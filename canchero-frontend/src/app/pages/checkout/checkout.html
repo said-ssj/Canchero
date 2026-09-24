@@ -1,0 +1,741 @@
+<section class="checkout-context-bar">
+  <div class="container checkout-context-container">
+    <!-- Mini ficha de la cancha elegida -->
+    <div class="context-venue-info">
+      <div class="context-thumb">
+        <img [src]="selectedComplejo().img" alt="Cancha Sintética">
+      </div>
+      <div>
+        <div class="context-title-group">
+          <h1 class="context-venue-name" style="margin: 0;">{{ selectedComplejo().name }}</h1>
+          <span class="context-court-pill">{{ selectedTipoCancha() }}</span>
+          <span class="venue-online-badge">
+            <span class="pulse-dot-green"></span>
+            Sede Online
+          </span>
+        </div>
+        <div class="context-meta-row">
+          <span class="context-meta-item">
+            <svg class="icon-15 icon" style="color: var(--color-brand-green);" aria-hidden="true"><use href="/iconos-canchero.svg#calendar_month"></use></svg>
+            <span>{{ summaryDateText() }}</span>
+          </span>
+          <span>•</span>
+          <span class="context-meta-item">
+            <svg class="icon-15 icon" style="color: var(--color-brand-orange);" aria-hidden="true"><use href="/iconos-canchero.svg#schedule"></use></svg>
+            <span>{{ horarioText() }}</span>
+          </span>
+          <span>•</span>
+          <button type="button" class="context-change-link" (click)="goToPaso(1)">
+            <svg class="icon-14 icon" aria-hidden="true"><use href="/iconos-canchero.svg#arrow_back"></use></svg>
+            Cambiar horario
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stepper horizontal clásico Canchero -->
+    <div class="checkout-stepper">
+      <div class="step-item">
+        <div class="step-circle" [class.completed]="activePaso() > 1" [class.active]="activePaso() === 1" [class.pending]="activePaso() < 1">
+          @if (activePaso() > 1) {
+            <svg class="icon-14 icon" aria-hidden="true"><use href="/iconos-canchero.svg#check"></use></svg>
+          } @else {
+            <span>1</span>
+          }
+        </div>
+        <span class="step-label" [class.active]="activePaso() === 1">Horarios</span>
+      </div>
+      <div class="step-divider" [class.active]="activePaso() > 1"></div>
+      <div class="step-item">
+        <div class="step-circle" [class.completed]="activePaso() > 2" [class.active]="activePaso() === 2" [class.pending]="activePaso() < 2">
+          @if (activePaso() > 2) {
+            <svg class="icon-14 icon" aria-hidden="true"><use href="/iconos-canchero.svg#check"></use></svg>
+          } @else {
+            <span>2</span>
+          }
+        </div>
+        <span class="step-label" [class.active]="activePaso() === 2">División y Pago</span>
+      </div>
+      <div class="step-divider" [class.active]="activePaso() > 2"></div>
+      <div class="step-item">
+        <div class="step-circle" [class.active]="activePaso() === 3" [class.pending]="activePaso() < 3">
+          <span>3</span>
+        </div>
+        <span class="step-label" [class.active]="activePaso() === 3">Confirmación</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Alerta de Retención Temporal con Cronómetro -->
+  <div class="retention-alert-bar">
+    <div class="container retention-alert-content">
+      <div class="retention-left">
+        <svg class="icon-18 icon" style="color: var(--color-brand-orange);" aria-hidden="true"><use href="/iconos-canchero.svg#timer"></use></svg>
+        <span>
+          <strong style="color: var(--color-brand-orange);">Turno retenido temporalmente:</strong>
+          Tienes <span class="retention-timer">{{ retentionText() }}</span> para completar tu reserva antes de que vuelva al mercado libre.
+        </span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<main class="container">
+  <div class="checkout-main-grid">
+
+    <!-- COLUMNA IZQUIERDA: Pasos Interactivos -->
+    <div class="checkout-left-col">
+
+      @switch (activePaso()) {
+        @case (1) {
+          <!-- ============ PASO 1: HORARIOS ============ -->
+          <!-- Paso 1.1: Selección de Sede y Tipo de Cancha -->
+          <section class="checkout-card">
+            <div class="checkout-card-header">
+              <div class="checkout-card-title-group">
+                <div class="step-number-circle">1</div>
+                <h2 class="checkout-card-title">Sede y Tipo de Cancha</h2>
+              </div>
+              <span class="context-court-pill" style="font-size: 0.75rem;">{{ selectedTipoCancha() }} • S/ {{ selectedComplejo().price }}/hr</span>
+            </div>
+
+            <div class="reserva-grid-2">
+              <div class="form-group" style="margin-bottom: 0;">
+                <label for="selectComplejo" class="form-label">Sede Deportiva</label>
+                <select id="selectComplejo" class="form-control" [(ngModel)]="selectedComplejoId" (ngModelChange)="onComplejoChange($event)">
+                  @for (complejo of complejos(); track complejo.id) {
+                    <option [value]="complejo.id">{{ complejo.name }}</option>
+                  }
+                </select>
+              </div>
+              <div class="form-group" style="margin-bottom: 0;">
+                <label for="selectTipoCancha" class="form-label">Tipo de Cancha</label>
+                <select id="selectTipoCancha" class="form-control" [(ngModel)]="selectedTipoCancha">
+                  <option value="Grass 7">Fútbol 7 - Grass Sintético (S/ {{ selectedComplejo().price }}/hr)</option>
+                  <option value="Grass 5">Fútbol 5 - Grass Sintético (S/ {{ getSlotPrice(9, basePrice()) }}/hr aprox.)</option>
+                  <option value="Futsal Techado">Futsal Techado - Tabloncillo (S/ {{ getSlotPrice(9, basePrice()) }}/hr aprox.)</option>
+                </select>
+              </div>
+            </div>
+          </section>
+
+          <!-- Paso 1.2: Calendario Semanal -->
+          <section class="checkout-card">
+            <div class="checkout-card-header">
+              <div class="checkout-card-title-group">
+                <div class="step-number-circle">2</div>
+                <div>
+                  <h2 class="checkout-card-title" style="margin: 0;">Horarios de Juego Semanales</h2>
+                  <p class="card-description" style="margin: 2px 0 0 0;">Visualiza la disponibilidad completa de la semana y selecciona tus horas favoritas sin esperas</p>
+                </div>
+              </div>
+              <span class="context-court-pill" style="font-size: 0.75rem;">{{ convocadosText() }} en lista</span>
+            </div>
+
+            <!-- Toolbar de Navegación de Semanas -->
+            <div class="week-toolbar">
+              <div class="week-nav-actions">
+                <button type="button" class="btn-week" (click)="prevWeek()" title="Semana anterior" [disabled]="weekOffset() === 0">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                  Ant.
+                </button>
+                <button type="button" class="btn-week btn-today" (click)="todayWeek()" title="Regresar a la semana actual">
+                  Esta Semana
+                </button>
+                <button type="button" class="btn-week" (click)="nextWeek()" title="Semana siguiente">
+                  Sig.
+                  <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </button>
+              </div>
+              <div class="week-title-wrap">
+                <span class="week-label">{{ weekLabelText() }}</span>
+                <span class="week-tag" [style.background]="weekBadgeBg()" [style.color]="weekBadgeColor()">{{ weekBadgeText() }}</span>
+              </div>
+            </div>
+
+            <!-- Filtros de Franja Horaria -->
+            <div class="time-filter-row">
+              <div class="filter-pills">
+                @for (option of filterOptions; track option.key) {
+                  <button type="button" class="filter-pill" [class.active]="timeFilter() === option.key" (click)="setTimeFilter(option.key)">
+                    {{ option.label }}
+                  </button>
+                }
+              </div>
+            </div>
+
+            <!-- Leyenda -->
+            <div class="calendar-legend" style="margin-bottom: 0.75rem;">
+              <span class="legend-chip">
+                <span class="legend-box available"></span> Libre
+              </span>
+              <span class="legend-chip">
+                <span class="legend-box selected"></span> Elegido
+              </span>
+              <span class="legend-chip">
+                <span class="legend-box occupied"></span> Ocupado
+              </span>
+            </div>
+
+            <!-- Matriz de Mini Calendario Semanal -->
+            <div class="calendar-matrix-wrapper">
+              <table class="calendar-table">
+                <thead>
+                  <tr>
+                    <th class="corner-th">Horario</th>
+                    @for (day of currentWeekDays(); track day.dateStr) {
+                      <th [class.is-today]="day.isToday">
+                        <div class="day-th-content">
+                          <span class="day-th-name">{{ day.dayName }}</span>
+                          <span class="day-th-num">{{ day.dayNum }}</span>
+                          <span class="day-th-month">{{ day.monthName }}</span>
+                          @if (day.isToday) {
+                            <span class="today-pill-badge">Hoy</span>
+                          }
+                        </div>
+                      </th>
+                    }
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (hour of filteredHours(); track hour) {
+                    <tr>
+                      <th class="hour-th">
+                        <div class="hour-label-main">{{ hour < 10 ? '0' + hour : hour }}:00</div>
+                        <div class="hour-label-sub">{{ slotPriceAt(hour) >= basePrice() ? 'Noche' : 'Día' }}</div>
+                      </th>
+                      @for (day of currentWeekDays(); track day.dateStr) {
+                        <td>
+                          <button
+                            type="button"
+                            class="cell-slot-btn"
+                            [class.available]="slotStatus(day, hour) === 'available'"
+                            [class.occupied]="slotStatus(day, hour) === 'occupied'"
+                            [class.past]="slotStatus(day, hour) === 'past'"
+                            [class.selected]="isSlotSelected(day, hour)"
+                            (click)="slotStatus(day, hour) === 'available' && toggleSlot(day, hour)"
+                            [attr.aria-label]="'Turno ' + day.dayName + ' ' + day.dayNum + ' a las ' + hour + ':00'"
+                          >
+                            @if (slotStatus(day, hour) === 'available') {
+                              <span class="slot-price-txt" style="font-size: 0.78rem; font-weight: 700;">{{ fmt(slotPriceAt(hour)) }}</span>
+                              <span class="slot-state-txt">Disponible</span>
+                            } @else if (isSlotSelected(day, hour)) {
+                              <svg class="icon-18 icon" aria-hidden="true"><use href="/iconos-canchero.svg#check"></use></svg>
+                              <span class="slot-state-txt" style="color: var(--color-surface); font-weight: 800;">Elegido</span>
+                            } @else if (slotStatus(day, hour) === 'occupied') {
+                              <svg class="icon-16 icon" aria-hidden="true"><use href="/iconos-canchero.svg#close"></use></svg>
+                              <span class="slot-state-txt">Ocupado</span>
+                            } @else {
+                              <span class="slot-state-txt" style="color: var(--color-ink-400);">Pasado</span>
+                            }
+                          </button>
+                        </td>
+                      }
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Indicador de ayuda y selección -->
+            <div style="margin-top: 0.75rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; font-size: 0.75rem; color: var(--color-ink-500);">
+              <span>💡 Desliza horizontalmente la tabla para ver todos los días de la semana.</span>
+              <span style="font-weight: 700; color: var(--color-brand-green-dark);">{{ selectionCountText() }}</span>
+            </div>
+
+            <button type="button" class="btn-checkout-submit" (click)="goToPaso(2)">
+              <span>Continuar a División y Pago →</span>
+            </button>
+          </section>
+        }
+
+        @case (2) {
+          <!-- ============ PASO 2: DIVISIÓN Y PAGO ============ -->
+          <!-- Paso 2.1: Convocados -->
+          <section class="checkout-card">
+            <div class="checkout-card-header">
+              <div class="checkout-card-title-group">
+                <div class="step-number-circle">2</div>
+                <div>
+                  <h2 class="checkout-card-title" style="margin: 0;">Convocados para la Pichanga</h2>
+                  <p class="card-description" style="margin: 2px 0 0 0;">Agrega a tus amigos para convocarlos y dividir el costo de la cancha automáticamente en tiempo real.</p>
+                </div>
+              </div>
+              <span class="context-court-pill" style="font-size: 0.75rem;">{{ convocadosText() }}</span>
+            </div>
+
+            <div class="add-player-row">
+              <div class="player-input-wrap">
+                <span class="player-input-prefix">+51</span>
+                <input
+                  type="tel"
+                  id="convocado-input-phone"
+                  class="player-input-field"
+                  placeholder="Número celular (9 dígitos)"
+                  [(ngModel)]="newPlayerPhone"
+                  pattern="^9\d{8}$"
+                  maxlength="9"
+                >
+              </div>
+              <div class="player-input-wrap">
+                <input
+                  type="text"
+                  id="convocado-input-name"
+                  class="player-input-field"
+                  style="padding-left: 14px;"
+                  placeholder="Nombre del jugador o amigo..."
+                  [(ngModel)]="newPlayerName"
+                >
+              </div>
+              <select class="form-control" style="width: 150px; height: 44px;" [(ngModel)]="newPlayerTipo">
+                <option value="Registrado">Registrado</option>
+                <option value="Invitado">Invitado</option>
+              </select>
+              <button type="button" class="btn-add-player" (click)="addPlayer()">
+                <svg class="icon-18 icon" aria-hidden="true"><use href="/iconos-canchero.svg#person_add"></use></svg>
+                Agregar Jugador
+              </button>
+            </div>
+
+            <div class="players-list" id="lista-convocados">
+              @for (player of players(); track player.id) {
+                <div class="player-row player-card-item">
+                  <div class="player-left-group">
+                    <div class="player-avatar" [class.captain-avatar]="player.isCaptain" [class.invited-avatar]="!player.registrado">
+                      {{ player.name.charAt(0) }}
+                    </div>
+                    <div>
+                      <div class="player-name-row">
+                        <span class="player-name">{{ player.name }}</span>
+                        @if (player.isCaptain) {
+                          <span class="player-role-tag">(Tú — Capitán)</span>
+                        } @else {
+                          <span class="player-role-tag">{{ player.registrado ? '(Amigo)' : '(Invitado)' }}</span>
+                        }
+                      </div>
+                      <div class="player-phone">{{ player.phone }}</div>
+                    </div>
+                  </div>
+                  <div class="player-right-group">
+                    @if (player.isCaptain) {
+                      <span class="pill-status paying-now">Pagando ahora (Titular)</span>
+                    } @else if (player.paid) {
+                      <span class="pill-status paid-green">Pagó {{ fmt(cuotaPerPlayer()) }}</span>
+                    } @else {
+                      <span class="pill-status pending-orange">Pendiente</span>
+                    }
+                    @if (!player.isCaptain) {
+                      <button type="button" class="btn-remove-player" (click)="removePlayer(player.id)" title="Quitar">
+                        <svg class="icon-18 icon" aria-hidden="true"><use href="/iconos-canchero.svg#close"></use></svg>
+                      </button>
+                    }
+                  </div>
+                </div>
+              } @empty {
+                <p style="font-size: 0.85rem; color: var(--color-ink-500); margin: 0;">Aún no hay convocados. Agrega a tus amigos arriba.</p>
+              }
+            </div>
+
+            <!-- Barra de Progreso de Recaudación -->
+            <div class="squad-progress-box">
+              <div class="squad-header-line">
+                <div style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem;">
+                  <div class="avatars-stack">
+                    @for (player of players(); track player.id) {
+                      <span class="avatar-stack-item" [style.background]="player.isCaptain ? 'var(--color-brand-green)' : 'var(--color-slate-300)'" [style.color]="player.isCaptain ? 'white' : 'var(--color-ink-900)'" style="display: inline-flex; align-items: center; justify-content: center; font-size: 0.68rem; font-weight: 800;">{{ player.name.charAt(0) }}</span>
+                    }
+                  </div>
+                  <span style="font-weight: 800; color: var(--color-ink-900);">{{ convocadosText() }}</span>
+                </div>
+                <span style="font-size: 0.75rem; font-weight: 700; color: var(--color-brand-green);">{{ paidCount() }} de {{ players().length }} pagaron</span>
+              </div>
+              <div class="progress-track">
+                <div class="progress-fill" [style.width.%]="recaudacionPercent()"></div>
+              </div>
+              <div class="squad-amounts-line">
+                <span>Recaudado: <strong style="color: var(--color-ink-900);">{{ fmt(recaudado()) }}</strong></span>
+                <span>Total cancha: <strong style="color: var(--color-ink-900);">{{ fmt(total()) }}</strong></span>
+              </div>
+            </div>
+
+            <div style="background: var(--color-surface-muted); border-radius: var(--radius-md); padding: 0.85rem 1rem; border: 1px solid var(--color-border);">
+              <p class="card-description" style="margin: 0; color: var(--color-ink-700);">
+                <strong style="color: var(--color-brand-green);">¿Cómo funciona?</strong> Solo los jugadores con cuenta verificada en Canchero podrán pagar su cuota individual a tu Yape. Los invitados pueden ser asumidos por el Capitán o cancelados en recepción antes de jugar.
+              </p>
+            </div>
+
+            <button type="button" class="btn-checkout-submit" (click)="goToPaso(1)">
+              <span>← Volver a Horarios</span>
+            </button>
+            <button type="button" class="btn-action-green" (click)="goToPaso(3)">
+              <span>Continuar a Confirmación y Pago →</span>
+            </button>
+          </section>
+        }
+
+        @case (3) {
+          <!-- ============ PASO 3: CONFIRMACIÓN ============ -->
+          <!-- Paso 3.1: Resumen Final -->
+          <section class="checkout-card">
+            <div class="checkout-card-header">
+              <div class="checkout-card-title-group">
+                <div class="step-number-circle">3</div>
+                <div>
+                  <h2 class="checkout-card-title" style="margin: 0;">Confirma tu Reserva</h2>
+                  <p class="card-description" style="margin: 2px 0 0 0;">Revisa los datos y confirma el envío de tu comprobante. El turno quedará retenido mientras se valida.</p>
+                </div>
+              </div>
+              <span class="status-badge confirmed" style="font-size: 0.72rem;">
+                <svg class="icon-14 icon" aria-hidden="true"><use href="/iconos-canchero.svg#verified"></use></svg>
+                Reserva protegida
+              </span>
+            </div>
+
+            <!-- Ficha de Detalles -->
+            <div style="background: var(--color-slate-50); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.86rem;">
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: var(--color-ink-500);">Sede:</span>
+                <span style="font-weight: 700; color: var(--color-ink-900);">{{ selectedComplejo().name }} — {{ selectedComplejo().address }}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: var(--color-ink-500);">Cancha:</span>
+                <span style="font-weight: 700; color: var(--color-ink-900);">{{ selectedTipoCancha() }}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: var(--color-ink-500);">Fecha:</span>
+                <span style="font-weight: 700; color: var(--color-ink-900);">{{ summaryDateText() }}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: var(--color-ink-500);">Horario:</span>
+                <span style="font-weight: 700; color: var(--color-ink-900);">{{ horarioText() }}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: var(--color-ink-500);">Capitán:</span>
+                <span style="font-weight: 700; color: var(--color-ink-900);">Carlos Jugador</span>
+              </div>
+            </div>
+
+            <!-- Turnos seleccionados -->
+            <div>
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.35rem;">
+                <span style="font-size: 0.8rem; font-weight: 600; color: var(--color-ink-500); text-transform: uppercase;">Turnos Seleccionados</span>
+                <button type="button" class="context-change-link" (click)="clearSlots()">Limpiar selección</button>
+              </div>
+              @for (slot of selectedSlots(); track slot.id) {
+                <div class="selected-slot-chip">
+                  <span style="font-weight: 700; color: var(--color-ink-900);">{{ slot.dayDisplay }} — {{ slot.time }}</span>
+                  <span style="font-weight: 800; color: var(--color-brand-green);">{{ fmt(slot.price) }}</span>
+                </div>
+              } @empty {
+                <p style="font-size: 0.82rem; color: var(--color-ink-500); margin: 0;">No hay horarios seleccionados.</p>
+              }
+            </div>
+
+            <!-- Alerta de error validación -->
+            @if (confirmError()) {
+              <div class="modal-confirm-alert" style="background: var(--color-danger-50); border: 1px solid var(--color-danger-200); color: var(--color-danger-600); border-radius: var(--radius-md); padding: 0.75rem 1rem; font-size: 0.84rem; font-weight: 600;">
+                {{ confirmError() }}
+              </div>
+            }
+
+            <button type="button" class="btn-action-green" (click)="goToPaso(2)">
+              <span>← Volver a División</span>
+            </button>
+          </section>
+
+          <!-- Paso 3.2: Método de Pago, Voucher y Cupón -->
+          <section class="checkout-card">
+            <div class="checkout-card-header">
+              <div class="checkout-card-title-group">
+                <div class="step-number-circle">4</div>
+                <h2 class="checkout-card-title">Método de Pago y Comprobante</h2>
+              </div>
+            </div>
+
+            <!-- Tabs de métodos -->
+            <div class="payment-tabs-bar">
+              <button type="button" class="payment-tab-btn" [class.active]="paymentMethod() === 'yape'" (click)="selectPayment('yape')">Yape</button>
+              <button type="button" class="payment-tab-btn" [class.active]="paymentMethod() === 'plin'" (click)="selectPayment('plin')">Plin</button>
+              <button type="button" class="payment-tab-btn" [class.active]="paymentMethod() === 'card'" (click)="selectPayment('card')">Tarjeta</button>
+            </div>
+
+            @if (paymentMethod() === 'card') {
+              <!-- Panel Tarjeta -->
+              <div class="card-inputs-panel">
+                <label style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--color-ink-500);">Número de Tarjeta</label>
+                <input type="text" class="card-input-clean" placeholder="•••• •••• •••• ••••" maxlength="19">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                  <input type="text" class="card-input-clean" placeholder="MM / AA" maxlength="5">
+                  <input type="password" class="card-input-clean" placeholder="CVV" maxlength="4">
+                </div>
+                <p style="font-size: 0.75rem; color: var(--color-ink-500); margin: 0;">El pago con tarjeta se procesa contra una tarjeta demo de Canchero MVP.</p>
+              </div>
+            } @else {
+              <!-- Contenedor QR dinámico Yape/Plin -->
+              <div class="qr-container-box">
+                <div style="display: flex; align-items: center; gap: 6px; width: 100%;">
+                  <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--color-brand-green);"></span>
+                  <strong style="font-size: 0.88rem; color: var(--color-ink-900);">{{ qrTitle() }}</strong>
+                </div>
+
+                <div class="qr-svg-card">
+                  <div [innerHTML]="qrSvg()"></div>
+                </div>
+
+                <!-- Beneficiario y Teléfono con copiar -->
+                <div style="width: 100%;">
+                  <span style="font-size: 0.82rem; color: var(--color-ink-700); font-weight: 600;">Complejo Deportivo {{ selectedComplejo().name }}</span>
+                  <div class="phone-copy-row">
+                    <span class="phone-copy-number">{{ getPaymentPhone() }}</span>
+                    <button type="button" class="btn-copy-icon" (click)="copyNumber()" title="Copiar número de abono">
+                      <svg class="icon-16 icon" aria-hidden="true"><use href="/iconos-canchero.svg#content_copy"></use></svg>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Indicaciones de 3 pasos -->
+                <div style="font-size: 0.78rem; color: var(--color-ink-500); text-align: left; width: 100%; display: flex; flex-direction: column; gap: 2px;">
+                  <span>1. Escanea el código o transfiere al número celular.</span>
+                  <span>2. Ingresa el monto exacto: <strong style="color: var(--color-ink-900);">{{ fmt(totalToPayNow()) }}</strong></span>
+                  <span>3. Sube la captura de tu voucher aquí abajo:</span>
+                </div>
+
+                <!-- Zona Drag & Drop para Voucher -->
+                <div
+                  class="voucher-dropzone-box"
+                  [style.border-color]="voucherBorderColor()"
+                  (click)="voucherInput.click()"
+                  (dragover)="onVoucherDragOver($event)"
+                  (dragleave)="onVoucherDragLeave($event)"
+                  (drop)="onVoucherDrop($event)"
+                >
+                  <svg class="icon-22 icon" style="color: var(--color-brand-green);" aria-hidden="true"><use href="/iconos-canchero.svg#cloud_upload"></use></svg>
+                  <span style="font-size: 0.78rem; font-weight: 700; color: var(--color-ink-900);">Voucher adjunto:</span>
+                  <span style="font-size: 0.8rem; color: var(--color-brand-green); font-weight: 600;">{{ voucherUploaded() ? voucherFileName() : 'Arrastra tu comprobante o haz click para subir el archivo' }}</span>
+                  <span class="pill-status" [class.paid-green]="voucherUploaded()" [class.pending-orange]="!voucherUploaded()" style="font-size: 0.7rem;">{{ voucherStatusText() }}</span>
+                  <input type="file" #voucherInput id="voucher-file-input" style="display: none;" accept="image/*,.pdf" (change)="onVoucherSelect($event)">
+                </div>
+
+                <!-- Código de Operación -->
+                <div style="width: 100%; text-align: left;">
+                  <label style="font-size: 0.7rem; text-transform: uppercase; font-weight: 700; color: var(--color-ink-500); display: block; margin-bottom: 4px;">
+                    Código de Operación (6 dígitos)
+                  </label>
+                  <input type="text" class="op-code-input" placeholder="Ingrese código de operación" [(ngModel)]="opCode" maxlength="12">
+                </div>
+              </div>
+            }
+
+            <!-- Cupón de Descuento -->
+            <div class="checkout-card-header" style="border-bottom: none; padding-bottom: 0;">
+              <div class="checkout-card-title-group">
+                <div class="step-number-circle" style="background: transparent; border: none; color: var(--color-brand-orange);">%</div>
+                <h2 class="checkout-card-title">Cupón de Descuento</h2>
+              </div>
+            </div>
+            <div class="coupon-input-group">
+              <div class="coupon-input-wrap">
+                <svg class="icon-18 icon coupon-icon" aria-hidden="true"><use href="/iconos-canchero.svg#sell"></use></svg>
+                <input type="text" id="couponInput" class="coupon-input" [placeholder]="'Ej: ' + coupons.map(c => c.code).join(', ')" [(ngModel)]="couponCodeInput">
+              </div>
+              <button type="button" class="btn-apply-coupon" (click)="applyCoupon()">
+                <svg class="icon-18 icon" aria-hidden="true"><use href="/iconos-canchero.svg#check"></use></svg>
+                <span>{{ couponApplied() ? 'Aplicado' : 'Aplicar' }}</span>
+              </button>
+            </div>
+            @if (couponMessage()) {
+              <div class="coupon-applied-alert">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <svg class="icon-18 icon" style="color: var(--color-brand-green);" aria-hidden="true"><use href="/iconos-canchero.svg#verified"></use></svg>
+                  <span>{{ couponMessage() }}</span>
+                </div>
+                @if (couponApplied()) {
+                  <button type="button" class="btn-copy-icon" (click)="removeCoupon()" title="Remover cupón">
+                    <span style="font-size: 0.78rem; font-weight: 700;">Remover</span>
+                  </button>
+                }
+              </div>
+            }
+
+            <!-- Desglose Final -->
+            <div style="border-top: 1px solid var(--color-border); padding-top: 1rem;">
+              <div class="summary-row">
+                <span>Tarifa base ({{ selectedSlots().length }} h)</span>
+                <span>{{ fmt(subtotal()) }}</span>
+              </div>
+              @if (couponApplied()) {
+                <div class="summary-row discount">
+                  <span>Descuento {{ couponCodeInput() }} ({{ couponPercentText() }})</span>
+                  <span>- {{ fmt(discountAmount()) }}</span>
+                </div>
+              }
+              <div class="breakdown-divider"></div>
+              <div class="summary-row total">
+                <span>Total a pagar</span>
+                <span style="color: var(--color-brand-green);">{{ fmt(total()) }}</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- Confirmar y Enviar Reserva -->
+          <section class="checkout-card">
+            @if (confirmError()) {
+              <div style="background: var(--color-danger-50); border: 1px solid var(--color-danger-200); color: var(--color-danger-600); border-radius: var(--radius-md); padding: 0.75rem 1rem; font-size: 0.84rem; font-weight: 600;">
+                {{ confirmError() }}
+              </div>
+            }
+            <button
+              type="button"
+              class="btn-checkout-submit"
+              [disabled]="submitting()"
+              (click)="confirmarReserva()"
+            >
+              @if (submitting()) {
+                <svg class="icon-18 icon" style="animation: spin 1s linear infinite;" aria-hidden="true"><use href="/iconos-canchero.svg#sync"></use></svg>
+                <span>Enviando reserva...</span>
+              } @else {
+                <svg class="icon-18 icon" aria-hidden="true"><use href="/iconos-canchero.svg#verified_user"></use></svg>
+                <span>Confirmar y Enviar Reserva ({{ fmt(totalToPayNow()) }})</span>
+              }
+            </button>
+            <div style="display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 0.78rem; color: var(--color-ink-500);">
+              <svg class="icon-16 icon" style="color: var(--color-brand-green);" aria-hidden="true"><use href="/iconos-canchero.svg#lock"></use></svg>
+              <span>Pago protegido con cifrado SSL bancario</span>
+            </div>
+            <div style="background: #f8fafc; border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 0.5rem; text-align: center; font-size: 0.78rem; color: var(--color-ink-700);">
+              <svg class="icon-14 icon" style="color: var(--color-brand-orange); vertical-align: middle;" aria-hidden="true"><use href="/iconos-canchero.svg#verified"></use></svg>
+              Cancelación gratuita hasta 6 horas antes del partido
+            </div>
+          </section>
+        }
+      }
+    </div>
+
+    <!-- COLUMNA DERECHA: Resumen Sticky -->
+    <aside class="checkout-sticky-col">
+      <div class="summary-card">
+        <div class="summary-header">
+          <h3 class="summary-title">Resumen de la Reserva</h3>
+          <span class="context-court-pill" style="font-size: 0.7rem;">{{ selectedTipoCancha() }}</span>
+        </div>
+
+        <!-- Info de Sede Seleccionada -->
+        <div style="display: flex; gap: 0.75rem; padding-bottom: 1rem; border-bottom: 1px solid var(--color-border);">
+          <img [src]="selectedComplejo().img" alt="Cancha" style="width: 60px; height: 60px; border-radius: var(--radius-md); object-fit: cover;">
+          <div>
+            <div style="font-weight: 700; font-size: 0.95rem; color: var(--color-ink-900);">{{ selectedComplejo().name }}</div>
+            <div style="font-size: 0.8rem; color: var(--color-ink-500);">{{ selectedTipoCancha() }}</div>
+            <div style="font-size: 0.8rem; color: var(--color-brand-green); font-weight: 600; margin-top: 2px;">{{ summaryDateText() }}</div>
+          </div>
+        </div>
+
+        <!-- Turnos Seleccionados -->
+        <div>
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.35rem;">
+            <span style="font-size: 0.8rem; font-weight: 600; color: var(--color-ink-500); text-transform: uppercase;">{{ selectionCountText() }}</span>
+          </div>
+          @for (slot of selectedSlots(); track slot.id) {
+            <div class="selected-slot-chip">
+              <span style="font-weight: 700; color: var(--color-ink-900);">{{ slot.dayDisplay }} {{ slot.time }}</span>
+              <button type="button" class="chip-del" (click)="removeSlot(slot.id)" title="Quitar turno">
+                <svg class="icon-16 icon" aria-hidden="true"><use href="/iconos-canchero.svg#close"></use></svg>
+              </button>
+            </div>
+          } @empty {
+            <p style="font-size: 0.8rem; color: var(--color-ink-500); margin: 0;">Aún no seleccionas turnos.</p>
+          }
+        </div>
+
+        <!-- Desglose Económico -->
+        <div style="border-top: 1px solid var(--color-border); padding-top: 1rem;">
+          <div class="summary-row">
+            <span>Tarifa base ({{ selectedSlots().length }} h)</span>
+            <span>{{ fmt(subtotal()) }}</span>
+          </div>
+          @if (couponApplied()) {
+            <div class="summary-row discount">
+              <span>Descuento {{ couponCodeInput() }}</span>
+              <span>- {{ fmt(discountAmount()) }}</span>
+            </div>
+          }
+          <div class="breakdown-divider"></div>
+          <div class="summary-row total">
+            <span>Total a pagar</span>
+            <span id="summaryTotal" style="color: var(--color-brand-green);">{{ fmt(total()) }}</span>
+          </div>
+        </div>
+
+        <!-- Cuota Estimada por Jugador -->
+        <div class="summary-quota">
+          <div><strong>{{ cuotaLabel() }}</strong></div>
+          <div style="font-size: 1.15rem; font-weight: 800; margin: 0.2rem 0;">{{ fmt(cuotaPerPlayer()) }}</div>
+          <div style="font-size: 0.75rem; opacity: 0.9;">Dividido entre {{ players().length }} jugadores convocados</div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<!-- ==========================================================================
+     MODAL DE ÉXITO (POST-RESERVA)
+     ========================================================================== -->
+<div class="modal-backdrop-classic" [class.is-visible]="showSuccess()" (click)="onModalBackdrop($event)">
+  <div class="modal-card-classic" role="dialog" aria-modal="true" aria-label="Reserva confirmada">
+    <!-- Icono y Botón Cerrar -->
+    <div style="display: flex; align-items: center; justify-content: space-between;">
+      <div style="width: 44px; height: 44px; border-radius: 50%; background: #dcfce7; color: var(--color-brand-green); display: flex; align-items: center; justify-content: center;">
+        <svg class="icon-24 icon" aria-hidden="true"><use href="/iconos-canchero.svg#sports_soccer"></use></svg>
+      </div>
+      <button type="button" class="modal-close-btn" (click)="showSuccess.set(false)" title="Cerrar modal">
+        <svg class="icon-18 icon" aria-hidden="true"><use href="/iconos-canchero.svg#close"></use></svg>
+      </button>
+    </div>
+
+    <!-- Título de Éxito -->
+    <div style="text-align: center;">
+      <h3 style="font-size: 1.35rem; font-weight: 800; color: var(--color-ink-900); margin: 0;">{{ reservaCode() }}</h3>
+      <p style="font-size: 0.88rem; color: var(--color-ink-500); margin: 4px 0 0 0;">
+        ¡Tu reserva fue enviada con éxito! Tu turno está reservado mientras validamos tu comprobante.
+      </p>
+    </div>
+
+    <!-- Alerta de Validación en Progreso -->
+    <div style="background: #fff7ed; border: 1px solid #fed7aa; border-radius: var(--radius-md); padding: 0.85rem 1rem; display: flex; gap: 0.65rem; color: #9a3412; font-size: 0.84rem;">
+      <svg class="icon-20 icon" style="color: var(--color-brand-orange); flex-shrink: 0; margin-top: 1px;" aria-hidden="true"><use href="/iconos-canchero.svg#hourglass_top"></use></svg>
+      <div>
+        <strong style="color: var(--color-brand-orange); display: block; margin-bottom: 2px;">Verificación en progreso (30 min):</strong>
+        <span>Tu turno está reservado mientras el administrador de {{ selectedComplejo().name }} valida tu transferencia {{ paymentMethodName() }}.</span>
+      </div>
+    </div>
+
+    <!-- Ficha de Detalles -->
+    <div style="background: #f8fafc; border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; gap: 0.4rem; font-size: 0.86rem;">
+      <div style="display: flex; justify-content: space-between;">
+        <span style="color: var(--color-ink-500);">Código de Reserva:</span>
+        <span style="font-weight: 800; color: var(--color-brand-orange);">{{ reservaCode() }}</span>
+      </div>
+      <div style="display: flex; justify-content: space-between;">
+        <span style="color: var(--color-ink-500);">Cancha:</span>
+        <span style="font-weight: 700; color: var(--color-ink-900);">{{ selectedTipoCancha() }} — {{ selectedComplejo().name }}</span>
+      </div>
+      <div style="display: flex; justify-content: space-between;">
+        <span style="color: var(--color-ink-500);">Fecha y Horario:</span>
+        <span style="font-weight: 700; color: var(--color-ink-900);">{{ summaryDateText() }} • {{ horarioText() }}</span>
+      </div>
+      <div style="display: flex; justify-content: space-between; border-top: 1px solid var(--color-border); padding-top: 0.4rem; margin-top: 0.2rem;">
+        <span style="color: var(--color-ink-500);">Monto a pagar (Capitán):</span>
+        <span style="font-weight: 800; color: var(--color-brand-green);">{{ fmt(total()) }}</span>
+      </div>
+    </div>
+
+    <!-- Botones de Acción -->
+    <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.25rem;">
+      <a routerLink="/itinerario" class="btn-action-green">
+        <span>Ver en Mi Itinerario →</span>
+      </a>
+      <button type="button" class="btn-action-outline" (click)="showSuccess.set(false)">
+        Seguir navegando
+      </button>
+    </div>
+  </div>
+</div>

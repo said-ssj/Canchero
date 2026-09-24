@@ -1,0 +1,106 @@
+<main class="login-main-wrapper">
+  <div class="login-auth-card">
+
+    <div class="auth-header-group">
+      <div class="auth-icon-circle">
+        <svg class="icon icon-28" aria-hidden="true"><use href="/iconos-canchero.svg#sports_and_outdoors"></use></svg>
+      </div>
+      <div class="auth-badge-pill">
+        <svg class="icon-14 icon" aria-hidden="true"><use href="/iconos-canchero.svg#lock"></use></svg>
+        <span>Portal de Jugadores y Sedes</span>
+      </div>
+      <h1 class="auth-title">Bienvenido de nuevo</h1>
+      <p class="auth-subtitle">Ingresa a tu cuenta para ver y gestionar tus reservas deportivas en tiempo real.</p>
+    </div>
+
+    <div class="auth-error-alert" [class.is-visible]="showError()" role="alert">
+      <svg class="icon-20 icon" style="flex-shrink: 0;" aria-hidden="true"><use href="/iconos-canchero.svg#error"></use></svg>
+      <span>Correo o contraseña incorrectos. Verifica tus credenciales.</span>
+    </div>
+
+    <form novalidate (ngSubmit)="onSubmit()">
+
+      <div class="form-field-group">
+        <label class="form-field-label" for="email">Usuario o Correo Electrónico</label>
+        <div class="input-icon-wrap">
+          <span class="input-leading-icon">
+            <svg class="icon icon-20" aria-hidden="true"><use href="/iconos-canchero.svg#mail"></use></svg>
+          </span>
+          <input
+            type="text"
+            id="email"
+            name="email"
+            class="auth-input"
+            placeholder="ejemplo: jugador@canchero.pe"
+            [(ngModel)]="email"
+            autocomplete="username"
+          />
+        </div>
+      </div>
+
+      <div class="form-field-group">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.45rem;">
+          <label class="form-field-label" for="password" style="margin-bottom: 0;">Contraseña</label>
+          <button type="button" class="forgot-pwd-link" (click)="forgotPassword()" style="font-size: 0.78rem; background: none; border: none; color: var(--color-brand-green); text-decoration: underline; cursor: pointer;">
+            ¿Olvidaste tu contraseña?
+          </button>
+        </div>
+        <div class="input-icon-wrap">
+          <span class="input-leading-icon">
+            <svg class="icon icon-20" aria-hidden="true"><use href="/iconos-canchero.svg#lock_open"></use></svg>
+          </span>
+          <input
+            [type]="showPassword() ? 'text' : 'password'"
+            id="password"
+            name="password"
+            class="auth-input has-trailing-btn"
+            placeholder="••••••••••••"
+            [(ngModel)]="password"
+            autocomplete="current-password"
+          />
+          <button type="button" class="toggle-pwd-btn" (click)="showPassword.set(!showPassword())" aria-label="Mostrar u ocultar contraseña">
+            <svg class="icon-20 icon" aria-hidden="true"><use [attr.href]="showPassword() ? '/iconos-canchero.svg#visibility_off' : '/iconos-canchero.svg#visibility'"></use></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="auth-options-row">
+        <label class="remember-label">
+          <input type="checkbox" name="remember" class="remember-checkbox" [(ngModel)]="remember" />
+          <span>Mantener mi sesión iniciada</span>
+        </label>
+      </div>
+
+      <button type="submit" class="btn-submit-auth" id="btn-submit" [disabled]="submitting()">
+        @if (submitting()) {
+          <svg class="icon" style="animation: spin 1s linear infinite;" aria-hidden="true"><use href="/iconos-canchero.svg#sync"></use></svg>
+        }
+        <span>{{ submitting() ? 'Iniciando sesión...' : 'Entrar a mi cuenta' }}</span>
+        @if (!submitting()) {
+          <svg class="icon-18 icon" style="font-weight: bold;" aria-hidden="true"><use href="/iconos-canchero.svg#arrow_forward"></use></svg>
+        }
+      </button>
+
+    </form>
+
+    <div class="auth-divider">
+      <div class="auth-divider-line"></div>
+      <span class="auth-divider-text">o</span>
+    </div>
+
+    <div class="auth-footer-prompt">
+      ¿Aún no tienes cuenta?
+      <a routerLink="/registro">Regístrate gratis</a>
+    </div>
+
+    <div class="security-badge-footer">
+      <svg class="icon icon-15" aria-hidden="true"><use href="/iconos-canchero.svg#encrypted"></use></svg>
+      <span>Conexión cifrada de 256 bits • Canchero.MVP</span>
+    </div>
+
+    <p style="text-align: center; font-size: 0.72rem; color: var(--color-slate-400); margin-top: 1rem;">
+      Demo: jugador@canchero.pe / dueno@canchero.pe — clave 123456
+    </p>
+
+  </div>
+</main>

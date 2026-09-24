@@ -1,0 +1,443 @@
+@if (venue(); as v) {
+
+  <section class="venue-header-banner">
+    <div class="container">
+      <div class="venue-header-content">
+        <div>
+          <div class="venue-breadcrumbs">
+            <a routerLink="/sedes">
+              <svg class="icon icon-16" aria-hidden="true"><use href="/iconos-canchero.svg#arrow_back"></use></svg> Sedes
+            </a>
+            <span>/</span>
+            <span style="color: #cbd5e1;">{{ capitalize(v.distrito) }}</span>
+          </div>
+          <h1 class="venue-title">
+            {{ v.nombre }} <span class="highlight-orange">Complejo Deportivo</span>
+          </h1>
+          <p class="venue-address">
+            <svg class="icon-18 icon" style="color: var(--color-brand-orange);" aria-hidden="true"><use href="/iconos-canchero.svg#location_on"></use></svg>
+            {{ v.direccion }}
+          </p>
+        </div>
+
+        <div class="venue-header-stats">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <svg class="icon-24 icon" style="color: var(--color-brand-orange);" aria-hidden="true"><use href="/iconos-canchero.svg#star-fill"></use></svg>
+            <div>
+              <div class="stat-rating-val">{{ v.rating }}</div>
+              <div class="stat-sublabel">reseñas verificadas</div>
+            </div>
+          </div>
+          <div class="stat-divider"></div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <svg class="icon-24 icon" style="color: var(--color-brand-green);" aria-hidden="true"><use href="/iconos-canchero.svg#verified"></use></svg>
+            <div>
+              <div style="font-size: 0.85rem; font-weight: 700; color: #FFFFFF;">FIFA Quality</div>
+              <div class="stat-sublabel">Césped Certificado</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <main class="container">
+
+    <div class="hero-carousel-wrapper">
+      <div id="heroCarouselSlide" class="hero-carousel-slide" [style.background-image]="'url(' + currentHero() + ')'">
+      </div>
+      <div class="hero-gradient-overlay"></div>
+
+      <div class="carousel-top-controls">
+        <button id="btnFav" class="round-ctrl-btn" type="button" aria-label="Agregar a favoritos" (click)="toggleFavorite()" [style.color]="favorito() ? 'var(--color-brand-orange)' : ''">
+          <svg class="icon-20 icon" aria-hidden="true"><use [attr.href]="favorito() ? '/iconos-canchero.svg#star-fill' : '/iconos-canchero.svg#star'"></use></svg>
+        </button>
+        <button class="round-ctrl-btn" type="button" aria-label="Activar notificaciones" (click)="handleNotificationClick()" [style.color]="notificaciones() ? 'var(--color-brand-green)' : ''">
+          <svg class="icon-20 icon" aria-hidden="true"><use href="/iconos-canchero.svg#notifications"></use></svg>
+        </button>
+      </div>
+
+      <button class="carousel-nav-btn prev" type="button" aria-label="Foto anterior" (click)="prevHeroImage()">
+        <svg class="icon" aria-hidden="true"><use href="/iconos-canchero.svg#chevron_left"></use></svg>
+      </button>
+      <button class="carousel-nav-btn next" type="button" aria-label="Siguiente foto" (click)="nextHeroImage()">
+        <svg class="icon" aria-hidden="true"><use href="/iconos-canchero.svg#chevron_right"></use></svg>
+      </button>
+
+      <div class="carousel-caption-overlay">
+        <div>
+          <span class="status-open-pill">
+            <span class="pulse-dot"></span> Abierto hoy hasta las 00:00 hrs
+          </span>
+          <h2 class="carousel-slide-title">{{ heroCaption() }}</h2>
+        </div>
+        <div class="carousel-dots">
+          @for (imagen of heroImages(); track imagen; let i = $index) {
+            <span class="carousel-dot" [class.active]="carouselIdx() === i" (click)="goToHeroImage(i)"></span>
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="services-chips-row">
+      @for (amenidad of v.amenidades; track amenidad) {
+        <span class="service-chip">
+          <svg class="icon-16 icon" style="color: var(--color-brand-green);" aria-hidden="true"><use href="/iconos-canchero.svg#stadium"></use></svg> {{ amenidad }}
+        </span>
+      }
+    </div>
+
+    <section class="losa-section">
+      <div class="losa-section-header">
+        <div>
+          <h2>Selecciona tu Cancha</h2>
+          <p>Selecciona una losa para ver sus especificaciones, fotos dedicadas y disponibilidad de horarios en tiempo real.</p>
+        </div>
+        <span class="badge-canchas-disponibles">{{ availableCount() }} Canchas Disponibles</span>
+      </div>
+
+      <div class="losa-grid" id="losaSelectorContainer">
+        @for (cancha of v.canchas; track cancha.id) {
+          <div class="losa-card" [class.active]="selectedCourtId() === cancha.id" (click)="selectLosa(cancha)">
+            @if (selectedCourtId() === cancha.id) {
+              <div class="losa-check-badge">
+                <svg class="icon-16 icon" aria-hidden="true"><use href="/iconos-canchero.svg#check"></use></svg>
+              </div>
+            }
+            <div>
+              <div class="losa-thumb-wrap">
+                <img [src]="cancha.foto ?? v.fotos[0]" [alt]="cancha.nombre">
+                <span class="losa-state-pill" [class.occupied]="!cancha.disponible">{{ cancha.disponible ? 'Disponible ahora' : 'Ocupada hoy' }}</span>
+              </div>
+              <h3 class="losa-title">{{ cancha.nombre }}</h3>
+              <p class="losa-type">
+                <svg class="icon-14 icon" aria-hidden="true"><use href="/iconos-canchero.svg#sports_soccer"></use></svg> {{ cancha.tipo }}
+              </p>
+            </div>
+            <div class="losa-price-row">
+              <span class="losa-price-label">Tarifa</span>
+              <span class="losa-price-val">S/. {{ cancha.precioHora }} <span style="font-size: 0.8rem; font-weight: normal; color: var(--color-ink-500);">/ h</span></span>
+            </div>
+          </div>
+        }
+      </div>
+    </section>
+
+    <div class="detail-body-grid">
+
+      <section class="detail-left-col">
+
+        <div class="content-box">
+          <div class="box-header">
+            <div class="box-header-icon">
+              <svg class="icon icon-20" aria-hidden="true"><use href="/iconos-canchero.svg#auto_stories"></use></svg>
+            </div>
+            <h3>Nuestra Historia & Pasión</h3>
+          </div>
+          <div class="quote-box">
+            <div class="quote-accent-line"></div>
+            <p class="quote-text">
+              {{ v.descripcion || 'Fundado por amantes del fútbol aficionado, ' + v.nombre + ' nació para ofrecer una experiencia de juego profesional a los grupos de amigos de barrio, academias y empresas que buscan desconectar. Renovamos anualmente la fibra sintética y cuidamos cada detalle para que cada pichanga se viva como una final de copa.' }}
+            </p>
+          </div>
+        </div>
+
+        <div class="content-box">
+          <div style="display: flex; flex-direction: column; gap: 0.5rem; justify-content: space-between; margin-bottom: 1rem;">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+              <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 0.4rem;">
+                <svg class="icon" style="color: var(--color-brand-green);" aria-hidden="true"><use href="/iconos-canchero.svg#photo_library"></use></svg>
+                Fotos del Campo: <span style="color: var(--color-brand-orange-dark);">{{ losaName() }}</span>
+              </h3>
+              <button type="button" class="btn btn-outline btn-sm" (click)="openPhotoModal()">
+                Ver todas ({{ v.fotos.length }}) <svg class="icon-16 icon" aria-hidden="true"><use href="/iconos-canchero.svg#chevron_right"></use></svg>
+              </button>
+            </div>
+            <p style="font-size: 0.85rem; color: var(--color-ink-500); margin: 0;">Imágenes reales y actualizadas del césped, arcos y áreas auxiliares.</p>
+          </div>
+
+          <div class="bento-gallery-grid">
+            @for (foto of v.fotos; track foto; let i = $index) {
+              <div class="bento-item" [class.span-2]="i === 0" [class.normal]="i !== 0">
+                <img [src]="foto" [alt]="'Foto ' + (i + 1) + ' de ' + v.nombre">
+                <span class="bento-label">{{ i === 0 ? 'Vista Principal' : 'Imagen ' + (i + 1) }}</span>
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="content-box">
+          <div style="margin-bottom: 1.25rem;">
+            <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0 0 0.25rem 0;">Instalaciones & Servicios Incluidos</h3>
+            <p style="font-size: 0.9rem; color: var(--color-ink-500); margin: 0;">Todo lo que necesitas para tu grupo antes, durante y después del cotejo.</p>
+          </div>
+
+          <div class="amenities-feature-grid">
+            @for (amenidad of v.amenidades; track amenidad) {
+              <div class="amenity-card">
+                <div class="amenity-icon-circle" [class.green]="$even">
+                  <svg class="icon" aria-hidden="true"><use href="/iconos-canchero.svg#sports_soccer"></use></svg>
+                </div>
+                <h4 class="amenity-title">{{ amenidad }}</h4>
+                <p class="amenity-desc">Servicio incluido para todas las reservas de este complejo.</p>
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="content-box">
+          <div class="ratings-summary-row">
+            <div>
+              <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0 0 0.25rem 0;">Opiniones de la Comunidad Canchera</h3>
+              <p style="font-size: 0.85rem; color: var(--color-ink-500); margin: 0;">Jugadores verificados que han disputado partidos en {{ v.nombre }}.</p>
+            </div>
+            @if (reviews().length > 0) {
+              <div class="global-score-badge">
+                <span class="score-stars">★</span>
+                <span class="score-num">{{ ratingDisplay() }}</span>
+                <span class="score-total">/ 5.0 {{ reviewCount() }}</span>
+              </div>
+              <button type="button" class="btn btn-outline btn-sm" [disabled]="!canReview()" (click)="openReviewModal()">
+                <svg class="icon-16 icon" aria-hidden="true"><use href="/iconos-canchero.svg#rate_review"></use></svg>
+                Calificar mi partido
+              </button>
+            }
+          </div>
+
+          @if (reviews().length === 0) {
+            <div class="reviews-empty-state">
+              <div class="reviews-empty-icon">
+                <svg class="icon-28 icon" aria-hidden="true"><use href="/iconos-canchero.svg#rate_review"></use></svg>
+              </div>
+              <h4 class="reviews-empty-title">Aún no hay reseñas en esta sede</h4>
+              <p class="reviews-empty-text">
+                Esta sede aún no cuenta con reseñas. Sé el primero en calificarla tras jugar tu partido.
+              </p>
+              @if (canReview()) {
+                <button type="button" class="btn btn-primary" (click)="openReviewModal()">
+                  <svg class="icon-18 icon" aria-hidden="true"><use href="/iconos-canchero.svg#edit"></use></svg>
+                  Publicar mi opinión
+                </button>
+              } @else {
+                <span class="reviews-empty-hint">
+                  Solo jugadores con un partido finalizado en esta sede pueden calificar.
+                </span>
+              }
+            </div>
+          } @else {
+            @for (review of reviews(); track review.id) {
+              <div class="comment-card">
+                <div class="comment-card-header">
+                  <div class="comment-author-info">
+                    <div class="author-initials">{{ initialsOf(review.author) }}</div>
+                    <div>
+                      <h5 class="author-name">{{ review.author }}</h5>
+                      <p class="author-meta">{{ review.matchCount }} {{ review.matchCount === 1 ? 'partido' : 'partidos' }} jugados</p>
+                    </div>
+                  </div>
+                  <div class="comment-stars" [attr.aria-label]="'Calificación ' + review.rating + ' de 5'">
+                    {{ '★'.repeat(review.rating) }}
+                  </div>
+                </div>
+                <p class="comment-text">{{ review.text }}</p>
+              </div>
+            }
+          }
+        </div>
+
+        <div class="content-box">
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.5rem;">
+            <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 0.4rem;">
+              <svg class="icon" style="color: var(--color-brand-orange);" aria-hidden="true"><use href="/iconos-canchero.svg#map"></use></svg> Cómo Llegar
+            </h3>
+            <a [href]="mapsUrl(v)" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm">
+              Abrir en Google Maps <svg class="icon-16 icon" aria-hidden="true"><use href="/iconos-canchero.svg#open_in_new"></use></svg>
+            </a>
+          </div>
+
+          <div class="map-preview-wrap" [style.background-image]="'url(' + mapsUrl(v) + ')'">
+            <div class="map-overlay-ref">
+              <span style="font-size: 0.72rem; color: var(--color-brand-orange-dark); font-weight: 800; text-transform: uppercase;">Punto de referencia</span>
+              <p style="font-size: 0.85rem; color: var(--color-ink-900); margin: 0.2rem 0 0 0; line-height: 1.35;">
+                {{ v.direccion }}
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <aside>
+        <div class="sticky-booking-card">
+          <div class="booking-card-header">
+            <div>
+              <div class="booking-tariff-label">Tarifa por hora</div>
+              <div>
+                <span class="booking-price-display">{{ tarifaDisplay() }}</span>
+                <span class="booking-price-unit">/ 60 min</span>
+              </div>
+            </div>
+            <div class="live-pulse-badge">
+              <span class="live-dot"></span> En directo
+            </div>
+          </div>
+
+          <div>
+            <div class="form-group-title">
+              <span>Fecha del Partido</span>
+              <span style="color: var(--color-brand-orange-dark); font-weight: 500; font-size: 0.78rem;">Semana en curso</span>
+            </div>
+            <div class="date-pills-grid" id="dateButtonsContainer">
+              @for (fecha of fechas; track fecha) {
+                <button type="button" class="date-pill-btn" [class.active]="selectedDateLabel() === fecha" (click)="selectDate(fecha)">
+                  {{ fecha }}
+                </button>
+              }
+            </div>
+          </div>
+
+          <div>
+            <div class="form-group-title">
+              <span>Horario Nocturno Disponible</span>
+              <span style="font-size: 0.75rem; color: var(--color-ink-500); font-weight: normal;">1 h sugerida</span>
+            </div>
+            <div class="slots-picker-grid" id="slotsContainer">
+              @for (slot of horarios; track slot.hora) {
+                <button type="button" class="slot-picker-btn" [class.active]="selectedTimeLabel() === slot.hora" [disabled]="!slot.disponible" (click)="selectTimeSlot(slot.hora)">
+                  <span class="slot-hour-text">{{ slot.hora }}</span>
+                  @if (selectedTimeLabel() === slot.hora) {
+                    <span class="slot-status-text">
+                      <svg class="icon-14 icon" aria-hidden="true"><use href="/iconos-canchero.svg#check"></use></svg> Seleccionada
+                    </span>
+                  } @else if (!slot.disponible) {
+                    <span class="slot-status-text" style="color: #ef4444;">Ocupado</span>
+                  } @else {
+                    <span class="slot-status-text">
+                      <span class="live-dot"></span> Disponible
+                    </span>
+                  }
+                </button>
+              }
+            </div>
+          </div>
+
+          <div class="booking-summary-box">
+            <div class="summary-heading">Resumen de Partido</div>
+            <div class="summary-line">
+              <span>Sede:</span>
+              <strong style="color: var(--color-ink-900);">{{ capitalize(v.distrito) }}</strong>
+            </div>
+            <div class="summary-line">
+              <span>Cancha:</span>
+              <strong style="color: var(--color-ink-900);">{{ losaName() }}</strong>
+            </div>
+            <div class="summary-line">
+              <span>Fecha & Turno:</span>
+              <strong style="color: var(--color-ink-900);">{{ summaryTime() }}</strong>
+            </div>
+            <div class="summary-line">
+              <span>Accesorios:</span>
+              <strong style="color: var(--color-brand-green-dark);">2 Balones + Chalecos (Gratis)</strong>
+            </div>
+            <div class="summary-line total-line">
+              <span>Total Estimado:</span>
+              <span class="total-price-highlight">{{ summaryTotal() }}</span>
+            </div>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 0.6rem;">
+            <button type="button" class="btn btn-primary btn-full btn-lg" (click)="goToBookingFlow()">
+              <svg class="icon-20 icon" aria-hidden="true"><use href="/iconos-canchero.svg#sports_soccer"></use></svg> Reservar Ahora
+            </button>
+            <a routerLink="/itinerario" class="btn btn-secondary btn-full">
+              Ver Itinerario Completo
+            </a>
+          </div>
+
+          <div style="text-align: center; border-top: 1px solid #f1f5f9; padding-top: 0.75rem;">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 0.75rem; color: var(--color-ink-700); font-weight: 600; margin-bottom: 0.25rem;">
+              <svg class="icon-16 icon" style="color: var(--color-brand-green);" aria-hidden="true"><use href="/iconos-canchero.svg#lock"></use></svg>
+              Reserva 100% garantizada en el sistema
+            </div>
+            <p style="font-size: 0.75rem; color: var(--color-ink-500); line-height: 1.35; margin: 0 0 0.5rem 0;">
+              Cancelación gratuita hasta 6 horas antes del partido. Aceptamos Yape, Plin y todas las tarjetas.
+            </p>
+            <div style="display: flex; align-items: center; justify-content: center; gap: 0.4rem; flex-wrap: wrap;">
+              <span style="font-size: 0.7rem; font-weight: 700; background: #f1f5f9; padding: 2px 7px; border-radius: var(--radius-full); color: #475569;">YAPE</span>
+              <span style="font-size: 0.7rem; font-weight: 700; background: #f1f5f9; padding: 2px 7px; border-radius: var(--radius-full); color: #475569;">PLIN</span>
+              <span style="font-size: 0.7rem; font-weight: 700; background: #f1f5f9; padding: 2px 7px; border-radius: var(--radius-full); color: #475569;">VISA</span>
+              <span style="font-size: 0.7rem; font-weight: 700; background: #f1f5f9; padding: 2px 7px; border-radius: var(--radius-full); color: #475569;">MASTERCARD</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="tournament-sidebar-card">
+          <div class="tourney-badge">
+            <svg class="icon icon-16" aria-hidden="true"><use href="/iconos-canchero.svg#trophy"></use></svg> Torneos en {{ v.nombre }}
+          </div>
+          <h4 class="tourney-title">Próximos torneos disponibles</h4>
+          <p class="tourney-desc">
+            Consulta las bases e inscribe a tu equipo en los torneos organizados en esta sede.
+          </p>
+          <a routerLink="/torneos" class="tourney-link">
+            Ver torneos &rarr;
+          </a>
+        </div>
+      </aside>
+
+    </div>
+
+    @if (galleryOpen()) {
+      <div id="photoGalleryModal" class="gallery-modal-backdrop is-open" (click)="closePhotoModal($event)">
+        <div class="gallery-modal-content">
+          <div style="padding: 1.25rem; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--color-border);">
+            <h4 style="margin: 0; font-size: 1.1rem; font-weight: 700;">Galería Panorámica - {{ v.nombre }}</h4>
+            <button type="button" class="modal-close-btn inline" (click)="closePhotoModalDirect()" aria-label="Cerrar">&times;</button>
+          </div>
+          <div style="padding: 1.5rem; max-height: 70vh; overflow-y: auto;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+              @for (foto of v.fotos; track foto) {
+                <img [src]="foto" [alt]="'Foto de ' + v.nombre" style="width: 100%; height: 160px; object-fit: cover; border-radius: var(--radius-sm);">
+              }
+            </div>
+          </div>
+          <div style="padding: 1rem 1.25rem; background: #f8fafc; text-align: right; border-top: 1px solid var(--color-border);">
+            <button type="button" class="btn btn-primary btn-sm" (click)="closePhotoModalDirect()">Cerrar</button>
+          </div>
+        </div>
+      </div>
+    }
+
+    @if (reviewModalOpen()) {
+      <div class="modal-overlay-classic" (click)="closeReviewModal($event)">
+        <div class="modal-window-classic review-modal" role="dialog" aria-modal="true" aria-label="Calificar mi partido">
+          <button type="button" class="modal-close-btn" (click)="closeReviewModalDirect()" aria-label="Cerrar">
+            <svg class="icon icon-20" aria-hidden="true"><use href="/iconos-canchero.svg#close"></use></svg>
+          </button>
+          <h2 class="review-modal-title">¿Cómo estuvo tu partido?</h2>
+          <p class="review-modal-sub">{{ v.nombre }}</p>
+          <div class="review-star-picker">
+            @for (star of [1, 2, 3, 4, 5]; track star) {
+              <button type="button" class="review-star" [class.is-active]="star <= reviewStars()" (click)="setReviewStars(star)" [attr.aria-label]="'Calificación ' + star">
+                <svg class="icon icon-28" aria-hidden="true"><use [attr.href]="star <= reviewStars() ? '/iconos-canchero.svg#star-fill' : '/iconos-canchero.svg#star'"></use></svg>
+              </button>
+            }
+          </div>
+          <textarea class="review-input" rows="5" placeholder="Cuéntale a la comunidad cómo estuvo el grass, la iluminación y la atención..." (input)="onReviewInput($event)"></textarea>
+          <button type="button" class="btn btn-primary btn-full" (click)="submitReview()">Publicar opinión</button>
+        </div>
+      </div>
+    }
+
+    <div class="toast-popup" style="position: fixed; bottom: 24px; right: 24px; background: #1A1A1A; color: #FFFFFF; padding: 12px 20px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); font-size: 0.9rem; font-weight: 600; z-index: 9999; display: flex; align-items: center; gap: 8px; border-left: 4px solid var(--color-brand-green);" [style.opacity]="toastVisible() ? '1' : '0'" [style.transform]="toastVisible() ? 'translateY(0)' : 'translateY(20px)'" [style.transition]="'opacity 0.4s ease, transform 0.4s ease'">
+      <span>{{ toastText() }}</span>
+    </div>
+
+  </main>
+
+} @else {
+  <main class="container" style="text-align: center; padding-top: 4rem; padding-bottom: 4rem;">
+    <h2 style="font-size: 1.75rem; font-weight: 800; color: var(--color-ink-900); margin-bottom: 0.75rem;">No encontramos esa sede</h2>
+    <p style="font-size: 1rem; color: var(--color-ink-500); margin-bottom: 1.5rem;">La sede que buscas no existe o ya no se encuentra disponible.</p>
+    <a routerLink="/sedes" class="btn btn-primary">Volver a Sedes</a>
+  </main>
+}

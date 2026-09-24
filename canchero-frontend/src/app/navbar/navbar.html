@@ -1,0 +1,58 @@
+@if (topbarVisible()) {
+  <aside class="topbar">
+    <div class="container topbar-content">
+      <div class="topbar-message">
+        <span>🔥 <strong>{{ topbarMessage() }}</strong></span>
+        <a routerLink="/checkout" class="topbar-cta">Reservar ahora &rarr;</a>
+      </div>
+      <div class="topbar-right">
+        <div class="topbar-links">
+          <a routerLink="/">Inicio</a>
+          <span class="topbar-sep">|</span>
+          <a routerLink="/sedes">Instalaciones</a>
+          <span class="topbar-sep">|</span>
+          <span style="opacity: 0.6; cursor: default;">Torneos (Próximamente)</span>
+        </div>
+        <button type="button" class="topbar-close-btn" (click)="hideTopBar()" title="Cerrar aviso">&times;</button>
+      </div>
+    </div>
+  </aside>
+}
+
+<header class="navbar">
+  <div class="container navbar-content">
+    <a routerLink="/" class="brand-logo">
+      <div class="brand-icon">C</div>
+      <span class="brand-name">Canchero<span class="brand-badge">.MVP</span></span>
+    </a>
+
+    <nav id="navMenu" class="nav-menu" [class.is-open]="menuOpen()">
+      <a routerLink="/" class="nav-link" (click)="menuOpen.set(false)">Inicio</a>
+      <a routerLink="/sedes" class="nav-link" (click)="menuOpen.set(false)">Sedes</a>
+      <a routerLink="/itinerario" class="nav-link" (click)="menuOpen.set(false)">Mi Itinerario</a>
+      <span class="nav-link" style="opacity: 0.6; cursor: default;">Torneos (Próximamente)</span>
+    </nav>
+
+    <div class="nav-actions">
+      @if (user(); as u) {
+        @if (u.rol === 'OWNER') {
+          <a routerLink="/admin" class="btn btn-primary btn-sm">Panel Admin</a>
+        }
+        <span class="user-chip">
+          <span class="user-avatar" aria-hidden="true">{{ initials(u.nombre) }}</span>
+          <span class="user-name">{{ u.nombre }}</span>
+        </span>
+        <button type="button" class="logout-btn" (click)="logout()">Cerrar sesión</button>
+        <a routerLink="/checkout" class="btn btn-secondary btn-sm">Reserva tu cancha</a>
+      } @else {
+        <a routerLink="/login" class="nav-login">Ingresar</a>
+        <a routerLink="/checkout" class="btn btn-secondary btn-sm">Reserva tu cancha</a>
+      }
+      <button type="button" id="mobileMenuBtn" class="mobile-menu-btn" (click)="menuOpen.set(!menuOpen())" aria-label="Abrir menú">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
+        </svg>
+      </button>
+    </div>
+  </div>
+</header>

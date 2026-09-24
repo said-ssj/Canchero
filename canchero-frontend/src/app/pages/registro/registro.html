@@ -1,0 +1,181 @@
+<main class="registro-main-wrapper">
+  <div class="registro-card">
+
+    <div class="auth-header-group">
+      <div class="auth-icon-circle">
+        <svg class="icon icon-32" aria-hidden="true"><use href="/iconos-canchero.svg#sports_soccer"></use></svg>
+      </div>
+      <div class="auth-badge-pill">
+        <svg class="icon-14 icon" aria-hidden="true"><use href="/iconos-canchero.svg#lock"></use></svg>
+        <span>Registro de cuenta nueva</span>
+      </div>
+      <h1 class="auth-title">Crea tu cuenta</h1>
+      <p class="auth-subtitle">Regístrate para reservar tu cancha en minutos o gestionar tu complejo deportivo.</p>
+    </div>
+
+    <div class="role-switcher-bar">
+      <button type="button" class="role-pill-btn" [class.active-green]="rol() === 'jugador'" [class.active-orange]="rol() === 'dueno'" (click)="selectRol('jugador')">
+        <svg class="icon-18 icon" aria-hidden="true"><use href="/iconos-canchero.svg#sports_soccer"></use></svg>
+        <span>Soy Jugador</span>
+      </button>
+      <button type="button" class="role-pill-btn" [class.active-orange]="rol() === 'dueno'" [class.active-green]="rol() === 'jugador'" (click)="selectRol('dueno')">
+        <svg class="icon-18 icon" aria-hidden="true"><use href="/iconos-canchero.svg#apartment"></use></svg>
+        <span>Soy Dueño de Cancha</span>
+      </button>
+    </div>
+
+    <p class="role-microtext">{{ roleText() }}</p>
+
+    <div class="auth-feedback-alert" [class.is-visible]="feedbackVisible()" role="alert">
+      <svg class="icon-20 icon" style="flex-shrink: 0;" aria-hidden="true"><use href="/iconos-canchero.svg#error"></use></svg>
+      <span>{{ feedbackText() }}</span>
+    </div>
+
+    <form novalidate (ngSubmit)="onSubmit()">
+
+      <div class="form-field-group">
+        <label class="form-field-label" for="input-nombre">Nombre Completo</label>
+        <div class="input-icon-wrap">
+          <span class="input-leading-icon">
+            <svg class="icon icon-20" aria-hidden="true"><use href="/iconos-canchero.svg#person"></use></svg>
+          </span>
+          <input type="text" id="input-nombre" name="nombre" class="auth-input" placeholder="Ej. Mateo Ramírez" [(ngModel)]="nombre" autocomplete="name" />
+        </div>
+      </div>
+
+      <div class="form-field-group">
+        <label class="form-field-label" for="input-email">Correo Electrónico</label>
+        <div class="input-icon-wrap">
+          <span class="input-leading-icon">
+            <svg class="icon icon-20" aria-hidden="true"><use href="/iconos-canchero.svg#mail"></use></svg>
+          </span>
+          <input type="email" id="input-email" name="email" class="auth-input" placeholder="ejemplo: mateo.ramirez@canchero.pe" [(ngModel)]="email" autocomplete="email" />
+        </div>
+      </div>
+
+      <div class="form-field-group">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+          <label class="form-field-label" for="input-telefono" style="margin-bottom: 0;">Teléfono / WhatsApp</label>
+          <span style="font-size: 0.72rem; color: #94a3b8;">Para confirmaciones y cuotas</span>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <div class="phone-prefix-pill">
+            <span>🇵🇪</span>
+            <span>+51</span>
+          </div>
+          <div class="input-icon-wrap" style="flex: 1;">
+            <span class="input-leading-icon">
+              <svg class="icon icon-20" aria-hidden="true"><use href="/iconos-canchero.svg#call"></use></svg>
+            </span>
+            <input type="tel" id="input-telefono" name="telefono" class="auth-input" maxlength="9" placeholder="987 654 321" [(ngModel)]="telefono" autocomplete="tel" />
+          </div>
+        </div>
+      </div>
+
+      <div class="venue-owner-box" id="seccion-dueno" [class.is-visible]="rol() === 'dueno'">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <svg class="icon icon-20" style="color: var(--color-brand-orange);" aria-hidden="true"><use href="/iconos-canchero.svg#stadium"></use></svg>
+          <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: #9a3412; letter-spacing: 0.05em;">
+            Datos de tu Establecimiento
+          </span>
+        </div>
+        <div>
+          <label class="form-field-label" for="input-sede">Nombre de tu Sede o Complejo</label>
+          <div class="input-icon-wrap">
+            <span class="input-leading-icon">
+              <svg class="icon icon-20" aria-hidden="true"><use href="/iconos-canchero.svg#store"></use></svg>
+            </span>
+            <input type="text" id="input-sede" name="sede" class="auth-input" placeholder="Ej. Complejo Deportivo Los Próceres" [(ngModel)]="sede" />
+          </div>
+        </div>
+        <p style="font-size: 0.75rem; color: #7c2d12; margin: 0; display: flex; align-items: center; gap: 4px;">
+          <svg class="icon icon-16" style="color: var(--color-brand-orange);" aria-hidden="true"><use href="/iconos-canchero.svg#info"></use></svg>
+          Podrás configurar tus losas y tarifas en tu panel admin tras verificar tu cuenta.
+        </p>
+      </div>
+
+      <div class="form-field-group">
+        <label class="form-field-label" for="input-pass">Contraseña</label>
+        <div class="input-icon-wrap">
+          <span class="input-leading-icon">
+            <svg class="icon icon-20" aria-hidden="true"><use href="/iconos-canchero.svg#lock"></use></svg>
+          </span>
+          <input [type]="showPass() ? 'text' : 'password'" id="input-pass" name="password" class="auth-input has-trailing-btn" placeholder="••••••••••••" [(ngModel)]="password" autocomplete="new-password" />
+          <button type="button" class="toggle-pwd-btn" (click)="showPass.set(!showPass())" aria-label="Mostrar contraseña">
+            <svg class="icon-20 icon" aria-hidden="true"><use [attr.href]="showPass() ? '/iconos-canchero.svg#visibility_off' : '/iconos-canchero.svg#visibility'"></use></svg>
+          </button>
+        </div>
+        <span style="font-size: 0.72rem; color: #94a3b8; display: block; margin-top: 4px;">
+          Mínimo 8 caracteres, al menos una letra y un número.
+        </span>
+      </div>
+
+      <div class="form-field-group">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+          <label class="form-field-label" for="input-pass-confirm" style="margin-bottom: 0;">Confirmar Contraseña</label>
+          <span [style.display]="passMatch() ? 'inline' : 'none'" style="font-size: 0.72rem; font-weight: 700; color: var(--color-brand-green);">
+            ✓ Las contraseñas coinciden
+          </span>
+        </div>
+        <div class="input-icon-wrap">
+          <span class="input-leading-icon">
+            <svg class="icon icon-20" aria-hidden="true"><use href="/iconos-canchero.svg#verified_user"></use></svg>
+          </span>
+          <input [type]="showPassConfirm() ? 'text' : 'password'" id="input-pass-confirm" name="password_confirm" class="auth-input has-trailing-btn" placeholder="••••••••••••" [(ngModel)]="passwordConfirm" autocomplete="new-password" />
+          <button type="button" class="toggle-pwd-btn" (click)="showPassConfirm.set(!showPassConfirm())" aria-label="Mostrar confirmación de contraseña">
+            <svg class="icon-20 icon" aria-hidden="true"><use [attr.href]="showPassConfirm() ? '/iconos-canchero.svg#visibility_off' : '/iconos-canchero.svg#visibility'"></use></svg>
+          </button>
+        </div>
+      </div>
+
+      <label class="terms-row" for="check-terminos">
+        <input type="checkbox" id="check-terminos" name="terminos" class="terms-checkbox" [(ngModel)]="terminos" />
+        <span>
+          Acepto los <a role="button" tabindex="0" (click)="verTerminos($event)" (keydown.enter)="verTerminos($event)" style="color: var(--color-brand-green); font-weight: 700; text-decoration: underline; cursor: pointer;">Términos y Condiciones</a> y la <a role="button" tabindex="0" (click)="verPrivacidad($event)" (keydown.enter)="verPrivacidad($event)" style="color: var(--color-brand-green); font-weight: 700; text-decoration: underline; cursor: pointer;">Política de Privacidad</a> de Canchero.MVP.
+        </span>
+      </label>
+
+      <button type="submit" class="btn-submit-registro" id="btn-submit" [disabled]="submitting()">
+        @if (submitting()) {
+          <svg class="icon" style="animation: spin 1s linear infinite;" aria-hidden="true"><use href="/iconos-canchero.svg#sync"></use></svg>
+          <span>Creando tu cuenta...</span>
+        } @else if (success()) {
+          <svg class="icon-20 icon" aria-hidden="true"><use href="/iconos-canchero.svg#check_circle"></use></svg>
+          <span>¡Cuenta creada con éxito!</span>
+        } @else {
+          <span>Crear mi cuenta</span>
+          <svg class="icon-18 icon" style="font-weight: bold;" aria-hidden="true"><use href="/iconos-canchero.svg#arrow_forward"></use></svg>
+        }
+      </button>
+
+    </form>
+
+    <div class="auth-divider">
+      <div class="auth-divider-line"></div>
+      <span class="auth-divider-text">o</span>
+    </div>
+
+    <div class="auth-footer-prompt">
+      ¿Ya tienes cuenta?
+      <a routerLink="/login">Inicia sesión</a>
+    </div>
+
+    <div class="security-badge-footer">
+      <svg class="icon-15 icon" aria-hidden="true"><use href="/iconos-canchero.svg#lock"></use></svg>
+      <span>Conexión segura y cifrada de 256 bits • Canchero.MVP</span>
+    </div>
+
+  </div>
+</main>
+
+@if (terminosModalOpen()) {
+  <div class="auth-modal-overlay" (click)="terminosModalOpen.set(false)" style="position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 1rem;">
+    <div class="auth-modal-card" (click)="$event.stopPropagation()" style="background: #ffffff; border-radius: var(--radius-lg); max-width: 480px; width: 100%; padding: 1.5rem; box-shadow: var(--shadow-lg);">
+      <h3 style="margin-top: 0; font-size: 1.15rem; font-weight: 800; color: var(--color-ink-900);">{{ modalTitulo() }}</h3>
+      <p style="font-size: 0.88rem; color: var(--color-ink-700); line-height: 1.6;">{{ modalContenido() }}</p>
+      <div style="text-align: right; margin-top: 1.25rem;">
+        <button type="button" class="btn btn-primary btn-sm" (click)="terminosModalOpen.set(false)">Entendido</button>
+      </div>
+    </div>
+  </div>
+}

@@ -1,0 +1,1321 @@
+/* ==========================================================================
+   CANCHERO.MVP — Estilos Específicos de Página
+   Archivo: css/detalle.css
+   Origen: extraído de <style> inline en pages/detalle.html
+   Capa CSS: se carga DESPUÉS de variables/global/layout/components y ANTES de responsive.
+   ========================================================================== */
+/* Estilos específicos de Ficha de Sede (Detalle) manteniendo la identidad de Canchero */
+    body {
+      font-family: 'Plus Jakarta Sans', var(--font-sans);
+      background-color: var(--color-slate-50);
+      color: var(--color-ink-900);
+    }
+
+    /* Banner Superior Oscuro con Título de Sede */
+    .venue-header-banner {
+      background-color: var(--color-ink-900);
+      color: var(--color-surface);
+      padding: 2.25rem 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .venue-header-content {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    @media (min-width: 768px) {
+      .venue-header-content {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+      }
+    }
+
+    .venue-breadcrumbs {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      color: var(--color-brand-orange);
+      margin-bottom: 0.5rem;
+    }
+
+    .venue-breadcrumbs a {
+      color: var(--color-brand-orange);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-weight: 600;
+    }
+
+    
+
+    .venue-title {
+      font-size: 2.1rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin: 0 0 0.4rem 0;
+      color: var(--color-surface);
+      line-height: 1.2;
+    }
+
+    .venue-title .highlight-orange {
+      color: var(--color-brand-orange);
+    }
+
+    .venue-address {
+      font-size: 0.92rem;
+      color: var(--color-slate-300);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      margin: 0;
+    }
+
+    .venue-header-stats {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      background: rgba(255, 255, 255, 0.07);
+      padding: 0.75rem 1.25rem;
+      border-radius: var(--radius-lg);
+      backdrop-filter: blur(8px);
+      align-self: flex-start;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    @media (min-width: 768px) {
+      .venue-header-stats {
+        align-self: auto;
+      }
+    }
+
+    .stat-rating-val {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--color-surface);
+      line-height: 1;
+    }
+
+    .stat-sublabel {
+      font-size: 0.72rem;
+      color: var(--color-slate-400);
+    }
+
+    .stat-divider {
+      width: 1px;
+      height: 28px;
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    /* Visor de Carrusel Hero */
+    .hero-carousel-wrapper {
+      position: relative;
+      width: 100%;
+      height: 300px;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-lg);
+      background-color: var(--color-ink-900);
+      margin-top: 1.5rem;
+    }
+
+    @media (min-width: 640px) {
+      .hero-carousel-wrapper {
+        height: 400px;
+      }
+    }
+
+    @media (min-width: 1024px) {
+      .hero-carousel-wrapper {
+        height: 460px;
+      }
+    }
+
+    .hero-carousel-slide {
+      width: 100%;
+      height: 100%;
+      background-size: cover;
+      background-position: center;
+      transition: background-image 0.6s ease-in-out;
+      position: relative;
+    }
+
+    .hero-gradient-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(26,26,26,0.15) 0%, rgba(26,26,26,0.85) 100%);
+      pointer-events: none;
+    }
+
+    .carousel-top-controls {
+      position: absolute;
+      top: 1.25rem;
+      right: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      z-index: 10;
+    }
+
+    .round-ctrl-btn {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: var(--color-surface);
+      color: var(--color-ink-900);
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+      transition: transform var(--transition-fast), color var(--transition-fast);
+    }
+
+    
+
+    .round-ctrl-btn:active {
+      transform: scale(0.95);
+    }
+
+    .carousel-nav-btn {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.9);
+      color: var(--color-ink-900);
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: var(--shadow-md);
+      transition: background var(--transition-fast);
+      z-index: 10;
+    }
+
+    
+
+    .carousel-nav-btn.prev { left: 1rem; }
+    .carousel-nav-btn.next { right: 1rem; }
+
+    .carousel-caption-overlay {
+      position: absolute;
+      bottom: 1.5rem;
+      left: 1.5rem;
+      right: 1.5rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 1rem;
+      z-index: 10;
+    }
+
+    .status-open-pill {
+      background-color: var(--color-brand-green);
+      color: var(--color-surface);
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: var(--radius-full);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 0.4rem;
+    }
+
+    .pulse-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background-color: var(--color-surface);
+      animation: pulseAnimation 2s infinite;
+    }
+
+    @keyframes pulseAnimation {
+      0% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.3); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    .carousel-slide-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--color-surface);
+      margin: 0;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    }
+
+    .carousel-dots {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(26, 26, 26, 0.75);
+      padding: 6px 12px;
+      border-radius: var(--radius-full);
+      backdrop-filter: blur(4px);
+    }
+
+    .carousel-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.4);
+      transition: all var(--transition-normal);
+      cursor: pointer;
+    }
+
+    .carousel-dot.active {
+      width: 22px;
+      border-radius: 8px;
+      background: var(--color-brand-green);
+    }
+
+    /* Chips de Servicios Generales */
+    .services-chips-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+    }
+
+    .service-chip {
+      background-color: var(--color-slate-100);
+      color: var(--color-ink-700);
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 0.45rem 0.9rem;
+      border-radius: var(--radius-full);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      border: 1px solid var(--color-border);
+      transition: background var(--transition-fast);
+    }
+
+    
+
+    /* Selector de Canchas / Losas */
+    .losa-section {
+      background-color: var(--color-surface);
+      padding: 1.75rem;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--color-border);
+      box-shadow: var(--shadow-sm);
+      margin-top: 2rem;
+    }
+
+    .losa-section-header {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin-bottom: 1.25rem;
+    }
+
+    @media (min-width: 640px) {
+      .losa-section-header {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+      }
+    }
+
+    .losa-section-header h2 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin: 0;
+      color: var(--color-ink-900);
+    }
+
+    .losa-section-header p {
+      font-size: 0.9rem;
+      color: var(--color-ink-500);
+      margin: 0.25rem 0 0 0;
+    }
+
+    .badge-canchas-disponibles {
+      background-color: var(--color-brand-green-light);
+      color: var(--color-brand-green-dark);
+      font-size: 0.82rem;
+      font-weight: 700;
+      padding: 0.35rem 0.85rem;
+      border-radius: var(--radius-full);
+      white-space: nowrap;
+      align-self: flex-start;
+    }
+
+    @media (min-width: 640px) {
+      .badge-canchas-disponibles {
+        align-self: auto;
+      }
+    }
+
+    .losa-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.25rem;
+    }
+
+    @media (min-width: 640px) {
+      .losa-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (min-width: 1024px) {
+      .losa-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+    }
+
+    .losa-card {
+      border: 2px solid var(--color-border);
+      background-color: var(--color-slate-50);
+      border-radius: var(--radius-md);
+      padding: 0.75rem;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all var(--transition-normal);
+    }
+
+    
+
+    .losa-card.active {
+      border-color: var(--color-brand-green);
+      background-color: var(--color-surface);
+      box-shadow: 0 0 0 2px var(--color-brand-green);
+    }
+
+    .losa-check-badge {
+      position: absolute;
+      top: 0.6rem;
+      right: 0.6rem;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background-color: var(--color-brand-green);
+      color: var(--color-surface);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 5;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .losa-thumb-wrap {
+      width: 100%;
+      height: 120px;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      margin-bottom: 0.75rem;
+      position: relative;
+      background-color: var(--color-slate-200);
+    }
+
+    .losa-thumb-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .losa-state-pill {
+      position: absolute;
+      bottom: 0.4rem;
+      left: 0.4rem;
+      background-color: var(--color-brand-green);
+      color: var(--color-surface);
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: var(--radius-full);
+    }
+
+    .losa-state-pill.occupied {
+      background-color: var(--color-brand-orange-dark);
+    }
+
+    .losa-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--color-ink-900);
+      margin: 0 0 0.25rem 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .losa-type {
+      font-size: 0.8rem;
+      color: var(--color-ink-500);
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      margin: 0;
+    }
+
+    .losa-price-row {
+      margin-top: 0.75rem;
+      padding-top: 0.5rem;
+      border-top: 1px solid var(--color-border);
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+    }
+
+    .losa-price-label {
+      font-size: 0.7rem;
+      color: var(--color-ink-500);
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+
+    .losa-price-val {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--color-ink-900);
+    }
+
+    .losa-card.active .losa-price-val {
+      color: var(--color-brand-green-dark);
+    }
+
+    /* Layout Principal de 2 Columnas */
+    .detail-body-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 2rem;
+      align-items: start;
+      margin-top: 2rem;
+      margin-bottom: 3.5rem;
+    }
+
+    @media (min-width: 1024px) {
+      .detail-body-grid {
+        grid-template-columns: 1fr 380px;
+      }
+    }
+
+    /* Columna Izquierda (Contenido Amplio) */
+    .detail-left-col {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+      min-width: 0;
+    }
+
+    .content-box {
+      background-color: var(--color-surface);
+      padding: 1.75rem;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--color-border);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .box-header {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .box-header-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background-color: var(--color-brand-orange-light);
+      color: var(--color-brand-orange-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .box-header h3 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin: 0;
+      color: var(--color-ink-900);
+    }
+
+    /* Historia & Pasión */
+    .quote-box {
+      position: relative;
+      padding-left: 1.25rem;
+      margin: 1rem 0;
+    }
+
+    .quote-accent-line {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background-color: var(--color-brand-orange);
+      border-radius: 2px;
+    }
+
+    .quote-text {
+      font-size: 0.98rem;
+      line-height: 1.7;
+      color: var(--color-ink-700);
+      font-style: italic;
+      margin: 0;
+    }
+
+    .founder-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--color-slate-100);
+    }
+
+    .founder-info {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .founder-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      object-fit: cover;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .founder-name {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--color-ink-900);
+    }
+
+    .founder-role {
+      font-size: 0.8rem;
+      color: var(--color-ink-500);
+    }
+
+    .passion-stat {
+      text-align: right;
+    }
+
+    .passion-tag {
+      font-size: 0.7rem;
+      color: var(--color-brand-orange-dark);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .passion-val {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--color-brand-green-dark);
+    }
+
+    /* Bento Grid de Fotos */
+    .bento-gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
+      margin-top: 1rem;
+    }
+
+    @media (min-width: 640px) {
+      .bento-gallery-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    .bento-item {
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      position: relative;
+      background-color: var(--color-ink-900);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .bento-item.span-2 {
+      grid-column: span 2;
+      height: 220px;
+    }
+
+    .bento-item.normal {
+      height: 160px;
+    }
+
+    .bento-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.5s ease;
+    }
+
+    
+
+    .bento-label {
+      position: absolute;
+      bottom: 0.5rem;
+      left: 0.5rem;
+      background: rgba(26, 26, 26, 0.85);
+      color: var(--color-surface);
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: var(--radius-sm);
+      backdrop-filter: blur(4px);
+    }
+
+    /* Instalaciones & Servicios */
+    .amenities-feature-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    @media (min-width: 640px) {
+      .amenities-feature-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (min-width: 768px) {
+      .amenities-feature-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    .amenity-card {
+      background-color: var(--color-slate-50);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      transition: background var(--transition-fast);
+    }
+
+    
+
+    .amenity-icon-circle {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: var(--color-surface);
+      color: var(--color-brand-orange-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 0.25rem;
+    }
+
+    .amenity-icon-circle.green {
+      color: var(--color-brand-green-dark);
+    }
+
+    .amenity-title {
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: var(--color-ink-900);
+      margin: 0;
+    }
+
+    .amenity-desc {
+      font-size: 0.82rem;
+      color: var(--color-ink-500);
+      line-height: 1.45;
+      margin: 0;
+    }
+
+    /* Reseñas y Puntuaciones */
+    .ratings-summary-row {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    @media (min-width: 768px) {
+      .ratings-summary-row {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+      }
+    }
+
+    .global-score-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--color-slate-100);
+      padding: 0.5rem 1rem;
+      border-radius: var(--radius-full);
+    }
+
+    .score-stars {
+      color: var(--color-brand-orange);
+      font-size: 1.25rem;
+      line-height: 1;
+    }
+
+    .score-num {
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: var(--color-ink-900);
+    }
+
+    .score-total {
+      font-size: 0.8rem;
+      color: var(--color-ink-500);
+    }
+
+    .breakdown-bars-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    @media (min-width: 640px) {
+      .breakdown-bars-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (min-width: 768px) {
+      .breakdown-bars-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+    }
+
+    .bar-item {
+      background: var(--color-slate-50);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      padding: 0.6rem 0.8rem;
+    }
+
+    .bar-item-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      margin-bottom: 0.35rem;
+      font-weight: 600;
+    }
+
+    .bar-track {
+      width: 100%;
+      height: 6px;
+      background: var(--color-slate-200);
+      border-radius: var(--radius-full);
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      background: var(--color-brand-green);
+      border-radius: var(--radius-full);
+    }
+
+    .bar-fill.orange {
+      background: var(--color-brand-orange);
+    }
+
+    .comment-card {
+      background: var(--color-slate-50);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 1rem 1.25rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .comment-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
+    }
+
+    .comment-author-info {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .author-initials {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: var(--color-brand-green-light);
+      color: var(--color-brand-green-dark);
+      font-weight: 700;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .author-initials.orange {
+      background: var(--color-brand-orange-light);
+      color: var(--color-brand-orange-dark);
+    }
+
+    .author-name {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--color-ink-900);
+      margin: 0;
+    }
+
+    .author-meta {
+      font-size: 0.78rem;
+      color: var(--color-ink-500);
+      margin: 0;
+    }
+
+    .comment-stars {
+      color: var(--color-brand-orange);
+      font-size: 0.9rem;
+    }
+
+    .comment-text {
+      font-size: 0.88rem;
+      color: var(--color-ink-700);
+      line-height: 1.55;
+      margin: 0;
+    }
+
+    /* Ubicación y Mapa */
+    .map-preview-wrap {
+      width: 100%;
+      height: 250px;
+      border-radius: var(--radius-md);
+      background-size: cover;
+      background-position: center;
+      position: relative;
+      display: flex;
+      align-items: flex-end;
+      padding: 1rem;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1);
+      margin-top: 1rem;
+    }
+
+    .map-overlay-ref {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(4px);
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--color-border);
+      max-width: 360px;
+      box-shadow: var(--shadow-md);
+    }
+
+    /* Columna Derecha (Sticky Booking Card) */
+    .sticky-booking-card {
+      position: sticky;
+      top: 90px;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .booking-card-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--color-slate-100);
+    }
+
+    .booking-tariff-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: var(--color-ink-500);
+      letter-spacing: 0.04em;
+      margin-bottom: 0.2rem;
+    }
+
+    .booking-price-display {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--color-brand-green-dark);
+      line-height: 1;
+    }
+
+    .booking-price-unit {
+      font-size: 0.85rem;
+      color: var(--color-ink-500);
+      font-weight: 500;
+    }
+
+    .live-pulse-badge {
+      background: var(--color-brand-green-light);
+      color: var(--color-brand-green-dark);
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: var(--radius-full);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .live-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--color-brand-green);
+    }
+
+    /* Selector de Fechas */
+    .form-group-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--color-ink-900);
+      margin-bottom: 0.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .date-pills-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.5rem;
+    }
+
+    .date-pill-btn {
+      padding: 0.5rem 0.25rem;
+      text-align: center;
+      border-radius: var(--radius-full);
+      font-size: 0.82rem;
+      font-weight: 600;
+      background: var(--color-slate-100);
+      color: var(--color-ink-700);
+      border: 1px solid var(--color-border);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+
+    
+
+    .date-pill-btn.active {
+      background: var(--color-brand-green);
+      color: var(--color-surface);
+      border-color: var(--color-brand-green);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* Slots de Horario */
+    .slots-picker-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.5rem;
+    }
+
+    .slot-picker-btn {
+      padding: 0.6rem 0.75rem;
+      text-align: left;
+      border-radius: var(--radius-sm);
+      background: var(--color-slate-50);
+      border: 1px solid var(--color-border);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+
+    
+
+    .slot-picker-btn.active {
+      background: var(--color-brand-green);
+      color: var(--color-surface);
+      border-color: var(--color-brand-green);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .slot-picker-btn:disabled {
+      background: var(--color-slate-100);
+      opacity: 0.6;
+      cursor: not-allowed;
+      border-color: var(--color-slate-200);
+    }
+
+    .slot-hour-text {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 700;
+      margin-bottom: 2px;
+    }
+
+    .slot-picker-btn:disabled .slot-hour-text {
+      text-decoration: line-through;
+      color: var(--color-ink-400);
+    }
+
+    .slot-status-text {
+      font-size: 0.7rem;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      font-weight: 600;
+      color: var(--color-brand-green-dark);
+    }
+
+    .slot-picker-btn.active .slot-status-text {
+      color: var(--color-surface);
+    }
+
+    .slot-picker-btn:disabled .slot-status-text {
+      color: var(--color-danger-500);
+    }
+
+    /* Resumen de Partido */
+    .booking-summary-box {
+      background: var(--color-slate-50);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .summary-heading {
+      font-size: 0.7rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--color-brand-orange-dark);
+      margin-bottom: 0.25rem;
+    }
+
+    .summary-line {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.82rem;
+      color: var(--color-ink-700);
+    }
+
+    .summary-line.total-line {
+      margin-top: 0.5rem;
+      padding-top: 0.5rem;
+      border-top: 1px dashed var(--color-border);
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--color-ink-900);
+      align-items: baseline;
+    }
+
+    .total-price-highlight {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--color-brand-orange-dark);
+    }
+
+    /* Torneo Banner lateral */
+    .tournament-sidebar-card {
+      background: var(--color-ink-900);
+      color: var(--color-surface);
+      padding: 1.25rem;
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-md);
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+
+    .tourney-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--color-brand-orange);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .tourney-title {
+      font-size: 1rem;
+      font-weight: 700;
+      margin: 0;
+      color: var(--color-surface);
+    }
+
+    .tourney-desc {
+      font-size: 0.8rem;
+      color: var(--color-slate-400);
+      line-height: 1.4;
+      margin: 0;
+    }
+
+    .tourney-link {
+      font-size: 0.82rem;
+      color: var(--color-brand-orange);
+      font-weight: 700;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 0.25rem;
+    }
+
+    
+
+    /* Modal de Galería Ampliada */
+    .gallery-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    .gallery-modal-backdrop.is-open {
+      display: flex;
+    }
+
+    .gallery-modal-content {
+      background: var(--color-surface);
+      border-radius: var(--radius-lg);
+      max-width: 800px;
+      width: 100%;
+      overflow: hidden;
+      box-shadow: var(--shadow-xl);
+    }
+
+.reviews-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 0.5rem;
+  padding: 2.5rem 1.5rem;
+  border: 1.5px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+}
+
+.reviews-empty-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--color-slate-100);
+  color: var(--color-slate-400);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.reviews-empty-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-ink-900);
+  margin: 0;
+}
+
+.reviews-empty-text {
+  font-size: 0.88rem;
+  color: var(--color-ink-500);
+  margin: 0 0 0.75rem 0;
+  max-width: 420px;
+}
+
+.reviews-empty-hint {
+  font-size: 0.78rem;
+  color: var(--color-ink-400);
+  background: #f1f5f9;
+  padding: 0.35rem 0.85rem;
+  border-radius: var(--radius-full);
+}
+
+.review-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 440px;
+  width: 100%;
+}
+
+.review-modal-title {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--color-ink-900);
+  margin: 0;
+}
+
+.review-modal-sub {
+  font-size: 0.9rem;
+  color: var(--color-ink-500);
+  margin: 0;
+}
+
+.review-star-picker {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 0;
+}
+
+.review-star {
+  background: none;
+  border: none;
+  padding: 0.15rem;
+  cursor: pointer;
+  color: var(--color-ink-300);
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.review-star.is-active,
+.review-star:hover {
+  color: var(--color-brand-orange);
+  transform: scale(1.1);
+}
+
+.review-input {
+  width: 100%;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0.75rem;
+  font-family: inherit;
+  font-size: 0.9rem;
+  color: var(--color-ink-900);
+  resize: vertical;
+  box-sizing: border-box;
+  background: #fff;
+}
+
+.review-input:focus {
+  outline: none;
+  border-color: var(--color-brand-orange);
+  box-shadow: 0 0 0 3px rgba(242, 169, 59, 0.15);
+}

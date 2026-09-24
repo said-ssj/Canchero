@@ -1,0 +1,1766 @@
+/* ==========================================================================
+   CANCHERO.MVP — Estilos Específicos de Página
+   Archivo: css/reserva.css
+   Origen: extraído de <style> inline en pages/reserva.html
+   Capa CSS: se carga DESPUÉS de variables/global/layout/components y ANTES de responsive.
+   ========================================================================== */
+/* Estilos limpios y consistentes con index.html para el flujo de reserva */
+    .reserva-layout {
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 2rem;
+      align-items: start;
+      margin-top: 2rem;
+      margin-bottom: 3.5rem;
+    }
+
+    @media (max-width: 992px) {
+      .reserva-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .step-section {
+      margin-bottom: 2rem;
+    }
+
+    .step-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .step-num {
+      width: 2rem;
+      height: 2rem;
+      border-radius: var(--radius-full);
+      background-color: var(--color-brand-green);
+      color: var(--color-surface);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.95rem;
+      flex-shrink: 0;
+    }
+
+    .step-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--color-ink-900);
+      margin: 0;
+    }
+
+    .step-subtitle {
+      font-size: 0.875rem;
+      color: var(--color-ink-500);
+      margin: 0.25rem 0 0;
+    }
+
+    /* Navegación Semanal e Infinitas Semanas */
+    .week-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      padding: 0.85rem 1rem;
+      background: var(--color-surface-muted);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--color-border);
+      margin-bottom: 0.85rem;
+    }
+
+    .week-nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .week-nav-actions .btn-week {
+      padding: 0.4rem 0.75rem;
+      font-size: 0.85rem;
+      border: 1px solid var(--color-border);
+      background: white;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--color-ink-700);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: all var(--transition-fast);
+    }
+
+    
+
+    .week-nav-actions .btn-week:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .week-nav-actions .btn-today {
+      background: var(--color-slate-100);
+      font-size: 0.8rem;
+    }
+
+    .week-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .week-label {
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--color-ink-900);
+    }
+
+    .week-tag {
+      font-size: 0.7rem;
+      padding: 2px 7px;
+      border-radius: var(--radius-full);
+      background: var(--color-brand-green-light);
+      color: var(--color-brand-green-dark);
+      font-weight: 600;
+    }
+
+    /* Filtros rápidos de franja horaria */
+    .time-filter-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 0.85rem;
+    }
+
+    .filter-pills {
+      display: flex;
+      gap: 0.35rem;
+      overflow-x: auto;
+      padding-bottom: 2px;
+    }
+
+    .filter-pill {
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.35rem 0.65rem;
+      border-radius: var(--radius-full);
+      border: 1px solid var(--color-border);
+      background: white;
+      color: var(--color-ink-700);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      white-space: nowrap;
+    }
+
+    
+
+    .filter-pill.active {
+      background: var(--color-brand-green);
+      border-color: var(--color-brand-green);
+      color: white;
+    }
+
+    .calendar-legend {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 0.75rem;
+      color: var(--color-ink-700);
+    }
+
+    .legend-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .legend-box {
+      width: 12px;
+      height: 12px;
+      border-radius: 2px;
+    }
+
+    .legend-box.available {
+      background: white;
+      border: 1px solid var(--color-border);
+    }
+
+    .legend-box.selected {
+      background: var(--color-brand-green);
+    }
+
+    .legend-box.occupied {
+      background: var(--color-slate-100);
+      border: 1px solid var(--color-slate-200);
+    }
+
+    /* Contenedor del Mini Calendario Semanal (Matriz Horaria) */
+    .calendar-matrix-wrapper {
+      position: relative;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      overflow-x: auto;
+      max-height: 480px;
+      overflow-y: auto;
+      background: white;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .calendar-table {
+      width: 100%;
+      min-width: 820px;
+      border-collapse: separate;
+      border-spacing: 0;
+      table-layout: fixed;
+    }
+
+    /* Cabecera de días (Sticky Top) */
+    .calendar-table thead th {
+      position: sticky;
+      top: 0;
+      background: var(--color-slate-50);
+      z-index: 20;
+      border-bottom: 2px solid var(--color-border);
+      border-right: 1px solid var(--color-border);
+      padding: 0.6rem 0.35rem;
+      text-align: center;
+      vertical-align: middle;
+    }
+
+    .calendar-table thead th:last-child {
+      border-right: none;
+    }
+
+    /* Esquina superior izquierda (Sticky Top & Left) */
+    .calendar-table thead th.corner-th {
+      position: sticky;
+      top: 0;
+      left: 0;
+      z-index: 30;
+      background: var(--color-slate-100);
+      width: 85px;
+      min-width: 85px;
+      max-width: 85px;
+      font-size: 0.75rem;
+      color: var(--color-ink-500);
+      font-weight: 700;
+      text-transform: uppercase;
+      border-right: 2px solid var(--color-border);
+    }
+
+    .day-th-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .day-th-name {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--color-ink-500);
+      letter-spacing: 0.5px;
+    }
+
+    .day-th-num {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--color-ink-900);
+      line-height: 1;
+    }
+
+    .day-th-month {
+      font-size: 0.65rem;
+      color: var(--color-ink-500);
+    }
+
+    .calendar-table thead th.is-today {
+      background: #effaf1;
+      border-bottom: 2px solid var(--color-brand-green);
+    }
+
+    .calendar-table thead th.is-today .day-th-name,
+    .calendar-table thead th.is-today .day-th-num {
+      color: var(--color-brand-green-dark);
+    }
+
+    .today-pill-badge {
+      font-size: 0.58rem;
+      padding: 1px 5px;
+      background: var(--color-brand-green);
+      color: white;
+      border-radius: 4px;
+      font-weight: 700;
+      margin-top: 2px;
+      text-transform: uppercase;
+    }
+
+    /* Columna de Horas (Sticky Left) */
+    .calendar-table tbody th.hour-th {
+      position: sticky;
+      left: 0;
+      z-index: 10;
+      background: var(--color-slate-50);
+      border-right: 2px solid var(--color-border);
+      border-bottom: 1px solid var(--color-border);
+      padding: 0.5rem 0.25rem;
+      text-align: center;
+      vertical-align: middle;
+      width: 85px;
+      min-width: 85px;
+      max-width: 85px;
+    }
+
+    .hour-label-main {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--color-ink-700);
+      line-height: 1.1;
+    }
+
+    .hour-label-sub {
+      font-size: 0.65rem;
+      color: var(--color-ink-500);
+      margin-top: 2px;
+    }
+
+    /* Celdas interactivas de Horarios */
+    .calendar-table tbody td {
+      border-right: 1px solid var(--color-border);
+      border-bottom: 1px solid var(--color-border);
+      padding: 0.35rem 0.25rem;
+      text-align: center;
+      vertical-align: middle;
+      height: 52px;
+      background: white;
+      position: relative;
+    }
+
+    .calendar-table tbody td:last-child {
+      border-right: none;
+    }
+
+    .cell-slot-btn {
+      width: 100%;
+      height: 100%;
+      min-height: 44px;
+      border-radius: var(--radius-sm);
+      border: 1px solid transparent;
+      background: transparent;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      padding: 2px 4px;
+      gap: 2px;
+      font-family: inherit;
+      transition: all var(--transition-fast);
+      user-select: none;
+    }
+
+    
+
+    .cell-slot-btn.available .slot-price-txt {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--color-ink-900);
+    }
+
+    .cell-slot-btn.available .slot-state-txt {
+      font-size: 0.65rem;
+      color: var(--color-ink-500);
+    }
+
+    /* Estado Seleccionado */
+    .cell-slot-btn.selected {
+      background: var(--color-brand-green) !important;
+      border-color: var(--color-brand-green-dark) !important;
+      color: white !important;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+    }
+
+    .cell-slot-btn.selected .slot-price-txt,
+    .cell-slot-btn.selected .slot-state-txt {
+      color: white !important;
+      font-weight: 700;
+    }
+
+    /* Estado Ocupado */
+    .cell-slot-btn.occupied {
+      background: var(--color-slate-50);
+      cursor: not-allowed;
+      opacity: 0.85;
+    }
+
+    .cell-slot-btn.occupied .slot-state-txt {
+      font-size: 0.68rem;
+      color: var(--color-slate-400);
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      font-weight: 500;
+    }
+
+    /* Estado Pasado */
+    .cell-slot-btn.past {
+      background: var(--color-slate-100);
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+
+    .cell-slot-btn.past .slot-state-txt {
+      font-size: 0.65rem;
+      color: var(--color-slate-400);
+    }
+
+    /* Chip de selección en resumen */
+    .selected-slot-chip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.4rem 0.6rem;
+      background: var(--color-surface-muted);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      margin-bottom: 0.35rem;
+      font-size: 0.82rem;
+    }
+
+    .selected-slot-chip .chip-del {
+      background: none;
+      border: none;
+      color: var(--color-slate-400);
+      cursor: pointer;
+      padding: 2px;
+      display: flex;
+      align-items: center;
+    }
+
+    
+
+    /* Convocados y Equipo */
+    .player-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.65rem 0.75rem;
+      border-radius: var(--radius-md);
+      background: var(--color-surface-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    .player-info {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .player-avatar {
+      width: 2.25rem;
+      height: 2.25rem;
+      border-radius: var(--radius-full);
+      background: var(--color-slate-200);
+      color: var(--color-ink-700);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.85rem;
+    }
+
+    .player-name {
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--color-ink-900);
+    }
+
+    .btn-remove-player {
+      background: none;
+      border: none;
+      color: var(--color-slate-400);
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+      transition: color var(--transition-fast);
+    }
+
+    
+
+    /* Métodos de Pago */
+    .payment-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .payment-option {
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      text-align: center;
+      cursor: pointer;
+      background: var(--color-surface);
+      transition: all var(--transition-fast);
+    }
+
+    
+
+    .payment-option.active {
+      border-color: var(--color-brand-green);
+      background: var(--color-brand-green-light);
+      box-shadow: 0 0 0 2px var(--color-brand-green);
+    }
+
+    .payment-option-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+      margin-top: 0.35rem;
+      color: var(--color-ink-900);
+    }
+
+    /* Sticky Resumen Lateral */
+    .summary-card {
+      position: sticky;
+      top: 90px;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-xl);
+      padding: 1.75rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+      font-size: 0.95rem;
+      color: var(--color-ink-700);
+    }
+
+    .summary-row.total {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--color-ink-900);
+      padding-top: 0.75rem;
+      border-top: 2px dashed var(--color-border);
+      margin-top: 0.75rem;
+    }
+
+    .summary-quota {
+      background: var(--color-brand-green-light);
+      border-radius: var(--radius-md);
+      padding: 0.75rem;
+      margin-top: 1rem;
+      margin-bottom: 1.25rem;
+      font-size: 0.85rem;
+      color: var(--color-brand-green-dark);
+      text-align: center;
+      line-height: 1.4;
+    }
+
+    /* Modal de Confirmación */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .modal-overlay.is-active {
+      display: flex;
+    }
+
+    .modal-card {
+      background: white;
+      border-radius: var(--radius-xl);
+      padding: 2.25rem;
+      max-width: 480px;
+      width: 100%;
+      text-align: center;
+      box-shadow: var(--shadow-xl);
+      animation: modalFadeIn 0.25s ease-out;
+    }
+
+    @keyframes modalFadeIn {
+      from { opacity: 0; transform: translateY(12px) scale(0.96); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+
+/* ===== CONSOLIDA RESERVA + CHECKOUT ===== */
+
+/* ==========================================================================
+   CANCHERO.MVP — Estilos Específicos de Página
+   Archivo: css/checkout.css
+   Origen: extraído de <style> inline en pages/checkout.html
+   Capa CSS: se carga DESPUÉS de variables/global/layout/components y ANTES de responsive.
+   ========================================================================== */
+/* ==========================================================================
+       ESTILOS CLÁSICOS DE CHECKOUT CANCHERO
+       ========================================================================== */
+    body {
+      font-family: 'Plus Jakarta Sans', var(--font-sans);
+      background-color: var(--color-slate-50);
+      color: var(--color-ink-900);
+      margin: 0;
+      padding: 0;
+    }
+
+    /* 1. Barra de Contexto Superior (Sticky bajo el navbar) */
+    .checkout-context-bar {
+      background-color: var(--color-surface);
+      border-bottom: 1px solid var(--color-border);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+      position: sticky;
+      top: 64px;
+      z-index: 30;
+      padding: 0.85rem 0;
+    }
+
+    .checkout-context-container {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+
+    @media (min-width: 992px) {
+      .checkout-context-container {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+      }
+    }
+
+    .context-venue-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .context-thumb {
+      width: 54px;
+      height: 54px;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      background: var(--color-surface-muted);
+      border: 1px solid var(--color-border);
+      flex-shrink: 0;
+    }
+
+    .context-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .context-title-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .context-venue-name {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--color-ink-900);
+      margin: 0;
+      line-height: 1.2;
+    }
+
+    .context-court-pill {
+      background: var(--color-slate-100);
+      color: var(--color-ink-700);
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+      border: 1px solid var(--color-border);
+    }
+
+    .context-meta-row {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 0.82rem;
+      color: var(--color-ink-500);
+      margin-top: 0.25rem;
+      flex-wrap: wrap;
+    }
+
+    .context-meta-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .context-change-link {
+      color: var(--color-brand-orange);
+      font-weight: 700;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      transition: color var(--transition-fast);
+    }
+
+    
+
+    /* Stepper horizontal clásico */
+    .checkout-stepper {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .step-item {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .step-circle {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--color-surface);
+    }
+
+    .step-circle.completed {
+      background-color: var(--color-brand-green);
+    }
+
+    .step-circle.active {
+      background-color: var(--color-brand-orange);
+      box-shadow: 0 2px 6px rgba(245, 130, 31, 0.35);
+    }
+
+    .step-circle.pending {
+      background-color: var(--color-slate-300);
+      color: var(--color-slate-600);
+    }
+
+    .step-label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--color-ink-700);
+    }
+
+    .step-label.active {
+      color: var(--color-brand-orange);
+      font-weight: 800;
+    }
+
+    .step-divider {
+      width: 20px;
+      height: 2px;
+      background-color: var(--color-slate-300);
+      border-radius: 2px;
+    }
+
+    .step-divider.active {
+      background-color: var(--color-brand-green);
+    }
+
+    /* 2. Banner de Retención Temporal con Cronómetro */
+    .retention-alert-bar {
+      background-color: var(--color-warning-50);
+      border-bottom: 1px solid var(--color-warning-200);
+      padding: 0.65rem 0;
+    }
+
+    .retention-alert-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      font-size: 0.85rem;
+      color: var(--color-warning-700);
+    }
+
+    .retention-left {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .retention-timer {
+      font-weight: 800;
+      color: var(--color-warning-600);
+    }
+
+    .venue-online-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 2px 10px;
+      background: var(--color-warning-100);
+      color: var(--color-warning-700);
+      border-radius: var(--radius-full);
+      font-size: 0.75rem;
+      font-weight: 700;
+      border: 1px solid var(--color-warning-300);
+    }
+
+    .pulse-dot-green {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: var(--color-brand-green);
+      animation: pulseAnim 1.8s infinite;
+    }
+
+    @keyframes pulseAnim {
+      0% { transform: scale(0.95); opacity: 0.9; }
+      50% { transform: scale(1.3); opacity: 0.4; }
+      100% { transform: scale(0.95); opacity: 0.9; }
+    }
+
+    /* 3. Layout Principal a Dos Columnas */
+    .checkout-main-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.75rem;
+      align-items: start;
+      padding: 2rem 0 3.5rem 0;
+    }
+
+    @media (min-width: 992px) {
+      .checkout-main-grid {
+        grid-template-columns: 1.6fr 1fr;
+      }
+    }
+
+    /* 4. Tarjetas Blancas Clásicas (Left Column) */
+    .checkout-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+      display: flex;
+      flex-direction: column;
+      gap: 1.15rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .checkout-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      border-bottom: 1px solid var(--color-slate-100);
+      padding-bottom: 0.85rem;
+    }
+
+    .checkout-card-title-group {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+    }
+
+    .step-number-circle {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--color-slate-100);
+      color: var(--color-ink-900);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 0.85rem;
+      border: 1px solid var(--color-border);
+    }
+
+    .checkout-card-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--color-ink-900);
+      margin: 0;
+    }
+
+    .card-description {
+      font-size: 0.86rem;
+      color: var(--color-ink-500);
+      line-height: 1.5;
+      margin: 0;
+    }
+
+    /* Información de Capitán */
+    .captain-info-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      background: var(--color-slate-50);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 1rem 1.25rem;
+    }
+
+    @media (min-width: 640px) {
+      .captain-info-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    .info-item-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: var(--color-ink-500);
+    }
+
+    .info-item-value {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--color-ink-900);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: 3px;
+    }
+
+    .badge-verified {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      background: var(--color-success-100);
+      color: var(--color-success-600);
+      border-radius: var(--radius-full);
+      font-size: 0.72rem;
+      font-weight: 700;
+      border: 1px solid var(--color-success-200);
+    }
+
+    /* Convocados Input & Lista */
+    .add-player-row {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    @media (min-width: 576px) {
+      .add-player-row {
+        flex-direction: row;
+      }
+    }
+
+    .player-input-wrap {
+      position: relative;
+      flex: 1;
+    }
+
+    .player-input-prefix {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--color-ink-500);
+    }
+
+    .player-input-field {
+      width: 100%;
+      height: 44px;
+      padding: 0 14px 0 46px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-full);
+      background: var(--color-slate-50);
+      font-size: 0.9rem;
+      font-family: inherit;
+      color: var(--color-ink-900);
+      outline: none;
+      transition: all var(--transition-fast);
+      box-sizing: border-box;
+    }
+
+    .player-input-field:focus {
+      background: var(--color-surface);
+      border-color: var(--color-brand-green);
+      box-shadow: 0 0 0 3px rgba(60, 176, 67, 0.15);
+    }
+
+    .btn-add-player {
+      height: 44px;
+      padding: 0 1.25rem;
+      border-radius: var(--radius-full);
+      background: var(--color-ink-900);
+      color: var(--color-surface);
+      font-size: 0.88rem;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background var(--transition-fast);
+      flex-shrink: 0;
+    }
+
+    
+
+    /* Lista de Convocados */
+    .players-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .player-card-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      padding: 0.85rem 1rem;
+      background: var(--color-slate-50);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      transition: background var(--transition-fast);
+    }
+
+    @media (min-width: 576px) {
+      .player-card-item {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+      }
+    }
+
+    
+
+    .player-left-group {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .player-avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: var(--color-slate-200);
+      color: var(--color-ink-900);
+      font-weight: 800;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .player-avatar.captain-avatar {
+      background: var(--color-brand-green);
+      color: var(--color-surface);
+    }
+
+    .player-avatar.invited-avatar {
+      background: var(--color-brand-orange);
+      color: var(--color-surface);
+    }
+
+    .player-name-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .player-name {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--color-ink-900);
+    }
+
+    .player-role-tag {
+      font-size: 0.75rem;
+      color: var(--color-ink-500);
+    }
+
+    .player-phone {
+      font-size: 0.8rem;
+      color: var(--color-ink-500);
+    }
+
+    .player-right-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      align-self: flex-end;
+    }
+
+    @media (min-width: 576px) {
+      .player-right-group {
+        align-self: center;
+      }
+    }
+
+    .pill-status {
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: var(--radius-full);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .pill-status.paid-green {
+      background: var(--color-success-100);
+      color: var(--color-success-600);
+      border: 1px solid var(--color-success-200);
+    }
+
+    .pill-status.pending-orange {
+      background: var(--color-warning-100);
+      color: var(--color-warning-600);
+      border: 1px solid var(--color-warning-200);
+    }
+
+    .pill-status.paying-now {
+      background: var(--color-brand-green);
+      color: var(--color-surface);
+    }
+
+    .btn-remove-player {
+      background: none;
+      border: none;
+      color: var(--color-ink-500);
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color var(--transition-fast);
+    }
+
+    
+
+    /* Botón Compartir link WhatsApp */
+    .whatsapp-share-bar {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--color-slate-100);
+    }
+
+    @media (min-width: 576px) {
+      .whatsapp-share-bar {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+      }
+    }
+
+    .btn-wsp-share {
+      background: var(--color-slate-100);
+      color: var(--color-ink-900);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-full);
+      padding: 0.55rem 1.25rem;
+      font-size: 0.88rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all var(--transition-fast);
+    }
+
+    
+
+    /* Switch Toggle Clásico */
+    .switch-toggle-label {
+      position: relative;
+      display: inline-block;
+      width: 48px;
+      height: 26px;
+      cursor: pointer;
+    }
+
+    .switch-toggle-label input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .switch-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: var(--color-slate-300);
+      transition: .3s;
+      border-radius: 26px;
+    }
+
+    .switch-slider:before {
+      position: absolute;
+      content: "";
+      height: 20px;
+      width: 20px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+
+    input:checked + .switch-slider {
+      background-color: var(--color-brand-green);
+    }
+
+    input:checked + .switch-slider:before {
+      transform: translateX(22px);
+    }
+
+    /* Grilla de Cuotas Divididas */
+    .quota-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
+    }
+
+    @media (min-width: 640px) {
+      .quota-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+    }
+
+    .quota-item-card {
+      background: var(--color-slate-50);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 0.75rem 0.5rem;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .quota-player-name {
+      font-size: 0.75rem;
+      color: var(--color-ink-500);
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .quota-amount-val {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--color-ink-900);
+      line-height: 1.2;
+    }
+
+    .quota-amount-val.highlight-green {
+      color: var(--color-brand-green);
+    }
+
+    .quota-status-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+    }
+
+    .quota-status-label.green { color: var(--color-brand-green); }
+    .quota-status-label.orange { color: var(--color-brand-orange); }
+    .quota-status-label.muted { color: var(--color-ink-500); }
+
+    /* Barra de Progreso de Recaudación */
+    .progress-box {
+      background: var(--color-slate-50);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 0.85rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .progress-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.82rem;
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 10px;
+      background: var(--color-slate-200);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--color-brand-green);
+      border-radius: 999px;
+      transition: width 0.4s ease;
+    }
+
+    /* Cupón de descuento */
+    .coupon-input-group {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    .coupon-input-wrap {
+      position: relative;
+      flex: 1;
+    }
+
+    .coupon-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--color-ink-500);
+      font-size: 20px;
+    }
+
+    .coupon-input {
+      width: 100%;
+      height: 44px;
+      padding: 0 12px 0 40px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-full);
+      background: var(--color-slate-50);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      outline: none;
+      box-sizing: border-box;
+      font-family: inherit;
+    }
+
+    .btn-apply-coupon {
+      height: 44px;
+      padding: 0 1.25rem;
+      border-radius: var(--radius-full);
+      background: var(--color-brand-green);
+      color: var(--color-surface);
+      font-size: 0.88rem;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: background var(--transition-fast);
+      flex-shrink: 0;
+    }
+
+    .coupon-applied-alert {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 1rem;
+      background: var(--color-success-100);
+      border: 1px solid var(--color-success-200);
+      border-radius: var(--radius-md);
+      color: var(--color-success-600);
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    /* 5. Columna Derecha Sticky (Resumen de Pago & Pasarela) */
+    .checkout-sticky-col {
+      position: sticky;
+      top: 140px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .summary-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .summary-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--color-border);
+      padding-bottom: 0.75rem;
+    }
+
+    .summary-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--color-ink-900);
+      margin: 0;
+    }
+
+    .breakdown-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.9rem;
+      color: var(--color-ink-700);
+    }
+
+    .breakdown-row.discount {
+      color: var(--color-brand-green);
+      font-weight: 700;
+    }
+
+    .breakdown-divider {
+      height: 1px;
+      background: var(--color-border);
+      margin: 0.25rem 0;
+    }
+
+    .cuota-highlight-box {
+      background: var(--color-success-50);
+      border: 1px solid var(--color-success-200);
+      border-radius: var(--radius-md);
+      padding: 0.75rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: var(--color-success-700);
+    }
+
+    .cuota-highlight-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .cuota-highlight-val {
+      font-size: 1.05rem;
+      font-weight: 800;
+    }
+
+    .captain-total-box {
+      background: var(--color-slate-50);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .captain-total-label {
+      font-size: 0.92rem;
+      font-weight: 800;
+      color: var(--color-ink-900);
+    }
+
+    .captain-total-sub {
+      font-size: 0.75rem;
+      color: var(--color-ink-500);
+    }
+
+    .captain-total-amount {
+      font-size: 1.85rem;
+      font-weight: 800;
+      color: var(--color-brand-green);
+      line-height: 1;
+    }
+
+    /* Tabs de Medios de Pago */
+    .payment-tabs-bar {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px;
+      background: var(--color-slate-100);
+      padding: 4px;
+      border-radius: var(--radius-full);
+      border: 1px solid var(--color-border);
+    }
+
+    .payment-tab-btn {
+      padding: 0.5rem 0;
+      border: none;
+      background: transparent;
+      font-size: 0.82rem;
+      font-weight: 700;
+      border-radius: var(--radius-full);
+      color: var(--color-ink-700);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      text-align: center;
+    }
+
+    .payment-tab-btn.active {
+      background: var(--color-brand-orange);
+      color: var(--color-surface);
+      box-shadow: 0 1px 4px rgba(245, 130, 31, 0.35);
+    }
+
+    /* Contenedor QR y Voucher */
+    .qr-container-box {
+      background: var(--color-slate-50);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 1.15rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.85rem;
+      text-align: center;
+    }
+
+    .qr-svg-card {
+      background: var(--color-surface);
+      padding: 0.75rem;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--color-border);
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .phone-copy-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--color-surface);
+      padding: 0.35rem 0.85rem;
+      border-radius: var(--radius-full);
+      border: 1px solid var(--color-border);
+    }
+
+    .phone-copy-number {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: var(--color-brand-green);
+    }
+
+    .btn-copy-icon {
+      background: none;
+      border: none;
+      color: var(--color-ink-500);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      padding: 2px;
+      transition: color var(--transition-fast);
+    }
+
+    
+
+    /* Drag & Drop Comprobante */
+    .voucher-dropzone-box {
+      width: 100%;
+      border: 2px dashed var(--color-slate-300);
+      border-radius: var(--radius-md);
+      background: var(--color-surface);
+      padding: 0.85rem 1rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    
+
+    .op-code-input {
+      width: 100%;
+      height: 40px;
+      padding: 0 12px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-full);
+      background: var(--color-surface);
+      font-weight: 700;
+      font-size: 0.95rem;
+      letter-spacing: 0.1em;
+      outline: none;
+      box-sizing: border-box;
+      text-align: center;
+    }
+
+    .op-code-input:focus {
+      border-color: var(--color-brand-green);
+      box-shadow: 0 0 0 3px rgba(60, 176, 67, 0.15);
+    }
+
+    /* Panel Tarjeta */
+    .card-inputs-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      background: var(--color-slate-50);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+    }
+
+    .card-input-clean {
+      height: 40px;
+      padding: 0 12px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-full);
+      background: var(--color-surface);
+      font-size: 0.88rem;
+      outline: none;
+      box-sizing: border-box;
+    }
+
+/* Botón Grande Principal de Confirmar */
+    .btn-checkout-submit {
+      width: 100%;
+      margin-top: 1.25rem;
+      padding: 0.95rem 1.5rem;
+      border-radius: var(--radius-full);
+      background-color: var(--color-brand-green);
+      color: var(--color-surface);
+      font-size: 1.05rem;
+      font-weight: 800;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(60, 176, 67, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all var(--transition-fast);
+    }
+
+    
+
+    .btn-checkout-submit:active {
+      transform: translateY(0);
+    }
+
+.btn-checkout-submit:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    /* Variantes a ancho completo (misma base que btn-action de itinerario) */
+    .btn-action-green {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      width: 100%;
+      padding: 0.75rem;
+      border-radius: var(--radius-md);
+      background: var(--color-brand-green);
+      color: var(--color-surface);
+      border: none;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: var(--shadow-sm);
+      transition: all var(--transition-fast);
+      text-decoration: none;
+      box-sizing: border-box;
+    }
+
+    .btn-action-outline {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      width: 100%;
+      padding: 0.75rem;
+      border-radius: var(--radius-md);
+      background: var(--color-surface);
+      color: var(--color-ink-900);
+      border: 1px solid var(--color-border);
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      text-decoration: none;
+      box-sizing: border-box;
+    }
+
+    /* Reglas e Información Clásica */
+    .rules-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      font-size: 0.82rem;
+      color: var(--color-ink-700);
+      line-height: 1.45;
+    }
+
+    /* Modal de Confirmación Clásico */
+    .modal-backdrop-classic {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    .modal-backdrop-classic.is-visible {
+      display: flex;
+    }
+
+    .modal-card-classic {
+      background: var(--color-surface);
+      border-radius: var(--radius-lg);
+      max-width: 520px;
+      width: 100%;
+      padding: 2rem;
+      box-shadow: var(--shadow-xl);
+      border: 1px solid var(--color-border);
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      animation: modalFadeIn 0.3s ease;
+    }
+
+    @keyframes modalFadeIn {
+      from { opacity: 0; transform: scale(0.96); }
+      to { opacity: 1; transform: scale(1); }
+    }
+

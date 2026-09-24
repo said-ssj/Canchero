@@ -1,0 +1,46 @@
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-column">
+        <a routerLink="/" class="brand-logo" style="margin-bottom: 1rem;">
+          <div class="brand-icon">C</div>
+          <span class="brand-name" style="color: #FFFFFF;">Canchero<span class="brand-badge">.MVP</span></span>
+        </a>
+        <p>
+          La mejor plataforma para encontrar y reservar canchas y complejos deportivos de manera rápida y segura.
+        </p>
+      </div>
+
+      <div class="footer-column">
+        <h4>Sedes</h4>
+        <ul>
+          <li><a routerLink="/sedes">Lima Centro</a></li>
+          <li><a routerLink="/sedes">Lima Norte</a></li>
+          <li><a routerLink="/sedes">Lima Sur</a></li>
+          <li><a routerLink="/sedes">Callao</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-column">
+        <h4>Servicios</h4>
+        <ul>
+          <li><a routerLink="/checkout">Alquiler de Canchas</a></li>
+          <li><a routerLink="/academias">Academias</a></li>
+          <li><a routerLink="/torneos">Torneos</a></li>
+          <li><a routerLink="/eventos">Eventos Corporativos</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-column">
+        <h4>Contacto</h4>
+        <p><strong>Email:</strong> {{ contact().email }}</p>
+        <p><strong>Teléfono:</strong> {{ contact().phone }}</p>
+        <p><strong>Dirección:</strong> {{ contact().address }}</p>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <p>&copy; {{ year() }} Canchero MVP. Todos los derechos reservados.</p>
+    </div>
+  </div>
+</footer>

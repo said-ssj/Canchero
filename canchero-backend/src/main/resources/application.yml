@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: canchero-backend
+  datasource:
+    url: jdbc:postgresql://localhost:5432/canchero
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: true
+    properties:
+      hibernate:
+        format_sql: true
+  jackson:
+    default-property-inclusion: non_null
+
+server:
+  port: 8080

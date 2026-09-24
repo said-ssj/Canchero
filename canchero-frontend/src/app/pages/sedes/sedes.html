@@ -1,0 +1,248 @@
+<main class="flex-1">
+
+  <section class="sedes-hero">
+    <div class="hero-background" style="background-color: #1A1A1A;">
+    </div>
+
+    <div class="container sedes-hero-content">
+      <div class="sedes-hero-badge">
+        <svg class="icon icon-16" aria-hidden="true"><use href="/iconos-canchero.svg#stadium"></use></svg>
+        Red Oficial de Complejos
+      </div>
+      <h1 class="sedes-hero-title">
+        Nuestras Sedes <span class="hero-highlight">Deportivas</span>
+      </h1>
+      <p class="sedes-hero-subtitle">
+        Encuentra el complejo deportivo más cercano a tu ubicación con los mejores campos reglamentarios y reserva tu cupo en minutos.
+      </p>
+    </div>
+  </section>
+
+  <section class="sedes-section" style="padding-top: 0;">
+    <div class="container">
+
+      <div class="filters-wrapper">
+        <div class="filters-card">
+          <div class="filters-form" id="filterForm">
+            <div class="filter-item">
+              <label class="filter-label" for="citySelect">
+                <svg class="icon-15 icon" aria-hidden="true"><use href="/iconos-canchero.svg#location_city"></use></svg>
+                Ciudad
+              </label>
+              <div class="filter-input-wrap">
+                <svg class="icon" aria-hidden="true"><use href="/iconos-canchero.svg#location_city"></use></svg>
+                <select id="citySelect" class="filter-control" [value]="ciudad()" (change)="onCityChange($event)">
+                  <option value="all">Todas las ciudades</option>
+                  @for (city of cities(); track city) {
+                    <option [value]="city">{{ capitalize(city) }}</option>
+                  }
+                </select>
+                <svg class="icon select-arrow icon-rotate-90" aria-hidden="true"><use href="/iconos-canchero.svg#chevron_right"></use></svg>
+              </div>
+            </div>
+
+            <div class="filter-item">
+              <label class="filter-label" for="districtSelect">
+                <svg class="icon-15 icon" aria-hidden="true"><use href="/iconos-canchero.svg#map"></use></svg>
+                Distrito
+              </label>
+              <div class="filter-input-wrap">
+                <svg class="icon" aria-hidden="true"><use href="/iconos-canchero.svg#map"></use></svg>
+                <select id="districtSelect" class="filter-control" [value]="distrito()" (change)="onDistritoChange($event)">
+                  <option value="all">{{ distritoOptions().topLabel }}</option>
+                  @if (ciudad() === 'all') {
+                    @for (group of distritoOptions().groups; track group.label) {
+                      <optgroup [attr.label]="group.label">
+                        @for (distrito of group.districts; track distrito) {
+                          <option [value]="distrito">{{ capitalize(distrito) }}</option>
+                        }
+                      </optgroup>
+                    }
+                  } @else {
+                    @for (group of distritoOptions().groups; track group.label) {
+                      @for (distrito of group.districts; track distrito) {
+                        <option [value]="distrito">{{ capitalize(distrito) }}</option>
+                      }
+                    }
+                  }
+                </select>
+                <svg class="icon select-arrow icon-rotate-90" aria-hidden="true"><use href="/iconos-canchero.svg#chevron_right"></use></svg>
+              </div>
+            </div>
+
+            <div class="filter-item">
+              <label class="filter-label" for="searchInput">
+                <svg class="icon-15 icon" aria-hidden="true"><use href="/iconos-canchero.svg#search"></use></svg>
+                Buscar por Nombre
+              </label>
+              <div class="filter-input-wrap">
+                <svg class="icon" aria-hidden="true"><use href="/iconos-canchero.svg#search"></use></svg>
+                <input type="text" id="searchInput" class="filter-control" placeholder="Ej. Complejo, distrito, ciudad..." autocomplete="off" [value]="busqueda()" (input)="onSearch($event)">
+              </div>
+            </div>
+
+            <div class="filter-item">
+              <label class="filter-label" for="typeSelect">
+                <svg class="icon-15 icon" aria-hidden="true"><use href="/iconos-canchero.svg#sports_soccer"></use></svg>
+                Tipo de Cancha
+              </label>
+              <div class="filter-input-wrap">
+                <svg class="icon" aria-hidden="true"><use href="/iconos-canchero.svg#sports_soccer"></use></svg>
+                <select id="typeSelect" class="filter-control" [value]="deporte()" (change)="onDeporteChange($event)">
+                  <option value="all">Todas las opciones</option>
+                  <option value="futbol-5">Fútbol 5</option>
+                  <option value="futbol-7">Fútbol 7</option>
+                  <option value="futbol-11">Fútbol 11</option>
+                  <option value="techado">Techado</option>
+                  <option value="sintetico">Césped Sintético</option>
+                  <option value="natural">Césped Natural</option>
+                </select>
+                <svg class="icon select-arrow icon-rotate-90" aria-hidden="true"><use href="/iconos-canchero.svg#chevron_right"></use></svg>
+              </div>
+            </div>
+
+            <div class="filter-item">
+              <button type="button" class="btn btn-primary btn-full"><svg class="icon-18 icon" aria-hidden="true"><use href="/iconos-canchero.svg#filter_alt"></use></svg>
+                Filtrar
+              </button>
+            </div>
+          </div>
+
+          <div class="quick-filters">
+            <span style="font-size: 0.8rem; font-weight: 700; color: var(--color-ink-500); text-transform: uppercase;">Filtro Rápido:</span>
+            <button type="button" class="quick-pill" [class.active]="pills().all" (click)="selectCityQuick('all')">
+              <svg class="icon icon-16" aria-hidden="true"><use href="/iconos-canchero.svg#grid_view"></use></svg>
+              Todas las Sedes
+            </button>
+            @for (city of cities(); track city) {
+              <button type="button" class="quick-pill" [class.active]="view() === 'all' && ciudad() === city" (click)="selectCityQuick(city)">
+                <svg class="icon-16 icon" style="color: var(--color-brand-green);" aria-hidden="true"><use href="/iconos-canchero.svg#location_on"></use></svg>
+                Sedes en {{ capitalize(city) }} (<span>{{ countPorCiudad(city) }}</span>)
+              </button>
+            }
+            <button type="button" class="quick-pill" [class.active-fav]="pills().fav" (click)="setActiveFav()">
+              <svg class="icon-16 icon" style="color: var(--color-brand-orange);" aria-hidden="true"><use href="/iconos-canchero.svg#star-fill"></use></svg>
+              Mis Favoritas (<span>{{ countFav() }}</span>)
+            </button>
+            <button type="button" class="reset-link" [style.display]="isFiltered() ? 'inline-block' : 'none'" (click)="resetFilters()">
+              Limpiar filtros
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="complex-grid" id="venuesContainer">
+        @for (venue of filteredVenues(); track venue.id) {
+          <article class="complex-card venue-card" (click)="goDetail(venue.id)">
+            <div class="card-media">
+              <img [src]="venue.fotos[0]" [alt]="venue.nombre" class="card-image">
+              <button type="button" class="fav-btn" [class.is-active]="favorites().has(venue.id)" aria-label="Guardar en favoritos" (click)="toggleFav($event, venue.id)">
+                <svg class="icon-18 icon" aria-hidden="true"><use [attr.href]="favorites().has(venue.id) ? '/iconos-canchero.svg#star-fill' : '/iconos-canchero.svg#star'"></use></svg>
+              </button>
+              <button type="button" class="alert-btn" [class.is-active]="alerts().has(venue.id)" aria-label="Activar notificaciones" (click)="toggleAlert($event, venue.id)">
+                <svg class="icon-18 icon" aria-hidden="true"><use href="/iconos-canchero.svg#notifications"></use></svg>
+              </button>
+
+              <div class="card-overlay">
+                <h3 class="card-title">{{ venue.nombre }}</h3>
+                <div class="card-address">
+                  <svg class="icon-16 icon" style="color: var(--color-brand-orange);" aria-hidden="true"><use href="/iconos-canchero.svg#location_on"></use></svg>
+                  {{ venue.direccion }}
+                </div>
+              </div>
+            </div>
+
+            <div class="card-body">
+              <div class="card-meta-top">
+                <a [routerLink]="['/sedes', venue.id]" class="link-details" (click)="stop($event)">
+                  Ver más
+                  <svg class="icon-15 icon" aria-hidden="true"><use href="/iconos-canchero.svg#arrow_forward"></use></svg>
+                </a>
+                <span class="live-status">
+                  <span class="pulse-dot"></span>
+                  {{ disponibleCount(venue) }} canchas libres
+                </span>
+              </div>
+
+              <div class="card-tags">
+                @for (amenidad of venue.amenidades; track amenidad) {
+                  <span class="badge">{{ amenidad }}</span>
+                }
+              </div>
+              <div class="card-actions-row">
+                <a routerLink="/checkout" class="btn btn-primary btn-sm btn-full" (click)="stop($event)">
+                  <svg class="icon-16 icon" aria-hidden="true"><use href="/iconos-canchero.svg#event_available"></use></svg>
+                  Reservar
+                </a>
+                <a routerLink="/itinerario" class="btn btn-secondary btn-sm btn-full" (click)="stop($event)">
+                  <svg class="icon-16 icon" aria-hidden="true"><use href="/iconos-canchero.svg#calendar_month"></use></svg>
+                  Itinerario
+                </a>
+              </div>
+            </div>
+          </article>
+        }
+      </div>
+
+      @if (filteredVenues().length === 0) {
+        @if (venues().length === 0) {
+          <div class="empty-search-box" id="noResultsState">
+            <div class="empty-icon-circle">
+              <svg class="icon-28 icon" aria-hidden="true"><use href="/iconos-canchero.svg#sports_soccer"></use></svg>
+            </div>
+            <h3 class="empty-title">Actualmente no hay canchas disponibles. Vuelve pronto.</h3>
+            <p class="empty-text">
+              ¿Eres dueño o administrador de un complejo deportivo? Forma parte de la red de Canchero y empieza a llenar tus horarios libres con jugadores cercanos.
+            </p>
+            <a routerLink="/registro" [queryParams]="{ rol: 'dueno' }" class="btn btn-primary">
+              <svg class="icon-18 icon" aria-hidden="true"><use href="/iconos-canchero.svg#storefront"></use></svg>
+              Publica tu cancha aquí
+            </a>
+          </div>
+        } @else {
+        <div class="empty-search-box" id="noResultsState">
+          <div class="empty-icon-circle">
+            <svg class="icon-28 icon" aria-hidden="true"><use href="/iconos-canchero.svg#search_off"></use></svg>
+          </div>
+          <h3 class="empty-title">No encontramos sedes con ese criterio</h3>
+          <p class="empty-text">
+            Intenta buscando en otro distrito o seleccionando "Todas las opciones" en el tipo de cancha.
+          </p>
+          <button type="button" class="btn btn-primary" (click)="resetFilters()">
+            <svg class="icon-18 icon" aria-hidden="true"><use href="/iconos-canchero.svg#refresh"></use></svg>
+            Restablecer Filtros
+          </button>
+        </div>
+        }
+      }
+
+      <div class="owner-banner">
+        <div class="owner-banner-content">
+          <div class="owner-banner-icon">
+            <svg class="icon-32 icon" aria-hidden="true"><use href="/iconos-canchero.svg#storefront"></use></svg>
+          </div>
+          <div>
+            <h3 class="owner-banner-title">
+              ¿Tienes una sede o complejo deportivo?
+            </h3>
+            <p class="owner-banner-text">
+              Únete a la red Canchero.MVP y aumenta tus reservas hasta un 45% con gestión inteligente y pagos al instante.
+            </p>
+          </div>
+        </div>
+        <a routerLink="/" class="btn btn-secondary btn-lg owner-banner-cta">
+          Afiliar mi complejo &rarr;
+        </a>
+      </div>
+
+      <div class="toast-popup" [class.show]="toastVisible()">
+        <svg class="icon icon-20" [style.color]="toastAlert() ? 'var(--color-brand-orange)' : 'var(--color-brand-green)'" aria-hidden="true">
+          <use [attr.href]="toastAlert() ? '/iconos-canchero.svg#notifications_active' : '/iconos-canchero.svg#check_circle'"></use>
+        </svg>
+        <span>{{ toastText() }}</span>
+      </div>
+
+    </div>
+  </section>
+
+</main>

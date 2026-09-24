@@ -1,0 +1,386 @@
+/* ==========================================================================
+   CANCHERO.MVP — Estilos Específicos de Página
+   Archivo: css/registro.css
+   Origen: extraído de <style> inline en pages/registro.html
+   Capa CSS: se carga DESPUÉS de variables/global/layout/components y ANTES de responsive.
+   ========================================================================== */
+/* ==========================================================================
+       ESTILOS DEL PORTAL DE REGISTRO (INDEX.HTML STYLE)
+       ========================================================================== */
+    body {
+      font-family: 'Plus Jakarta Sans', var(--font-sans);
+      background-color: var(--color-slate-50);
+      color: var(--color-ink-900);
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .registro-main-wrapper {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2.5rem 1rem 4rem 1rem;
+      background: radial-gradient(circle at 10% 20%, rgba(60, 176, 67, 0.05) 0%, transparent 40%),
+                  radial-gradient(circle at 90% 80%, rgba(245, 130, 31, 0.06) 0%, transparent 40%),
+                  var(--color-slate-50);
+    }
+
+    .registro-card {
+      width: 100%;
+      max-width: 520px;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-xl);
+      padding: 2.5rem 2rem;
+      box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.06), 0 4px 10px -2px rgba(0, 0, 0, 0.03);
+      position: relative;
+    }
+
+    @media (min-width: 640px) {
+      .registro-card {
+        padding: 2.75rem 2.5rem;
+      }
+    }
+
+    .auth-header-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .auth-icon-circle {
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      background: var(--color-brand-green);
+      color: var(--color-surface);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 0.85rem;
+      box-shadow: 0 4px 12px rgba(60, 176, 67, 0.3);
+    }
+
+    .auth-badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      color: var(--color-ink-500);
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.65rem;
+    }
+
+    .auth-title {
+      font-size: 1.75rem;
+      font-weight: 800;
+      color: var(--color-ink-900);
+      margin: 0 0 0.35rem 0;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+    }
+
+    .auth-subtitle {
+      font-size: 0.88rem;
+      color: var(--color-ink-500);
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    /* Selector de Rol (Tabs / Pills) */
+    .role-switcher-bar {
+      display: flex;
+      background: var(--color-slate-100);
+      padding: 4px;
+      border-radius: var(--radius-full);
+      border: 1px solid var(--color-border);
+      gap: 4px;
+      margin-bottom: 0.4rem;
+      width: 100%;
+    }
+
+    .role-pill-btn {
+      flex: 1;
+      padding: 0.6rem 1rem;
+      border-radius: var(--radius-full);
+      font-size: 0.82rem;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      background: transparent;
+      color: var(--color-ink-500);
+      transition: all var(--transition-fast);
+      white-space: nowrap;
+    }
+
+    .role-pill-btn.active-green {
+      background: var(--color-brand-green);
+      color: var(--color-surface);
+      box-shadow: 0 2px 6px rgba(60, 176, 67, 0.25);
+    }
+
+    .role-pill-btn.active-orange {
+      background: var(--color-brand-orange);
+      color: var(--color-surface);
+      box-shadow: 0 2px 6px rgba(245, 130, 31, 0.25);
+    }
+
+    .role-microtext {
+      font-size: 0.78rem;
+      color: var(--color-ink-500);
+      text-align: center;
+      margin: 0 0 1.5rem 0;
+      line-height: 1.4;
+    }
+
+    /* Campos de Entrada */
+    .form-field-group {
+      margin-bottom: 1.15rem;
+    }
+
+    .form-field-label {
+      display: block;
+      font-size: 0.72rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--color-ink-700);
+      margin-bottom: 0.4rem;
+    }
+
+    .input-icon-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-leading-icon {
+      position: absolute;
+      left: 14px;
+      color: var(--color-slate-400);
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+    }
+
+    .auth-input {
+      width: 100%;
+      height: 48px;
+      padding-left: 42px;
+      padding-right: 14px;
+      background: var(--color-surface);
+      border: 1.5px solid var(--color-border);
+      border-radius: var(--radius-md);
+      font-family: inherit;
+      font-size: 0.9rem;
+      color: var(--color-ink-900);
+      transition: all var(--transition-fast);
+      outline: none;
+      box-sizing: border-box;
+    }
+
+    .auth-input.has-trailing-btn {
+      padding-right: 44px;
+    }
+
+    .auth-input:focus {
+      border-color: var(--color-brand-green);
+      box-shadow: 0 0 0 3px rgba(60, 176, 67, 0.15);
+    }
+
+    .auth-input.input-error {
+      border-color: var(--color-danger-500);
+      background-color: #fffbfa;
+    }
+
+    .toggle-pwd-btn {
+      position: absolute;
+      right: 12px;
+      background: none;
+      border: none;
+      color: var(--color-slate-400);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px;
+      border-radius: 50%;
+      transition: color var(--transition-fast);
+    }
+
+    
+
+    /* Prefijo de Teléfono Perú */
+    .phone-prefix-pill {
+      height: 48px;
+      padding: 0 14px;
+      border: 1.5px solid var(--color-border);
+      border-radius: var(--radius-md);
+      background: var(--color-slate-50);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--color-ink-900);
+      flex-shrink: 0;
+    }
+
+    /* Sección Condicional de Dueño de Cancha */
+    .venue-owner-box {
+      display: none;
+      flex-direction: column;
+      gap: 0.75rem;
+      padding: 1.15rem;
+      border-radius: var(--radius-lg);
+      background: var(--color-warning-50);
+      border: 1px solid var(--color-warning-200);
+      margin-bottom: 1.15rem;
+      animation: fadeInBox 0.25s ease;
+    }
+
+    .venue-owner-box.is-visible {
+      display: flex;
+    }
+
+    @keyframes fadeInBox {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Mensajes de Validación / Feedback */
+    .auth-feedback-alert {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-md);
+      background: var(--color-danger-50);
+      border: 1px solid var(--color-danger-200);
+      color: var(--color-danger-600);
+      font-size: 0.82rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      animation: alertShake 0.3s ease-in-out;
+    }
+
+    .auth-feedback-alert.is-visible {
+      display: flex;
+    }
+
+    @keyframes alertShake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-4px); }
+      75% { transform: translateX(4px); }
+    }
+
+    /* Checkbox de Términos */
+    .terms-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 0.8rem;
+      color: var(--color-ink-700);
+      line-height: 1.45;
+      margin-top: 0.25rem;
+      margin-bottom: 1.25rem;
+      cursor: pointer;
+    }
+
+    .terms-checkbox {
+      margin-top: 2px;
+      width: 16px;
+      height: 16px;
+      accent-color: var(--color-brand-green);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    /* Botón Principal */
+    .btn-submit-registro {
+      width: 100%;
+      height: 50px;
+      border-radius: var(--radius-md);
+      background-color: var(--color-brand-green);
+      color: var(--color-surface);
+      font-size: 0.95rem;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 14px rgba(60, 176, 67, 0.3);
+      transition: all var(--transition-fast);
+    }
+
+    
+
+    .btn-submit-registro:active {
+      transform: scale(0.98);
+    }
+
+    /* Separador Clásico */
+    .auth-divider {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 1.5rem 0 1.25rem 0;
+    }
+
+    .auth-divider-line {
+      width: 100%;
+      height: 1px;
+      background: var(--color-border);
+    }
+
+    .auth-divider-text {
+      position: absolute;
+      background: var(--color-surface);
+      padding: 0 12px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--color-slate-400);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    /* Pie de Login */
+    .auth-footer-prompt {
+      text-align: center;
+      font-size: 0.88rem;
+      color: var(--color-ink-700);
+      margin-bottom: 1.25rem;
+    }
+
+    .auth-footer-prompt a {
+      color: var(--color-brand-orange);
+      font-weight: 700;
+      text-decoration: underline;
+      margin-left: 4px;
+    }
+
+    /* Nota de Seguridad */
+    .security-badge-footer {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      font-size: 0.75rem;
+      color: var(--color-slate-400);
+      text-align: center;
+    }
