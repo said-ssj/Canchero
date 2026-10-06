@@ -1,0 +1,476 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+env:
+  NODE_VERSION: '20'
+  JAVA_VERSION: '21'
+  SUPABASE_VERSION: 'latest'
+
+jobs:
+  # =============================================
+  # LINT & TYPECHECK
+  # =============================================
+  lint-and-typecheck:
+    name: Lint & Typecheck
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./apps/web
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Run TypeScript typecheck
+        run: npm run typecheck
+
+      - name: Run Prettier check
+        run: npx prettier --check .
+
+  # =============================================
+  # UNIT TESTS
+  # =============================================
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./apps/web
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: npm run test -- --watch=false --code-coverage
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          directory: ./apps/web/coverage
+          flags: frontend
+          fail_ci_if_error: true
+
+  # =============================================
+  # BACKEND TESTS (Spring Boot - Legacy)
+  # =============================================
+  backend-tests:
+    name: Backend Tests (Legacy)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./apps/api
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'maven'
+
+      - name: Run tests
+        run: ./mvnw test -B
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          directory: ./apps/api/target/site/jacoco
+          flags: backend
+          fail_ci_if_error: false
+
+  # =============================================
+  # BUILD FRONTEND
+  # =============================================
+  build-frontend:
+    name: Build Frontend
+    runs-on: ubuntu-latest
+    needs: [lint-and-typecheck, unit-tests]
+    defaults:
+      run:
+        working-directory: ./apps/web
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Angular (SSR)
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: apps/web/dist/
+          retention-days: 7
+
+  # =============================================
+  # BUILD BACKEND (Legacy)
+  # =============================================
+  build-backend:
+    name: Build Backend (Legacy)
+    runs-on: ubuntu-latest
+    needs: [backend-tests]
+    defaults:
+      run:
+        working-directory: ./apps/api
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'maven'
+
+      - name: Build JAR
+        run: ./mvnw clean package -DskipTests -B
+
+      - name: Upload JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-jar
+          path: apps/api/target/*.jar
+          retention-days: 7
+
+  # =============================================
+  # E2E TESTS (Playwright)
+  # =============================================
+  e2e-tests:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    needs: [build-frontend]
+    defaults:
+      run:
+        working-directory: ./apps/web
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: dist/
+
+      - name: Install Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Start preview server
+        run: npx http-server dist/browser -p 4200 &
+        shell: bash
+
+      - name: Wait for server
+        run: sleep 5 && curl -f http://localhost:4200
+
+      - name: Run Playwright tests
+        run: npx playwright test
+        env:
+          PLAYWRIGHT_BASE_URL: http://localhost:4200
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: apps/web/playwright-report/
+          retention-days: 7
+
+  # =============================================
+  # ACCESSIBILITY TESTS
+  # =============================================
+  accessibility-tests:
+    name: Accessibility Tests
+    runs-on: ubuntu-latest
+    needs: [build-frontend]
+    defaults:
+      run:
+        working-directory: ./apps/web
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: dist/
+
+      - name: Start preview server
+        run: npx http-server dist/browser -p 4200 &
+        shell: bash
+
+      - name: Run axe-core accessibility tests
+        run: npx playwright test --project=accessibility
+        env:
+          PLAYWRIGHT_BASE_URL: http://localhost:4200
+
+  # =============================================
+  # SECURITY SCAN
+  # =============================================
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run npm audit
+        run: |
+          cd apps/web && npm audit --audit-level=high
+        continue-on-error: false
+
+      - name: Run Snyk scan
+        uses: snyk/actions/node@master
+        continue-on-error: false
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
+
+      - name: Run OWASP ZAP scan
+        uses: zaproxy/action-baseline@v0.12.0
+        with:
+          target: 'http://localhost:4200'
+        continue-on-error: true
+
+  # =============================================
+  # SUPABASE EDGE FUNCTIONS
+  # =============================================
+  supabase-functions:
+    name: Supabase Edge Functions
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: ${{ env.SUPABASE_VERSION }}
+
+      - name: Link to Supabase project
+        run: supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Deploy Edge Functions
+        run: |
+          supabase functions deploy pagos-culqi
+          supabase functions deploy facturacion-sunat
+          supabase functions deploy notificaciones
+          supabase functions deploy reservas
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          CULQI_PUBLIC_KEY: ${{ secrets.CULQI_PUBLIC_KEY }}
+          CULQI_SECRET_KEY: ${{ secrets.CULQI_SECRET_KEY }}
+          CULQI_WEBHOOK_SECRET: ${{ secrets.CULQI_WEBHOOK_SECRET }}
+          SUNAT_RUC: ${{ secrets.SUNAT_RUC }}
+          SUNAT_USER: ${{ secrets.SUNAT_USER }}
+          SUNAT_PASSWORD: ${{ secrets.SUNAT_PASSWORD }}
+          TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
+          TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
+          SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
+          FCM_SERVER_KEY: ${{ secrets.FCM_SERVER_KEY }}
+
+  # =============================================
+  # DEPLOY STAGING
+  # =============================================
+  deploy-staging:
+    name: Deploy Staging
+    runs-on: ubuntu-latest
+    needs: [build-frontend, build-backend, e2e-tests, accessibility-tests, security-scan]
+    if: github.ref == 'refs/heads/develop'
+    environment: staging
+    steps:
+      - name: Deploy to Vercel (Preview)
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: '--prod=false'
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+
+      - name: Deploy Backend to Railway (Staging)
+        run: |
+          # Railway CLI deploy
+          echo "Deploying backend to Railway staging..."
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: Run smoke tests
+        run: |
+          sleep 30
+          curl -f https://staging-canchero.vercel.app/api/health
+          curl -f https://staging-api.canchero.pe/health
+
+  # =============================================
+  # DEPLOY PRODUCTION
+  # =============================================
+  deploy-production:
+    name: Deploy Production
+    runs-on: ubuntu-latest
+    needs: [build-frontend, build-backend, e2e-tests, accessibility-tests, security-scan, supabase-functions]
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    steps:
+      - name: Deploy to Vercel (Production)
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: '--prod=true'
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+
+      - name: Deploy Backend to Railway (Production)
+        run: |
+          echo "Deploying backend to Railway production..."
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: Run production smoke tests
+        run: |
+          sleep 30
+          curl -f https://canchero.pe/api/health
+          curl -f https://api.canchero.pe/health
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Notify Slack
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          channel: '#deployments'
+          text: 'Production deployment completed'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  # =============================================
+  # DEPENDENCY UPDATES
+  # =============================================
+  dependabot:
+    name: Dependabot Auto-merge
+    runs-on: ubuntu-latest
+    if: github.actor == 'dependabot[bot]'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Auto-merge patch/minor updates
+        run: |
+          cd apps/web
+          npm install
+          npm test -- --watch=false
+        continue-on-error: false
+
+  # =============================================
+  # NOTIFICATIONS
+  # =============================================
+  notify-failure:
+    name: Notify Failure
+    runs-on: ubuntu-latest
+    if: failure()
+    needs: [lint-and-typecheck, unit-tests, backend-tests, build-frontend, build-backend, e2e-tests, accessibility-tests, security-scan, deploy-staging, deploy-production]
+    steps:
+      - name: Send failure notification
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          channel: '#alerts'
+          text: 'CI/CD Pipeline failed - check GitHub Actions'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

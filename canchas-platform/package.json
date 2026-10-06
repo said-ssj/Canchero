@@ -1,0 +1,30 @@
+{
+  "name": "canchas-platform",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/web",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run start --workspace=apps/web",
+    "build:web": "npm run build --workspace=apps/web",
+    "test:web": "npm run test --workspace=apps/web",
+    "lint:web": "npm run lint --workspace=apps/web",
+    "dev:api": "cd apps/api && ./mvnw spring-boot:run",
+    "build:api": "cd apps/api && ./mvnw clean package",
+    "test:api": "cd apps/api && ./mvnw test",
+    "supabase:start": "supabase start",
+    "supabase:functions:deploy": "supabase functions deploy",
+    "db:generate:types": "supabase gen types typescript --local > packages/types/supabase.types.ts",
+    "prepare": "husky install"
+  },
+  "devDependencies": {
+    "husky": "^9.0.0",
+    "lint-staged": "^15.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "packageManager": "npm@10.0.0"
+}

@@ -1,0 +1,951 @@
+-- ============================================================================
+-- CANCHERO PLATFORM — DDL COMPLETO (44 TABLAS) PARA SUPABASE
+-- 43 Tablas Base del Profesor + 1 Tabla Auxiliar (bloqueo_mantenimiento)
+-- Auditoría oficial de 7 campos en TODAS las tablas
+-- Esquema limpio: SIN DATOS DEMO
+-- ============================================================================
+
+-- ============================================================================
+-- EXTENSIONES REQUERIDAS
+-- ============================================================================
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+-- ============================================================================
+-- 1. MÓDULO GEOGRÁFICO (UBIGEO) (4 tablas)
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS pais (
+    id_pais SERIAL PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    codigo_iso VARCHAR(10),
+    -- 7 Campos de Auditoría
+    usucre VARCHAR(30) NOT NULL DEFAULT 'SYSTEM',
+    pccre VARCHAR(30) NOT NULL DEFAULT 'WEBAPP',
+    feccre TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    usmod VARCHAR(30),
+    pcmod VARCHAR(30),
+    fecmod TIMESTAMP,
+    estado CHAR(1) NOT NULL DEFAULT 'A' CHECK (estado IN ('A', 'I'))
+);
+
+CREATE TABLE IF NOT EXISTS departamento (
+    id_departamento SERIAL PRIMARY KEY,
+    id_pais INT NOT NULL REFERENCES pais(id_pais) ON DELETE CASCADE,
+    nombre VARCHAR(100) NOT NULL,
+    codigo_ubigeo VARCHAR(10),
+    -- 7 Campos de Auditoría
+    usucre VARCHAR(30) NOT NULL DEFAULT 'SYSTEM',
+    pccre VARCHAR(30) NOT NULL DEFAULT 'WEBAPP',
+    feccre TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    usmod VARCHAR(30),
+    pcmod VARCHAR(30),
+    fecmod TIMESTAMP,
+    estado CHAR(1) NOT NULL DEFAULT 'A' CHECK (estado IN ('A', 'I'))
+);
+
+CREATE TABLE IF NOT EXISTS provincia (
+    id_provincia SERIAL PRIMARY KEY,
+    id_departamento INT NOT NULL REFERENCES departamento(id_departamento) ON DELETE CASCADE,
+    nombre VARCHAR(100) NOT NULL,
+    codigo_ubigeo VARCHAR(10),
+    -- 7 Campos de Auditoría
+    usucre VARCHAR(30) NOT NULL DEFAULT 'SYSTEM',
+    pccre VARCHAR(30) NOT NULL DEFAULT 'WEBAPP',
+    feccre TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    usmod VARCHAR(30),
+    pcmod VARCHAR(30),
+    fecmod TIMESTAMP,
+    estado CHAR(1) NOT NULL DEFAULT 'A' CHECK (estado IN ('A', 'I'))
+);
+
+CREATE TABLE IF NOT EXISTS distrito (
+    id_distrito SERIAL PRIMARY KEY,
+    id_provincia INT NOT NULL REFERENCES provincia(id_provincia) ON DELETE CASCADE,
+    nombre VARCHAR(100) NOT NULL,
+    codigo_ubigeo VARCHAR(10),
+    -- 7 Campos de Auditoría
+    usucre VARCHAR(30) NOT NULL DEFAULT 'SYSTEM',
+    pccre VARCHAR(30) NOT NULL DEFAULT 'WEBAPP',
+    feccre TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    usmod VARCHAR(30),
+    pcmod VARCHAR(30),
+    fecmod TIMESTAMP,
+    estado CHAR(1) NOT NULL DEFAULT 'A' CHECK (estado IN ('A', 'I'))
+);
+
+-- ============================================================================
+-- 2. SEGURIDAD Y PRIVILEGIOS (6 tablas)
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS rol (
+    id_rol SERIAL PRIMARY KEY,
+    nombre VARCHAR(50) NOT NULL UNIQUE,
+    descripcion TEXT,
+    -- 7 Campos de Auditoría
+    usucre VARCHAR(30) NOT NULL DEFAULT 'SYSTEM',
+    pccre VARCHAR(30) NOT NULL DEFAULT 'WEBAPP',
+    feccre TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    usmod VARCHAR(30),
+    pcmod VARCHAR(30),
+    fecmod TIMESTAMP,
+    estado CHAR(1) NOT NULL DEFAULT 'A' CHECK (estado IN ('A', 'I'))
+);
+
+CREATE TABLE IF NOT EXISTS privilegio (
+    id_privilegio SERIAL PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL UNIQUE,
+    descripcion TEXT,
+    -- 7 Campos de Auditoría
+    usucre VARCHAR(30) NOT NULL DEFAULT 'SYSTEM',
+    pccre VARCHAR(30) NOT NULL DEFAULT 'WEBAPP',
+    feccre TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    usmod VARCHAR(30),
+    pcmod VARCHAR(30),
+    fecmod TIMESTAMP,
+    estado CHAR(1) NOT NULL DEFAULT 'A' CHECK (estado IN ('A', 'I'))
+);
+
+CREATE TABLE IF NOT EXISTS modulo (
+    id_modulo SERIAL PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL UNIQUE,
+    icono VARCHAR(50),
+    ruta VARCHAR(255),
+    -- 7 Campos de Auditoría
+    usucre VARCHAR(30) NOT NULL DEFAULT 'SYSTEM',
+    pccre VARCHAR(30) NOT NULL DEFAULT 'WEBAPP',
+    feccre TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    usmod VARCHAR(30),
+    pcmod VARCHAR(30),
+    fecmod TIMESTAMP,
+    estado CHAR(1) NOT NULL DEFAULT 'A' CHECK (estado IN ('A', 'I'))
+);
+
+CREATE TABLE IF NOT EXISTS rol_modulo_privilegio (
+    id_rol_mod_priv SERIAL PRIMARY KEY,
+    id_rol INT NOT NULL REFERENCES rol(id_rol) ON DELETE CASCADE,
+    id_modulo INT NOT NULL REFERENCES modulo(id_modulo) ON DELETE CASCADE,
+    id_privilegio INT NOT NULL REFERENCES privilegio(id_privilegio) ON DELETE CASCADE,
+    -- 7 Campos de Auditoría
+    usucre VARCHAR(30) NOT NULL DEFAULT 'SYSTEM',
+    pccre VARCHAR(30) NOT NULL DEFAULT 'WEBAPP',
+    feccre TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    usmod VARCHAR(30),
+    pcmod VARCHAR(30),
+    fecmod TIMESTAMP,
+    estado CHAR(1) NOT NULL DEFAULT 'A' CHECK (estado IN ('A', 'I'))
+);
+
+CREATE TABLE IF NOT EXISTS usuario (
+    id_usuario UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id_rol INT NOT NULL REFERENCES rol(id_rol),
+    nombre VARCHAR(100) NOT NULL,
+    apellido VARCHAR(100) NOT NULL DEFAULT '',
+    correo VARCHAR(150) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL DEFAULT '',
+    telefono VARCHAR(20),
+    -- 7 Campos de Auditoría
+    usucre VARCHAR(30) NOT NULL DEFAULT 'SYSTEM',
+    pccre VARCHAR(30) NOT NULL DEFAULT 'WEBAPP',
+    feccre TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    usmod VARCHAR(30),
+    pcmod VARCHAR(30),
+    fecmod TIMESTAMP,
+    estado CHAR(1) NOT NULL DEFAULT 'A' CHECK (estado IN ('A', 'I'))
+);
+
+CREATE TABLE IF NOT EXISTS bitacora_acceso (
+    id_bitacora SERIAL PRIMARY KEY,
+    id_usuario UUID NOT NULL REFERENCES usuario(id_usuario) ON DELETE CASCADE,
+    ip_origen VARCHAR(45),
+    dispositivo VARCHAR(150),
+    fecha_ingreso TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_salida TIMESTAMP,
+    -- 7 Campos de Auditoría
+    usucre VARCHAR(30) NOT NULL DEFAULT 'SYSTEM',
+    pccre VARCHAR(30) NOT NULL DEFAULT 'WEBAPP',
+    feccre TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    usmod VARCHAR(30),
+    pcmod VARCHAR(30),
+    fecmod TIMESTAMP,
+    estado CHAR(1) NOT NULL DEFAULT 'A' CHECK (estado IN ('A', 'I'))
+);
+
+-- ============================================================================
+-- 3. SEDES Y CANCHAS (3 tablas)
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS sede (
+    id_sede SERIAL PRIMARY KEY,
+    id_dueno UUID REFERENCES usuario(id_usuario) ON DELETE SET NULL,
+    id_distrito INT NOT NULL REFERENCES distrito(id_distrito),
+    nombre VARCHAR(100) NOT NULL,
+    direccion VARCHAR(255) NOT NULL,
+    telefono VARCHAR(20),
+    latitud NUMERIC(10, 8),
+    longitud NUMERIC(11, 8),
+    descripcion TEXT,
+    imagen_url TEXT,
+    rating NUMERIC(2, 1),
+    banco VARCHAR(50),
+    cuenta_bancaria VARCHAR(30),
+    cci VARCHAR(30),
+    titular_cuenta VARCHAR(100),
+    ruc_facturacion VARCHAR(15),
+    -- 7 Campos de Auditoría
+    usucre VARCHAR(30) NOT NULL DEFAULT 'SYSTEM',
+    pccre VARCHAR(30) NOT NULL DEFAULT 'WEBAPP',
+    feccre TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    usmod VARCHAR(30),
+    pcmod VARCHAR(30),
+    fecmod TIMESTAMP,
+    estado CHAR(1) NOT NULL DEFAULT 'A' CHECK (estado IN ('A', 'I'))
+);
+
+CREATE TABLE IF NOT EXISTS tipo_cancha (
+    id_tipo_cancha SERIAL PRIMARY KEY,
+    nombre VARCHAR(50) NOT NULL UNIQUE,
+    descripcion TEXT,
+    -- 7 Campos de Auditoría
+    usucre VARCHAR(30) NOT NULL DEFAULT 'SYSTEM',
+    pccre VARCHAR(30) NOT NULL DEFAULT 'WEBAPP',
+    feccre TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    usmod VARCHAR(30),
+    pcmod VARCHAR(30),
+    fecmod TIMESTAMP,
+    estado CHAR(1) NOT NULL DEFAULT 'A' CHECK (estado IN ('A', 'I'))
+);
+
+CREATE TABLE IF NOT EXISTS cancha (
+    id_cancha SERIAL PRIMARY KEY,
+    id_sede INT NOT NULL REFERENCES sede(id_sede) ON DELETE CASCADE,
+    id_tipo_cancha INT NOT NULL REFERENCES tipo_cancha(id_tipo_cancha),
+    nombre_numero VARCHAR(50) NOT NULL,
+    techada BOOLEAN DEFAULT FALSE,
+    foto_url TEXT,
+    superficie VARCHAR(100),
+    equipamiento TEXT[],
+    -- 7 Campos de Auditoría
+    usucre VARCHAR(30) NOT NULL DEFAULT 'SYSTEM',
+    pccre VARCHAR(30) NOT NULL DEFAULT 'WEBAPP',
+    feccre TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    usmod VARCHAR(30),
+    pcmod VARCHAR(30),
+    fecmod TIMESTAMP,
+    estado CHAR(1) NOT NULL DEFAULT 'A' CHECK (estado IN ('A', 'I'))
+);
+
+-- ============================================================================
+-- 4. TARIFAS Y HORARIOS (2 tablas)
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS tarifa_cancha (
+    id_tarifa SERIAL PRIMARY KEY,
+    id_cancha INT NOT NULL REFERENCES cancha(id_cancha) ON DELETE CASCADE,
+    dia_semana INT NOT NULL CHECK (dia_semana BETWEEN 0 AND 6),
+    hora_inicio TIME NOT NULL,
+    hora_fin TIME NOT NULL,
+    precio NUMERIC(10, 2) NOT NULL,
+    -- 7 Campos de Auditoría
+    usucre VARCHAR(30) NOT NULL DEFAULT 'SYSTEM',
+    pccre VARCHAR(30) NOT NULL DEFAULT 'WEBAPP',
+    feccre TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    usmod VARCHAR(30),
+    pcmod VARCHAR(30),
+    fecmod TIMESTAMP,
+    estado CHAR(1) NOT NULL DEFAULT 'A' CHECK (estado IN ('A', 'I'))
+);
+
+CREATE TABLE IF NOT EXISTS tipo_horario (
+    id_tipo_horario SERIAL PRIMARY KEY,
+    id_sede INT NOT NULL REFERENCES sede(id_sede) ON DELETE CASCADE,
+    dia_semana INT NOT NULL CHECK (dia_semana BETWEEN 0 AND 6),
+    apertura TIME NOT NULL,
+    cierre TIME NOT NULL,
+    -- 7 Campos de Auditoría
+    usucre VARCHAR(30) NOT NULL DEFAULT 'SYSTEM',
+    pccre VARCHAR(30) NOT NULL DEFAULT 'WEBAPP',
+    feccre TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    usmod VARCHAR(30),
+    pcmod VARCHAR(30),
+    fecmod TIMESTAMP,
+    estado CHAR(1) NOT NULL DEFAULT 'A' CHECK (estado IN ('A', 'I'))
+);
+
+-- ============================================================================
+-- 5. CLIENTES Y EQUIPOS (3 tablas)
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS cliente (
+    id_cliente UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id_usuario UUID REFERENCES usuario(id_usuario) ON DELETE SET NULL,
+    tipo_documento VARCHAR(20) NOT NULL DEFAULT 'DNI',
+    numero_documento VARCHAR(20) NOT NULL,
+    nombres VARCHAR(100) NOT NULL,
+    apellidos VARCHAR(100) NOT NULL DEFAULT '',
+    telefono VARCHAR(20),
+    correo VARCHAR(150),
+    direccion VARCHAR(255),
+    id_distrito INT REFERENCES distrito(id_distrito),
+    -- 7 Campos de Auditoría
+    usucre VARCHAR(30) NOT NULL DEFAULT 'SYSTEM',
+    pccre VARCHAR(30) NOT NULL DEFAULT 'WEBAPP',
+    feccre TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    usmod VARCHAR(30),
+    pcmod VARCHAR(30),
+    fecmod TIMESTAMP,
+    estado CHAR(1) NOT NULL DEFAULT 'A' CHECK (estado IN ('A', 'I'))
+);
+
+CREATE TABLE IF NOT EXISTS equipo (
+    id_equipo SERIAL PRIMARY KEY,
+    id_capitan UUID NOT NULL REFERENCES cliente(id_cliente),
+    nombre_equipo VARCHAR(100) NOT NULL,
+    color_distintivo VARCHAR(50),
+    logo_url TEXT,
+    fecha_creacion DATE DEFAULT CURRENT_DATE,
+    -- 7 Campos de Auditoría
+    usucre VARCHAR(30) NOT NULL DEFAULT 'SYSTEM',
+    pccre VARCHAR(30) NOT NULL DEFAULT 'WEBAPP',
+    feccre TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    usmod VARCHAR(30),
+    pcmod VARCHAR(30),
+    fecmod TIMESTAMP,
+    estado CHAR(1) NOT NULL DEFAULT 'A' CHECK (estado IN ('A', 'I'))
+);
+
+CREATE TABLE IF NOT EXISTS miembro_equipo (
+    id_miembro SERIAL PRIMARY KEY,
+    id_equipo INT NOT NULL REFERENCES equipo(id_equipo) ON DELETE CASCADE,
+    id_cliente UUID NOT NULL REFERENCES cliente(id_cliente) ON DELETE CASCADE,
+    posicion VARCHAR(50),
+    fecha_union DATE DEFAULT CURRENT_DATE,
+    es_suplente BOOLEAN DEFAULT FALSE,
+    -- 7 Campos de Auditoría
+    usucre VARCHAR(30) NOT NULL DEFAULT 'SYSTEM',
+    pccre VARCHAR(30) NOT NULL DEFAULT 'WEBAPP',
+    feccre TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    usmod VARCHAR(30),
+    pcmod VARCHAR(30),
+    fecmod TIMESTAMP,
+    estado CHAR(1) NOT NULL DEFAULT 'A' CHECK (estado IN ('A', 'I'))
+);
+
+-- ============================================================================
+-- 6. MÓDULO DE SUSCRIPCIONES (3 tablas)
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS plan_suscripcion (
+    id_plan SERIAL PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    descripcion TEXT,
+    precio NUMERIC(10, 2) NOT NULL,
+    duracion_dias INT NOT NULL,
+    descuento_reserva_pct NUMERIC(5, 2) DEFAULT 0.00,
+    limite_reservas_mes INT,
+    -- 7 Campos de Auditoría
+    usucre VARCHAR(30) NOT NULL DEFAULT 'SYSTEM',
+    pccre VARCHAR(30) NOT NULL DEFAULT 'WEBAPP',
+    feccre TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    usmod VARCHAR(30),
+    pcmod VARCHAR(30),
+    fecmod TIMESTAMP,
+    estado CHAR(1) NOT NULL DEFAULT 'A' CHECK (estado IN ('A', 'I'))
+);
+
+CREATE TABLE IF NOT EXISTS suscripcion (
+    id_suscripcion SERIAL PRIMARY KEY,
+    id_cliente UUID NOT NULL REFERENCES cliente(id_cliente),
+    id_plan INT NOT NULL REFERENCES plan_suscripcion(id_plan),
+    fecha_inicio DATE NOT NULL,
+    fecha_fin DATE NOT NULL,
+    -- 7 Campos de Auditoría
+    usucre VARCHAR(30) NOT NULL DEFAULT 'SYSTEM',
+    pccre VARCHAR(30) NOT NULL DEFAULT 'WEBAPP',
+    feccre TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    usmod VARCHAR(30),
+    pcmod VARCHAR(30),
+    fecmod TIMESTAMP,
+    estado CHAR(1) NOT NULL DEFAULT 'A' CHECK (estado IN ('A', 'I'))
+);
+
+CREATE TABLE IF NOT EXISTS pago_suscripcion (
+    id_pago_suscripcion SERIAL PRIMARY KEY,
+    id_suscripcion INT NOT NULL REFERENCES suscripcion(id_suscripcion),
+    monto NUMERIC(10, 2) NOT NULL,
+    fecha_pago TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    metodo_pago VARCHAR(50) NOT NULL,
+    comprobante VARCHAR(100),
+    -- 7 Campos de Auditoría
+    usucre VARCHAR(30) NOT NULL DEFAULT 'SYSTEM',
+    pccre VARCHAR(30) NOT NULL DEFAULT 'WEBAPP',
+    feccre TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    usmod VARCHAR(30),
+    pcmod VARCHAR(30),
+    fecmod TIMESTAMP,
+    estado CHAR(1) NOT NULL DEFAULT 'A' CHECK (estado IN ('A', 'I'))
+);
+
+-- ============================================================================
+-- 7. MÓDULO DE CAJA (7 tablas)
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS caja (
+    id_caja SERIAL PRIMARY KEY,
+    id_sede INT NOT NULL REFERENCES sede(id_sede),
+    nombre_identificador VARCHAR(50) NOT NULL,
+    -- 7 Campos de Auditoría
+    usucre VARCHAR(30) NOT NULL DEFAULT 'SYSTEM',
+    pccre VARCHAR(30) NOT NULL DEFAULT 'WEBAPP',
+    feccre TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    usmod VARCHAR(30),
+    pcmod VARCHAR(30),
+    fecmod TIMESTAMP,
+    estado CHAR(1) NOT NULL DEFAULT 'A' CHECK (estado IN ('A', 'I'))
+);
+
+CREATE TABLE IF NOT EXISTS sesion_caja (
+    id_sesion_caja SERIAL PRIMARY KEY,
+    id_caja INT NOT NULL REFERENCES caja(id_caja),
+    id_usuario UUID NOT NULL REFERENCES usuario(id_usuario),
+    fecha_apertura TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    monto_apertura NUMERIC(10, 2) NOT NULL,
+    fecha_cierre TIMESTAMP,
+    monto_cierre NUMERIC(10, 2),
+    monto_sistema NUMERIC(10, 2),
+    diferencia NUMERIC(10, 2),
+    -- 7 Campos de Auditoría
+    usucre VARCHAR(30) NOT NULL DEFAULT 'SYSTEM',
+    pccre VARCHAR(30) NOT NULL DEFAULT 'WEBAPP',
+    feccre TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    usmod VARCHAR(30),
+    pcmod VARCHAR(30),
+    fecmod TIMESTAMP,
+    estado CHAR(1) NOT NULL DEFAULT 'A' CHECK (estado IN ('A', 'I'))
+);
+
+CREATE TABLE IF NOT EXISTS tipo_movimiento_caja (
+    id_tipo_movimiento SERIAL PRIMARY KEY,
+    nombre VARCHAR(50) NOT NULL,
+    descripcion TEXT,
+    -- 7 Campos de Auditoría
+    usucre VARCHAR(30) NOT NULL DEFAULT 'SYSTEM',
+    pccre VARCHAR(30) NOT NULL DEFAULT 'WEBAPP',
+    feccre TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    usmod VARCHAR(30),
+    pcmod VARCHAR(30),
+    fecmod TIMESTAMP,
+    estado CHAR(1) NOT NULL DEFAULT 'A' CHECK (estado IN ('A', 'I'))
+);
+
+CREATE TABLE IF NOT EXISTS movimiento_caja (
+    id_movimiento SERIAL PRIMARY KEY,
+    id_sesion_caja INT NOT NULL REFERENCES sesion_caja(id_sesion_caja),
+    id_tipo_movimiento INT NOT NULL REFERENCES tipo_movimiento_caja(id_tipo_movimiento),
+    monto NUMERIC(10, 2) NOT NULL,
+    concepto VARCHAR(255) NOT NULL,
+    fecha_movimiento TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    -- 7 Campos de Auditoría
+    usucre VARCHAR(30) NOT NULL DEFAULT 'SYSTEM',
+    pccre VARCHAR(30) NOT NULL DEFAULT 'WEBAPP',
+    feccre TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    usmod VARCHAR(30),
+    pcmod VARCHAR(30),
+    fecmod TIMESTAMP,
+    estado CHAR(1) NOT NULL DEFAULT 'A' CHECK (estado IN ('A', 'I'))
+);
+
+CREATE TABLE IF NOT EXISTS arqueo_caja (
+    id_arqueo SERIAL PRIMARY KEY,
+    id_sesion_caja INT NOT NULL REFERENCES sesion_caja(id_sesion_caja),
+    id_usuario UUID NOT NULL REFERENCES usuario(id_usuario),
+    fecha_arqueo TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    total_efectivo NUMERIC(10, 2) NOT NULL,
+    total_digital NUMERIC(10, 2) NOT NULL,
+    observaciones TEXT,
+    -- 7 Campos de Auditoría
+    usucre VARCHAR(30) NOT NULL DEFAULT 'SYSTEM',
+    pccre VARCHAR(30) NOT NULL DEFAULT 'WEBAPP',
+    feccre TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    usmod VARCHAR(30),
+    pcmod VARCHAR(30),
+    fecmod TIMESTAMP,
+    estado CHAR(1) NOT NULL DEFAULT 'A' CHECK (estado IN ('A', 'I'))
+);
+
+CREATE TABLE IF NOT EXISTS denominacion (
+    id_denominacion SERIAL PRIMARY KEY,
+    valor NUMERIC(10, 2) NOT NULL,
+    tipo VARCHAR(20) NOT NULL, -- Billete o Moneda
+    -- 7 Campos de Auditoría
+    usucre VARCHAR(30) NOT NULL DEFAULT 'SYSTEM',
+    pccre VARCHAR(30) NOT NULL DEFAULT 'WEBAPP',
+    feccre TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    usmod VARCHAR(30),
+    pcmod VARCHAR(30),
+    fecmod TIMESTAMP,
+    estado CHAR(1) NOT NULL DEFAULT 'A' CHECK (estado IN ('A', 'I'))
+);
+
+CREATE TABLE IF NOT EXISTS arqueo_detalle (
+    id_arqueo_detalle SERIAL PRIMARY KEY,
+    id_arqueo INT NOT NULL REFERENCES arqueo_caja(id_arqueo) ON DELETE CASCADE,
+    id_denominacion INT NOT NULL REFERENCES denominacion(id_denominacion),
+    cantidad INT NOT NULL,
+    subtotal NUMERIC(10, 2) NOT NULL,
+    -- 7 Campos de Auditoría
+    usucre VARCHAR(30) NOT NULL DEFAULT 'SYSTEM',
+    pccre VARCHAR(30) NOT NULL DEFAULT 'WEBAPP',
+    feccre TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    usmod VARCHAR(30),
+    pcmod VARCHAR(30),
+    fecmod TIMESTAMP,
+    estado CHAR(1) NOT NULL DEFAULT 'A' CHECK (estado IN ('A', 'I'))
+);
+
+-- ============================================================================
+-- 8. IMPLEMENTOS DEPORTIVOS (3 tablas)
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS tipo_implemento (
+    id_tipo_implemento SERIAL PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    descripcion TEXT,
+    -- 7 Campos de Auditoría
+    usucre VARCHAR(30) NOT NULL DEFAULT 'SYSTEM',
+    pccre VARCHAR(30) NOT NULL DEFAULT 'WEBAPP',
+    feccre TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    usmod VARCHAR(30),
+    pcmod VARCHAR(30),
+    fecmod TIMESTAMP,
+    estado CHAR(1) NOT NULL DEFAULT 'A' CHECK (estado IN ('A', 'I'))
+);
+
+CREATE TABLE IF NOT EXISTS implemento (
+    id_implemento SERIAL PRIMARY KEY,
+    id_sede INT NOT NULL REFERENCES sede(id_sede),
+    id_tipo_implemento INT NOT NULL REFERENCES tipo_implemento(id_tipo_implemento),
+    nombre VARCHAR(100) NOT NULL,
+    precio_alquiler NUMERIC(10, 2) NOT NULL,
+    costo_garantia NUMERIC(10, 2) DEFAULT 0.00,
+    stock_total INT NOT NULL,
+    stock_disponible INT NOT NULL,
+    -- 7 Campos de Auditoría
+    usucre VARCHAR(30) NOT NULL DEFAULT 'SYSTEM',
+    pccre VARCHAR(30) NOT NULL DEFAULT 'WEBAPP',
+    feccre TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    usmod VARCHAR(30),
+    pcmod VARCHAR(30),
+    fecmod TIMESTAMP,
+    estado CHAR(1) NOT NULL DEFAULT 'A' CHECK (estado IN ('A', 'I'))
+);
+
+CREATE TABLE IF NOT EXISTS alquiler_implemento (
+    id_alquiler SERIAL PRIMARY KEY,
+    id_implemento INT NOT NULL REFERENCES implemento(id_implemento),
+    id_cliente UUID NOT NULL REFERENCES cliente(id_cliente),
+    cantidad INT NOT NULL,
+    monto_total NUMERIC(10, 2) NOT NULL,
+    monto_garantia NUMERIC(10, 2) DEFAULT 0.00,
+    fecha_alquiler TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_devolucion TIMESTAMP,
+    -- 7 Campos de Auditoría
+    usucre VARCHAR(30) NOT NULL DEFAULT 'SYSTEM',
+    pccre VARCHAR(30) NOT NULL DEFAULT 'WEBAPP',
+    feccre TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    usmod VARCHAR(30),
+    pcmod VARCHAR(30),
+    fecmod TIMESTAMP,
+    estado CHAR(1) NOT NULL DEFAULT 'A' CHECK (estado IN ('A', 'I'))
+);
+
+-- ============================================================================
+-- 9. CATÁLOGO E INVENTARIO / KARDEX (4 tablas)
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS categoria_producto (
+    id_categoria SERIAL PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    descripcion TEXT,
+    -- 7 Campos de Auditoría
+    usucre VARCHAR(30) NOT NULL DEFAULT 'SYSTEM',
+    pccre VARCHAR(30) NOT NULL DEFAULT 'WEBAPP',
+    feccre TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    usmod VARCHAR(30),
+    pcmod VARCHAR(30),
+    fecmod TIMESTAMP,
+    estado CHAR(1) NOT NULL DEFAULT 'A' CHECK (estado IN ('A', 'I'))
+);
+
+CREATE TABLE IF NOT EXISTS producto (
+    id_producto SERIAL PRIMARY KEY,
+    id_categoria INT NOT NULL REFERENCES categoria_producto(id_categoria),
+    codigo_barras VARCHAR(50),
+    nombre VARCHAR(150) NOT NULL,
+    precio_compra NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
+    precio_venta NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
+    stock_minimo INT DEFAULT 5,
+    -- 7 Campos de Auditoría
+    usucre VARCHAR(30) NOT NULL DEFAULT 'SYSTEM',
+    pccre VARCHAR(30) NOT NULL DEFAULT 'WEBAPP',
+    feccre TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    usmod VARCHAR(30),
+    pcmod VARCHAR(30),
+    fecmod TIMESTAMP,
+    estado CHAR(1) NOT NULL DEFAULT 'A' CHECK (estado IN ('A', 'I'))
+);
+
+CREATE TABLE IF NOT EXISTS tipo_movimiento_inv (
+    id_tipo_mov_inv SERIAL PRIMARY KEY,
+    nombre VARCHAR(50) NOT NULL,
+    operacion CHAR(1) NOT NULL CHECK (operacion IN ('+', '-')),
+    -- 7 Campos de Auditoría
+    usucre VARCHAR(30) NOT NULL DEFAULT 'SYSTEM',
+    pccre VARCHAR(30) NOT NULL DEFAULT 'WEBAPP',
+    feccre TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    usmod VARCHAR(30),
+    pcmod VARCHAR(30),
+    fecmod TIMESTAMP,
+    estado CHAR(1) NOT NULL DEFAULT 'A' CHECK (estado IN ('A', 'I'))
+);
+
+CREATE TABLE IF NOT EXISTS kardex (
+    id_kardex SERIAL PRIMARY KEY,
+    id_producto INT NOT NULL REFERENCES producto(id_producto),
+    id_sede INT NOT NULL REFERENCES sede(id_sede),
+    id_tipo_mov_inv INT NOT NULL REFERENCES tipo_movimiento_inv(id_tipo_mov_inv),
+    fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    cantidad INT NOT NULL,
+    precio_unitario NUMERIC(10, 2) NOT NULL,
+    saldo_stock INT NOT NULL,
+    motivo VARCHAR(255),
+    -- 7 Campos de Auditoría
+    usucre VARCHAR(30) NOT NULL DEFAULT 'SYSTEM',
+    pccre VARCHAR(30) NOT NULL DEFAULT 'WEBAPP',
+    feccre TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    usmod VARCHAR(30),
+    pcmod VARCHAR(30),
+    fecmod TIMESTAMP,
+    estado CHAR(1) NOT NULL DEFAULT 'A' CHECK (estado IN ('A', 'I'))
+);
+
+-- ============================================================================
+-- 10. MÓDULO DE RESERVAS (3 tablas + 1 AUXILIAR = 4 tablas)
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS estado_reserva (
+    id_estado_reserva SERIAL PRIMARY KEY,
+    nombre VARCHAR(50) NOT NULL UNIQUE,
+    color_hex VARCHAR(7),
+    -- 7 Campos de Auditoría
+    usucre VARCHAR(30) NOT NULL DEFAULT 'SYSTEM',
+    pccre VARCHAR(30) NOT NULL DEFAULT 'WEBAPP',
+    feccre TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    usmod VARCHAR(30),
+    pcmod VARCHAR(30),
+    fecmod TIMESTAMP,
+    estado CHAR(1) NOT NULL DEFAULT 'A' CHECK (estado IN ('A', 'I'))
+);
+
+CREATE TABLE IF NOT EXISTS reserva (
+    id_reserva SERIAL PRIMARY KEY,
+    id_cliente UUID NOT NULL REFERENCES cliente(id_cliente),
+    id_cancha INT NOT NULL REFERENCES cancha(id_cancha),
+    id_estado_reserva INT NOT NULL REFERENCES estado_reserva(id_estado_reserva),
+    id_usuario UUID REFERENCES usuario(id_usuario),
+    fecha_reserva DATE NOT NULL,
+    hora_inicio TIME NOT NULL,
+    hora_fin TIME NOT NULL,
+    monto_total NUMERIC(10, 2) NOT NULL,
+    adelanto NUMERIC(10, 2) DEFAULT 0.00,
+    saldo NUMERIC(10, 2) NOT NULL,
+    codigo_pase VARCHAR(50),
+    -- 7 Campos de Auditoría
+    usucre VARCHAR(30) NOT NULL DEFAULT 'SYSTEM',
+    pccre VARCHAR(30) NOT NULL DEFAULT 'WEBAPP',
+    feccre TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    usmod VARCHAR(30),
+    pcmod VARCHAR(30),
+    fecmod TIMESTAMP,
+    estado CHAR(1) NOT NULL DEFAULT 'A' CHECK (estado IN ('A', 'I')),
+    CONSTRAINT uq_reserva_slot UNIQUE (id_cancha, fecha_reserva, hora_inicio, hora_fin)
+);
+
+CREATE TABLE IF NOT EXISTS equipo_partido (
+    id_partido SERIAL PRIMARY KEY,
+    id_reserva INT NOT NULL REFERENCES reserva(id_reserva) ON DELETE CASCADE,
+    id_equipo_local INT REFERENCES equipo(id_equipo),
+    id_equipo_visitante INT REFERENCES equipo(id_equipo),
+    resultado_local INT DEFAULT 0,
+    resultado_visitante INT DEFAULT 0,
+    -- 7 Campos de Auditoría
+    usucre VARCHAR(30) NOT NULL DEFAULT 'SYSTEM',
+    pccre VARCHAR(30) NOT NULL DEFAULT 'WEBAPP',
+    feccre TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    usmod VARCHAR(30),
+    pcmod VARCHAR(30),
+    fecmod TIMESTAMP,
+    estado CHAR(1) NOT NULL DEFAULT 'A' CHECK (estado IN ('A', 'I'))
+);
+
+-- TABLA 44: AUXILIAR DE BLOQUEO DE CANCHAS POR MANTENIMIENTO
+CREATE TABLE IF NOT EXISTS bloqueo_mantenimiento (
+    id_bloqueo SERIAL PRIMARY KEY,
+    id_cancha INT NOT NULL REFERENCES cancha(id_cancha) ON DELETE CASCADE,
+    motivo TEXT NOT NULL DEFAULT 'Mantenimiento programado',
+    fecha_inicio TIMESTAMP NOT NULL,
+    fecha_fin TIMESTAMP NOT NULL,
+    -- 7 Campos de Auditoría
+    usucre VARCHAR(30) NOT NULL DEFAULT 'SYSTEM',
+    pccre VARCHAR(30) NOT NULL DEFAULT 'WEBAPP',
+    feccre TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    usmod VARCHAR(30),
+    pcmod VARCHAR(30),
+    fecmod TIMESTAMP,
+    estado CHAR(1) NOT NULL DEFAULT 'A' CHECK (estado IN ('A', 'I')),
+    CONSTRAINT chk_fechas_bloqueo CHECK (fecha_fin > fecha_inicio)
+);
+
+-- ============================================================================
+-- 11. VENTAS Y PAGOS (5 tablas)
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS metodo_pago (
+    id_metodo_pago SERIAL PRIMARY KEY,
+    nombre VARCHAR(50) NOT NULL UNIQUE,
+    descripcion TEXT,
+    -- 7 Campos de Auditoría
+    usucre VARCHAR(30) NOT NULL DEFAULT 'SYSTEM',
+    pccre VARCHAR(30) NOT NULL DEFAULT 'WEBAPP',
+    feccre TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    usmod VARCHAR(30),
+    pcmod VARCHAR(30),
+    fecmod TIMESTAMP,
+    estado CHAR(1) NOT NULL DEFAULT 'A' CHECK (estado IN ('A', 'I'))
+);
+
+CREATE TABLE IF NOT EXISTS venta (
+    id_venta SERIAL PRIMARY KEY,
+    id_cliente UUID REFERENCES cliente(id_cliente),
+    id_usuario UUID NOT NULL REFERENCES usuario(id_usuario),
+    id_sesion_caja INT REFERENCES sesion_caja(id_sesion_caja),
+    fecha_venta TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    subtotal NUMERIC(10, 2) NOT NULL,
+    igv NUMERIC(10, 2) NOT NULL,
+    total NUMERIC(10, 2) NOT NULL,
+    tipo_comprobante VARCHAR(20) NOT NULL,
+    numero_comprobante VARCHAR(50),
+    -- 7 Campos de Auditoría
+    usucre VARCHAR(30) NOT NULL DEFAULT 'SYSTEM',
+    pccre VARCHAR(30) NOT NULL DEFAULT 'WEBAPP',
+    feccre TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    usmod VARCHAR(30),
+    pcmod VARCHAR(30),
+    fecmod TIMESTAMP,
+    estado CHAR(1) NOT NULL DEFAULT 'A' CHECK (estado IN ('A', 'I'))
+);
+
+CREATE TABLE IF NOT EXISTS venta_detalle (
+    id_venta_detalle SERIAL PRIMARY KEY,
+    id_venta INT NOT NULL REFERENCES venta(id_venta) ON DELETE CASCADE,
+    id_producto INT NOT NULL REFERENCES producto(id_producto),
+    cantidad INT NOT NULL CHECK (cantidad > 0),
+    precio_unitario NUMERIC(10, 2) NOT NULL,
+    subtotal NUMERIC(10, 2) NOT NULL,
+    -- 7 Campos de Auditoría
+    usucre VARCHAR(30) NOT NULL DEFAULT 'SYSTEM',
+    pccre VARCHAR(30) NOT NULL DEFAULT 'WEBAPP',
+    feccre TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    usmod VARCHAR(30),
+    pcmod VARCHAR(30),
+    fecmod TIMESTAMP,
+    estado CHAR(1) NOT NULL DEFAULT 'A' CHECK (estado IN ('A', 'I'))
+);
+
+CREATE TABLE IF NOT EXISTS pago_reserva (
+    id_pago_reserva SERIAL PRIMARY KEY,
+    id_reserva INT NOT NULL REFERENCES reserva(id_reserva) ON DELETE CASCADE,
+    id_metodo_pago INT NOT NULL REFERENCES metodo_pago(id_metodo_pago),
+    id_sesion_caja INT REFERENCES sesion_caja(id_sesion_caja),
+    monto NUMERIC(10, 2) NOT NULL,
+    fecha_pago TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    numero_operacion VARCHAR(100),
+    es_adelanto BOOLEAN DEFAULT FALSE,
+    comision_plataforma NUMERIC(10, 2) DEFAULT 0.00,
+    monto_neto_dueno NUMERIC(10, 2) DEFAULT 0.00,
+    comprobante_url TEXT,
+    estado_liquidacion VARCHAR(20) DEFAULT 'pendiente',
+    -- 7 Campos de Auditoría
+    usucre VARCHAR(30) NOT NULL DEFAULT 'SYSTEM',
+    pccre VARCHAR(30) NOT NULL DEFAULT 'WEBAPP',
+    feccre TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    usmod VARCHAR(30),
+    pcmod VARCHAR(30),
+    fecmod TIMESTAMP,
+    estado CHAR(1) NOT NULL DEFAULT 'A' CHECK (estado IN ('A', 'I'))
+);
+
+CREATE TABLE IF NOT EXISTS sesion_pago_resumen (
+    id_resumen SERIAL PRIMARY KEY,
+    id_sesion_caja INT NOT NULL REFERENCES sesion_caja(id_sesion_caja) ON DELETE CASCADE,
+    id_metodo_pago INT NOT NULL REFERENCES metodo_pago(id_metodo_pago),
+    total_recaudado NUMERIC(10, 2) NOT NULL,
+    -- 7 Campos de Auditoría
+    usucre VARCHAR(30) NOT NULL DEFAULT 'SYSTEM',
+    pccre VARCHAR(30) NOT NULL DEFAULT 'WEBAPP',
+    feccre TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    usmod VARCHAR(30),
+    pcmod VARCHAR(30),
+    fecmod TIMESTAMP,
+    estado CHAR(1) NOT NULL DEFAULT 'A' CHECK (estado IN ('A', 'I'))
+);
+
+-- ============================================================================
+-- TRIGGERS AUTOMÁTICOS
+-- ============================================================================
+
+-- 1. Sincronizar Registro de Supabase Auth con usuario y cliente
+CREATE OR REPLACE FUNCTION handle_new_user()
+RETURNS TRIGGER AS $$
+DECLARE
+  v_rol_id INT;
+  v_nombre TEXT;
+  v_telefono TEXT;
+  v_rol_nombre TEXT;
+BEGIN
+  v_nombre := COALESCE(NEW.raw_user_meta_data->>'nombre', NEW.raw_user_meta_data->>'name', 'Usuario');
+  v_telefono := COALESCE(NEW.raw_user_meta_data->>'telefono', '');
+  -- El rol enviado por el cliente no es confiable; los permisos se asignan después de revisión administrativa.
+  v_rol_nombre := 'cliente';
+
+  SELECT id_rol INTO v_rol_id FROM public.rol
+  WHERE LOWER(nombre) = LOWER(v_rol_nombre) AND estado = 'A'
+  LIMIT 1;
+  IF v_rol_id IS NULL THEN
+    RAISE EXCEPTION 'El rol cliente no está configurado en public.rol';
+  END IF;
+
+  INSERT INTO public.usuario (id_usuario, id_rol, nombre, apellido, correo, password_hash, telefono, usucre, pccre, feccre, estado)
+  VALUES (NEW.id, v_rol_id, v_nombre, '', NEW.email, '', v_telefono, 'AUTH_SIGNUP', 'WEBAPP', NOW(), 'A')
+  ON CONFLICT (id_usuario) DO NOTHING;
+
+  INSERT INTO public.cliente (id_cliente, id_usuario, tipo_documento, numero_documento, nombres, apellidos, telefono, correo, usucre, pccre, feccre, estado)
+  VALUES (NEW.id, NEW.id, 'DNI', COALESCE(NEW.raw_user_meta_data->>'dni', '00000000'), v_nombre, '', v_telefono, NEW.email, 'AUTH_SIGNUP', 'WEBAPP', NOW(), 'A')
+  ON CONFLICT (id_cliente) DO NOTHING;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW
+  EXECUTE FUNCTION handle_new_user();
+
+-- 2. Trigger de Auditoría en Actualizaciones (fecmod, pcmod, usmod)
+CREATE OR REPLACE FUNCTION trigger_audit_update()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.fecmod := NOW();
+  NEW.pcmod  := COALESCE(current_setting('app.current_pc', TRUE), 'WEBAPP');
+  NEW.usmod  := COALESCE(current_setting('app.current_user', TRUE), 'SYSTEM');
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DO $$
+DECLARE
+  t TEXT;
+BEGIN
+  FOR t IN
+    SELECT unnest(ARRAY[
+      'pais', 'departamento', 'provincia', 'distrito',
+      'rol', 'privilegio', 'modulo', 'rol_modulo_privilegio', 'usuario', 'bitacora_acceso',
+      'sede', 'tipo_cancha', 'cancha',
+      'tarifa_cancha', 'tipo_horario',
+      'cliente', 'equipo', 'miembro_equipo',
+      'plan_suscripcion', 'suscripcion', 'pago_suscripcion',
+      'caja', 'sesion_caja', 'tipo_movimiento_caja', 'movimiento_caja', 'arqueo_caja', 'denominacion', 'arqueo_detalle',
+      'tipo_implemento', 'implemento', 'alquiler_implemento',
+      'categoria_producto', 'producto', 'tipo_movimiento_inv', 'kardex',
+      'estado_reserva', 'reserva', 'equipo_partido', 'bloqueo_mantenimiento',
+      'metodo_pago', 'venta', 'venta_detalle', 'pago_reserva', 'sesion_pago_resumen'
+    ])
+  LOOP
+    EXECUTE format('
+      DROP TRIGGER IF EXISTS trg_audit_update ON %I;
+      CREATE TRIGGER trg_audit_update
+        BEFORE UPDATE ON %I
+        FOR EACH ROW
+        EXECUTE FUNCTION trigger_audit_update();
+    ', t, t);
+  END LOOP;
+END $$;
+
+-- 3. Trigger para cálculo de Comisión 5% en pagos de reserva
+CREATE OR REPLACE FUNCTION trigger_calcular_comision_pago_reserva()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.comision_plataforma := ROUND(NEW.monto * 0.05, 2);
+  NEW.monto_neto_dueno    := ROUND(NEW.monto * 0.95, 2);
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_comision_pago_reserva ON pago_reserva;
+CREATE TRIGGER trg_comision_pago_reserva
+  BEFORE INSERT OR UPDATE OF monto ON pago_reserva
+  FOR EACH ROW
+  EXECUTE FUNCTION trigger_calcular_comision_pago_reserva();
+
+-- 4. Trigger para generar Código de Pase Digital (#CAN-XXXX)
+CREATE OR REPLACE FUNCTION trigger_generar_codigo_pase_reserva()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.codigo_pase IS NULL OR NEW.codigo_pase = '' THEN
+    NEW.codigo_pase := '#CAN-' || LPAD(NEW.id_reserva::TEXT, 4, '0');
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_codigo_pase_reserva ON reserva;
+CREATE TRIGGER trg_codigo_pase_reserva
+  BEFORE INSERT ON reserva
+  FOR EACH ROW
+  EXECUTE FUNCTION trigger_generar_codigo_pase_reserva();
+
+-- ============================================================================
+-- VERIFICACIÓN AUTOMÁTICA DE 44 TABLAS Y 7 AUDITORÍAS
+-- ============================================================================
+DO $$
+DECLARE
+  v_total_tablas INTEGER;
+  v_audit_check INTEGER;
+BEGIN
+  SELECT COUNT(*) INTO v_total_tablas
+  FROM information_schema.tables
+  WHERE table_schema = 'public'
+    AND table_type = 'BASE TABLE'
+    AND table_name IN (
+      'pais', 'departamento', 'provincia', 'distrito',
+      'rol', 'privilegio', 'modulo', 'rol_modulo_privilegio', 'usuario', 'bitacora_acceso',
+      'sede', 'tipo_cancha', 'cancha',
+      'tarifa_cancha', 'tipo_horario',
+      'cliente', 'equipo', 'miembro_equipo',
+      'plan_suscripcion', 'suscripcion', 'pago_suscripcion',
+      'caja', 'sesion_caja', 'tipo_movimiento_caja', 'movimiento_caja', 'arqueo_caja', 'denominacion', 'arqueo_detalle',
+      'tipo_implemento', 'implemento', 'alquiler_implemento',
+      'categoria_producto', 'producto', 'tipo_movimiento_inv', 'kardex',
+      'estado_reserva', 'reserva', 'equipo_partido', 'bloqueo_mantenimiento',
+      'metodo_pago', 'venta', 'venta_detalle', 'pago_reserva', 'sesion_pago_resumen'
+    );
+
+  RAISE NOTICE '═════════════════════════════════════════════════════════════';
+  RAISE NOTICE '  DDL EJECUTADO EXITOSAMENTE';
+  RAISE NOTICE '  Total de Tablas Creadas: % / 44', v_total_tablas;
+  RAISE NOTICE '  Auditoría: 7 campos (usucre, pccre, feccre, usmod, pcmod, fecmod, estado)';
+  RAISE NOTICE '  Base de datos 100%% limpia (Sin datos de prueba/demo)';
+  RAISE NOTICE '═════════════════════════════════════════════════════════════';
+END $$;

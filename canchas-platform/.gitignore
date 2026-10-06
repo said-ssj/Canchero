@@ -1,0 +1,69 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+build/
+*.jar
+*.war
+*.ear
+target/
+*.class
+
+# Angular
+apps/web/.angular/
+apps/web/dist/
+apps/web/coverage/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+.env.production
+.env.staging
+.env.development
+apps/web/src/environments/environment.local.ts
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Testing
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+
+# Supabase
+supabase/.temp/
+supabase/.branches/
+.supabase/
+
+# Vercel
+.vercel
+
+# Turbo
+.turbo/
+
+# Misc
+*.tsbuildinfo
+.eslintcache
+.stylelintcache
