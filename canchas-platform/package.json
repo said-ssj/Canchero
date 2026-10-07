@@ -16,7 +16,7 @@
     "test:api": "cd apps/api && ./mvnw test",
     "supabase:start": "supabase start",
     "supabase:functions:deploy": "supabase functions deploy",
-    "db:generate:types": "supabase gen types typescript --local > packages/types/supabase.types.ts",
+    "db:generate:types": "supabase gen types typescript --project-id ibnnkjqcmionynytkqqh > packages/types/supabase.types.ts",
     "prepare": "husky install"
   },
   "devDependencies": {
