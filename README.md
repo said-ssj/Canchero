@@ -4,7 +4,7 @@ Plataforma monorepo para la reserva de canchas deportivas, gestión de sedes, co
 
 ---
 
-## 🏗️ Arquitectura y Estructura del Proyecto
+##  Arquitectura y Estructura del Proyecto
 
 El proyecto está organizado en una arquitectura de monorepo desacoplada dentro del directorio `canchas-platform`:
 
@@ -43,7 +43,7 @@ Antes de inicializar la aplicación, asegúrate de contar con las siguientes her
 
 ---
 
-## 🚀 Guía Rápida de Inicio para Desarrolladores
+##  Guía Rápida de Inicio para Desarrolladores
 
 Para que cualquier miembro del equipo clone e inicie el proyecto localmente, sigue estos pasos:
 
@@ -90,7 +90,7 @@ La API REST estará disponible en **`http://localhost:8080/api`**.
 
 ---
 
-## 🧪 Pruebas y Validación Automatizada
+##  Pruebas y Validación Automatizada
 
 El proyecto cuenta con cobertura de pruebas unitarias y de aislamiento en ambas capas:
 
@@ -109,7 +109,7 @@ El archivo [`.github/workflows/ci.yml`](.github/workflows/ci.yml) ejecuta autom�
 
 ---
 
-## 📌 Estado de Entrega y Consideraciones de Producción
+##  Estado de Entrega y Consideraciones de Producción
 
 1. **Estado del Software**: Proyecto en fase de consolidación funcional.
 2. **Flujos de Pago**: Los pagos con tarjeta online operan en modo simulado para pruebas de experiencia de usuario y validación de turnos. No existe integración en vivo con pasarelas de pago externas ni emisión fiscal SUNAT.
