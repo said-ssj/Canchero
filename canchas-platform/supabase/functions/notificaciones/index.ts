@@ -5,7 +5,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { handleCors, createSupabaseClient, verifyAuth, jsonResponse, errorResponse } from '../_shared/index.ts';
 
 interface NotificationRequest {
-  usuario_id: number;
+  usuario_id: string;
   tipo: 'reserva_creada' | 'reserva_confirmada' | 'reserva_cancelada' | 'pago_recibido' | 'recordatorio' | 'review_solicitada' | 'liquidacion_lista';
   titulo: string;
   mensaje: string;
@@ -41,23 +41,23 @@ serve(async (req: Request) => {
         const canales = body.canales || ['push', 'email'];
         const results: Record<string, any> = {};
         
-        // Obtener preferencias de notificación del usuario
+        // Obtener datos de contacto del usuario real.
         const { data: user } = await supabase
           .from('usuario')
-          .select('email, telefono, fcm_token, preferencias_notif')
-          .eq('id', body.usuario_id)
+          .select('correo, telefono')
+          .eq('id_usuario', body.usuario_id)
           .single();
         
         if (!user) return errorResponse('Usuario no encontrado', 404);
         
-        // 1. Push Notification (FCM)
-        if (canales.includes('push') && user.fcm_token) {
-          results.push = await sendPushNotification(user.fcm_token, body);
+        // 1. Push queda pendiente hasta que exista una columna/token de dispositivo en usuario.
+        if (canales.includes('push')) {
+          results.push = { skipped: true, reason: 'No hay token push conectado en el esquema actual.' };
         }
         
         // 2. Email (SendGrid)
-        if (canales.includes('email') && user.email) {
-          results.email = await sendEmail(user.email, body);
+        if (canales.includes('email') && user.correo) {
+          results.email = await sendEmail(user.correo, body);
         }
         
         // 3. WhatsApp (Twilio)
@@ -65,21 +65,7 @@ serve(async (req: Request) => {
           results.whatsapp = await sendWhatsApp(user.telefono, body);
         }
         
-        // 4. Guardar en BD como notificación in-app
-        const { error: notifError } = await supabase
-          .from('notificacion')
-          .insert({
-            usuario_id: body.usuario_id,
-            tipo: body.tipo,
-            titulo: body.titulo,
-            mensaje: body.mensaje,
-            datos: body.datos,
-            enviado_push: canales.includes('push'),
-            enviado_email: canales.includes('email'),
-            enviado_whatsapp: canales.includes('whatsapp'),
-          });
-        
-        if (notifError) console.error('Error guardando notificación:', notifError);
+        // No se guarda in-app porque la tabla public.notificacion no existe en el esquema actual.
         
         return jsonResponse({ success: true, results });
       }

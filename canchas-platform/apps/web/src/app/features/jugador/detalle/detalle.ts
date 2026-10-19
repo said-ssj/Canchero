@@ -1,6 +1,11 @@
-import { Component, computed, effect, inject, signal } from '@angular/core';
+import { Component, computed, DestroyRef, effect, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { finalize } from 'rxjs';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { DatabaseService } from '@core/supabase/database.service';
+import { CourtFilterService } from '@core/services/court-filter.service';
+import { MapsService } from '@core/services/maps.service';
 import { ReviewService, type ReviewResponse } from './review.service';
 import { AuthService } from '@core/auth/auth.service';
 import type { Venue } from '@shared/models/venue.model';
@@ -36,12 +41,33 @@ export class Detalle {
   private readonly db = inject(DatabaseService);
   private readonly reviewService = inject(ReviewService);
   private readonly auth = inject(AuthService);
+  private readonly destroyRef = inject(DestroyRef);
+  protected readonly courtFilters = inject(CourtFilterService);
+  private readonly sanitizer = inject(DomSanitizer);
+  private readonly mapsService = inject(MapsService);
+  protected readonly comoLlegarModalOpen = signal(false);
+
+  protected readonly safeMapUrl = computed<SafeResourceUrl>(() => {
+    const v = this.venue();
+    const lat = v?.latitud != null ? Number(v.latitud) : -14.06778;
+    const lng = v?.longitud != null ? Number(v.longitud) : -75.72861;
+    const url = this.mapsService.getEmbedMapUrl(lat, lng, 16, 'satellite');
+    return this.sanitizer.bypassSecurityTrustResourceUrl(url);
+  });
 
   constructor() {
     effect(() => {
       const current = this.venue();
       if (current) {
         this.loadReviews(current.id);
+      }
+    });
+
+    effect(() => {
+      const canchas = this.filteredCanchas();
+      const currentId = this.selectedCourtId();
+      if (canchas.length > 0 && !canchas.some((c) => c.id === currentId)) {
+        this.selectedCourtId.set(canchas[0].id);
       }
     });
   }
@@ -66,9 +92,14 @@ export class Detalle {
   protected readonly toastVisible = signal(false);
 
   protected readonly reviews = signal<Review[]>([]);
+  protected readonly reviewsLoading = signal(false);
+  protected readonly reviewsLoadError = signal('');
+  private reviewsRequest = 0;
   protected readonly reviewModalOpen = signal(false);
   protected readonly reviewStars = signal(5);
   protected readonly reviewText = signal('');
+  protected readonly reviewSubmitting = signal(false);
+  protected readonly reviewError = signal('');
 
   protected readonly reviewsAvg = computed<number>(() => {
     const items = this.reviews();
@@ -86,10 +117,7 @@ export class Detalle {
 
   protected readonly canReview = computed<boolean>(() => {
     const venue = this.venue();
-    if (!venue) {
-      return false;
-    }
-    return this.reservasJugadasDe(venue).length > 0;
+    return !!venue && !!this.auth.currentUser();
   });
 
   private toastTimer: ReturnType<typeof setTimeout> | undefined;
@@ -103,22 +131,34 @@ export class Detalle {
     { hora: '21:00 - 22:00', disponible: true },
   ];
 
+  protected readonly isLoading = computed(() => this.db.catalogLoading());
+  protected readonly fallbackVenueImg =
+    'https://images.unsplash.com/photo-1529900241929-58a47400d705?q=80&w=1200&auto=format&fit=crop';
+
   protected readonly heroImages = computed<string[]>(() => this.venue()?.fotos ?? []);
 
   protected readonly currentHero = computed<string>(() => {
     const images = this.heroImages();
-    return images[this.carouselIdx()] ?? images[0] ?? '';
+    return images[this.carouselIdx()] ?? images[0] ?? this.fallbackVenueImg;
   });
 
   protected readonly heroCaption = computed<string>(() => this.venue()?.nombre ?? '');
 
+  protected readonly filteredCanchas = computed<Court[]>(() => {
+    const all = this.venue()?.canchas ?? [];
+    return all.filter((cancha) => this.courtFilters.matchesCourt(cancha));
+  });
+
   protected readonly selectedCourt = computed<Court | undefined>(() => {
-    const canchas = this.venue()?.canchas ?? [];
+    const canchas = this.filteredCanchas();
+    if (canchas.length === 0) {
+      return this.venue()?.canchas[0];
+    }
     return canchas.find((cancha) => cancha.id === this.selectedCourtId()) ?? canchas[0];
   });
 
   protected readonly availableCount = computed(
-    () => this.venue()?.canchas.filter((cancha) => cancha.disponible).length ?? 0,
+    () => this.filteredCanchas().filter((cancha) => cancha.disponible).length,
   );
 
   protected readonly tarifaDisplay = computed<string>(() => {
@@ -153,16 +193,34 @@ export class Detalle {
   }
 
   private loadReviews(venueId: string): void {
-    this.reviewService.getByVenue(venueId).subscribe((responses) => {
-      this.reviews.set(this.toReviews(responses));
+    const request = ++this.reviewsRequest;
+    this.reviews.set([]);
+    this.reviewsLoadError.set('');
+    this.reviewsLoading.set(true);
+    const current = () => request === this.reviewsRequest && this.venue()?.id === venueId;
+    this.reviewService.getByVenue(venueId).pipe(
+      takeUntilDestroyed(this.destroyRef),
+      finalize(() => { if (current()) this.reviewsLoading.set(false); }),
+    ).subscribe({
+      next: (responses) => {
+        if (current()) this.reviews.set(this.toReviews(responses));
+      },
+      error: () => {
+        if (current()) this.reviewsLoadError.set('No se pudieron cargar las opiniones.');
+      },
     });
+  }
+
+  protected retryReviews(): void {
+    const venue = this.venue();
+    if (venue) this.loadReviews(venue.id);
   }
 
   private toReviews(responses: ReviewResponse[]): Review[] {
     const count = this.reservasJugadasDe(this.venue() ?? ({} as Venue)).length || 1;
     return responses.map((response) => ({
       id: response.id,
-      author: response.playerName,
+      author: response.playerName || response.clienteNombre || 'Jugador Canchero',
       rating: response.puntuacion,
       text: response.comentario,
       matchCount: count,
@@ -170,7 +228,42 @@ export class Detalle {
   }
 
   protected mapsUrl(venue: Venue): string {
-    return `https://maps.google.com/?q=${encodeURIComponent(venue.direccion)}`;
+    const lat = venue.latitud != null ? Number(venue.latitud) : -14.06778;
+    const lng = venue.longitud != null ? Number(venue.longitud) : -75.72861;
+    return this.mapsService.getGoogleMapsDirectionsUrl(lat, lng);
+  }
+
+  protected abrirComoLlegar(): void {
+    this.comoLlegarModalOpen.set(true);
+  }
+
+  protected irDirectoRutaNavegable(): void {
+    const v = this.venue();
+    if (!v) return;
+    const lat = v.latitud != null ? Number(v.latitud) : -14.06778;
+    const lng = v.longitud != null ? Number(v.longitud) : -75.72861;
+    const target = this.mapsService.getGoogleMapsDirectionsUrl(lat, lng);
+    window.open(target, '_blank', 'noopener,noreferrer');
+    this.comoLlegarModalOpen.set(false);
+  }
+
+  protected closeComoLlegarModal(event?: Event): void {
+    if (event && (event.target as HTMLElement).closest('.modal-window-classic')) {
+      return;
+    }
+    this.comoLlegarModalOpen.set(false);
+  }
+
+  protected closeComoLlegarModalDirect(): void {
+    this.comoLlegarModalOpen.set(false);
+  }
+
+  protected copiarCoordenadas(venue: Venue): void {
+    const lat = venue.latitud != null ? Number(venue.latitud) : -14.06778;
+    const lng = venue.longitud != null ? Number(venue.longitud) : -75.72861;
+    navigator.clipboard?.writeText(`${lat}, ${lng}`).then(() => {
+      this.showToast('Coordenadas GPS copiadas al portapapeles');
+    });
   }
 
   protected nextHeroImage(): void {
@@ -189,16 +282,25 @@ export class Detalle {
 
   protected toggleFavorite(): void {
     this.favorito.update((value) => !value);
-    this.showToast(this.favorito() ? '★ ¡Agregado a tus canchas favoritas!' : 'Eliminado de favoritos');
+    this.showToast(this.favorito() ? 'Agregado a tus canchas favoritas' : 'Eliminado de favoritos');
   }
 
   protected handleNotificationClick(): void {
     this.notificaciones.update((value) => !value);
-    this.showToast('🔔 Notificaciones activadas para horarios libres en esta sede');
+    this.showToast('Notificaciones activadas para horarios libres en esta sede');
   }
 
   protected selectLosa(court: Court): void {
     this.selectedCourtId.set(court.id);
+    const venue = this.venue();
+    if (!venue) {
+      return;
+    }
+    void this.router.navigate(['/checkout'], {
+      queryParams: {
+        courtId: court.id,
+      },
+    });
   }
 
   protected selectDate(label: string): void {
@@ -217,12 +319,7 @@ export class Detalle {
     }
     void this.router.navigate(['/checkout'], {
       queryParams: {
-        id: venue.id,
-        cancha: court.tipo,
-        losaName: court.nombre,
-        precio: court.precioHora,
-        fecha: this.selectedDateLabel(),
-        hora: this.selectedTimeLabel(),
+        courtId: court.id,
       },
     });
   }
@@ -242,6 +339,8 @@ export class Detalle {
   }
 
   protected openReviewModal(): void {
+    if (this.reviewSubmitting()) return;
+    this.reviewError.set('');
     this.reviewStars.set(5);
     this.reviewText.set('');
     this.reviewModalOpen.set(true);
@@ -271,47 +370,68 @@ export class Detalle {
     const venue = this.venue();
     const text = this.reviewText().trim();
     const user = this.auth.currentUser();
-    if (!venue || text.length < 10 || !user) {
+    if (!venue || text.length < 10 || !user || this.reviewSubmitting()) {
       return;
     }
     const jugados = this.reservasJugadasDe(venue);
-    const review: Review = {
-      id: `review_${Date.now()}`,
-      author: user.nombre,
-      rating: this.reviewStars(),
-      text,
-      matchCount: Math.max(jugados.length, 1),
-    };
     const reserva = jugados[0];
-    if (reserva) {
-      this.reviewService
-        .publish({
-          venueId: venue.id,
-          playerId: user.id,
-          bookingId: String(reserva.id),
-          puntuacion: this.reviewStars(),
-          comentario: text,
-        })
-        .subscribe((saved) => {
-          if (saved) {
-            review.id = saved.id;
-          }
-          this.reviews.update((prev) => [review, ...prev]);
-          this.reviewModalOpen.set(false);
-          this.showToast('★ ¡Gracias! Tu opinión fue publicada.');
-        });
+    if (!reserva) {
+      this.reviewError.set('Necesitas una reserva completada en esta sede para publicar una opinion.');
       return;
     }
-    this.reviews.update((prev) => [review, ...prev]);
-    this.reviewModalOpen.set(false);
-    this.showToast('★ ¡Gracias! Tu opinión fue publicada.');
+    this.reviewSubmitting.set(true);
+    this.reviewError.set('');
+    const sameContext = () => this.auth.currentUser()?.id === user.id && this.venue()?.id === venue.id;
+    this.reviewService
+      .publish({
+        venueId: venue.id,
+        playerId: user.id,
+        playerName: user.nombre,
+        bookingId: String(reserva.id),
+        puntuacion: this.reviewStars(),
+        comentario: text,
+      })
+      .pipe(takeUntilDestroyed(this.destroyRef), finalize(() => this.reviewSubmitting.set(false)))
+      .subscribe({
+        next: (saved) => {
+          if (!sameContext()) return;
+          if (!saved?.id) {
+            this.reviewError.set('El servidor no confirmo la publicacion de la opinion.');
+            return;
+          }
+          const [review] = this.toReviews([saved]);
+          this.reviews.update((prev) => [review, ...prev.filter((item) => item.id !== review.id)]);
+          this.reviewModalOpen.set(false);
+          this.showToast('Gracias. Tu opinión fue publicada.');
+        },
+        error: (error) => {
+          if (!sameContext()) return;
+          const messages: Record<number, string> = {
+            401: 'Tu sesion vencio. Inicia sesion para publicar.',
+            403: 'No tienes permiso para calificar esta reserva.',
+            409: 'Esta reserva ya tiene una opinion o no se puede publicar ahora.',
+          };
+          this.reviewError.set(messages[error?.status] ?? 'No se pudo publicar la opinion. Intenta nuevamente.');
+        },
+      });
+  }
+
+  protected ratingStars(rating: number): number[] {
+    const count = Math.max(0, Math.min(5, Math.round(rating)));
+    return Array.from({ length: count }, (_, index) => index + 1);
   }
 
   private reservasJugadasDe(venue: Venue): ReservationMatch[] {
-    const estadoCuenta = this.auth.currentUser()?.email;
+    const currentUser = this.auth.currentUser();
+    if (!currentUser) {
+      return [];
+    }
     const jugador = this.db.usuarios().find(
-      (u) => u.email.toLowerCase() === (estadoCuenta ?? 'jugador@canchero.pe').toLowerCase(),
-    ) ?? this.db.usuarios()[0];
+      (u) =>
+        String(u.id_usuario ?? u.id) === String(currentUser.id) ||
+        (!!currentUser.email &&
+          (u.correo || u.email || '').toLowerCase() === currentUser.email.toLowerCase()),
+    );
     if (!jugador) {
       return [];
     }

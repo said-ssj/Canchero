@@ -7,6 +7,8 @@ export interface Venue {
   ciudad: string;
   distrito: string;
   direccion: string;
+  latitud?: number;
+  longitud?: number;
   rating: number;
   precioBase: number;
   fotos: string[];
@@ -15,4 +17,6 @@ export interface Venue {
   favorita?: boolean;
   descripcion?: string;
   telefono?: string;
+  ruc_facturacion?: string;
+  adelanto_minimo_porcentaje?: number;
 }

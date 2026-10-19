@@ -1,0 +1,15 @@
+/* Common dimensions. Component CSS handles the detailed layout. */
+.mat-admin-shell {
+  --ui-admin-font: 'Plus Jakarta Sans', sans-serif;
+  --ui-admin-sidebar-width: clamp(248px, 17vw, 286px);
+  --ui-admin-sidebar-collapsed-width: 82px;
+  --ui-admin-radius: 8px;
+
+  --ui-sede-max-width: 1180px;
+  --ui-sede-height: 160px;
+  --ui-sede-photo-width: 200px;
+  --ui-sede-title-size: 20px;
+  --ui-sede-description-lines: 2;
+
+  --ui-add-action-height: 72px;
+}

@@ -1,102 +1,179 @@
-<main class="login-main-wrapper">
-  <div class="login-auth-card">
+<main class="login-split-page">
+  <div class="login-split-wrapper">
 
-    <div class="auth-header-group">
-      <div class="auth-icon-circle">
-        <svg class="icon icon-28" aria-hidden="true"><use href="/iconos-canchero.svg#sports_and_outdoors"></use></svg>
+    <!-- LADO IZQUIERDO: Branding y Propuesta de Valor (Estilo Hero del Index) -->
+    <section class="login-brand-panel">
+      <!-- Decoración de fondo geométrica estilo campo deportivo -->
+      <div class="brand-panel-decor" aria-hidden="true">
+        <div class="decor-circle decor-circle-lg"></div>
+        <div class="decor-circle decor-circle-md"></div>
+        <div class="decor-court-arc"></div>
       </div>
-      <div class="auth-badge-pill">
-        <svg class="icon-14 icon" aria-hidden="true"><use href="/iconos-canchero.svg#lock"></use></svg>
-        <span>Portal de Jugadores y Sedes</span>
+
+      <!-- Header: Logo Canchero (Texto Plano - No Redirige) -->
+      <div class="brand-panel-header">
+        <div class="login-brand-logo">
+          <div class="brand-icon">C</div>
+          <span class="brand-name">Canchero<span class="brand-badge">.MVP</span></span>
+        </div>
       </div>
-      <h1 class="auth-title">Bienvenido de nuevo</h1>
-      <p class="auth-subtitle">Ingresa a tu cuenta para ver y gestionar tus reservas deportivas en tiempo real.</p>
-    </div>
 
-    <div class="auth-error-alert" [class.is-visible]="showError()" role="alert">
-      <svg class="icon-20 icon" style="flex-shrink: 0;" aria-hidden="true"><use href="/iconos-canchero.svg#error"></use></svg>
-      <span>{{ errorMessage() }}</span>
-    </div>
+      <!-- Centro: Titulares y Valor -->
+      <div class="brand-panel-body">
+        <span class="brand-eyebrow">TU PRÓXIMO PARTIDO EMPIEZA AQUÍ</span>
+        <h1 class="brand-headline">
+          Reserva tu cancha <br>
+          <span class="brand-headline-highlight">fácil y rápido.</span>
+        </h1>
+        <p class="brand-description">
+          Encuentra los mejores complejos deportivos cerca de ti. Compara horarios, tarifas y asegura tu pichanga en minutos sin llamadas ni esperas.
+        </p>
 
-    <form novalidate (ngSubmit)="onSubmit()">
-
-      <div class="form-field-group">
-        <label class="form-field-label" for="email">Usuario o Correo Electrónico</label>
-        <div class="input-icon-wrap">
-          <span class="input-leading-icon">
-            <svg class="icon icon-20" aria-hidden="true"><use href="/iconos-canchero.svg#mail"></use></svg>
+        <div class="brand-feature-tags">
+          <span class="feature-tag">
+            <span class="material-symbols-outlined icon-16" aria-hidden="true">sports_soccer</span>
+            Fútbol 5 al 11
           </span>
-          <input
-            type="text"
-            id="email"
-            name="email"
-            class="auth-input"
-            placeholder="ejemplo: jugador@canchero.pe"
-            [(ngModel)]="email"
-            autocomplete="username"
-          />
-        </div>
-      </div>
-
-      <div class="form-field-group">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.45rem;">
-          <label class="form-field-label" for="password" style="margin-bottom: 0;">Contraseña</label>
-          <button type="button" class="forgot-pwd-link" (click)="forgotPassword()" style="font-size: 0.78rem; background: none; border: none; color: var(--color-brand-green); text-decoration: underline; cursor: pointer;">
-            ¿Olvidaste tu contraseña?
-          </button>
-        </div>
-        <div class="input-icon-wrap">
-          <span class="input-leading-icon">
-            <svg class="icon icon-20" aria-hidden="true"><use href="/iconos-canchero.svg#lock_open"></use></svg>
+          <span class="feature-tag">
+            <span class="material-symbols-outlined icon-16" aria-hidden="true">bolt</span>
+            Disponibilidad de horarios
           </span>
-          <input
-            [type]="showPassword() ? 'text' : 'password'"
-            id="password"
-            name="password"
-            class="auth-input has-trailing-btn"
-            placeholder="••••••••••••"
-            [(ngModel)]="password"
-            autocomplete="current-password"
-          />
-          <button type="button" class="toggle-pwd-btn" (click)="showPassword.set(!showPassword())" aria-label="Mostrar u ocultar contraseña">
-            <svg class="icon-20 icon" aria-hidden="true"><use [attr.href]="showPassword() ? '/iconos-canchero.svg#visibility_off' : '/iconos-canchero.svg#visibility'"></use></svg>
-          </button>
+          <span class="feature-tag">
+            <span class="material-symbols-outlined icon-16" aria-hidden="true">verified_user</span>
+            Reserva 100% segura
+          </span>
         </div>
       </div>
 
-      <div class="auth-options-row">
-        <label class="remember-label">
-          <input type="checkbox" name="remember" class="remember-checkbox" [(ngModel)]="remember" />
-          <span>Mantener mi sesión iniciada</span>
-        </label>
+      <!-- Footer: Cobertura -->
+      <div class="brand-panel-footer">
+        <span class="material-symbols-outlined icon-16" aria-hidden="true">location_on</span>
+        <span>Complejos deportivos, losas y sedes en todo el Perú.</span>
       </div>
+    </section>
 
-      <button type="submit" class="btn-submit-auth" id="btn-submit" [disabled]="submitting()">
-        @if (submitting()) {
-          <svg class="icon" style="animation: spin 1s linear infinite;" aria-hidden="true"><use href="/iconos-canchero.svg#sync"></use></svg>
+    <!-- LADO DERECHO: Formulario de Inicio de Sesión -->
+    <section class="login-form-panel">
+      <div class="login-form-card">
+
+        <div class="form-header">
+          <span class="form-eyebrow">BIENVENIDO/A</span>
+          <h2 class="form-title">Inicia sesión</h2>
+          <p class="form-subtitle">Ingresa tus datos para continuar.</p>
+        </div>
+
+        @if (showError()) {
+          <div class="auth-error-alert" role="alert">
+            <span class="material-symbols-outlined icon-18" aria-hidden="true">error</span>
+            <span>{{ errorMessage() || 'Correo o contraseña incorrectos. Verifica tus credenciales.' }}</span>
+          </div>
         }
-        <span>{{ submitting() ? 'Iniciando sesión...' : 'Entrar a mi cuenta' }}</span>
-        @if (!submitting()) {
-          <svg class="icon-18 icon" style="font-weight: bold;" aria-hidden="true"><use href="/iconos-canchero.svg#arrow_forward"></use></svg>
-        }
-      </button>
 
-    </form>
+        <form novalidate (ngSubmit)="onSubmit()" class="auth-form">
 
-    <div class="auth-divider">
-      <div class="auth-divider-line"></div>
-      <span class="auth-divider-text">o</span>
-    </div>
+          <!-- Campo Correo -->
+          <div class="form-group">
+            <label class="form-label" for="email">Correo electrónico</label>
+            <div class="input-wrap">
+              <span class="input-icon">
+                <span class="material-symbols-outlined icon-20" aria-hidden="true">mail</span>
+              </span>
+              <input
+                type="text"
+                id="email"
+                name="email"
+                class="form-input"
+                placeholder="tu@correo.com"
+                [(ngModel)]="email"
+                autocomplete="username"
+                required
+              />
+            </div>
+          </div>
 
-    <div class="auth-footer-prompt">
-      ¿Aún no tienes cuenta?
-      <a routerLink="/registro">Regístrate gratis</a>
-    </div>
+          <!-- Campo Contraseña -->
+          <div class="form-group">
+            <label class="form-label" for="password">Contraseña</label>
+            <div class="input-wrap">
+              <span class="input-icon">
+                <span class="material-symbols-outlined icon-20" aria-hidden="true">lock</span>
+              </span>
+              <input
+                [type]="showPassword() ? 'text' : 'password'"
+                id="password"
+                name="password"
+                class="form-input has-toggle"
+                placeholder="Tu contraseña"
+                [(ngModel)]="password"
+                autocomplete="current-password"
+                required
+              />
+              <button
+                type="button"
+                class="pwd-toggle-btn"
+                (click)="showPassword.set(!showPassword())"
+                [attr.aria-label]="showPassword() ? 'Ocultar contraseña' : 'Ver contraseña'"
+              >
+                <span class="material-symbols-outlined icon-20" aria-hidden="true">
+                  {{ showPassword() ? 'visibility_off' : 'visibility' }}
+                </span>
+              </button>
+            </div>
+          </div>
 
-    <div class="security-badge-footer">
-      <svg class="icon icon-15" aria-hidden="true"><use href="/iconos-canchero.svg#encrypted"></use></svg>
-      <span>Conexión cifrada de 256 bits • Canchero.MVP</span>
-    </div>
+          <!-- Opciones debajo de la contraseña: Recordarme y ¿Olvidaste tu contraseña? -->
+          <div class="options-row">
+            <label class="remember-label">
+              <input
+                type="checkbox"
+                name="remember"
+                class="remember-checkbox"
+                [(ngModel)]="remember"
+              />
+              <span>Mantener mi sesión iniciada</span>
+            </label>
+            <button type="button" class="forgot-link" disabled title="Recuperación de contraseña aún no disponible">
+              ¿Olvidaste tu contraseña?
+            </button>
+          </div>
+
+          <!-- Botón Iniciar Sesión (Principal) -->
+          <button type="submit" class="btn-login-primary" [disabled]="submitting()">
+            @if (submitting()) {
+              <span class="material-symbols-outlined icon-20 spin-icon" aria-hidden="true">sync</span>
+              <span>Iniciando sesión...</span>
+            } @else {
+              <span>Iniciar sesión</span>
+            }
+          </button>
+
+        </form>
+
+        <!-- Separador -->
+        <div class="auth-divider">
+          <span class="divider-line"></span>
+          <span class="divider-text">o</span>
+          <span class="divider-line"></span>
+        </div>
+
+        <!-- Botón Registrarse (Secundario) -->
+        <a routerLink="/registro" class="btn-login-secondary">
+          Registrarse
+        </a>
+
+        <!-- Botón Continuar como Invitado (Terciario) con bordes más resaltados -->
+        <a routerLink="/sedes" class="btn-login-guest">
+          Continuar como invitado
+        </a>
+
+        <!-- Ayuda y Soporte -->
+        <p class="help-prompt">
+          ¿Necesitas ayuda?
+          <a href="mailto:soporte@canchero.pe" class="help-link">Contacta a nuestro equipo.</a>
+        </p>
+
+      </div>
+    </section>
 
   </div>
 </main>

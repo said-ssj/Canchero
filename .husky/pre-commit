@@ -1,0 +1,2 @@
+cd canchas-platform || exit 1
+npm exec -- lint-staged

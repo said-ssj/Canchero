@@ -1,0 +1,478 @@
+<div class="admin-finanzas container" id="main">
+  @if (loading()) {
+    <!-- SKELETON SCREEN (Estático y sobrio según Reglas de Construcción) -->
+    <div class="finanzas-skeleton-container" role="status" aria-busy="true" aria-label="Cargando finanzas">
+      <div class="skeletons" aria-hidden="true">
+        <span class="skeleton short"></span>
+        <span class="skeleton"></span>
+        <span class="skeleton photo"></span>
+        <span class="skeleton button"></span>
+      </div>
+    </div>
+  } @else if (error()) {
+    <!-- ERROR STATE CON RECUPERACIÓN SEGURA -->
+    <div class="finanzas-error-banner notice danger" role="alert">
+      <span class="material-symbols-outlined icon" aria-hidden="true">error</span>
+      <div>
+        <strong>No se pudo cargar la información</strong>
+        <p>{{ error() }}</p>
+        <button matButton="outlined" disableRipple type="button" class="btn" (click)="db.refreshCatalogo()">
+          <span class="material-symbols-outlined icon" aria-hidden="true">refresh</span>
+          Reintentar consulta
+        </button>
+      </div>
+    </div>
+  } @else if (!venueId()) {
+    <app-admin-venue-required title="Finanzas y liquidación" description="Alquileres, productos y devoluciones de esta sede." icon="account_balance" />
+  } @else {
+    <!-- CONTENIDO COMPLETO DE FINANZAS & LIQUIDACIÓN -->
+    <div class="page-title">
+      <h1>Finanzas y liquidación</h1>
+      <p>Alquileres, productos y devoluciones de {{ venueName() }}</p>
+    </div>
+
+    <!-- Barra de Selección de Periodo (finanzas.html) -->
+    <div class="op-period">
+      <label class="field">
+        <span>Desde</span>
+        <input type="date" disabled [ngModel]="fechaDesde()" />
+      </label>
+      <label class="field">
+        <span>Hasta</span>
+        <input type="date" disabled [ngModel]="fechaHasta()" />
+      </label>
+      <button matButton="outlined" disableRipple type="button" class="btn" disabled title="Consulta por fechas pendiente de implementación">
+        <span class="material-symbols-outlined icon" aria-hidden="true">filter_alt</span>
+        Consultar periodo
+      </button>
+      <button matButton="outlined" disableRipple type="button" class="btn" [disabled]="facturablesFiltrados().length === 0" (click)="exportarReporteFinanciero()">
+        <span class="material-symbols-outlined icon" aria-hidden="true">download</span>
+        Exportar CSV
+      </button>
+    </div>
+
+    <!-- Métricas Operativas (op-metrics) -->
+    <div class="stack">
+      <div class="op-metrics">
+        <div>
+          <small>Ingresos cobrados</small>
+          <strong id="kpiIngresosBrutos">{{ fmtPEN(metricas().ingresoBruto) }}</strong>
+          <span>{{ facturables().length }} reservas cobradas</span>
+        </div>
+        <div>
+          <small>Devoluciones</small>
+          <strong>S/ 0.00</strong>
+          <span>Sin devoluciones registradas</span>
+        </div>
+        <div>
+          <small>Comisión Canchero</small>
+          <strong id="kpiComisionCanchero">- {{ fmtPEN(metricas().comisionApp) }}</strong>
+          <span>5% de alquileres netos cobrados</span>
+        </div>
+        <div>
+          <small>Neto del dueño</small>
+          <strong id="kpiNetoRecibir">{{ fmtPEN(metricas().ingresoNeto) }}</strong>
+          <span>{{ fmtPEN(metricas().ingresoBruto) }} − comisiones</span>
+        </div>
+      </div>
+
+      <!-- Resumen por origen -->
+      <div class="row spread" style="align-items: center;">
+        <h2>Resumen por origen</h2>
+        <div class="row" style="align-items: center; gap: 8px;">
+          <span class="tag-periodo" id="kpiTotalLiquidado">Liquidado: {{ fmtPEN(metricas().totalLiquidado) }}</span>
+          <button matButton="outlined" disableRipple type="button" class="btn" disabled title="Devoluciones pendientes de integración">
+            <span class="material-symbols-outlined icon" aria-hidden="true">undo</span>
+            Revisar devolución
+          </button>
+        </div>
+      </div>
+
+      <!-- Tabla de Origen (op-table) -->
+      <div class="op-table-wrap">
+        <table class="op-table">
+          <thead>
+            <tr>
+              <th scope="col">Origen</th>
+              <th scope="col">Cobrado</th>
+              <th scope="col">Devuelto</th>
+              <th scope="col">Comisión</th>
+              <th scope="col">Neto</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Alquileres</td>
+              <td>{{ fmtPEN(metricas().ingresoBruto) }}</td>
+              <td>S/ 0.00</td>
+              <td>{{ fmtPEN(metricas().comisionApp) }}</td>
+              <td>{{ fmtPEN(metricas().ingresoNeto) }}</td>
+            </tr>
+            <tr>
+              <td>Productos</td>
+              <td>S/ 0.00</td>
+              <td>S/ 0.00</td>
+              <td>S/ 0.00</td>
+              <td>S/ 0.00</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Notificación oficial del modelo de comisión -->
+      <div class="notice" role="note">
+        <span class="material-symbols-outlined icon" aria-hidden="true">info</span>
+        <div>
+          <strong>La comisión la paga el dueño</strong>
+          <p>Se calcula sobre alquileres efectivamente cobrados y se revierte proporcionalmente al devolver dinero. No se aplica a productos.</p>
+        </div>
+      </div>
+
+      <div class="row spread">
+        <button matButton="outlined" disableRipple type="button" class="btn" (click)="abrirDesgloseGeneral()">
+          <span class="material-symbols-outlined icon" aria-hidden="true">receipt_long</span>
+          Ver desglose
+        </button>
+        <button matButton="outlined" disableRipple type="button" class="btn" disabled title="Liquidaciones pendientes de integración">
+          <span class="material-symbols-outlined icon" aria-hidden="true">account_balance_wallet</span>
+          Solicitar liquidación
+        </button>
+      </div>
+    </div>
+
+    <!-- Sección de Desglose Detallado de Cobros por Reserva -->
+    <section class="management-editor-section" style="border-bottom: 0; padding-top: 32px;">
+      <div class="row spread" style="align-items: center; margin-bottom: 12px;">
+        <div>
+          <h2 style="font-size: 18px; margin: 0;">Desglose de cobros por reserva</h2>
+          <p class="view-description" style="margin: 4px 0 0;">Historial detallado de reservas cobradas en esta sede.</p>
+        </div>
+        <div class="row" style="gap: 8px;">
+          <button matButton="outlined" disableRipple type="button" class="btn" (click)="abrirColumnasAvanzadas()">
+            <span class="material-symbols-outlined icon" aria-hidden="true">tune</span>
+            Columnas avanzadas
+          </button>
+        </div>
+      </div>
+
+      <!-- Barra de Filtros, Búsqueda y Segmented Controls -->
+      <div class="filterbar" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+        <div class="search" style="flex: 1 1 240px; max-width: 380px;">
+          <span class="material-symbols-outlined icon" aria-hidden="true">search</span>
+          <input
+            type="search"
+            placeholder="Buscar código o servicio"
+            aria-label="Buscar cobros por código o servicio"
+            [ngModel]="facturablesSearch()"
+            (ngModelChange)="buscarFacturables($event)"
+          />
+        </div>
+
+        <div class="row" style="flex-wrap: wrap; gap: 8px; align-items: center;">
+          <div class="segmented" role="group" aria-label="Estado de liquidación">
+            <button
+              type="button"
+              [class.active]="facturablesTab() === 'all'"
+              [attr.aria-pressed]="facturablesTab() === 'all'"
+              (click)="filtrarFacturables('all')"
+            >
+              Todas ({{ facturables().length }})
+            </button>
+            <button
+              type="button"
+              [class.active]="facturablesTab() === 'pendiente'"
+              [attr.aria-pressed]="facturablesTab() === 'pendiente'"
+              (click)="filtrarFacturables('pendiente')"
+            >
+              Pendientes ({{ facturablesPendientesCount() }})
+            </button>
+            <button
+              type="button"
+              [class.active]="facturablesTab() === 'liquidado'"
+              [attr.aria-pressed]="facturablesTab() === 'liquidado'"
+              (click)="filtrarFacturables('liquidado')"
+            >
+              Liquidadas ({{ facturablesLiquidadosCount() }})
+            </button>
+          </div>
+
+          <select
+            class="btn"
+            style="height: 36px; padding: 0 10px; font-size: 12px;"
+            [ngModel]="selectedCanchaFilter()"
+            (ngModelChange)="filtrarFacturablesPorCancha($event)"
+            aria-label="Filtrar por cancha"
+          >
+            <option value="all">Todas las canchas</option>
+            @for (cancha of canchasFiltradasPorSede(); track cancha.id) {
+              <option [value]="cancha.nombre">{{ cancha.nombre }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <!-- Tabla de Facturables Operativa -->
+      <div class="op-table-wrap">
+        <table class="op-table" id="tablaFacturables">
+          <thead>
+            <tr>
+              @if (columnas().codigo) { <th scope="col">Código y Fecha</th> }
+              @if (columnas().cancha) { <th scope="col">Cancha / Servicio</th> }
+              @if (columnas().metodo) { <th scope="col">Método de Cobro</th> }
+              @if (columnas().monto) { <th scope="col" style="text-align: right;">Monto Bruto</th> }
+              @if (columnas().comision) { <th scope="col" style="text-align: right;">Comisión (5%)</th> }
+              @if (columnas().neto) { <th scope="col" style="text-align: right;">Neto Sede (95%)</th> }
+              @if (columnas().liquidado) { <th scope="col" style="text-align: center;">Estado Liquidación</th> }
+              <th scope="col" style="text-align: center;">Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (f of paginatedFacturables(); track f.codigo) {
+              <tr>
+                @if (columnas().codigo) {
+                  <td>
+                    <strong>{{ f.codigo }}</strong>
+                    <div class="small muted">{{ f.fechaLabel }}</div>
+                  </td>
+                }
+                @if (columnas().cancha) {
+                  <td>
+                    <div>{{ f.canchaNombre }}</div>
+                    <div class="small muted">{{ f.servicio }}</div>
+                  </td>
+                }
+                @if (columnas().metodo) {
+                  <td>
+                    <span class="row" style="gap: 6px; align-items: center;">
+                      <span class="material-symbols-outlined icon" style="font-size: 16px; width: 16px; height: 16px;" aria-hidden="true">{{ f.metodoIcon }}</span>
+                      <span>{{ f.metodo }}</span>
+                    </span>
+                  </td>
+                }
+                @if (columnas().monto) {
+                  <td style="text-align: right; font-weight: 600;">
+                    {{ fmtPEN(f.monto) }}
+                  </td>
+                }
+                @if (columnas().comision) {
+                  <td style="text-align: right; color: var(--muted);">
+                    - {{ fmtPEN(f.comision) }}
+                  </td>
+                }
+                @if (columnas().neto) {
+                  <td style="text-align: right; font-weight: 700; color: var(--primary);">
+                    {{ fmtPEN(f.neto) }}
+                  </td>
+                }
+                @if (columnas().liquidado) {
+                  <td style="text-align: center;">
+                    @if (f.liquidado) {
+                      <span class="badge" style="background: #e6f4ea; color: #137333;">Liquidado</span>
+                    } @else {
+                      <span class="badge" style="background: #fef7e0; color: #b06000;">Pendiente</span>
+                    }
+                  </td>
+                }
+                <td style="text-align: center;">
+                  <button matButton="outlined" disableRipple
+                    type="button"
+                    class="btn icon-only"
+                    (click)="verDetalleFacturable(f.codigo)"
+                    title="Ver detalle del cobro"
+                    aria-label="Ver detalle del cobro"
+                  >
+                    <span class="material-symbols-outlined icon" aria-hidden="true">receipt_long</span>
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="8" style="text-align: center; padding: 32px 16px;">
+                  <article class="card state" style="margin: 0 auto; max-width: 420px; border: 0; box-shadow: none;">
+                    <span class="material-symbols-outlined icon" aria-hidden="true">receipt_long</span>
+                    <h3>Sin movimientos en el periodo</h3>
+                    <p>Los importes se mostrarán cuando existan operaciones registradas.</p>
+                  </article>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Paginación -->
+      <div class="row spread" style="align-items: center; padding: 14px 0;">
+        <small class="muted">Mostrando {{ facturablesFiltrados().length }} de {{ facturables().length }} cobros registrados</small>
+        <div class="row" style="gap: 4px;">
+          <button matButton="outlined" disableRipple
+            type="button"
+            class="btn icon-only"
+            [disabled]="paginaActualFacturables() === 1"
+            (click)="irAPaginaFacturables(paginaActualFacturables() - 1)"
+            aria-label="Página anterior"
+          >
+            <span class="material-symbols-outlined icon" aria-hidden="true">chevron_left</span>
+          </button>
+          @for (p of paginasFacturablesArray(); track p) {
+            <button matButton="outlined" disableRipple
+              type="button"
+              class="btn"
+              [class.current-page]="p === paginaActualFacturables()"
+              (click)="irAPaginaFacturables(p)"
+              style="min-width: 36px; padding: 0 8px;"
+            >
+              {{ p }}
+            </button>
+          }
+          <button matButton="outlined" disableRipple
+            type="button"
+            class="btn icon-only"
+            [disabled]="paginaActualFacturables() >= totalPaginasFacturables()"
+            (click)="irAPaginaFacturables(paginaActualFacturables() + 1)"
+            aria-label="Página siguiente"
+          >
+            <span class="material-symbols-outlined icon" aria-hidden="true">chevron_right</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Banner aclaratorio inferior -->
+    <div class="notice" role="note" style="margin-top: 24px;">
+      <span class="material-symbols-outlined icon" aria-hidden="true">account_balance</span>
+      <div>
+        <strong>Cuenta de abono y periodicidad</strong>
+        <p>
+          Puedes gestionar tu cuenta bancaria y liquidaciones en
+          <a routerLink="/admin/configuracion" class="config-link">
+            Configuración <span class="material-symbols-outlined icon" style="font-size: 14px;" aria-hidden="true">arrow_forward</span>
+          </a>
+          sin alterar este histórico contable.
+        </p>
+      </div>
+    </div>
+  }
+
+  <!-- MODAL: DETALLE DEL COBRO / RECIBO (finanzas.html & tests) -->
+  @if (detalleModalOpen() && detalleFacturable(); as item) {
+    <div class="modal-backdrop" (click)="cerrarDetalleModal()">
+      <dialog class="dialog" open (click)="$event.stopPropagation()" aria-labelledby="finance-detail-title">
+        <div class="dialog-header">
+          <h2 id="finance-detail-title">Detalle de Cobro &amp; Liquidación</h2>
+          <button matButton="outlined" disableRipple type="button" class="btn icon-only" (click)="cerrarDetalleModal()" title="Cerrar ventana" aria-label="Cerrar ventana">
+            <span class="material-symbols-outlined icon" aria-hidden="true">close</span>
+          </button>
+        </div>
+
+        <div class="dialog-body stack">
+          <div class="list-line"><span>Código de Reserva:</span><strong>{{ item.codigo }}</strong></div>
+          <div class="list-line"><span>Fecha y Turno:</span><strong>{{ item.fechaLabel }}</strong></div>
+          <div class="list-line"><span>Cancha:</span><strong>{{ item.canchaNombre }}</strong></div>
+          <div class="list-line"><span>Servicio:</span><strong>{{ item.servicio }}</strong></div>
+          <div class="list-line"><span>Método de Cobro:</span><strong>{{ item.metodo }}</strong></div>
+          <div class="list-line"><span>Alquiler Bruto:</span><strong>{{ fmtPEN(item.monto) }}</strong></div>
+          <div class="list-line"><span>Comisión Canchero (5%):</span><strong>- {{ fmtPEN(item.comision) }}</strong></div>
+          <div class="list-line"><span>Neto del Dueño (95%):</span><strong>{{ fmtPEN(item.neto) }}</strong></div>
+          <div class="list-line"><span>Estado:</span><strong>{{ item.liquidado ? 'Liquidado' : 'Pendiente de corte' }}</strong></div>
+          <p class="small muted">Documento informativo para control interno de la sede.</p>
+        </div>
+
+        <div class="dialog-footer">
+          <button matButton="outlined" disableRipple type="button" class="btn" (click)="descargarComprobante(item.codigo)">
+            <span class="material-symbols-outlined icon" aria-hidden="true">download</span>
+            Descargar comprobante
+          </button>
+          <button matButton="outlined" disableRipple type="button" class="btn" (click)="cerrarDetalleModal()">Cerrar</button>
+        </div>
+      </dialog>
+    </div>
+  }
+
+  <!-- MODAL: REVISIÓN DE DEVOLUCIÓN (finance-refund de finanzas.html) -->
+  @if (reembolsoModalOpen()) {
+    <div class="modal-backdrop" (click)="cerrarRevisionDevolucion()">
+      <dialog class="dialog" open (click)="$event.stopPropagation()" aria-labelledby="finance-refund-title">
+        <div class="dialog-header">
+          <h2 id="finance-refund-title">Revisión de devolución</h2>
+          <button matButton="outlined" disableRipple type="button" class="btn icon-only" (click)="cerrarRevisionDevolucion()" title="Cerrar ventana" aria-label="Cerrar ventana">
+            <span class="material-symbols-outlined icon" aria-hidden="true">close</span>
+          </button>
+        </div>
+        <div class="dialog-body stack">
+          <p class="small muted">Reserva de sede · Pagado S/ 100.00 · Devuelto S/ 0.00</p>
+          <label class="field">
+            <span>Importe a devolver (S/)</span>
+            <input type="number" min="0" max="100" step="0.01" [ngModel]="reembolsoImporte()" (ngModelChange)="reembolsoImporte.set($event)" />
+          </label>
+          <label class="field">
+            <span>Motivo obligatorio</span>
+            <input type="text" placeholder="Explica el motivo" [ngModel]="reembolsoMotivo()" (ngModelChange)="reembolsoMotivo.set($event)" />
+          </label>
+          <p class="small muted">Autoriza el dueño. El dinero se devuelve por el método original y nunca supera lo cobrado pendiente de devolución.</p>
+          <label class="check">
+            <input type="checkbox" [ngModel]="reembolsoCondicionStock()" (ngModelChange)="reembolsoCondicionStock.set($event)" />
+            Si son productos, se recibieron en condiciones de venderse
+          </label>
+        </div>
+        <div class="dialog-footer">
+          <button matButton="outlined" disableRipple type="button" class="btn" (click)="cerrarRevisionDevolucion()">Volver</button>
+          <button matButton="outlined" disableRipple type="button" class="btn" disabled>Autorizar devolución</button>
+        </div>
+      </dialog>
+    </div>
+  }
+
+  <!-- MODAL: DESGLOSE GENERAL DE LA SEDE (finance-detail de finanzas.html) -->
+  @if (desgloseGeneralModalOpen()) {
+    <div class="modal-backdrop" (click)="cerrarDesgloseGeneral()">
+      <dialog class="dialog" open (click)="$event.stopPropagation()" aria-labelledby="finance-general-title">
+        <div class="dialog-header">
+          <h2 id="finance-general-title">Desglose de liquidación</h2>
+          <button matButton="outlined" disableRipple type="button" class="btn icon-only" (click)="cerrarDesgloseGeneral()" title="Cerrar ventana" aria-label="Cerrar ventana">
+            <span class="material-symbols-outlined icon" aria-hidden="true">close</span>
+          </button>
+        </div>
+        <div class="dialog-body stack">
+          <div class="list-line"><span>Comisión sobre alquileres cobrados</span><strong>{{ fmtPEN(metricas().comisionApp) }}</strong></div>
+          <div class="list-line"><span>Reversión por devoluciones</span><strong>- S/ 0.00</strong></div>
+          <div class="list-line"><span>Comisión neta Canchero (5%)</span><strong>{{ fmtPEN(metricas().comisionApp) }}</strong></div>
+          <div class="list-line"><span>Neto a liquidar</span><strong>{{ fmtPEN(metricas().ingresoNeto) }}</strong></div>
+          <p class="small muted">No representa una transferencia bancaria ni una liquidación real.</p>
+        </div>
+        <div class="dialog-footer">
+          <button matButton="outlined" disableRipple type="button" class="btn" (click)="cerrarDesgloseGeneral()">Volver</button>
+          <button matButton="outlined" disableRipple type="button" class="btn" disabled>Solicitar liquidación</button>
+        </div>
+      </dialog>
+    </div>
+  }
+
+  <!-- MODAL: COLUMNAS AVANZADAS -->
+  @if (columnasModalOpen()) {
+    <div class="modal-backdrop" (click)="cerrarColumnasAvanzadas()">
+      <dialog class="dialog" open (click)="$event.stopPropagation()" aria-labelledby="columns-modal-title">
+        <div class="dialog-header">
+          <h2 id="columns-modal-title">Columnas Visibles en Cobros</h2>
+          <button matButton="outlined" disableRipple type="button" class="btn icon-only" (click)="cerrarColumnasAvanzadas()" title="Cerrar ventana" aria-label="Cerrar ventana">
+            <span class="material-symbols-outlined icon" aria-hidden="true">close</span>
+          </button>
+        </div>
+
+        <div class="dialog-body stack">
+          <p class="small muted">Selecciona qué columnas deseas mostrar en la tabla:</p>
+          <label class="check"><input type="checkbox" [checked]="columnas().codigo" (change)="toggleColumna('codigo')" /> Código &amp; Fecha</label>
+          <label class="check"><input type="checkbox" [checked]="columnas().cancha" (change)="toggleColumna('cancha')" /> Cancha / Servicio</label>
+          <label class="check"><input type="checkbox" [checked]="columnas().metodo" (change)="toggleColumna('metodo')" /> Método de Cobro</label>
+          <label class="check"><input type="checkbox" [checked]="columnas().monto" (change)="toggleColumna('monto')" /> Monto Bruto</label>
+          <label class="check"><input type="checkbox" [checked]="columnas().comision" (change)="toggleColumna('comision')" /> Comisión (5%)</label>
+          <label class="check"><input type="checkbox" [checked]="columnas().neto" (change)="toggleColumna('neto')" /> Neto Sede (95%)</label>
+          <label class="check"><input type="checkbox" [checked]="columnas().liquidado" (change)="toggleColumna('liquidado')" /> Estado de Liquidación</label>
+        </div>
+
+        <div class="dialog-footer">
+          <button matButton="outlined" disableRipple type="button" class="btn" (click)="cerrarColumnasAvanzadas()">Aplicar</button>
+        </div>
+      </dialog>
+    </div>
+  }
+</div>

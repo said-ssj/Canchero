@@ -8,90 +8,93 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import pe.canchero.backend.domain.entity.Court;
-import pe.canchero.backend.domain.entity.Venue;
-import pe.canchero.backend.repository.CourtRepository;
-import pe.canchero.backend.repository.VenueRepository;
+import pe.canchero.backend.service.SupabaseDataService;
+import pe.canchero.backend.service.CourtOperationService;
+import pe.canchero.backend.service.CourtRecoveryService;
+import pe.canchero.backend.web.dto.AuthUserDto;
+import pe.canchero.backend.web.dto.CourtAvailabilityResponse;
 import pe.canchero.backend.web.dto.CourtDto;
 import pe.canchero.backend.web.dto.CourtRequest;
 import pe.canchero.backend.web.dto.ErrorResponse;
+import pe.canchero.backend.web.dto.QuoteRequest;
+import pe.canchero.backend.web.dto.QuoteResponse;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/courts")
 public class CourtController {
 
-    private final CourtRepository courts;
-    private final VenueRepository venues;
+    private final SupabaseDataService data;
+    private final CourtOperationService operation;
+    private final CourtRecoveryService recovery;
 
-    public CourtController(CourtRepository courts, VenueRepository venues) {
-        this.courts = courts;
-        this.venues = venues;
+    public CourtController(SupabaseDataService data, CourtOperationService operation, CourtRecoveryService recovery) {
+        this.data = data;
+        this.operation = operation;
+        this.recovery = recovery;
+    }
+
+    @PostMapping("/recover")
+    public CourtDto recover(@RequestAttribute("auth.user") AuthUserDto user, @RequestBody CourtRequest request) {
+        return recovery.recover(user, request);
+    }
+
+    @PutMapping("/{id}/operation")
+    public CourtOperationService.SavedOperation operation(@PathVariable int id,
+            @RequestAttribute("auth.user") AuthUserDto user,
+            @RequestBody CourtOperationService.Operation request) {
+        return operation.save(id, user, request);
     }
 
     @GetMapping
     public ResponseEntity<List<CourtDto>> list(@RequestParam(required = false) String venueId) {
-        List<Court> result = venueId != null && !venueId.isBlank()
-                ? courts.findByVenueId(venueId)
-                : courts.findAll();
-        return ResponseEntity.ok(result.stream().map(CourtDto::from).toList());
+        return ResponseEntity.ok(data.listCourts(venueId));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<CourtDto> detail(@PathVariable String id) {
-        return courts.findById(id)
-                .map(CourtDto::from)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<?> detail(@PathVariable String id) {
+        return data.getCourt(id)
+                .<ResponseEntity<?>>map(ResponseEntity::ok)
+                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse("Cancha no encontrada")));
+    }
+
+    @GetMapping("/{id}/availability")
+    public ResponseEntity<CourtAvailabilityResponse> availability(
+            @PathVariable String id,
+            @RequestParam String from,
+            @RequestParam String to) {
+        return ResponseEntity.ok(data.getCourtAvailability(id, from, to));
+    }
+
+    @PostMapping("/{id}/quote")
+    public ResponseEntity<QuoteResponse> quote(
+            @PathVariable String id,
+            @RequestBody QuoteRequest request) {
+        return ResponseEntity.ok(data.quoteCourtBooking(id, request));
     }
 
     @PostMapping
-    public ResponseEntity<?> create(@RequestBody CourtRequest request) {
-        if (request.venueId() == null || request.venueId().isBlank()) {
-            return ResponseEntity.badRequest().body(new ErrorResponse("Se requiere el venueId de la sede"));
-        }
-        Optional<Venue> venue = venues.findById(request.venueId());
-        if (venue.isEmpty()) {
-            return ResponseEntity.badRequest().body(new ErrorResponse("Sede no existe"));
-        }
-        Court court = new Court();
-        court.setId("c_" + System.nanoTime());
-        apply(court, request);
-        court.setVenue(venue.get());
-        Court saved = courts.save(court);
-        return ResponseEntity.status(HttpStatus.CREATED).body(CourtDto.from(saved));
+    public ResponseEntity<CourtDto> create(@RequestBody CourtRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(data.createCourt(request));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<?> update(@PathVariable String id, @RequestBody CourtRequest request) {
-        Optional<Court> existing = courts.findById(id);
-        if (existing.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse("Cancha no encontrada"));
-        }
-        apply(existing.get(), request);
-        Court saved = courts.save(existing.get());
-        return ResponseEntity.ok(CourtDto.from(saved));
+        return data.updateCourt(id, request)
+                .<ResponseEntity<?>>map(ResponseEntity::ok)
+                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse("Cancha no encontrada")));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> delete(@PathVariable String id) {
-        if (!courts.existsById(id)) {
+        if (!data.deleteCourt(id)) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse("Cancha no encontrada"));
         }
-        courts.deleteById(id);
         return ResponseEntity.noContent().build();
-    }
-
-    private void apply(Court court, CourtRequest request) {
-        court.setNombre(request.nombre());
-        court.setTipo(request.tipo());
-        court.setTechada(request.techada());
-        court.setDisponible(request.disponible());
-        court.setPrecioHora(request.precioHora());
     }
 }

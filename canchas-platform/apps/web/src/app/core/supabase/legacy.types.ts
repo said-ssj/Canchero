@@ -27,7 +27,14 @@ export interface Reserva {
   usucre?: string;
   pccre?: string;
   pcmod?: string | null;
-  usmod?: string | null;
+  // Guest client and deposit properties
+  nombre_cliente?: string;
+  telefono_cliente?: string;
+  es_cliente_sin_cuenta?: boolean;
+  porcentaje_adelanto?: number;
+  check_in_realizado?: boolean;
+  devolucion_monto?: number;
+  motivo_cancelacion?: string;
 }
 
 export interface HorarioAtencion {
@@ -51,4 +58,19 @@ export interface BloqueoMantenimiento {
   dia_semana?: number;
   creado_en: string;
   creado_por: number;
+}
+
+export interface NuevaReservaPresencialInput {
+  canchaId: number;
+  fecha: string;
+  horaInicio: string;
+  horaFin: string;
+  esClienteSinCuenta: boolean;
+  nombreCliente: string;
+  telefonoCliente: string;
+  montoTotal: number;
+  montoAdelanto: number;
+  saldoPendiente: number;
+  metodoPago: string;
+  numeroOperacion?: string;
 }

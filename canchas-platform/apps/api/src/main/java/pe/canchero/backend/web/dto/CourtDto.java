@@ -1,22 +1,39 @@
 package pe.canchero.backend.web.dto;
 
-import pe.canchero.backend.domain.entity.Court;
-
 public record CourtDto(
         String id,
         String nombre,
         String tipo,
+        String formato,
+        String superficie,
+        String cobertura,
         boolean techada,
         boolean disponible,
-        double precioHora) {
+        double precioHora,
+        Double precioHoraNoche,
+        String horaInicioNoche,
+        String foto,
+        Integer venueId) {
 
-    public static CourtDto from(Court court) {
-        return new CourtDto(
-                court.getId(),
-                court.getNombre(),
-                court.getTipo(),
-                court.isTechada(),
-                court.isDisponible(),
-                court.getPrecioHora());
+    public CourtDto(String id, String nombre, String tipo, String formato, String superficie,
+            String cobertura, boolean techada, boolean disponible, double precioHora,
+            Double precioHoraNoche, String horaInicioNoche, String foto) {
+        this(id, nombre, tipo, formato, superficie, cobertura, techada, disponible,
+                precioHora, precioHoraNoche, horaInicioNoche, foto, null);
+    }
+
+    public CourtDto(
+            String id,
+            String nombre,
+            String tipo,
+            String formato,
+            String superficie,
+            String cobertura,
+            boolean techada,
+            boolean disponible,
+            double precioHora,
+            String foto) {
+        this(id, nombre, tipo, formato, superficie, cobertura, techada, disponible, precioHora, precioHora, "18:00", foto);
     }
 }
+

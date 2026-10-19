@@ -3,10 +3,10 @@
 
     <div class="auth-header-group">
       <div class="auth-icon-circle">
-        <svg class="icon icon-32" aria-hidden="true"><use href="/iconos-canchero.svg#sports_soccer"></use></svg>
+        <span class="material-symbols-outlined icon icon-32" aria-hidden="true">sports_soccer</span>
       </div>
       <div class="auth-badge-pill">
-        <svg class="icon-14 icon" aria-hidden="true"><use href="/iconos-canchero.svg#lock"></use></svg>
+        <span class="material-symbols-outlined icon-14 icon" aria-hidden="true">lock</span>
         <span>Registro de cuenta nueva</span>
       </div>
       <h1 class="auth-title">Crea tu cuenta</h1>
@@ -15,25 +15,19 @@
 
     <div class="role-switcher-bar">
       <button type="button" class="role-pill-btn" [class.active-green]="rol() === 'jugador'" [class.active-orange]="rol() === 'dueno'" (click)="selectRol('jugador')">
-        <svg class="icon-18 icon" aria-hidden="true"><use href="/iconos-canchero.svg#sports_soccer"></use></svg>
+        <span class="material-symbols-outlined icon-18 icon" aria-hidden="true">sports_soccer</span>
         <span>Soy Jugador</span>
       </button>
       <button type="button" class="role-pill-btn" [class.active-orange]="rol() === 'dueno'" [class.active-green]="rol() === 'jugador'" (click)="selectRol('dueno')">
-        <svg class="icon-18 icon" aria-hidden="true"><use href="/iconos-canchero.svg#apartment"></use></svg>
+        <span class="material-symbols-outlined icon-18 icon" aria-hidden="true">apartment</span>
         <span>Soy Dueño de Cancha</span>
       </button>
     </div>
 
     <p class="role-microtext">{{ roleText() }}</p>
 
-    @if (ownerPending()) {
-      <div class="auth-feedback-alert is-visible" role="status">
-        <span>Tu cuenta se creó como jugador. Un administrador debe validar y asignar el rol de dueño antes de que puedas acceder al panel.</span>
-      </div>
-    }
-
     <div class="auth-feedback-alert" [class.is-visible]="feedbackVisible()" role="alert">
-      <svg class="icon-20 icon" style="flex-shrink: 0;" aria-hidden="true"><use href="/iconos-canchero.svg#error"></use></svg>
+      <span class="material-symbols-outlined icon-20 icon" style="flex-shrink: 0;" aria-hidden="true">error</span>
       <span>{{ feedbackText() }}</span>
     </div>
 
@@ -43,7 +37,7 @@
         <label class="form-field-label" for="input-nombre">Nombre Completo</label>
         <div class="input-icon-wrap">
           <span class="input-leading-icon">
-            <svg class="icon icon-20" aria-hidden="true"><use href="/iconos-canchero.svg#person"></use></svg>
+            <span class="material-symbols-outlined icon icon-20" aria-hidden="true">person</span>
           </span>
           <input type="text" id="input-nombre" name="nombre" class="auth-input" placeholder="Ej. Mateo Ramírez" [(ngModel)]="nombre" autocomplete="name" />
         </div>
@@ -53,7 +47,7 @@
         <label class="form-field-label" for="input-email">Correo Electrónico</label>
         <div class="input-icon-wrap">
           <span class="input-leading-icon">
-            <svg class="icon icon-20" aria-hidden="true"><use href="/iconos-canchero.svg#mail"></use></svg>
+            <span class="material-symbols-outlined icon icon-20" aria-hidden="true">mail</span>
           </span>
           <input type="email" id="input-email" name="email" class="auth-input" placeholder="ejemplo: mateo.ramirez@canchero.pe" [(ngModel)]="email" autocomplete="email" />
         </div>
@@ -71,7 +65,7 @@
           </div>
           <div class="input-icon-wrap" style="flex: 1;">
             <span class="input-leading-icon">
-              <svg class="icon icon-20" aria-hidden="true"><use href="/iconos-canchero.svg#call"></use></svg>
+              <span class="material-symbols-outlined icon icon-20" aria-hidden="true">call</span>
             </span>
             <input type="tel" id="input-telefono" name="telefono" class="auth-input" maxlength="9" placeholder="987 654 321" [(ngModel)]="telefono" autocomplete="tel" />
           </div>
@@ -80,7 +74,7 @@
 
       <div class="venue-owner-box" id="seccion-dueno" [class.is-visible]="rol() === 'dueno'">
         <div style="display: flex; align-items: center; gap: 8px;">
-          <svg class="icon icon-20" style="color: var(--color-brand-orange);" aria-hidden="true"><use href="/iconos-canchero.svg#stadium"></use></svg>
+          <span class="material-symbols-outlined icon icon-20" style="color: var(--color-brand-orange);" aria-hidden="true">stadium</span>
           <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: #9a3412; letter-spacing: 0.05em;">
             Datos de tu Establecimiento
           </span>
@@ -89,13 +83,13 @@
           <label class="form-field-label" for="input-sede">Nombre de tu Sede o Complejo</label>
           <div class="input-icon-wrap">
             <span class="input-leading-icon">
-              <svg class="icon icon-20" aria-hidden="true"><use href="/iconos-canchero.svg#store"></use></svg>
+              <span class="material-symbols-outlined icon icon-20" aria-hidden="true">store</span>
             </span>
             <input type="text" id="input-sede" name="sede" class="auth-input" placeholder="Ej. Complejo Deportivo Los Próceres" [(ngModel)]="sede" />
           </div>
         </div>
         <p style="font-size: 0.75rem; color: #7c2d12; margin: 0; display: flex; align-items: center; gap: 4px;">
-          <svg class="icon icon-16" style="color: var(--color-brand-orange);" aria-hidden="true"><use href="/iconos-canchero.svg#info"></use></svg>
+          <span class="material-symbols-outlined icon icon-16" style="color: var(--color-brand-orange);" aria-hidden="true">info</span>
           Podrás configurar tus losas y tarifas en tu panel admin tras verificar tu cuenta.
         </p>
       </div>
@@ -104,11 +98,11 @@
         <label class="form-field-label" for="input-pass">Contraseña</label>
         <div class="input-icon-wrap">
           <span class="input-leading-icon">
-            <svg class="icon icon-20" aria-hidden="true"><use href="/iconos-canchero.svg#lock"></use></svg>
+            <span class="material-symbols-outlined icon icon-20" aria-hidden="true">lock</span>
           </span>
           <input [type]="showPass() ? 'text' : 'password'" id="input-pass" name="password" class="auth-input has-trailing-btn" placeholder="••••••••••••" [(ngModel)]="password" autocomplete="new-password" />
           <button type="button" class="toggle-pwd-btn" (click)="showPass.set(!showPass())" aria-label="Mostrar contraseña">
-            <svg class="icon-20 icon" aria-hidden="true"><use [attr.href]="showPass() ? '/iconos-canchero.svg#visibility_off' : '/iconos-canchero.svg#visibility'"></use></svg>
+            <span class="material-symbols-outlined icon-20 icon" aria-hidden="true">{{ showPass() ? 'visibility_off' : 'visibility' }}</span>
           </button>
         </div>
         <span style="font-size: 0.72rem; color: #94a3b8; display: block; margin-top: 4px;">
@@ -125,11 +119,11 @@
         </div>
         <div class="input-icon-wrap">
           <span class="input-leading-icon">
-            <svg class="icon icon-20" aria-hidden="true"><use href="/iconos-canchero.svg#verified_user"></use></svg>
+            <span class="material-symbols-outlined icon icon-20" aria-hidden="true">verified_user</span>
           </span>
           <input [type]="showPassConfirm() ? 'text' : 'password'" id="input-pass-confirm" name="password_confirm" class="auth-input has-trailing-btn" placeholder="••••••••••••" [(ngModel)]="passwordConfirm" autocomplete="new-password" />
           <button type="button" class="toggle-pwd-btn" (click)="showPassConfirm.set(!showPassConfirm())" aria-label="Mostrar confirmación de contraseña">
-            <svg class="icon-20 icon" aria-hidden="true"><use [attr.href]="showPassConfirm() ? '/iconos-canchero.svg#visibility_off' : '/iconos-canchero.svg#visibility'"></use></svg>
+            <span class="material-symbols-outlined icon-20 icon" aria-hidden="true">{{ showPassConfirm() ? 'visibility_off' : 'visibility' }}</span>
           </button>
         </div>
       </div>
@@ -143,14 +137,14 @@
 
       <button type="submit" class="btn-submit-registro" id="btn-submit" [disabled]="submitting()">
         @if (submitting()) {
-          <svg class="icon" style="animation: spin 1s linear infinite;" aria-hidden="true"><use href="/iconos-canchero.svg#sync"></use></svg>
+          <span class="material-symbols-outlined icon" style="animation: spin 1s linear infinite;" aria-hidden="true">sync</span>
           <span>Creando tu cuenta...</span>
         } @else if (success()) {
-          <svg class="icon-20 icon" aria-hidden="true"><use href="/iconos-canchero.svg#check_circle"></use></svg>
+          <span class="material-symbols-outlined icon-20 icon" aria-hidden="true">check_circle</span>
           <span>¡Cuenta creada con éxito!</span>
         } @else {
           <span>Crear mi cuenta</span>
-          <svg class="icon-18 icon" style="font-weight: bold;" aria-hidden="true"><use href="/iconos-canchero.svg#arrow_forward"></use></svg>
+          <span class="material-symbols-outlined icon-18 icon" style="font-weight: bold;" aria-hidden="true">arrow_forward</span>
         }
       </button>
 
@@ -167,7 +161,7 @@
     </div>
 
     <div class="security-badge-footer">
-      <svg class="icon-15 icon" aria-hidden="true"><use href="/iconos-canchero.svg#lock"></use></svg>
+      <span class="material-symbols-outlined icon-15 icon" aria-hidden="true">lock</span>
       <span>Conexión segura y cifrada de 256 bits • Canchero.MVP</span>
     </div>
 

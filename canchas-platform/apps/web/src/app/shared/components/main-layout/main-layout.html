@@ -1,3 +1,5 @@
 <app-navbar></app-navbar>
 <router-outlet />
-<app-footer></app-footer>
+@if (!isLoginPage()) {
+  <app-footer></app-footer>
+}

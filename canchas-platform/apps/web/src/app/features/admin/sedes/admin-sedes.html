@@ -1,0 +1,392 @@
+<div class="admin-sedes-shell">
+  @if (!formularioSedeAbierto()) {
+    <!-- Título de Página Oficial Canchero -->
+    <div class="page-title">
+      <h1>Mis Sedes</h1>
+      <p>Tus complejos deportivos, en un solo lugar.</p>
+    </div>
+
+    @if (isLoading()) {
+      <!-- Skeletons de Carga Estáticos -->
+      <div class="skeletons" aria-busy="true" role="status" aria-label="Cargando sedes">
+        <span class="skeleton short"></span>
+        <span class="skeleton"></span>
+        <span class="skeleton photo"></span>
+        <span class="skeleton button"></span>
+      </div>
+    } @else if (hasError()) {
+      <!-- Estado de Error -->
+      <div class="notice danger" role="alert">
+        <span class="material-symbols-outlined icon" aria-hidden="true">error</span>
+        <div>
+          <strong>Error al cargar sedes</strong>
+          <p>{{ errorMessage() || 'No se pudo cargar el catálogo de sedes.' }}</p>
+          <button type="button" class="btn" (click)="db.refreshCatalogo?.()" style="margin-top: 8px;">
+            <span class="material-symbols-outlined icon" aria-hidden="true">refresh</span>
+            <span>Reintentar</span>
+          </button>
+        </div>
+      </div>
+    } @else if (sedesDelDueno().length === 0) {
+      <!-- Estado Vacío -->
+      <article class="card state">
+        <span class="material-symbols-outlined icon" aria-hidden="true">stadium</span>
+        <h3>Todavía no tienes sedes</h3>
+        <p>Registra los datos de tu primer complejo deportivo.</p>
+        <button type="button" class="btn primary" (click)="abrirFormularioNuevaSede()">
+          <span class="material-symbols-outlined icon" aria-hidden="true">add</span>
+          <span>Agregar sede</span>
+        </button>
+      </article>
+    } @else {
+      <!-- Listado de Sedes -->
+      <div class="stack">
+        @for (sede of sedesDelDueno(); track sede.id) {
+          <app-admin-sede-card
+            [sede]="sede"
+            (hours)="abrirDrawerHorarios(sede)"
+            (viewCourts)="verCanchasDeSede(sede.id)"
+            (edit)="editarSede(sede)"
+          />
+        }
+
+        <app-admin-add-action
+          label="Agregar nueva sede"
+          description="Identidad, ubicación y fotografías."
+          (activated)="abrirFormularioNuevaSede()"
+        />
+      </div>
+    }
+  } @else {
+    <!-- ======================================================================
+         EDITOR DE SEDE (Referencia: editar-sede.html)
+         ====================================================================== -->
+    <nav class="crumb" aria-label="Ruta">
+      <button type="button" class="btn" (click)="cerrarFormularioSede()">
+        <span class="material-symbols-outlined icon" aria-hidden="true">arrow_back</span>
+        <span>Mis Sedes</span>
+      </button>
+      <span>Editor de sede</span>
+    </nav>
+
+    <div class="row spread management-editor-heading">
+      <div class="page-title">
+        <h1>{{ sedeEnEdicion() ? 'Editar sede' : 'Nueva sede' }}</h1>
+        <p>{{ sedeEnEdicion() ? 'Edita los datos y fotos de tu complejo deportivo.' : 'Completa los datos de tu nuevo complejo deportivo.' }}</p>
+      </div>
+      <span class="badge info">{{ sedeEnEdicion() ? 'Modo edición' : 'Nueva sede' }}</span>
+    </div>
+
+    <!-- Layout de Editor a 2 Columnas -->
+    <div class="management-editor">
+      <!-- Columna Principal: Campos del Formulario -->
+      <div class="management-editor-fields">
+
+        <!-- 01 Identidad -->
+        <section class="management-editor-section">
+          <h2><span>01</span>Identidad</h2>
+
+          <label class="field">
+            <span>Nombre comercial</span>
+            <input
+              type="text"
+              #inputVenueName
+              [value]="liveVenueName()"
+              placeholder="Ej. Balón de Fuego"
+              (input)="liveVenueName.set(inputVenueName.value)">
+          </label>
+
+          <div class="field">
+            <span>Logo de la sede</span>
+            <div class="upload">
+              <input #logoInput type="file" id="venue-logo" accept="image/png,image/jpeg,image/webp" hidden (change)="onLogoSelected($event)">
+              <button type="button" class="btn icon-only" (click)="triggerInputLogo()" [disabled]="uploadingPhotos()" title="Elegir logo de la sede" aria-label="Elegir logo de la sede">
+                <span class="material-symbols-outlined icon" aria-hidden="true">add</span>
+              </button>
+              <p>{{ liveVenueLogo() ? 'Logo seleccionado y cargado.' : 'Selecciona un archivo de tu equipo' }}</p>
+            </div>
+            <div class="row" style="gap: 8px; margin-top: 6px;">
+              @if (liveVenueLogo()) {
+                <button type="button" class="btn" (click)="triggerInputLogo()" [disabled]="uploadingPhotos()">
+                  <span class="material-symbols-outlined icon" aria-hidden="true">sync</span>
+                  <span>Reemplazar</span>
+                </button>
+                <button type="button" class="btn danger" (click)="eliminarLogo()" [disabled]="uploadingPhotos()">
+                  <span class="material-symbols-outlined icon" aria-hidden="true">delete</span>
+                  <span>Eliminar</span>
+                </button>
+              }
+            </div>
+            <small class="muted">JPG, PNG o WebP · Máximo 5 MB</small>
+          </div>
+        </section>
+
+        <!-- 02 Ubicación y contacto -->
+        <section class="management-editor-section">
+          <h2><span>02</span>Ubicación y contacto</h2>
+
+          <div class="grid two">
+            <label class="field">
+              <span>Dirección</span>
+              <input
+                type="text"
+                #inputVenueAddress
+                [value]="liveVenueAddress()"
+                placeholder="Av. Deportiva 123"
+                (input)="liveVenueAddress.set(inputVenueAddress.value); buscarLugaresEnMapa(inputVenueAddress.value)">
+            </label>
+
+            <label class="field">
+              <span>Distrito</span>
+              <input
+                type="text"
+                #inputVenueDistrito
+                [value]="liveVenueCiudad()"
+                placeholder="Ej. Santiago de Surco o La Tinguiña"
+                (input)="liveVenueCiudad.set(inputVenueDistrito.value)">
+            </label>
+
+            <label class="field">
+              <span>Teléfono</span>
+              <input
+                type="tel"
+                #inputVenueTelefono
+                [value]="liveVenueTelefono()"
+                placeholder="Ej. +51 987 654 321"
+                (input)="liveVenueTelefono.set(inputVenueTelefono.value)">
+            </label>
+
+            @if (verEnGoogleMapsUrl()) {
+              <div class="field" style="justify-content: flex-end;">
+                <span>Verificación</span>
+                <a [href]="verEnGoogleMapsUrl()" target="_blank" rel="noopener noreferrer" class="btn" style="height: 38px;">
+                  <span class="material-symbols-outlined icon" aria-hidden="true">open_in_new</span>
+                  <span>Ver en Google Maps</span>
+                </a>
+              </div>
+            }
+          </div>
+
+          @if (geocodingResultados().length > 0) {
+            <div class="notice info" style="margin-top: 8px;">
+              <span class="material-symbols-outlined icon" aria-hidden="true">travel_explore</span>
+              <div>
+                <strong>Sugerencias de Google Places:</strong>
+                <div class="stack" style="gap: 4px; margin-top: 6px;">
+                  @for (sug of geocodingResultados(); track sug.displayName) {
+                    <button type="button" class="btn" style="text-align: left; justify-content: flex-start; font-size: 11px; padding: 4px 8px;" (click)="seleccionarLugarSugerido(sug)">
+                      <span class="material-symbols-outlined icon" aria-hidden="true">pin_drop</span>
+                      <span>{{ sug.displayName }}</span>
+                    </button>
+                  }
+                </div>
+              </div>
+            </div>
+          }
+
+          <!-- Mapa Interactivo Leaflet -->
+          <div class="management-map-container" style="margin-top: 12px;">
+            <div class="row spread" style="margin-bottom: 8px;">
+              <strong>Punto de acceso en mapa</strong>
+              <div class="row" style="gap: 8px;">
+                <button type="button" class="btn" [disabled]="buscandoUbicacionGps()" (click)="obtenerUbicacionActualGPS()">
+                  <span class="material-symbols-outlined icon" aria-hidden="true">my_location</span>
+                  <span>{{ buscandoUbicacionGps() ? 'Detectando...' : 'Mi GPS' }}</span>
+                </button>
+                <button type="button" class="btn" (click)="centrarPinEnCentroMapa()">
+                  <span class="material-symbols-outlined icon" aria-hidden="true">push_pin</span>
+                  <span>Centrar pin</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Contenedor Leaflet necesario para admin-sedes.spec.ts (#venueMap) -->
+            <div #venueMap class="venue-leaflet-map" style="height: 280px; width: 100%; border-radius: var(--radius); border: 1px solid var(--line); overflow: hidden;"></div>
+
+            <div class="row spread" style="margin-top: 8px; font-size: 11px; color: var(--muted);">
+              <span>Pin: {{ liveVenueLat() }}, {{ liveVenueLng() }}</span>
+              @if (geocodificandoReversa()) {
+                <span>Sincronizando dirección...</span>
+              }
+            </div>
+          </div>
+        </section>
+
+        <!-- 03 Historia de la sede -->
+        <section class="management-editor-section">
+          <h2><span>03</span>Historia de la sede</h2>
+          <label class="field">
+            <span class="counter">
+              <span>Historia y presentación</span>
+              <output>{{ historiaContadorSede() }} / 500</output>
+            </span>
+            <textarea
+              #venueStorySede
+              maxlength="500"
+              rows="4"
+              placeholder="Un espacio para disfrutar el fútbol con tu gente..."
+              [value]="liveVenueStory()"
+              (input)="historiaContadorSede.set(venueStorySede.value.length); liveVenueStory.set(venueStorySede.value)">
+            </textarea>
+          </label>
+        </section>
+
+        <!-- 04 Fotografías -->
+        <section class="management-editor-section">
+          <h2><span>04</span>Fotografías</h2>
+          <div class="management-gallery">
+            <div class="management-gallery-head">
+              <div>
+                <h3>Galería fotográfica</h3>
+                <small class="muted">{{ galeriaFotos().length }} de 12 fotos · Archivos JPG, PNG o WebP</small>
+              </div>
+              <input #galleryInput type="file" id="management-gallery" accept="image/*" multiple hidden (change)="onGallerySelected($event)">
+              <button type="button" class="btn" (click)="subirGaleria()" [disabled]="uploadingPhotos()">
+                <span class="material-symbols-outlined icon" aria-hidden="true">add</span>
+                <span>Agregar fotos</span>
+              </button>
+            </div>
+
+            <div class="management-photo-grid">
+              @for (foto of galeriaFotos(); track foto.id; let i = $index) {
+                <div class="management-photo">
+                  <img [src]="foto.url" [alt]="foto.alt">
+                  <div class="row spread">
+                    <label class="check" style="font-size: 11px;">
+                      <input type="radio" name="cover" [checked]="i === 0" (change)="hacerPortada(foto.id)">
+                      <span>{{ i === 0 ? 'Portada' : 'Foto ' + (i + 1) }}</span>
+                    </label>
+                    <button type="button" class="btn icon-only" (click)="eliminarFotoGaleria(foto.id)" title="Quitar foto" aria-label="Quitar foto">
+                      <span class="material-symbols-outlined icon" aria-hidden="true">delete</span>
+                    </button>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        </section>
+
+        <!-- Acciones Inferiores del Editor -->
+        <div class="management-editor-actions">
+          <button type="button" class="btn" (click)="cerrarFormularioSede()">
+            <span class="material-symbols-outlined icon" aria-hidden="true">arrow_back</span>
+            <span>Volver al listado</span>
+          </button>
+          <button type="button" class="btn primary" [disabled]="uploadingPhotos()" (click)="guardarCambiosSede()">
+            <span class="material-symbols-outlined icon" aria-hidden="true">check</span>
+            <span>{{ sedeEnEdicion() ? 'Guardar cambios' : 'Registrar sede' }}</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Columna Lateral: Vista Previa en Vivo -->
+      <aside class="management-preview">
+        <p class="gallery-label" style="font-size: 12px; font-weight: 700; color: var(--muted); margin: 0;">Vista previa de la sede</p>
+        <article class="card">
+          <img class="management-preview-photo" [src]="galeriaFotos()[0]?.url || liveVenueLogo() || placeholderCover()" alt="Vista previa referencial">
+          <div class="card-pad stack">
+            <span class="badge success">Sede activa</span>
+            <h3>{{ liveVenueName() || 'Mi Sede Deportiva' }}</h3>
+            <p class="small muted">{{ liveVenueStory() || 'Un espacio para disfrutar el fútbol con tu gente.' }}</p>
+            <p class="small muted">
+              <span class="material-symbols-outlined icon" aria-hidden="true">location_on</span>
+              {{ liveVenueCiudad() ? (liveVenueCiudad() + ' · ' + (liveVenueAddress() || 'Av. Deportiva 123')) : (liveVenueAddress() || 'Av. Deportiva 123') }}
+            </p>
+            <button type="button" class="btn primary" disabled>Ver canchas</button>
+          </div>
+        </article>
+        <small class="muted">Previsualización en tiempo real según los campos ingresados.</small>
+      </aside>
+    </div>
+  }
+
+  <!-- DRAWER LATERAL: Horarios Semanales (VenueHoursService) -->
+  <div class="admin-drawer" [class.is-open]="drawerHorariosOpen()">
+    <div class="admin-drawer-overlay" (click)="cerrarDrawerHorarios()"></div>
+    <section class="admin-drawer-panel hours-panel" role="dialog" aria-modal="true" aria-labelledby="sedes-hours-title">
+      <header class="hours-header">
+        <div>
+          <h2 id="sedes-hours-title">Horarios de atención</h2>
+          <p>{{ drawerHorariosNombre() }}</p>
+        </div>
+        <button type="button" class="btn icon-only" aria-label="Cerrar horarios" [disabled]="horariosGuardando()" (click)="cerrarDrawerHorarios()">
+          <span class="material-symbols-outlined icon" aria-hidden="true">close</span>
+        </button>
+      </header>
+
+      <div class="hours-body">
+        <p class="small muted">Configura el horario semanal para todas las canchas de esta sede. Si el cierre es anterior a la apertura, termina al día siguiente.</p>
+        @if (horariosCargando()) {
+          <p role="status">Cargando horarios...</p>
+        } @else {
+          <div class="management-hours">
+            @for (item of horariosSemana(); track item.diaSemana) {
+              <section class="schedule-day">
+                <div class="schedule-day-heading">
+                  <h2>{{ diasSemanaLabels[item.diaSemana] }}</h2>
+                  <label class="check">
+                    <input
+                      type="checkbox"
+                      [checked]="item.activo"
+                      [disabled]="horariosGuardando()"
+                      (change)="cambiarHorario(item.diaSemana, 'activo', $any($event.target).checked)">
+                    <span>{{ item.activo ? 'Abierto' : 'Cerrado' }}</span>
+                  </label>
+                </div>
+
+                @if (item.activo) {
+                  <div class="schedule-ranges">
+                    <div class="schedule-range">
+                      <label class="field">
+                        <span>Apertura</span>
+                        <input
+                          type="time"
+                          [value]="item.apertura"
+                          [disabled]="horariosGuardando()"
+                          (change)="cambiarHorario(item.diaSemana, 'apertura', $any($event.target).value)">
+                      </label>
+                      <span class="muted">—</span>
+                      <label class="field">
+                        <span>Cierre</span>
+                        <input
+                          type="time"
+                          [value]="item.cierre"
+                          [disabled]="horariosGuardando()"
+                          (change)="cambiarHorario(item.diaSemana, 'cierre', $any($event.target).value)">
+                      </label>
+                    </div>
+                  </div>
+                }
+              </section>
+            }
+          </div>
+        }
+
+        @if (horariosError()) {
+          <div class="notice danger" role="alert" style="margin-top: 12px;">
+            <span class="material-symbols-outlined icon" aria-hidden="true">error</span>
+            <div><p>{{ horariosError() }}</p></div>
+          </div>
+        }
+      </div>
+
+      <footer class="hours-footer">
+        <button type="button" class="btn" [disabled]="horariosGuardando()" (click)="cerrarDrawerHorarios()">
+          Cancelar
+        </button>
+        <button type="button" class="btn primary" [disabled]="horariosGuardando() || horariosCargando()" (click)="guardarHorariosDrawer()">
+          <span class="material-symbols-outlined icon" aria-hidden="true">save</span>
+          <span>{{ horariosGuardando() ? 'Guardando...' : 'Guardar Horarios' }}</span>
+        </button>
+      </footer>
+    </section>
+  </div>
+
+  <!-- Toast Notification Feedback -->
+  @if (toastMessage()) {
+    <div class="toast-popup" role="status">
+      <span class="material-symbols-outlined icon" aria-hidden="true">check_circle</span>
+      <span>{{ toastMessage() }}</span>
+    </div>
+  }
+</div>

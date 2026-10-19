@@ -1,0 +1,10 @@
+<button type="button" class="card management-add add-action" (click)="activated.emit()">
+  <span class="material-symbols-outlined icon" aria-hidden="true">{{ icon() }}</span>
+  <span class="add-action-copy">
+    <strong>{{ label() }}</strong>
+    @if (description()) {
+      <small>{{ description() }}</small>
+    }
+  </span>
+  <span class="material-symbols-outlined icon add-action-arrow" aria-hidden="true">arrow_forward</span>
+</button>

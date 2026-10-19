@@ -4,6 +4,7 @@ export const environment = {
   production: false,
   supabaseUrl: supabaseConfiguration.url,
   supabaseAnonKey: supabaseConfiguration.anonKey,
+  googleMapsApiKey: (supabaseConfiguration as any).googleMapsApiKey || '',
   apiUrl: 'http://localhost:8080/api',
   contact: {
     email: 'hola@canchero.pe',

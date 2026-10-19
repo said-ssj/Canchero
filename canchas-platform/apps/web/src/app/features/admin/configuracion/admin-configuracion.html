@@ -1,0 +1,595 @@
+<div class="config-container">
+
+  <!-- Top Breadcrumb -->
+  <div class="config-breadcrumb">
+    <span>{{ venue()?.nombre || 'Sede sin seleccionar' }}</span>
+    <span class="material-symbols-outlined" style="font-size: 16px;">chevron_right</span>
+    <span class="breadcrumb-active">Configuración del Sistema</span>
+  </div>
+
+  <!-- Page Header -->
+  <div class="config-header">
+    <div class="config-header-text">
+      <h1>Configuración</h1>
+      <p>Cuenta, seguridad y preferencias de tus sedes.</p>
+    </div>
+    <div class="config-header-actions">
+      <button class="btn-secondary" type="button" (click)="abrirCentroAyuda()">
+        <span class="material-symbols-outlined" style="font-size: 18px;">help</span>
+        <span>Centro de Ayuda</span>
+      </button>
+      <button class="btn-primary" type="button" (click)="guardarConfiguracionGeneral()">
+        <span class="material-symbols-outlined" style="font-size: 18px;">save</span>
+        <span>Guardar Cambios</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Subtle Informative Callout Banner -->
+  <div class="config-callout">
+    <div class="config-callout-icon">
+      <span class="material-symbols-outlined" style="font-size: 20px;">info</span>
+    </div>
+    <div class="config-callout-content">
+      <strong>Aclaración operativa importante:</strong>
+      La personalización visual de tu portal y los métodos de cobro a jugadores por Yape/Plin se gestionan en <strong>Personalización &amp; QR</strong>. Esta sección administra tu cuenta matriz y la liquidación directa con Canchero.
+    </div>
+    <button type="button" class="config-callout-action" (click)="irAPersonalizacion()">
+      <span>Ir a Personalización &amp; QR</span>
+      <span class="material-symbols-outlined" style="font-size: 16px;">arrow_forward</span>
+    </button>
+  </div>
+
+  <!-- Segmented Toggle Group Navigation matching the exact style of the user's reference image -->
+  <div class="config-toggle-wrapper">
+    <mat-button-toggle-group
+      aria-label="Secciones de configuración"
+      [value]="seccionActiva()"
+      (change)="setSeccion($event.value)">
+      @for (sec of seccionesConfiguracion; track sec.id) {
+        <mat-button-toggle [value]="sec.id" [disableRipple]="true">
+          {{ sec.label }}
+        </mat-button-toggle>
+      }
+    </mat-button-toggle-group>
+  </div>
+
+  @if (loading()) {
+  <!-- Skeleton Loading State -->
+  <div class="config-active-view animate-pulse">
+    <div style="height: 380px; background-color: var(--can-color-background, #F5F6F7); border-radius: 8px; border: 1px solid var(--can-color-border, #DFE3E8);"></div>
+  </div>
+  } @else {
+
+  <!-- Main Active Section View (Single focused card) -->
+  <div class="config-active-view">
+
+    <!-- ======================================================================
+         SECCIÓN 1: DATOS DE LA CUENTA
+         ====================================================================== -->
+    @if (seccionActiva() === 'cuenta') {
+      <section class="config-card">
+        <div class="config-card-header">
+          <div class="config-card-title-group">
+            <h2>Datos de la cuenta</h2>
+            <span>Identidad fiscal del titular</span>
+          </div>
+          <button type="button" class="btn-link" (click)="abrirEditarPerfil()">
+            <span>Editar datos</span>
+            <span class="material-symbols-outlined" style="font-size: 16px;">edit</span>
+          </button>
+        </div>
+
+        <!-- Ficha de resumen de datos -->
+        <div class="config-data-fiche">
+          <div class="fiche-item">
+            <span class="fiche-label">Razón Social / Titular</span>
+            <span class="fiche-val" [title]="titularRazonSocial()">{{ titularRazonSocial() }}</span>
+            <span class="fiche-sub">RUC: {{ rucFacturacion() }}</span>
+          </div>
+          <div class="fiche-item">
+            <span class="fiche-label">Correo Registrado</span>
+            <span class="fiche-val" [title]="perfilEmail()">{{ perfilEmail() }}</span>
+            <span class="fiche-sub" style="color: var(--can-color-primary, #27802D); display: inline-flex; align-items: center; gap: 4px; font-weight: 600;">
+              <span class="material-symbols-outlined" style="font-size: 14px;">check_circle</span> Verificado
+            </span>
+          </div>
+          <div class="fiche-item">
+            <span class="fiche-label">Teléfono de Enlace</span>
+            <span class="fiche-val">{{ perfilTelefono() }}</span>
+            <span class="fiche-sub">Contacto administrativo</span>
+          </div>
+        </div>
+
+        <!-- Form fields representados conforme a Canchero/Field en Figma -->
+        <div class="config-field">
+          <label>Titular</label>
+          <input class="config-input" type="text" [value]="titularRazonSocial()" readonly>
+          <span class="config-field-hint">Nombre visible para tus jugadores.</span>
+        </div>
+
+        <div class="config-field">
+          <label>Correo</label>
+          <input class="config-input is-disabled" type="email" [value]="perfilEmail()" disabled>
+          <span class="config-field-hint">Correo principal de administración.</span>
+        </div>
+
+        <div class="config-field">
+          <label>Teléfono</label>
+          <input class="config-input" type="text" [value]="perfilTelefono()" readonly>
+          <span class="config-field-hint">Canal de comunicación de soporte Canchero.</span>
+        </div>
+      </section>
+    }
+
+    <!-- ======================================================================
+         SECCIÓN 2: SEGURIDAD
+         ====================================================================== -->
+    @if (seccionActiva() === 'seguridad') {
+      <section class="config-card">
+        <div class="config-card-header">
+          <div class="config-card-title-group">
+            <h2>Seguridad</h2>
+            <span>Credenciales y acceso a la cuenta</span>
+          </div>
+        </div>
+
+        <form (submit)="guardarNuevaPassword(); $event.preventDefault();" style="display: flex; flex-direction: column; gap: 14px;">
+          <!-- Contraseña actual -->
+          <div class="config-field">
+            <label for="pwd-current">Contraseña actual</label>
+            <div class="config-input-wrapper">
+              <input class="config-input config-input-pwd"
+                     id="pwd-current"
+                     [type]="showPwdCurrent() ? 'text' : 'password'"
+                     placeholder="••••••••••••"
+                     [value]="pwdCurrent()"
+                     (input)="pwdCurrent.set($any($event.target).value)">
+              <button aria-label="Mostrar contraseña actual" class="config-pwd-btn" (click)="toggleShowPwdCurrent()" type="button">
+                <span class="material-symbols-outlined" style="font-size: 20px;">{{ showPwdCurrent() ? 'visibility_off' : 'visibility' }}</span>
+              </button>
+            </div>
+            <span class="config-field-hint">Mínimo 8 caracteres.</span>
+          </div>
+
+          <!-- Nueva contraseña -->
+          <div class="config-field">
+            <label for="pwd-new">Nueva contraseña</label>
+            <div class="config-input-wrapper">
+              <input class="config-input config-input-pwd"
+                     id="pwd-new"
+                     [type]="showPwdNew() ? 'text' : 'password'"
+                     placeholder="••••••••••••"
+                     [value]="pwdNew()"
+                     (input)="pwdNew.set($any($event.target).value)">
+              <button aria-label="Mostrar nueva contraseña" class="config-pwd-btn" (click)="toggleShowPwdNew()" type="button">
+                <span class="material-symbols-outlined" style="font-size: 20px;">{{ showPwdNew() ? 'visibility_off' : 'visibility' }}</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Confirmar nueva contraseña -->
+          <div class="config-field">
+            <label for="pwd-confirm">Confirmar nueva contraseña</label>
+            <input class="config-input"
+                   id="pwd-confirm"
+                   type="password"
+                   placeholder="Repite la nueva contraseña"
+                   [value]="pwdConfirm()"
+                   (input)="pwdConfirm.set($any($event.target).value)">
+          </div>
+
+          <!-- Feedback de contraseña -->
+          @if (pwdError()) {
+          <div style="padding: 10px 14px; background-color: rgba(239, 68, 68, 0.1); color: #EF4444; border-radius: 6px; font-size: 13px; display: flex; align-items: center; gap: 8px;">
+            <span class="material-symbols-outlined" style="font-size: 16px;">error</span>
+            <span>{{ pwdError() }}</span>
+          </div>
+          }
+          @if (pwdSuccess()) {
+          <div style="padding: 10px 14px; background-color: rgba(39, 128, 45, 0.1); color: #27802D; border-radius: 6px; font-size: 13px; display: flex; align-items: center; gap: 8px;">
+            <span class="material-symbols-outlined" style="font-size: 16px;">check_circle</span>
+            <span>{{ pwdSuccess() }}</span>
+          </div>
+          }
+
+          <!-- Barra de fortaleza de contraseña -->
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--can-color-background, #F5F6F7); padding: 10px 14px; border-radius: 6px;">
+            <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
+              <span style="font-size: 12px; color: var(--can-color-ink-secondary, #666666);">Seguridad:</span>
+              <div style="display: flex; gap: 4px; flex: 1; max-width: 140px;">
+                <span style="height: 6px; flex: 1; border-radius: 3px;" [style.background-color]="passwordStrength().score >= 1 ? '#27802D' : '#DFE3E8'"></span>
+                <span style="height: 6px; flex: 1; border-radius: 3px;" [style.background-color]="passwordStrength().score >= 2 ? '#27802D' : '#DFE3E8'"></span>
+                <span style="height: 6px; flex: 1; border-radius: 3px;" [style.background-color]="passwordStrength().score >= 3 ? '#27802D' : '#DFE3E8'"></span>
+                <span style="height: 6px; flex: 1; border-radius: 3px;" [style.background-color]="passwordStrength().score >= 4 ? '#27802D' : '#DFE3E8'"></span>
+              </div>
+              <span style="font-size: 12px; font-weight: 600;">{{ passwordStrength().label }}</span>
+            </div>
+            <button class="btn-primary" type="submit" [disabled]="pwdUpdating()">
+              {{ pwdUpdating() ? 'Actualizando...' : 'Actualizar clave' }}
+            </button>
+          </div>
+        </form>
+      </section>
+    }
+
+    <!-- ======================================================================
+         SECCIÓN 3: SEGURIDAD DE SESIONES & CUENTA
+         ====================================================================== -->
+    @if (seccionActiva() === 'sesiones') {
+      <section class="config-card">
+        <div class="config-card-header">
+          <div class="config-card-title-group">
+            <h2>Seguridad de sesiones &amp; cuenta</h2>
+            <span>Control de dispositivos y desvinculación</span>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; background: var(--can-color-background, #F5F6F7); padding: 14px 16px; border-radius: 6px; border: 1px solid var(--can-color-border, #DFE3E8);">
+          <div>
+            <div style="font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 8px;">
+              <span>Sesión Activa</span>
+              <span style="font-size: 11px; padding: 2px 6px; background-color: rgba(39, 128, 45, 0.15); color: #27802D; border-radius: 4px; font-weight: 700;">En línea</span>
+            </div>
+            <span style="font-size: 12px; color: var(--can-color-ink-secondary, #666666);">Navegador actual • Acceso seguro verificado</span>
+          </div>
+          <button class="btn-secondary" type="button" style="color: #b91c1c; border-color: rgba(185, 28, 28, 0.3);" (click)="solicitarCierreSesion()">
+            <span class="material-symbols-outlined" style="font-size: 18px;">logout</span>
+            <span>Cerrar sesión</span>
+          </button>
+        </div>
+
+        <!-- Zona de peligro -->
+        <div style="padding: 14px 16px; background-color: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 6px; display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px; color: #b91c1c; font-weight: 700; font-size: 14px;">
+            <span class="material-symbols-outlined" style="font-size: 18px;">warning</span>
+            <span>Desactivación de Cuenta Matriz</span>
+          </div>
+          <p style="font-size: 12px; color: var(--can-color-ink-secondary, #666666); margin: 0; line-height: 1.5;">
+            Esta acción despublicará tus losas deportivas y requiere la liquidación previa de saldos pendientes.
+          </p>
+          <div style="display: flex; justify-content: flex-end; margin-top: 4px;">
+            <button class="btn-secondary" type="button" style="color: #b91c1c; border-color: rgba(185, 28, 28, 0.3);" (click)="solicitarEliminacionCuenta()">
+              Solicitar asistencia para desactivación...
+            </button>
+          </div>
+        </div>
+      </section>
+    }
+
+    <!-- ======================================================================
+         SECCIÓN 4: NOTIFICACIONES
+         ====================================================================== -->
+    @if (seccionActiva() === 'notificaciones') {
+      <section class="config-card">
+        <div class="config-card-header">
+          <div class="config-card-title-group">
+            <h2>Notificaciones</h2>
+            <span>Solo dentro de Canchero</span>
+          </div>
+          <span style="font-size: 12px; padding: 3px 8px; background: rgba(39, 128, 45, 0.12); color: #27802D; border-radius: 4px; font-weight: 600;">
+            Alertas Activas
+          </span>
+        </div>
+
+        <!-- Switches -->
+        <div style="display: flex; flex-direction: column;">
+          @for (alerta of alertasDefinicion; track alerta.id) {
+          <div class="config-switch-row">
+            <div class="config-switch-label-group">
+              <span class="config-switch-title">{{ alerta.titulo }}</span>
+              <span class="config-switch-sub">{{ alerta.descripcion }}</span>
+            </div>
+            <button class="canchero-switch"
+                    [class.is-checked]="alertaOperativaActiva(alerta.id)"
+                    (click)="toggleAlertaOperativa(alerta.id)"
+                    role="switch"
+                    [attr.aria-checked]="alertaOperativaActiva(alerta.id)"
+                    type="button">
+              <span class="canchero-switch-thumb"></span>
+            </button>
+          </div>
+          }
+        </div>
+
+        <span style="font-size: 12px; color: var(--can-color-ink-secondary, #666666); border-top: 1px solid var(--can-color-border, #DFE3E8); padding-top: 10px;">
+          Correo y WhatsApp no están habilitados.
+        </span>
+
+        <div style="display: flex; justify-content: flex-end;">
+          <button class="btn-primary" type="button" (click)="guardarPreferenciasAlertas(true)">
+            <span class="material-symbols-outlined" style="font-size: 18px;">done_all</span>
+            <span>Guardar Preferencias de Alertas</span>
+          </button>
+        </div>
+      </section>
+    }
+
+    <!-- ======================================================================
+         SECCIÓN 5: RESERVAS PRESENCIALES
+         ====================================================================== -->
+    @if (seccionActiva() === 'reservas') {
+      <section class="config-card">
+        <div class="config-card-header">
+          <div class="config-card-title-group">
+            <h2>Reservas presenciales</h2>
+            <span>Un mínimo común para toda la sede</span>
+          </div>
+        </div>
+
+        <div class="config-field">
+          <label>Adelanto mínimo</label>
+          <input class="config-input is-disabled" type="text" value="30%" disabled>
+          <span class="config-field-hint">Nombre visible para tus jugadores.</span>
+        </div>
+
+        <p style="font-size: 13px; line-height: 1.5; color: var(--can-color-ink-secondary, #666666); margin: 0;">
+          Configurable del 10% al 90%. Saldo antes de jugar. Online: tarjeta al 100%; Yape y Plin no habilitados.
+        </p>
+
+        <button class="btn-primary btn-full btn-disabled" type="button" disabled>
+          Guardar porcentaje
+        </button>
+      </section>
+    }
+
+    <!-- ======================================================================
+         SECCIÓN 6: COMISIÓN Y LIQUIDACIÓN
+         ====================================================================== -->
+    @if (seccionActiva() === 'comision') {
+      <section class="config-card">
+        <div class="config-card-header">
+          <div class="config-card-title-group">
+            <h2>Comisión y liquidación</h2>
+            <span>Condiciones del servicio</span>
+          </div>
+        </div>
+
+        <!-- Highlight Box Comisión 5% -->
+        <div class="commission-box">
+          <div class="commission-header">
+            <span class="commission-title">Comisión Canchero 5%</span>
+            <span class="commission-badge">5.0%</span>
+          </div>
+          <p class="commission-desc">
+            A cargo del dueño sobre el alquiler efectivamente cobrado y registrado. Se revierte proporcionalmente en devoluciones.
+          </p>
+          <span style="font-size: 12px; color: var(--can-color-ink-secondary, #666666);">
+            Las ventas de productos no generan esta comisión.
+          </span>
+          <button class="btn-secondary btn-full btn-disabled" type="button" disabled style="margin-top: 6px;">
+            Gestión bancaria
+          </button>
+        </div>
+
+        <!-- Cuentas bancarias de depósito -->
+        <div class="config-field">
+          <label>Cuentas bancarias de depósito</label>
+          <div class="bank-list">
+            @for (cuenta of cuentasBancarias(); track cuenta.id) {
+            <div class="bank-item"
+                 [class.is-selected]="cuentaBancariaSeleccionada() === cuenta.id"
+                 (click)="seleccionarCuentaBancaria(cuenta.id)">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <input type="radio"
+                       name="bank_choice"
+                       [checked]="cuentaBancariaSeleccionada() === cuenta.id"
+                       (change)="seleccionarCuentaBancaria(cuenta.id)">
+                <div>
+                  <div style="font-weight: 600; font-size: 13px;">{{ cuenta.banco }} - {{ cuenta.tipo }}</div>
+                  <div style="font-size: 12px; color: var(--can-color-ink-secondary, #666666);">N° {{ cuenta.numeroEnmascarado }} (CCI: {{ cuenta.cci }})</div>
+                </div>
+              </div>
+              @if (cuentaBancariaSeleccionada() === cuenta.id) {
+                <span class="material-symbols-outlined" style="color: #27802D; font-size: 20px;">check_circle</span>
+              }
+            </div>
+            }
+          </div>
+          <button class="btn-link" type="button" style="margin-top: 4px;" (click)="abrirAgregarCuentaBancaria()">
+            <span class="material-symbols-outlined" style="font-size: 16px;">add</span>
+            <span>Agregar nueva cuenta bancaria</span>
+          </button>
+        </div>
+
+        <!-- Frecuencia de liquidación -->
+        <div class="config-field">
+          <label>Frecuencia de liquidaciones</label>
+          <div class="freq-group">
+            <button class="freq-btn" [class.is-active]="frecuenciaPago() === 'Semanal (Lunes)'" (click)="cambiarFrecuenciaPago('Semanal (Lunes)')" type="button">Semanal</button>
+            <button class="freq-btn" [class.is-active]="frecuenciaPago() === 'Quincenal'" (click)="cambiarFrecuenciaPago('Quincenal')" type="button">Quincenal</button>
+            <button class="freq-btn" [class.is-active]="frecuenciaPago() === 'Mensual'" (click)="cambiarFrecuenciaPago('Mensual')" type="button">Mensual</button>
+          </div>
+        </div>
+
+        <!-- Comprobantes descargables -->
+        <div class="config-field">
+          <label>Comprobantes de Liquidación Oficial</label>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            @for (comp of comprobantesHistorial(); track comp.codigo) {
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: var(--can-color-background, #F5F6F7); border: 1px solid var(--can-color-border, #DFE3E8); border-radius: 6px;">
+              <div>
+                <div style="font-size: 13px; font-weight: 600;">{{ comp.periodo }} • {{ comp.codigo }}</div>
+                <div style="font-size: 11px; color: var(--can-color-ink-secondary, #666666);">Comisión: S/ {{ comp.comisionMonto.toFixed(2) }} (Neto: S/ {{ comp.netoTransferido.toFixed(2) }})</div>
+              </div>
+              <div style="display: flex; gap: 6px;">
+                <button class="btn-secondary" style="height: 30px; padding: 0 8px; font-size: 11px;" type="button" (click)="descargarComprobanteTxt(comp)">TXT</button>
+                <button class="btn-secondary" style="height: 30px; padding: 0 8px; font-size: 11px;" type="button" (click)="descargarComprobanteXml(comp)">XML</button>
+              </div>
+            </div>
+            }
+          </div>
+        </div>
+      </section>
+    }
+
+  </div>
+
+  <!-- Page Footer Action Bar -->
+  <div class="config-footer">
+    <span class="config-footer-status">Sin cambios pendientes</span>
+    <button class="btn-primary" type="button" (click)="guardarConfiguracionGeneral()">
+      Guardar cambios
+    </button>
+  </div>
+
+  }
+</div>
+
+<!-- ======================================================================
+     MODALES OPERATIVOS
+     ====================================================================== -->
+
+<!-- Modal: Editar Datos del Titular -->
+@if (modalEditarPerfilOpen()) {
+<div class="config-modal-backdrop" (click)="modalEditarPerfilOpen.set(false)">
+  <div class="config-modal-card" (click)="$event.stopPropagation()">
+    <div class="config-modal-header">
+      <h3>Editar Datos del Titular</h3>
+      <button type="button" class="config-modal-close" (click)="modalEditarPerfilOpen.set(false)">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <div class="config-field">
+        <label>Nombre Completo o Razón Social</label>
+        <input class="config-input" [value]="editNombre()" (input)="editNombre.set($any($event.target).value)" placeholder="Ej: Complejo Deportivo S.A.C.">
+      </div>
+      <div class="config-field">
+        <label>RUC Fiscal</label>
+        <input class="config-input" [value]="editRuc()" (input)="editRuc.set($any($event.target).value)" placeholder="20XXXXXXXXX">
+      </div>
+      <div class="config-field">
+        <label>Teléfono de Contacto</label>
+        <input class="config-input" [value]="editTelefono()" (input)="editTelefono.set($any($event.target).value)" placeholder="+51 987 654 321">
+      </div>
+    </div>
+    <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
+      <button class="btn-secondary" type="button" (click)="modalEditarPerfilOpen.set(false)">Cancelar</button>
+      <button class="btn-primary" type="button" (click)="guardarEdicionPerfil()">Guardar Datos</button>
+    </div>
+  </div>
+</div>
+}
+
+<!-- Modal: Agregar Cuenta Bancaria -->
+@if (modalNuevaCuentaOpen()) {
+<div class="config-modal-backdrop" (click)="modalNuevaCuentaOpen.set(false)">
+  <div class="config-modal-card" (click)="$event.stopPropagation()">
+    <div class="config-modal-header">
+      <h3>Nueva Cuenta Bancaria</h3>
+      <button type="button" class="config-modal-close" (click)="modalNuevaCuentaOpen.set(false)">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <div class="config-field">
+        <label>Entidad Bancaria</label>
+        <select class="config-input" [value]="nuevaCuentaBanco()" (change)="nuevaCuentaBanco.set($any($event.target).value)">
+          <option value="BBVA">BBVA Perú</option>
+          <option value="Scotiabank">Scotiabank Perú</option>
+          <option value="BanBif">BanBif</option>
+          <option value="Banco Pichincha">Banco Pichincha</option>
+          <option value="BCP">Banco de Crédito (BCP)</option>
+          <option value="Interbank">Interbank</option>
+        </select>
+      </div>
+      <div class="config-field">
+        <label>Tipo de Cuenta</label>
+        <input class="config-input" [value]="nuevaCuentaTipo()" (input)="nuevaCuentaTipo.set($any($event.target).value)" placeholder="Cuenta Corriente Soles">
+      </div>
+      <div class="config-field">
+        <label>Número de Cuenta</label>
+        <input class="config-input" [value]="nuevaCuentaNumero()" (input)="nuevaCuentaNumero.set($any($event.target).value)" placeholder="0011-0123-0200123456">
+      </div>
+      <div class="config-field">
+        <label>Código Interbancario (CCI)</label>
+        <input class="config-input" [value]="nuevaCuentaCci()" (input)="nuevaCuentaCci.set($any($event.target).value)" placeholder="011-123-000200123456-12">
+      </div>
+    </div>
+    <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
+      <button class="btn-secondary" type="button" (click)="modalNuevaCuentaOpen.set(false)">Cancelar</button>
+      <button class="btn-primary" type="button" (click)="guardarNuevaCuentaBancaria()">Vincular Cuenta</button>
+    </div>
+  </div>
+</div>
+}
+
+<!-- Modal: Confirmar Cierre de Sesión -->
+@if (modalConfirmarLogoutOpen()) {
+<div class="config-modal-backdrop" (click)="modalConfirmarLogoutOpen.set(false)">
+  <div class="config-modal-card" style="max-width: 400px;" (click)="$event.stopPropagation()">
+    <div class="config-modal-header">
+      <h3 style="color: #b91c1c; display: flex; align-items: center; gap: 8px;">
+        <span class="material-symbols-outlined">logout</span>
+        <span>Cerrar Sesión</span>
+      </h3>
+    </div>
+    <p style="font-size: 14px; line-height: 1.5; color: var(--can-color-ink-secondary, #666666); margin: 0;">
+      ¿Estás seguro de que deseas cerrar tu sesión administrativa? Deberás ingresar tus credenciales nuevamente para acceder al panel.
+    </p>
+    <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
+      <button class="btn-secondary" type="button" (click)="modalConfirmarLogoutOpen.set(false)">Cancelar</button>
+      <button class="btn-primary" style="background-color: #b91c1c;" type="button" (click)="confirmarCierreSesion()">Sí, cerrar sesión</button>
+    </div>
+  </div>
+</div>
+}
+
+<!-- Modal: Confirmar Solicitud de Desactivación -->
+@if (modalEliminarCuentaOpen()) {
+<div class="config-modal-backdrop" (click)="modalEliminarCuentaOpen.set(false)">
+  <div class="config-modal-card" (click)="$event.stopPropagation()">
+    <div class="config-modal-header">
+      <h3 style="color: #b91c1c; display: flex; align-items: center; gap: 8px;">
+        <span class="material-symbols-outlined">warning</span>
+        <span>Desactivación de Cuenta Matriz</span>
+      </h3>
+    </div>
+    <p style="font-size: 14px; line-height: 1.5; color: var(--can-color-ink-secondary, #666666); margin: 0;">
+      Para proteger la integridad de las reservas de clientes y la liquidación contable de ingresos, la desactivación definitiva es procesada por el equipo de soporte tras verificar que no existen turnos futuros cobrados ni saldos pendientes.
+    </p>
+    <div style="padding: 10px 14px; background: var(--can-color-background, #F5F6F7); border-radius: 6px; font-size: 13px;">
+      Canal oficial de soporte: <strong>soporte@canchero.pe</strong>
+    </div>
+    <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
+      <button class="btn-secondary" type="button" (click)="modalEliminarCuentaOpen.set(false)">Cancelar</button>
+      <button class="btn-primary" type="button" disabled title="Solicitud de eliminación pendiente de integración con el servidor">Registrar Solicitud</button>
+    </div>
+  </div>
+</div>
+}
+
+<!-- Modal: Centro de Ayuda -->
+@if (modalAyudaOpen()) {
+<div class="config-modal-backdrop" (click)="modalAyudaOpen.set(false)">
+  <div class="config-modal-card" style="max-width: 540px;" (click)="$event.stopPropagation()">
+    <div class="config-modal-header">
+      <h3 style="display: flex; align-items: center; gap: 8px;">
+        <span class="material-symbols-outlined" style="color: #27802D;">help</span>
+        <span>Centro de Ayuda Canchero</span>
+      </h3>
+      <button type="button" class="config-modal-close" (click)="modalAyudaOpen.set(false)">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 14px; font-size: 13px; line-height: 1.5; color: var(--can-color-ink-secondary, #666666);">
+      <div>
+        <strong style="color: var(--can-color-ink, #1A1A1A); display: block; margin-bottom: 2px;">¿Cómo se calculan las comisiones de liquidación?</strong>
+        <span>Canchero retiene una comisión fija del 5.0% sobre cada alquiler efectivamente cobrado. En devoluciones, la comisión se revierte proporcionalmente.</span>
+      </div>
+      <div>
+        <strong style="color: var(--can-color-ink, #1A1A1A); display: block; margin-bottom: 2px;">¿Cuándo se depositan los ingresos a mi cuenta bancaria?</strong>
+        <span>Los cortes semanales se procesan cada lunes a primera hora. También puedes seleccionar cortes quincenales o mensuales en esta pantalla.</span>
+      </div>
+      <div>
+        <strong style="color: var(--can-color-ink, #1A1A1A); display: block; margin-bottom: 2px;">¿Dónde personalizo los logos, colores y fotos de mi sede?</strong>
+        <span>En la pestaña "Personalización &amp; QR" podrás elegir el color de acento, el lema comercial y descargar tu kit físico de recepción.</span>
+      </div>
+    </div>
+    <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
+      <button class="btn-primary" type="button" (click)="modalAyudaOpen.set(false)">Entendido</button>
+    </div>
+  </div>
+</div>
+}

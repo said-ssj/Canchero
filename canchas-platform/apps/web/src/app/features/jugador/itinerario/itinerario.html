@@ -1,364 +1,330 @@
-<main class="container">
-  <!-- Subbar / Franja de Contexto y Pestañas (Mi Itinerario) -->
-  <header class="itinerario-subbar">
-    <div class="containered-width itinerario-top-row">
-      <nav class="breadcrumb-row" aria-label="Ruta de navegación">
-        <a routerLink="/">Inicio</a>
-        <span aria-hidden="true">›</span>
-        <span aria-current="page" class="breadcrumb-current-active">Mi Itinerario</span>
-      </nav>
-
-      <div class="page-title-group">
-        <h1 class="page-title-main">Mi Itinerario Deportivo</h1>
-        <span class="live-status-pill">
-          <span class="pulse-dot-green" aria-hidden="true"></span>
-          En vivo
-        </span>
-      </div>
-    </div>
-
-    <!-- Pestañas Principales: Próximos vs Historial -->
-    <nav class="tabs-nav-bar" aria-label="Filtrar reservas">
-      <div class="filter-pills-bar">
-        <button
-          type="button"
-          class="filter-pill-btn"
-          [class.active]="tabActiva() === 'proximas'"
-          (click)="setTab('proximas')"
-        >
-          Próximas
-          <span class="tab-counter-badge badge-green">{{ countProximas() }}</span>
-        </button>
-        <button
-          type="button"
-          class="filter-pill-btn"
-          [class.active]="tabActiva() === 'historial'"
-          (click)="setTab('historial')"
-        >
-          Historial
-          <span class="tab-counter-badge badge-orange">{{ countHistorial() }}</span>
-        </button>
-        <button
-          type="button"
-          class="filter-pill-btn"
-          [class.active]="tabActiva() === 'todas'"
-          (click)="setTab('todas')"
-        >
-          Todas
-          <span class="tab-counter-badge badge-green">{{ countTodas() }}</span>
-        </button>
-      </div>
+<main class="container" id="main">
+  <!-- Encabezado de página -->
+  <div class="page-title">
+    <nav class="crumb" aria-label="Ruta">
+      <a class="btn" routerLink="/"><span class="material-symbols-outlined icon" aria-hidden="true">arrow_back</span>Inicio</a>
+      <span>Mi Itinerario</span>
     </nav>
-  </header>
-
-  <div class="itinerario-layout-grid">
-    <div class="itinerary-main-col">
-      <!-- Banner Partido de Hoy -->
-      @if (hoyMatch(); as hoy) {
-        <section class="today-match-banner" aria-label="Partido de hoy">
-          <div class="banner-left-info">
-            <div class="banner-icon-circle" aria-hidden="true">
-              <svg class="icon icon-22" aria-hidden="true">
-                <use href="/iconos-canchero.svg#sports_soccer"></use>
-              </svg>
-            </div>
-            <div>
-              <p class="banner-subtitle">Hoy</p>
-              <h2 class="banner-title">{{ hoy.venueName }} · {{ hoy.courtName }}</h2>
-            </div>
-          </div>
-          <button type="button" class="btn-quick-pass" (click)="openQr(hoy)">
-            Ver pase
-            <svg class="icon icon-16" aria-hidden="true">
-              <use href="/iconos-canchero.svg#chevron_right"></use>
-            </svg>
-          </button>
-        </section>
-      }
-
-      <!-- Tarjetas de Partidos -->
-      @for (reserva of reservasVisibles(); track reserva.id) {
-        <article class="match-card">
-          <div class="match-card-content">
-            <div class="match-thumbnail-wrap">
-              <span class="tag-top-thumb tag-fifa-green">FIFA</span>
-              <img
-                [src]="getVenueImage(reserva.venueId)"
-                [alt]="reserva.venueName"
-                loading="lazy"
-              />
-              <span class="tag-bottom-thumb tag-history-gray">Historial</span>
-            </div>
-
-            <div class="match-main-info">
-              <div class="match-header-row">
-                <div>
-                  <span class="match-captain-tag">{{ cabeceraInicial(reserva.venueName) }}</span>
-                  <h3 class="match-venue-name">{{ reserva.venueName }}</h3>
-                  <p class="match-court-sub">{{ reserva.courtName }}</p>
-                </div>
-                <span
-                  class="status-badge"
-                  [class.confirmed]="statusCls(reserva.status) === 'confirmed'"
-                  [class.reviewing]="statusCls(reserva.status) === 'reviewing'"
-                  [class.finished]="statusCls(reserva.status) === 'finished'"
-                >
-                  <svg class="icon icon-16" aria-hidden="true">
-                    <use [attr.href]="'/iconos-canchero.svg#' + statusIcon(reserva.status)"></use>
-                  </svg>
-                  {{ statusLabel(reserva.status) }}
-                </span>
-              </div>
-
-              <div class="match-meta-grid">
-                <div class="meta-line">
-                  <svg class="icon icon-16" aria-hidden="true">
-                    <use href="/iconos-canchero.svg#calendar_month"></use>
-                  </svg>
-                  {{ fechaDisplay(reserva.fecha) }}
-                </div>
-                <div class="meta-line">
-                  <svg class="icon icon-16" aria-hidden="true">
-                    <use href="/iconos-canchero.svg#schedule"></use>
-                  </svg>
-                  {{ reserva.horario }}
-                </div>
-                <div class="meta-line">
-                  <svg class="icon icon-16" aria-hidden="true">
-                    <use href="/iconos-canchero.svg#location_on"></use>
-                  </svg>
-                  {{ reserva.venueName }}
-                </div>
-              </div>
-
-              <div class="squad-progress-box">
-                <div class="squad-header-line">
-                  <span class="squad-header-label">Mi equipo</span>
-                  <span class="quota-assigned-pill">{{ cuotaJugadores(reserva) }}</span>
-                </div>
-                <div class="avatars-stack">
-                  @for (jugador of reserva.jugadores ?? []; track $index) {
-                    <span class="avatar-stack-item">{{ cabeceraInicial(jugador) }}</span>
-                  }
-                  <span class="avatar-stack-plus" aria-hidden="true">+</span>
-                </div>
-                <div class="progress-track-squad" role="presentation">
-                  <div
-                    class="progress-fill-squad"
-                    [style.width.%]="progressoSquad(reserva)"
-                  ></div>
-                </div>
-                <div class="squad-amounts-line">
-                  <span>{{ fmtMontoRecaudado(reserva) }}</span>
-                  <span>{{ fmtTotal(reserva) }}</span>
-                </div>
-              </div>
-
-              <div class="actions-buttons-cluster">
-                <button type="button" class="btn-action-outline" (click)="compartirWhatsApp(reserva)">
-                  <svg class="icon icon-16" aria-hidden="true">
-                    <use href="/iconos-canchero.svg#whatsapp"></use>
-                  </svg>
-                  Compartir
-                </button>
-                <button type="button" class="btn-action-green" (click)="openQr(reserva)">
-                  <svg class="icon icon-16" aria-hidden="true">
-                    <use href="/iconos-canchero.svg#qr_code_2"></use>
-                  </svg>
-                  Ver pase QR
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div class="match-action-toolbar">
-            <p class="match-total-amount">{{ fmtTotal(reserva) }}</p>
-            <div class="actions-buttons-cluster">
-              <button type="button" class="btn-action-outline" (click)="copiarCodigoPase(reserva)">
-                <svg class="icon icon-16" aria-hidden="true">
-                  <use href="/iconos-canchero.svg#content_copy"></use>
-                </svg>
-                Copiar código
-              </button>
-            </div>
-          </div>
-        </article>
-      } @empty {
-        @if (!isLoggedIn()) {
-          <div class="empty-state-banner" style="padding: 3.5rem 1.5rem; text-align: center;">
-            <div class="empty-icon-circle" style="margin: 0 auto 1.25rem auto;">
-              <svg class="icon icon-32" aria-hidden="true">
-                <use href="/iconos-canchero.svg#lock"></use>
-              </svg>
-            </div>
-            <h2 class="empty-state-title">Inicia sesión para ver tu itinerario</h2>
-            <p class="empty-state-subtitle" style="max-width: 480px; margin: 0.5rem auto 1.5rem auto;">
-              No has ingresado a ninguna cuenta de jugador. Inicia sesión para ver tus reservas confirmadas, convocatorias y tus pases QR de acceso.
-            </p>
-            <a routerLink="/login" class="cta-explore-btn btn-action-green" style="display: inline-flex; align-items: center; gap: 8px;">
-              <svg class="icon icon-18" aria-hidden="true"><use href="/iconos-canchero.svg#lock_open"></use></svg>
-              Iniciar Sesión
-            </a>
-          </div>
-        } @else {
-          <div class="empty-state-banner">
-            <svg class="icon icon-32" aria-hidden="true">
-              <use href="/iconos-canchero.svg#event_available"></use>
-            </svg>
-            <h2 class="empty-state-title">Aún no tienes reservas</h2>
-            <p class="empty-state-subtitle">
-              Explora canchas disponibles y arma tu próxima pichanga.
-            </p>
-            <a routerLink="/sedes" class="cta-explore-btn btn-action-green">
-              Explorar canchas
-              <svg class="icon icon-16" aria-hidden="true">
-                <use href="/iconos-canchero.svg#chevron_right"></use>
-              </svg>
-            </a>
-          </div>
-        }
-      }
-    </div>
-
-    <!-- Columna Compañera (Pase Oficial / QR / Clima) -->
-    <aside class="companion-sticky-col">
-      <div class="weather-widget-card">
-        <div class="banner-icon-circle" aria-hidden="true">
-          <svg class="icon icon-22" aria-hidden="true">
-            <use href="/iconos-canchero.svg#wb_sunny"></use>
-          </svg>
-        </div>
-        <p class="live-status-pill">
-          <span class="pulse-dot-green" aria-hidden="true"></span>
-          Clima en tu zona
-        </p>
-        <h3 class="banner-title">{{ climaTitulo() }}</h3>
-        <p class="banner-subtitle">{{ climaDetalle() }}</p>
+    <div class="row spread" style="align-items: baseline; margin-top: 8px;">
+      <div>
+        <h1>Mi Itinerario</h1>
+        <p>Tus partidos y pases de juego, reunidos en un solo lugar.</p>
       </div>
+    </div>
+  </div>
 
-      @if (paseActivo(); as pase) {
-        <div class="official-pass-card">
-          <div class="pass-header">
-            <div class="pass-logo-circle" aria-hidden="true">
-              <svg class="icon icon-20" aria-hidden="true">
-                <use href="/iconos-canchero.svg#sports_soccer"></use>
-              </svg>
-            </div>
-            <span class="pass-title">{{ passTitle }}</span>
-            <span class="pass-active-badge">
-              <svg class="icon icon-14" aria-hidden="true">
-                <use href="/iconos-canchero.svg#verified"></use>
-              </svg>
-              Pase activo
-            </span>
-          </div>
+  <!-- Pestañas Segmentadas del Sistema de Diseño -->
+  <div class="segmented booking-tabs" role="tablist" aria-label="Filtrar reservas">
+    <button
+      type="button"
+      role="tab"
+      [attr.aria-selected]="tabActiva() === 'proximas'"
+      [class.active]="tabActiva() === 'proximas'"
+      (click)="setTab('proximas')"
+    >
+      Próximas ({{ countProximas() }})
+    </button>
+    <button
+      type="button"
+      role="tab"
+      [attr.aria-selected]="tabActiva() === 'historial'"
+      [class.active]="tabActiva() === 'historial'"
+      (click)="setTab('historial')"
+    >
+      Historial ({{ countHistorial() }})
+    </button>
+    <button
+      type="button"
+      role="tab"
+      [attr.aria-selected]="tabActiva() === 'todas'"
+      [class.active]="tabActiva() === 'todas'"
+      (click)="setTab('todas')"
+    >
+      Todas ({{ countTodas() }})
+    </button>
+  </div>
 
-          <div class="pass-metadata-box">
-            <div class="pass-meta-row">
-              <span class="pass-meta-label">Código de pase</span>
-              <span class="pass-meta-val">{{ pase.codigoPase }}</span>
-            </div>
-            <div class="pass-meta-row">
-              <span class="pass-meta-label">Titular</span>
-              <span class="pass-meta-val">{{ pase.jugadores?.[0] ?? 'Tú' }}</span>
-            </div>
-          </div>
+  <!-- Alertas de Carga y Cancelación -->
+  @if (loadError()) {
+    <div class="notice danger" role="alert" style="margin-bottom: 20px;">
+      <span class="material-symbols-outlined icon" aria-hidden="true">error</span>
+      <div style="flex: 1;">
+        <strong>Error al cargar reservas</strong>
+        <p>{{ loadError() }}</p>
+      </div>
+      <button type="button" class="btn" (click)="retry()">
+        <span class="material-symbols-outlined icon" aria-hidden="true">refresh</span>
+        Reintentar
+      </button>
+    </div>
+  }
 
-          <div class="qr-dark-frame">
-            <div class="qr-white-card">
-              <span class="qr-alphanumeric-code">{{ pase.codigoPase }}</span>
-            </div>
-          </div>
+  @if (cancelError()) {
+    <div class="notice warning" role="alert" style="margin-bottom: 20px;">
+      <span class="material-symbols-outlined icon" aria-hidden="true">warning</span>
+      <div>
+        <strong>Aviso de cancelación</strong>
+        <p>{{ cancelError() }}</p>
+      </div>
+    </div>
+  }
 
-          <button type="button" class="btn-pass-action-green" (click)="openQr(pase)">
-            <svg class="icon icon-16" aria-hidden="true">
-              <use href="/iconos-canchero.svg#qr_code_scanner"></use>
-            </svg>
-            Ver QR completo
-          </button>
-          <button type="button" class="btn-pass-action-dark" (click)="copiarCodigoPase(pase)">
-            <svg class="icon icon-16" aria-hidden="true">
-              <use href="/iconos-canchero.svg#content_copy"></use>
-            </svg>
-            Copiar código de pase
-          </button>
+  <div class="itinerario-layout">
+    <!-- Columna Principal de Partidos -->
+    <div class="itinerario-main-col">
+      <!-- Skeleton Loading State -->
+      @if (isLoading()) {
+        <div class="stack" aria-busy="true">
+          <div class="skeleton-card" style="height: 120px;"></div>
+          <div class="skeleton-card" style="height: 120px;"></div>
         </div>
       } @else {
-        <div class="official-pass-card" style="text-align: center; padding: 2.2rem 1.5rem;">
-          <div class="pass-logo-circle" style="margin: 0 auto 1rem auto;" aria-hidden="true">
-            <svg class="icon icon-20" aria-hidden="true">
-              <use href="/iconos-canchero.svg#qr_code_2"></use>
-            </svg>
+        <!-- Partido de Hoy Destacado -->
+        @if (hoyMatch(); as hoy) {
+          <div class="notice success" style="margin-bottom: 20px; align-items: center;">
+            <span class="material-symbols-outlined icon" aria-hidden="true">sports_soccer</span>
+            <div style="flex: 1;">
+              <strong>Hoy tienes partido · {{ hoy.horario }}</strong>
+              <p>{{ hoy.venueName }} · {{ hoy.courtName }}</p>
+            </div>
           </div>
-          <h4 style="font-size: 1rem; font-weight: 700; color: var(--color-ink-900); margin: 0 0 0.4rem 0;">Sin pases activos</h4>
-          <p style="font-size: 0.82rem; color: var(--color-ink-500); margin: 0 0 1.25rem 0; line-height: 1.4;">
-            Cuando tengas una reserva activa, aquí se generará automáticamente tu pase oficial con código QR y check-in presencial.
-          </p>
-          <a routerLink="/sedes" class="btn btn-outline btn-sm" style="display: inline-flex; align-items: center; gap: 6px;">
-            Explorar Canchas
-          </a>
+        }
+
+        <!-- Lista de Reservas -->
+        <section class="booking-panel" aria-label="Listado de reservas">
+          @for (reserva of reservasVisibles(); track reserva.id) {
+            <article class="card booking-item">
+              <!-- Bloque de Fecha Canchero -->
+              <div class="booking-date">
+                <span>{{ fechaMes(reserva.fecha) }}</span>
+                <strong>{{ fechaDia(reserva.fecha) }}</strong>
+                <span>{{ fechaAnio(reserva.fecha) }}</span>
+              </div>
+
+              <!-- Información de Reserva -->
+              <div class="booking-info">
+                <div class="row" style="justify-content: space-between; align-items: flex-start;">
+                  <h3 style="margin: 0;">{{ reserva.venueName }}</h3>
+                  <span
+                    class="badge"
+                    [class.success]="reserva.status === 'CONFIRMADO'"
+                    [class.warning]="reserva.status === 'PENDIENTE' || reserva.status === 'EN_REVISION'"
+                    [class.danger]="reserva.status === 'CANCELADO'"
+                  >
+                    <span class="material-symbols-outlined icon" aria-hidden="true">{{ statusIcon(reserva.status) }}</span>
+                    {{ statusLabel(reserva.status) }}
+                  </span>
+                </div>
+
+                <p style="margin: 4px 0 2px 0;">{{ reserva.courtName }}</p>
+                <strong class="small" style="color: var(--ink);">{{ reserva.horario }}</strong>
+
+                <div class="row" style="gap: 12px; margin-top: 6px; font-size: 12px; color: var(--muted);">
+                  <span>Código: <strong style="color: var(--ink);">{{ reserva.codigoPase }}</strong></span>
+                  <span>Total: <strong style="color: var(--primary);">{{ fmtTotal(reserva) }}</strong></span>
+                  <span>Pagado: <strong style="color: var(--primary);">{{ fmtPaid(reserva) }}</strong></span>
+                  @if (reserva.balanceAmount && reserva.balanceAmount > 0) {
+                    <span>Saldo: <strong style="color: var(--warning);">{{ fmtBalance(reserva) }}</strong></span>
+                  }
+                  @if (reserva.paymentOperationNumber) {
+                    <span>Operación: <code style="font-family: monospace;">{{ reserva.paymentOperationNumber }}</code></span>
+                  }
+                </div>
+              </div>
+
+              <!-- Acciones de Reserva -->
+              <div class="booking-actions">
+                <button type="button" class="btn primary" (click)="openQr(reserva)">
+                  <span class="material-symbols-outlined icon" aria-hidden="true">qr_code</span>
+                  Ver pase QR
+                </button>
+                <button type="button" class="btn" (click)="compartirWhatsApp(reserva)" title="Compartir convocatoria por WhatsApp">
+                  <span class="material-symbols-outlined icon" aria-hidden="true">share</span>
+                  Compartir
+                </button>
+                @if (reserva.status === 'CONFIRMADO' || reserva.status === 'PENDIENTE') {
+                  <button
+                    type="button"
+                    class="btn"
+                    style="color: var(--danger); border-color: var(--line);"
+                    [disabled]="isCancelling() === reserva.id"
+                    (click)="cancelarReserva(reserva)"
+                  >
+                    <span class="material-symbols-outlined icon" aria-hidden="true">close</span>
+                    {{ isCancelling() === reserva.id ? 'Cancelando...' : 'Cancelar reserva' }}
+                  </button>
+                }
+              </div>
+            </article>
+          } @empty {
+            @if (!isLoggedIn()) {
+              <article class="card state" style="text-align: center; padding: 48px 24px;">
+                <span class="material-symbols-outlined icon" style="font-size: 40px; color: var(--muted);" aria-hidden="true">lock</span>
+                <h3 style="margin-top: 12px;">Inicia sesión para ver tu itinerario</h3>
+                <p style="color: var(--muted); max-width: 440px; margin: 8px auto 20px;">
+                  No has ingresado a ninguna cuenta de jugador. Inicia sesión para ver tus reservas confirmadas y tus pases QR de acceso.
+                </p>
+                <a routerLink="/login" class="btn primary" style="display: inline-flex; align-items: center; gap: 6px;">
+                  <span class="material-symbols-outlined icon" aria-hidden="true">lock_open</span>
+                  Iniciar sesión
+                </a>
+              </article>
+            } @else {
+              <article class="card state" style="text-align: center; padding: 48px 24px;">
+                <span class="material-symbols-outlined icon" style="font-size: 40px; color: var(--muted);" aria-hidden="true">calendar_month</span>
+                <h3 style="margin-top: 12px;">Aún no tienes reservas</h3>
+                <p style="color: var(--muted); max-width: 440px; margin: 8px auto 20px;">
+                  Explora canchas disponibles y arma tu próxima pichanga sin complicaciones.
+                </p>
+                <a routerLink="/sedes" class="btn primary" style="display: inline-flex; align-items: center; gap: 6px;">
+                  <span class="material-symbols-outlined icon" aria-hidden="true">search</span>
+                  Explorar canchas
+                </a>
+              </article>
+            }
+          }
+        </section>
+      }
+    </div>
+
+    <!-- Columna Lateral: Pase Rápido / Perfil -->
+    <aside class="itinerario-aside">
+      @if (isLoggedIn()) {
+        <div class="card" style="padding: 20px; margin-bottom: 20px;">
+          <div class="row" style="align-items: center; gap: 12px;">
+            <span class="avatar" style="width: 40px; height: 40px; font-size: 15px;">{{ cabeceraInicial(currentUser()?.nombre || 'J') }}</span>
+            <div style="overflow: hidden;">
+              <strong style="display: block; font-size: 14px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">{{ currentUser()?.nombre || 'Jugador' }}</strong>
+              <small class="muted" style="display: block; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">{{ currentUser()?.correo || currentUser()?.email || 'Cuenta verificada' }}</small>
+            </div>
+          </div>
+          <div class="list" style="margin-top: 16px; border-top: 1px solid var(--line); padding-top: 12px;">
+            <div class="list-line">
+              <span>Próximos partidos</span>
+              <strong>{{ countProximas() }}</strong>
+            </div>
+            <div class="list-line">
+              <span>Historial jugado</span>
+              <strong>{{ countHistorial() }}</strong>
+            </div>
+          </div>
+        </div>
+      }
+
+      @if (paseActivo(); as pase) {
+        <article class="card pass-ticket">
+          <div class="pass-ticket-header">
+            <span class="brand"><span class="brand-mark">C</span>Canchero</span>
+            <span class="badge success">Pase activo</span>
+          </div>
+          <div class="pass-qr">
+            <div class="qr-canvas-mock">
+              <span class="material-symbols-outlined icon" style="font-size: 120px; color: var(--ink);" aria-hidden="true">qr_code_2</span>
+            </div>
+            <strong>{{ pase.codigoPase }}</strong>
+            <p>Pase oficial de ingreso</p>
+          </div>
+          <div class="pass-ticket-data">
+            <h2>{{ pase.venueName }}</h2>
+            <p>{{ pase.courtName }}</p>
+            <div class="row spread">
+              <span>{{ fechaDisplay(pase.fecha) }}</span>
+              <strong>{{ pase.horario }}</strong>
+            </div>
+            <small class="muted">Titular: {{ pase.jugadores?.[0] ?? 'Tú' }}</small>
+          </div>
+          <div style="padding: 16px; border-top: 1px solid var(--line); display: grid; gap: 8px;">
+            <button type="button" class="btn primary" (click)="openQr(pase)">
+              <span class="material-symbols-outlined icon" aria-hidden="true">qr_code_scanner</span>
+              Ver QR completo
+            </button>
+            <button type="button" class="btn" (click)="copiarCodigoPase(pase)">
+              <span class="material-symbols-outlined icon" aria-hidden="true">content_copy</span>
+              Copiar código
+            </button>
+          </div>
+        </article>
+      } @else {
+        <div class="card state" style="padding: 24px; text-align: center;">
+          <span class="material-symbols-outlined icon" style="font-size: 32px; color: var(--muted);" aria-hidden="true">confirmation_number</span>
+          <h3 style="font-size: 15px; margin-top: 8px;">Sin pases activos</h3>
+          <p class="muted small" style="margin-top: 4px;">Cuando reserves una cancha, aquí aparecerá tu pase de acceso inmediato.</p>
         </div>
       }
     </aside>
   </div>
 </main>
 
-<!-- Modal QR del Pase -->
+<!-- Modal de Pase de Acceso QR -->
 @if (qrAbierto() && reservaQr(); as reserva) {
-  <div class="modal-overlay-classic" (click)="onBackdropClick($event)">
-    <div
-      class="modal-window-classic"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Código QR de tu pase"
-    >
-      <button type="button" class="modal-close-btn" (click)="closeQr()" aria-label="Cerrar">
-        <svg class="icon icon-20" aria-hidden="true">
-          <use href="/iconos-canchero.svg#close"></use>
-        </svg>
-      </button>
-      <h2 class="pass-title">Tu pase de acceso</h2>
-      <p class="banner-subtitle">{{ reserva.venueName }} · {{ reserva.courtName }}</p>
-
-      <div class="qr-dark-frame">
-        <div class="qr-white-card">
-          <svg class="icon icon-160" aria-hidden="true">
-            <use href="/iconos-canchero.svg#qr_code_2"></use>
-          </svg>
-        </div>
+  <div class="dialog-backdrop is-visible" (click)="onBackdropClick($event)">
+    <div class="dialog pass-modal" role="dialog" aria-modal="true" aria-label="Código QR de tu pase">
+      <div class="dialog-header">
+        <h2 style="font-size: 16px; margin: 0;">Pase de Acceso Oficial</h2>
+        <button type="button" class="btn icon-only" (click)="closeQr()" title="Cerrar" aria-label="Cerrar modal">
+          <span class="material-symbols-outlined icon" aria-hidden="true">close</span>
+        </button>
       </div>
 
-      <span class="qr-alphanumeric-code">{{ reserva.codigoPase }}</span>
+      <div class="dialog-body" style="padding: 0;">
+        <article class="pass-ticket" style="border: none; box-shadow: none;">
+          <div class="pass-ticket-header">
+            <span class="brand"><span class="brand-mark">C</span>Canchero</span>
+            <span class="badge success">{{ statusLabel(reserva.status) }}</span>
+          </div>
 
-      <div class="pass-metadata-box">
-        <div class="pass-meta-row">
-          <span class="pass-meta-label">Fecha</span>
-          <span class="pass-meta-val">{{ fechaDisplay(reserva.fecha) }}</span>
-        </div>
-        <div class="pass-meta-row">
-          <span class="pass-meta-label">Hora</span>
-          <span class="pass-meta-val">{{ reserva.horario }}</span>
-        </div>
-        <div class="pass-meta-row">
-          <span class="pass-meta-label">Total</span>
-          <span class="pass-meta-val">{{ fmtTotal(reserva) }}</span>
-        </div>
+          <div class="pass-qr">
+            <div class="qr-canvas-mock">
+              <span class="material-symbols-outlined icon" style="font-size: 160px; color: var(--ink);" aria-hidden="true">qr_code_2</span>
+            </div>
+            <strong>{{ reserva.codigoPase }}</strong>
+            <p>Pase oficial de ingreso</p>
+          </div>
+
+          <div class="pass-ticket-data">
+            <h2>{{ reserva.venueName }}</h2>
+            <p>{{ reserva.courtName }}</p>
+            <div class="row spread">
+              <span>{{ fechaDisplay(reserva.fecha) }}</span>
+              <strong>{{ reserva.horario }}</strong>
+            </div>
+            <div class="list" style="margin-top: 12px; border-top: 1px dashed var(--line); padding-top: 8px;">
+              <div class="list-line">
+                <span>Total Alquiler</span>
+                <strong>{{ fmtTotal(reserva) }}</strong>
+              </div>
+              <div class="list-line">
+                <span>Monto Pagado</span>
+                <strong style="color: var(--primary);">{{ fmtPaid(reserva) }}</strong>
+              </div>
+              @if (reserva.balanceAmount && reserva.balanceAmount > 0) {
+                <div class="list-line">
+                  <span>Saldo Pendiente</span>
+                  <strong style="color: var(--warning);">{{ fmtBalance(reserva) }}</strong>
+                </div>
+              }
+              @if (reserva.paymentOperationNumber) {
+                <div class="list-line">
+                  <span>Operación</span>
+                  <code style="font-family: monospace;">{{ reserva.paymentOperationNumber }}</code>
+                </div>
+              }
+            </div>
+          </div>
+        </article>
       </div>
 
-      <div class="actions-buttons-cluster">
-        <button type="button" class="btn-whatsapp" (click)="compartirWhatsApp(reserva)">
-          <svg class="icon icon-16" aria-hidden="true">
-            <use href="/iconos-canchero.svg#whatsapp"></use>
-          </svg>
+      <div class="dialog-footer">
+        <button type="button" class="btn" (click)="compartirWhatsApp(reserva)">
+          <span class="material-symbols-outlined icon" aria-hidden="true">share</span>
           Compartir pase
         </button>
-        <button type="button" class="btn-pass-action-dark" (click)="copiarCodigoPase(reserva)">
-          <svg class="icon icon-16" aria-hidden="true">
-            <use href="/iconos-canchero.svg#content_copy"></use>
-          </svg>
+        <button type="button" class="btn primary" (click)="copiarCodigoPase(reserva)">
+          <span class="material-symbols-outlined icon" aria-hidden="true">content_copy</span>
           Copiar código
         </button>
       </div>
     </div>
   </div>
 }
+

@@ -1,198 +1,140 @@
-<section class="checkout-context-bar">
-  <div class="container checkout-context-container">
-    <!-- Mini ficha de la cancha elegida -->
-    <div class="context-venue-info">
-      <div class="context-thumb">
-        <img [src]="selectedComplejo().img" alt="Cancha Sintética">
-      </div>
+@if (isLoadingCatalog()) {
+  <div class="container" style="padding: 48px 0;" aria-busy="true">
+    <div class="card" style="padding: 24px; margin-bottom: 24px;">
+      <div class="skeleton-card" style="height: 20px; width: 240px; margin-bottom: 12px;"></div>
+      <div class="skeleton-card" style="height: 14px; width: 360px;"></div>
+    </div>
+    <div class="card" style="padding: 24px;">
+      <div class="skeleton-card" style="height: 18px; width: 180px; margin-bottom: 16px;"></div>
+      <div class="skeleton-card" style="height: 200px;"></div>
+      <p class="muted small" style="margin-top: 16px;">Cargando información de la cancha y disponibilidad oficial...</p>
+    </div>
+  </div>
+} @else if (contextError(); as errorMsg) {
+  <section class="container" style="padding: 64px 0;">
+    <div class="card state" style="max-width: 520px; margin: 0 auto; text-align: center; padding: 40px 24px;">
+      <span class="material-symbols-outlined icon" style="font-size: 40px; color: var(--danger); margin-bottom: 12px;" aria-hidden="true">error_outline</span>
+      <h2 style="font-size: 18px; margin: 0 0 8px 0;">Cancha no disponible</h2>
+      <p style="color: var(--muted); font-size: 13px; line-height: 1.5; margin: 0 0 20px 0;">
+        {{ errorMsg }}
+      </p>
+      <a routerLink="/sedes" class="btn primary" style="display: inline-flex; align-items: center; gap: 8px;">
+        <span class="material-symbols-outlined icon" aria-hidden="true">arrow_back</span>
+        Volver al catálogo de sedes
+      </a>
+    </div>
+  </section>
+} @else {
+  <main class="container" id="main">
+    <!-- Migas de pan y contexto de cancha -->
+    <nav class="crumb" aria-label="Ruta">
+      <a class="btn" routerLink="/sedes"><span class="material-symbols-outlined icon" aria-hidden="true">arrow_back</span>Sedes</a>
+      <span>{{ selectedComplejo().name }} / {{ activePaso() === 1 ? 'Horarios' : (activePaso() === 2 ? 'Pago' : 'Confirmación') }}</span>
+    </nav>
+
+    <div class="court-context">
+      <img [src]="selectedComplejo().img || fallbackCourtImg" (error)="onImgError($event)" alt="Fotografía referencial de la cancha">
       <div>
-        <div class="context-title-group">
-          <h1 class="context-venue-name" style="margin: 0;">{{ selectedComplejo().name }}</h1>
-          <span class="context-court-pill">{{ selectedTipoCancha() }}</span>
-          <span class="venue-online-badge">
-            <span class="pulse-dot-green"></span>
-            Sede Online
-          </span>
-        </div>
-        <div class="context-meta-row">
-          <span class="context-meta-item">
-            <svg class="icon-15 icon" style="color: var(--color-brand-green);" aria-hidden="true"><use href="/iconos-canchero.svg#calendar_month"></use></svg>
-            <span>{{ summaryDateText() }}</span>
-          </span>
-          <span>•</span>
-          <span class="context-meta-item">
-            <svg class="icon-15 icon" style="color: var(--color-brand-orange);" aria-hidden="true"><use href="/iconos-canchero.svg#schedule"></use></svg>
-            <span>{{ horarioText() }}</span>
-          </span>
-          <span>•</span>
-          <button type="button" class="context-change-link" (click)="goToPaso(1)">
-            <svg class="icon-14 icon" aria-hidden="true"><use href="/iconos-canchero.svg#arrow_back"></use></svg>
-            Cambiar horario
-          </button>
+        <h1>{{ resolvedCourt()?.nombre || selectedComplejo().name }} · {{ selectedTipoCancha() }}</h1>
+        <p class="muted small">{{ selectedComplejo().name }} · {{ selectedComplejo().address }}</p>
+        <div class="row">
+          <span class="badge">{{ resolvedCourt()?.tipo || 'Fútbol 7' }}</span>
+          <span class="badge">{{ resolvedCourt()?.superficie || 'Grass Sintético' }}</span>
+          <span class="badge">{{ resolvedCourt()?.cobertura || 'Techada' }}</span>
+          <span class="badge success">Tarifa base: S/ {{ basePrice() }}/h</span>
         </div>
       </div>
     </div>
 
-    <!-- Stepper horizontal clásico Canchero -->
-    <div class="checkout-stepper">
-      <div class="step-item">
-        <div class="step-circle" [class.completed]="activePaso() > 1" [class.active]="activePaso() === 1" [class.pending]="activePaso() < 1">
-          @if (activePaso() > 1) {
-            <svg class="icon-14 icon" aria-hidden="true"><use href="/iconos-canchero.svg#check"></use></svg>
-          } @else {
-            <span>1</span>
-          }
-        </div>
-        <span class="step-label" [class.active]="activePaso() === 1">Horarios</span>
-      </div>
-      <div class="step-divider" [class.active]="activePaso() > 1"></div>
-      <div class="step-item">
-        <div class="step-circle" [class.completed]="activePaso() > 2" [class.active]="activePaso() === 2" [class.pending]="activePaso() < 2">
-          @if (activePaso() > 2) {
-            <svg class="icon-14 icon" aria-hidden="true"><use href="/iconos-canchero.svg#check"></use></svg>
-          } @else {
-            <span>2</span>
-          }
-        </div>
-        <span class="step-label" [class.active]="activePaso() === 2">División y Pago</span>
-      </div>
-      <div class="step-divider" [class.active]="activePaso() > 2"></div>
-      <div class="step-item">
-        <div class="step-circle" [class.active]="activePaso() === 3" [class.pending]="activePaso() < 3">
-          <span>3</span>
-        </div>
-        <span class="step-label" [class.active]="activePaso() === 3">Confirmación</span>
-      </div>
+    <!-- Stepper Canchero -->
+    <div class="steps" aria-label="Pasos de reserva">
+      <strong [style.color]="activePaso() === 1 ? 'var(--primary)' : 'var(--muted)'">1. Horarios</strong>
+      <strong [style.color]="activePaso() === 2 ? 'var(--primary)' : 'var(--muted)'">2. Pago</strong>
+      <strong [style.color]="activePaso() === 3 ? 'var(--primary)' : 'var(--muted)'">3. Confirmación</strong>
     </div>
-  </div>
 
-  <!-- Alerta de Retención Temporal con Cronómetro -->
-  <div class="retention-alert-bar">
-    <div class="container retention-alert-content">
-      <div class="retention-left">
-        <svg class="icon-18 icon" style="color: var(--color-brand-orange);" aria-hidden="true"><use href="/iconos-canchero.svg#timer"></use></svg>
-        <span>
-          <strong style="color: var(--color-brand-orange);">Turno retenido temporalmente:</strong>
-          Tienes <span class="retention-timer">{{ retentionText() }}</span> para completar tu reserva antes de que vuelva al mercado libre.
-        </span>
-      </div>
-    </div>
-  </div>
-</section>
-
-<main class="container">
-  <div class="checkout-main-grid">
-
-    <!-- COLUMNA IZQUIERDA: Pasos Interactivos -->
-    <div class="checkout-left-col">
-
-      @switch (activePaso()) {
-        @case (1) {
-          <!-- ============ PASO 1: HORARIOS ============ -->
-          <!-- Paso 1.1: Selección de Sede y Tipo de Cancha -->
-          <section class="checkout-card">
-            <div class="checkout-card-header">
-              <div class="checkout-card-title-group">
-                <div class="step-number-circle">1</div>
-                <h2 class="checkout-card-title">Sede y Tipo de Cancha</h2>
+    @switch (activePaso()) {
+      @case (1) {
+        <!-- ==================== PASO 1: SELECCIÓN DE HORARIOS ==================== -->
+        <div class="checkout-layout">
+          <section>
+            <!-- Cabecera de Calendario -->
+            <div class="calendar-header">
+              <div>
+                <h2 style="margin: 0; font-size: 18px;">Selecciona tus horas</h2>
+                <p class="muted small" style="margin: 4px 0 0 0;">Visualiza la disponibilidad completa de la semana y arma tu bloque continuo</p>
               </div>
-              <span class="context-court-pill" style="font-size: 0.75rem;">{{ selectedTipoCancha() }} • S/ {{ selectedComplejo().price }}/hr</span>
-            </div>
-
-            <div class="reserva-grid-2">
-              <div class="form-group" style="margin-bottom: 0;">
-                <label for="selectComplejo" class="form-label">Sede Deportiva</label>
-                <select id="selectComplejo" class="form-control" [(ngModel)]="selectedComplejoId" (ngModelChange)="onComplejoChange($event)">
-                  @for (complejo of complejos(); track complejo.id) {
-                    <option [value]="complejo.id">{{ complejo.name }}</option>
-                  }
-                </select>
-              </div>
-              <div class="form-group" style="margin-bottom: 0;">
-                <label for="selectTipoCancha" class="form-label">Tipo de Cancha</label>
-                <select id="selectTipoCancha" class="form-control" [(ngModel)]="selectedTipoCancha">
-                  <option value="Grass 7">Fútbol 7 - Grass Sintético (S/ {{ selectedComplejo().price }}/hr)</option>
-                  <option value="Grass 5">Fútbol 5 - Grass Sintético (S/ {{ getSlotPrice(9, basePrice()) }}/hr aprox.)</option>
-                  <option value="Futsal Techado">Futsal Techado - Tabloncillo (S/ {{ getSlotPrice(9, basePrice()) }}/hr aprox.)</option>
-                </select>
-              </div>
-            </div>
-          </section>
-
-          <!-- Paso 1.2: Calendario Semanal -->
-          <section class="checkout-card">
-            <div class="checkout-card-header">
-              <div class="checkout-card-title-group">
-                <div class="step-number-circle">2</div>
-                <div>
-                  <h2 class="checkout-card-title" style="margin: 0;">Horarios de Juego Semanales</h2>
-                  <p class="card-description" style="margin: 2px 0 0 0;">Visualiza la disponibilidad completa de la semana y selecciona tus horas favoritas sin esperas</p>
+              <div class="row" style="align-items: center; gap: 8px;">
+                <div class="btn-group">
+                  <button type="button" class="btn icon-only" (click)="prevWeek()" [disabled]="weekOffset() === 0" title="Semana anterior" aria-label="Semana anterior">
+                    <span class="material-symbols-outlined icon" aria-hidden="true">chevron_left</span>
+                  </button>
+                  <button type="button" class="btn" (click)="todayWeek()">Esta semana</button>
+                  <button type="button" class="btn icon-only" (click)="nextWeek()" title="Semana siguiente" aria-label="Semana siguiente">
+                    <span class="material-symbols-outlined icon" aria-hidden="true">chevron_right</span>
+                  </button>
                 </div>
-              </div>
-              <span class="context-court-pill" style="font-size: 0.75rem;">{{ convocadosText() }} en lista</span>
-            </div>
-
-            <!-- Toolbar de Navegación de Semanas -->
-            <div class="week-toolbar">
-              <div class="week-nav-actions">
-                <button type="button" class="btn-week" (click)="prevWeek()" title="Semana anterior" [disabled]="weekOffset() === 0">
-                  <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
-                  Ant.
-                </button>
-                <button type="button" class="btn-week btn-today" (click)="todayWeek()" title="Regresar a la semana actual">
-                  Esta Semana
-                </button>
-                <button type="button" class="btn-week" (click)="nextWeek()" title="Semana siguiente">
-                  Sig.
-                  <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                </button>
-              </div>
-              <div class="week-title-wrap">
-                <span class="week-label">{{ weekLabelText() }}</span>
-                <span class="week-tag" [style.background]="weekBadgeBg()" [style.color]="weekBadgeColor()">{{ weekBadgeText() }}</span>
+                <span class="badge" [style.background]="weekBadgeBg()" [style.color]="weekBadgeColor()">{{ weekLabelText() }}</span>
               </div>
             </div>
 
             <!-- Filtros de Franja Horaria -->
-            <div class="time-filter-row">
-              <div class="filter-pills">
-                @for (option of filterOptions; track option.key) {
-                  <button type="button" class="filter-pill" [class.active]="timeFilter() === option.key" (click)="setTimeFilter(option.key)">
-                    {{ option.label }}
-                  </button>
-                }
+            <div class="segmented" style="margin: 16px 0;">
+              @for (option of filterOptions; track option.key) {
+                <button
+                  type="button"
+                  [class.active]="timeFilter() === option.key"
+                  (click)="setTimeFilter(option.key)"
+                >
+                  {{ option.label }}
+                </button>
+              }
+            </div>
+
+            <!-- Leyenda Canchero -->
+            <div class="calendar-legend">
+              <span class="legend">Disponible</span>
+              <span class="legend chosen">Elegido</span>
+              <span class="legend busy">Ocupado</span>
+              <span class="legend closed">Cerrado</span>
+            </div>
+
+            <!-- Alerta de Error de Disponibilidad -->
+            @if (effectiveAvailabilityError(); as err) {
+              <div class="notice danger" role="alert" style="margin-bottom: 16px;">
+                <span class="material-symbols-outlined icon" aria-hidden="true">error</span>
+                <div style="flex: 1;">
+                  <strong>Error al verificar disponibilidad</strong>
+                  <p>{{ err }}</p>
+                </div>
+                <button type="button" class="btn" (click)="retryAvailability()">
+                  <span class="material-symbols-outlined icon" aria-hidden="true">refresh</span>
+                  Reintentar
+                </button>
               </div>
-            </div>
+            }
 
-            <!-- Leyenda -->
-            <div class="calendar-legend" style="margin-bottom: 0.75rem;">
-              <span class="legend-chip">
-                <span class="legend-box available"></span> Libre
-              </span>
-              <span class="legend-chip">
-                <span class="legend-box selected"></span> Elegido
-              </span>
-              <span class="legend-chip">
-                <span class="legend-box occupied"></span> Ocupado
-              </span>
-            </div>
+            @if (isLoadingAvailability()) {
+              <div class="notice" style="margin-bottom: 16px;" aria-busy="true">
+                <span class="material-symbols-outlined icon" aria-hidden="true">hourglass_empty</span>
+                <div>
+                  <strong>Actualizando turnos...</strong>
+                  <p>Comprobando disponibilidad en tiempo real con el servidor.</p>
+                </div>
+              </div>
+            }
 
-            <!-- Matriz de Mini Calendario Semanal -->
-            <div class="calendar-matrix-wrapper">
+            <!-- Matriz de Calendario Semanal -->
+            <div class="table-wrap" tabindex="0" role="region" aria-label="Calendario semanal de turnos">
               <table class="calendar-table">
                 <thead>
                   <tr>
-                    <th class="corner-th">Horario</th>
+                    <th scope="col">Hora</th>
                     @for (day of currentWeekDays(); track day.dateStr) {
-                      <th [class.is-today]="day.isToday">
-                        <div class="day-th-content">
-                          <span class="day-th-name">{{ day.dayName }}</span>
-                          <span class="day-th-num">{{ day.dayNum }}</span>
-                          <span class="day-th-month">{{ day.monthName }}</span>
-                          @if (day.isToday) {
-                            <span class="today-pill-badge">Hoy</span>
-                          }
-                        </div>
+                      <th scope="col" [class.is-today]="day.isToday">
+                        {{ day.dayName }}
+                        <strong>{{ day.dayNum }}</strong>
+                        {{ day.monthName }}
                       </th>
                     }
                   </tr>
@@ -200,33 +142,38 @@
                 <tbody>
                   @for (hour of filteredHours(); track hour) {
                     <tr>
-                      <th class="hour-th">
-                        <div class="hour-label-main">{{ hour < 10 ? '0' + hour : hour }}:00</div>
-                        <div class="hour-label-sub">{{ slotPriceAt(hour) >= basePrice() ? 'Noche' : 'Día' }}</div>
+                      <th scope="row">
+                        {{ hour < 10 ? '0' + hour : hour }}:00
+                        <small class="muted" style="display: block; font-size: 9px; font-weight: normal;">{{ isNightHour(hour) ? 'Noche' : 'Día' }}</small>
                       </th>
                       @for (day of currentWeekDays(); track day.dateStr) {
                         <td>
                           <button
                             type="button"
-                            class="cell-slot-btn"
+                            class="slot cell-slot-btn"
                             [class.available]="slotStatus(day, hour) === 'available'"
                             [class.occupied]="slotStatus(day, hour) === 'occupied'"
+                            [class.blocked]="slotStatus(day, hour) === 'blocked'"
+                            [class.closed]="slotStatus(day, hour) === 'closed'"
                             [class.past]="slotStatus(day, hour) === 'past'"
-                            [class.selected]="isSlotSelected(day, hour)"
+                            [class.chosen]="isSlotSelected(day, hour)"
+                            [attr.aria-pressed]="isSlotSelected(day, hour)"
+                            [disabled]="slotStatus(day, hour) !== 'available'"
                             (click)="slotStatus(day, hour) === 'available' && toggleSlot(day, hour)"
                             [attr.aria-label]="'Turno ' + day.dayName + ' ' + day.dayNum + ' a las ' + hour + ':00'"
                           >
-                            @if (slotStatus(day, hour) === 'available') {
-                              <span class="slot-price-txt" style="font-size: 0.78rem; font-weight: 700;">{{ fmt(slotPriceAt(hour)) }}</span>
-                              <span class="slot-state-txt">Disponible</span>
-                            } @else if (isSlotSelected(day, hour)) {
-                              <svg class="icon-18 icon" aria-hidden="true"><use href="/iconos-canchero.svg#check"></use></svg>
-                              <span class="slot-state-txt" style="color: var(--color-surface); font-weight: 800;">Elegido</span>
+                            @if (isSlotSelected(day, hour)) {
+                              <strong>Elegido</strong>
+                              <small>{{ hour }}:00–{{ hour + 1 }}:00</small>
+                            } @else if (slotStatus(day, hour) === 'available') {
+                              <strong>{{ fmt(slotPriceAt(day, hour)) }}</strong>
+                              <small>{{ hour }}:00–{{ hour + 1 }}:00</small>
                             } @else if (slotStatus(day, hour) === 'occupied') {
-                              <svg class="icon-16 icon" aria-hidden="true"><use href="/iconos-canchero.svg#close"></use></svg>
-                              <span class="slot-state-txt">Ocupado</span>
+                              <span>Ocupado</span>
+                            } @else if (slotStatus(day, hour) === 'closed' || slotStatus(day, hour) === 'blocked') {
+                              <span>Cerrado</span>
                             } @else {
-                              <span class="slot-state-txt" style="color: var(--color-ink-400);">Pasado</span>
+                              <span>Pasado</span>
                             }
                           </button>
                         </td>
@@ -237,505 +184,423 @@
               </table>
             </div>
 
-            <!-- Indicador de ayuda y selección -->
-            <div style="margin-top: 0.75rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; font-size: 0.75rem; color: var(--color-ink-500);">
-              <span>💡 Desliza horizontalmente la tabla para ver todos los días de la semana.</span>
-              <span style="font-weight: 700; color: var(--color-brand-green-dark);">{{ selectionCountText() }}</span>
-            </div>
+            <p class="calendar-note">America/Lima · Disponibilidad oficial de la cancha verificada con el servidor.</p>
 
-            <button type="button" class="btn-checkout-submit" (click)="goToPaso(2)">
-              <span>Continuar a División y Pago →</span>
-            </button>
-          </section>
-        }
-
-        @case (2) {
-          <!-- ============ PASO 2: DIVISIÓN Y PAGO ============ -->
-          <!-- Paso 2.1: Convocados -->
-          <section class="checkout-card">
-            <div class="checkout-card-header">
-              <div class="checkout-card-title-group">
-                <div class="step-number-circle">2</div>
-                <div>
-                  <h2 class="checkout-card-title" style="margin: 0;">Convocados para la Pichanga</h2>
-                  <p class="card-description" style="margin: 2px 0 0 0;">Agrega a tus amigos para convocarlos y dividir el costo de la cancha automáticamente en tiempo real.</p>
-                </div>
-              </div>
-              <span class="context-court-pill" style="font-size: 0.75rem;">{{ convocadosText() }}</span>
-            </div>
-
-            <div class="add-player-row">
-              <div class="player-input-wrap">
-                <span class="player-input-prefix">+51</span>
-                <input
-                  type="tel"
-                  id="convocado-input-phone"
-                  class="player-input-field"
-                  placeholder="Número celular (9 dígitos)"
-                  [(ngModel)]="newPlayerPhone"
-                  pattern="^9\d{8}$"
-                  maxlength="9"
-                >
-              </div>
-              <div class="player-input-wrap">
-                <input
-                  type="text"
-                  id="convocado-input-name"
-                  class="player-input-field"
-                  style="padding-left: 14px;"
-                  placeholder="Nombre del jugador o amigo..."
-                  [(ngModel)]="newPlayerName"
-                >
-              </div>
-              <select class="form-control" style="width: 150px; height: 44px;" [(ngModel)]="newPlayerTipo">
-                <option value="Registrado">Registrado</option>
-                <option value="Invitado">Invitado</option>
-              </select>
-              <button type="button" class="btn-add-player" (click)="addPlayer()">
-                <svg class="icon-18 icon" aria-hidden="true"><use href="/iconos-canchero.svg#person_add"></use></svg>
-                Agregar Jugador
-              </button>
-            </div>
-
-            <div class="players-list" id="lista-convocados">
-              @for (player of players(); track player.id) {
-                <div class="player-row player-card-item">
-                  <div class="player-left-group">
-                    <div class="player-avatar" [class.captain-avatar]="player.isCaptain" [class.invited-avatar]="!player.registrado">
-                      {{ player.name.charAt(0) }}
-                    </div>
-                    <div>
-                      <div class="player-name-row">
-                        <span class="player-name">{{ player.name }}</span>
-                        @if (player.isCaptain) {
-                          <span class="player-role-tag">(Tú — Capitán)</span>
-                        } @else {
-                          <span class="player-role-tag">{{ player.registrado ? '(Amigo)' : '(Invitado)' }}</span>
-                        }
-                      </div>
-                      <div class="player-phone">{{ player.phone }}</div>
-                    </div>
-                  </div>
-                  <div class="player-right-group">
-                    @if (player.isCaptain) {
-                      <span class="pill-status paying-now">Pagando ahora (Titular)</span>
-                    } @else if (player.paid) {
-                      <span class="pill-status paid-green">Pagó {{ fmt(cuotaPerPlayer()) }}</span>
-                    } @else {
-                      <span class="pill-status pending-orange">Pendiente</span>
-                    }
-                    @if (!player.isCaptain) {
-                      <button type="button" class="btn-remove-player" (click)="removePlayer(player.id)" title="Quitar">
-                        <svg class="icon-18 icon" aria-hidden="true"><use href="/iconos-canchero.svg#close"></use></svg>
-                      </button>
-                    }
-                  </div>
-                </div>
-              } @empty {
-                <p style="font-size: 0.85rem; color: var(--color-ink-500); margin: 0;">Aún no hay convocados. Agrega a tus amigos arriba.</p>
+            <!-- Línea de Selección y Limpieza -->
+            <div class="selection-line" aria-live="polite">
+              <output data-selection-label>{{ selectionCountText() }}</output>
+              @if (selectedSlots().length > 0) {
+                <button type="button" class="btn" (click)="clearSlots()">
+                  <span class="material-symbols-outlined icon" aria-hidden="true">close</span>
+                  Limpiar selección
+                </button>
               }
             </div>
 
-            <!-- Barra de Progreso de Recaudación -->
-            <div class="squad-progress-box">
-              <div class="squad-header-line">
-                <div style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem;">
-                  <div class="avatars-stack">
-                    @for (player of players(); track player.id) {
-                      <span class="avatar-stack-item" [style.background]="player.isCaptain ? 'var(--color-brand-green)' : 'var(--color-slate-300)'" [style.color]="player.isCaptain ? 'white' : 'var(--color-ink-900)'" style="display: inline-flex; align-items: center; justify-content: center; font-size: 0.68rem; font-weight: 800;">{{ player.name.charAt(0) }}</span>
-                    }
-                  </div>
-                  <span style="font-weight: 800; color: var(--color-ink-900);">{{ convocadosText() }}</span>
-                </div>
-                <span style="font-size: 0.75rem; font-weight: 700; color: var(--color-brand-green);">{{ paidCount() }} de {{ players().length }} pagaron</span>
-              </div>
-              <div class="progress-track">
-                <div class="progress-fill" [style.width.%]="recaudacionPercent()"></div>
-              </div>
-              <div class="squad-amounts-line">
-                <span>Recaudado: <strong style="color: var(--color-ink-900);">{{ fmt(recaudado()) }}</strong></span>
-                <span>Total cancha: <strong style="color: var(--color-ink-900);">{{ fmt(total()) }}</strong></span>
-              </div>
-            </div>
-
-            <div style="background: var(--color-surface-muted); border-radius: var(--radius-md); padding: 0.85rem 1rem; border: 1px solid var(--color-border);">
-              <p class="card-description" style="margin: 0; color: var(--color-ink-700);">
-                <strong style="color: var(--color-brand-green);">¿Cómo funciona?</strong> Solo los jugadores con cuenta verificada en Canchero podrán pagar su cuota individual a tu Yape. Los invitados pueden ser asumidos por el Capitán o cancelados en recepción antes de jugar.
-              </p>
-            </div>
-
-            <button type="button" class="btn-checkout-submit" (click)="goToPaso(1)">
-              <span>← Volver a Horarios</span>
-            </button>
-            <button type="button" class="btn-action-green" (click)="goToPaso(3)">
-              <span>Continuar a Confirmación y Pago →</span>
-            </button>
-          </section>
-        }
-
-        @case (3) {
-          <!-- ============ PASO 3: CONFIRMACIÓN ============ -->
-          <!-- Paso 3.1: Resumen Final -->
-          <section class="checkout-card">
-            <div class="checkout-card-header">
-              <div class="checkout-card-title-group">
-                <div class="step-number-circle">3</div>
+            <!-- Alerta de Validación de Continuidad de Bloque -->
+            @if (selectionValidationMessage()) {
+              <div class="notice danger" style="margin-top: 12px;">
+                <span class="material-symbols-outlined icon" aria-hidden="true">warning</span>
                 <div>
-                  <h2 class="checkout-card-title" style="margin: 0;">Confirma tu Reserva</h2>
-                  <p class="card-description" style="margin: 2px 0 0 0;">Revisa los datos y confirma el envío de tu comprobante. El turno quedará retenido mientras se valida.</p>
-                </div>
-              </div>
-              <span class="status-badge confirmed" style="font-size: 0.72rem;">
-                <svg class="icon-14 icon" aria-hidden="true"><use href="/iconos-canchero.svg#verified"></use></svg>
-                Reserva protegida
-              </span>
-            </div>
-
-            <!-- Ficha de Detalles -->
-            <div style="background: var(--color-slate-50); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.86rem;">
-              <div style="display: flex; justify-content: space-between;">
-                <span style="color: var(--color-ink-500);">Sede:</span>
-                <span style="font-weight: 700; color: var(--color-ink-900);">{{ selectedComplejo().name }} — {{ selectedComplejo().address }}</span>
-              </div>
-              <div style="display: flex; justify-content: space-between;">
-                <span style="color: var(--color-ink-500);">Cancha:</span>
-                <span style="font-weight: 700; color: var(--color-ink-900);">{{ selectedTipoCancha() }}</span>
-              </div>
-              <div style="display: flex; justify-content: space-between;">
-                <span style="color: var(--color-ink-500);">Fecha:</span>
-                <span style="font-weight: 700; color: var(--color-ink-900);">{{ summaryDateText() }}</span>
-              </div>
-              <div style="display: flex; justify-content: space-between;">
-                <span style="color: var(--color-ink-500);">Horario:</span>
-                <span style="font-weight: 700; color: var(--color-ink-900);">{{ horarioText() }}</span>
-              </div>
-              <div style="display: flex; justify-content: space-between;">
-                <span style="color: var(--color-ink-500);">Capitán:</span>
-                <span style="font-weight: 700; color: var(--color-ink-900);">Carlos Jugador</span>
-              </div>
-            </div>
-
-            <!-- Turnos seleccionados -->
-            <div>
-              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.35rem;">
-                <span style="font-size: 0.8rem; font-weight: 600; color: var(--color-ink-500); text-transform: uppercase;">Turnos Seleccionados</span>
-                <button type="button" class="context-change-link" (click)="clearSlots()">Limpiar selección</button>
-              </div>
-              @for (slot of selectedSlots(); track slot.id) {
-                <div class="selected-slot-chip">
-                  <span style="font-weight: 700; color: var(--color-ink-900);">{{ slot.dayDisplay }} — {{ slot.time }}</span>
-                  <span style="font-weight: 800; color: var(--color-brand-green);">{{ fmt(slot.price) }}</span>
-                </div>
-              } @empty {
-                <p style="font-size: 0.82rem; color: var(--color-ink-500); margin: 0;">No hay horarios seleccionados.</p>
-              }
-            </div>
-
-            <!-- Alerta de error validación -->
-            @if (confirmError()) {
-              <div class="modal-confirm-alert" style="background: var(--color-danger-50); border: 1px solid var(--color-danger-200); color: var(--color-danger-600); border-radius: var(--radius-md); padding: 0.75rem 1rem; font-size: 0.84rem; font-weight: 600;">
-                {{ confirmError() }}
-              </div>
-            }
-
-            <button type="button" class="btn-action-green" (click)="goToPaso(2)">
-              <span>← Volver a División</span>
-            </button>
-          </section>
-
-          <!-- Paso 3.2: Método de Pago, Voucher y Cupón -->
-          <section class="checkout-card">
-            <div class="checkout-card-header">
-              <div class="checkout-card-title-group">
-                <div class="step-number-circle">4</div>
-                <h2 class="checkout-card-title">Método de Pago y Comprobante</h2>
-              </div>
-            </div>
-
-            <!-- Tabs de métodos -->
-            <div class="payment-tabs-bar">
-              <button type="button" class="payment-tab-btn" [class.active]="paymentMethod() === 'yape'" (click)="selectPayment('yape')">Yape</button>
-              <button type="button" class="payment-tab-btn" [class.active]="paymentMethod() === 'plin'" (click)="selectPayment('plin')">Plin</button>
-              <button type="button" class="payment-tab-btn" [class.active]="paymentMethod() === 'card'" (click)="selectPayment('card')">Tarjeta</button>
-            </div>
-
-            @if (paymentMethod() === 'card') {
-              <!-- Panel Tarjeta -->
-              <div class="card-inputs-panel">
-                <label style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--color-ink-500);">Número de Tarjeta</label>
-                <input type="text" class="card-input-clean" placeholder="•••• •••• •••• ••••" maxlength="19">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
-                  <input type="text" class="card-input-clean" placeholder="MM / AA" maxlength="5">
-                  <input type="password" class="card-input-clean" placeholder="CVV" maxlength="4">
-                </div>
-                <p style="font-size: 0.75rem; color: var(--color-ink-500); margin: 0;">El pago con tarjeta se procesa contra una tarjeta demo de Canchero MVP.</p>
-              </div>
-            } @else {
-              <!-- Contenedor QR dinámico Yape/Plin -->
-              <div class="qr-container-box">
-                <div style="display: flex; align-items: center; gap: 6px; width: 100%;">
-                  <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--color-brand-green);"></span>
-                  <strong style="font-size: 0.88rem; color: var(--color-ink-900);">{{ qrTitle() }}</strong>
-                </div>
-
-                <div class="qr-svg-card">
-                  <div [innerHTML]="qrSvg()"></div>
-                </div>
-
-                <!-- Beneficiario y Teléfono con copiar -->
-                <div style="width: 100%;">
-                  <span style="font-size: 0.82rem; color: var(--color-ink-700); font-weight: 600;">Complejo Deportivo {{ selectedComplejo().name }}</span>
-                  <div class="phone-copy-row">
-                    <span class="phone-copy-number">{{ getPaymentPhone() }}</span>
-                    <button type="button" class="btn-copy-icon" (click)="copyNumber()" title="Copiar número de abono">
-                      <svg class="icon-16 icon" aria-hidden="true"><use href="/iconos-canchero.svg#content_copy"></use></svg>
-                    </button>
-                  </div>
-                </div>
-
-                <!-- Indicaciones de 3 pasos -->
-                <div style="font-size: 0.78rem; color: var(--color-ink-500); text-align: left; width: 100%; display: flex; flex-direction: column; gap: 2px;">
-                  <span>1. Escanea el código o transfiere al número celular.</span>
-                  <span>2. Ingresa el monto exacto: <strong style="color: var(--color-ink-900);">{{ fmt(totalToPayNow()) }}</strong></span>
-                  <span>3. Sube la captura de tu voucher aquí abajo:</span>
-                </div>
-
-                <!-- Zona Drag & Drop para Voucher -->
-                <div
-                  class="voucher-dropzone-box"
-                  [style.border-color]="voucherBorderColor()"
-                  (click)="voucherInput.click()"
-                  (dragover)="onVoucherDragOver($event)"
-                  (dragleave)="onVoucherDragLeave($event)"
-                  (drop)="onVoucherDrop($event)"
-                >
-                  <svg class="icon-22 icon" style="color: var(--color-brand-green);" aria-hidden="true"><use href="/iconos-canchero.svg#cloud_upload"></use></svg>
-                  <span style="font-size: 0.78rem; font-weight: 700; color: var(--color-ink-900);">Voucher adjunto:</span>
-                  <span style="font-size: 0.8rem; color: var(--color-brand-green); font-weight: 600;">{{ voucherUploaded() ? voucherFileName() : 'Arrastra tu comprobante o haz click para subir el archivo' }}</span>
-                  <span class="pill-status" [class.paid-green]="voucherUploaded()" [class.pending-orange]="!voucherUploaded()" style="font-size: 0.7rem;">{{ voucherStatusText() }}</span>
-                  <input type="file" #voucherInput id="voucher-file-input" style="display: none;" accept="image/*,.pdf" (change)="onVoucherSelect($event)">
-                </div>
-
-                <!-- Código de Operación -->
-                <div style="width: 100%; text-align: left;">
-                  <label style="font-size: 0.7rem; text-transform: uppercase; font-weight: 700; color: var(--color-ink-500); display: block; margin-bottom: 4px;">
-                    Código de Operación (6 dígitos)
-                  </label>
-                  <input type="text" class="op-code-input" placeholder="Ingrese código de operación" [(ngModel)]="opCode" maxlength="12">
+                  <strong>Selección no válida</strong>
+                  <p>{{ selectionValidationMessage() }}</p>
                 </div>
               </div>
             }
 
-            <!-- Cupón de Descuento -->
-            <div class="checkout-card-header" style="border-bottom: none; padding-bottom: 0;">
-              <div class="checkout-card-title-group">
-                <div class="step-number-circle" style="background: transparent; border: none; color: var(--color-brand-orange);">%</div>
-                <h2 class="checkout-card-title">Cupón de Descuento</h2>
-              </div>
+            <button
+              type="button"
+              class="btn primary btn-checkout-submit"
+              style="margin-top: 20px; width: 100%; justify-content: center; height: 42px;"
+              [disabled]="!canProceedToPaso2()"
+              (click)="goToPaso(2)"
+            >
+              <span>Continuar al pago</span>
+              <span class="material-symbols-outlined icon" aria-hidden="true">arrow_forward</span>
+            </button>
+          </section>
+
+          <!-- Columna Lateral Sticky Resumen -->
+          <aside class="summary" aria-label="Resumen de selección">
+            <h2>Tu reserva</h2>
+            <p>{{ resolvedCourt()?.nombre || selectedTipoCancha() }} · {{ selectedComplejo().name }}</p>
+
+            <div class="list">
+              <div class="list-line"><span>Fecha</span><strong data-summary-date>{{ summaryDateText() }}</strong></div>
+              <div class="list-line"><span>Bloque</span><strong data-summary-block>{{ horarioText() }}</strong></div>
+              <div class="list-line"><span>Duración</span><strong data-summary-duration>{{ horasLabel() }}</strong></div>
+              <div class="list-line"><span>Total</span><strong class="total" data-summary-total>{{ fmt(total()) }}</strong></div>
             </div>
-            <div class="coupon-input-group">
-              <div class="coupon-input-wrap">
-                <svg class="icon-18 icon coupon-icon" aria-hidden="true"><use href="/iconos-canchero.svg#sell"></use></svg>
-                <input type="text" id="couponInput" class="coupon-input" [placeholder]="'Ej: ' + coupons.map(c => c.code).join(', ')" [(ngModel)]="couponCodeInput">
-              </div>
-              <button type="button" class="btn-apply-coupon" (click)="applyCoupon()">
-                <svg class="icon-18 icon" aria-hidden="true"><use href="/iconos-canchero.svg#check"></use></svg>
-                <span>{{ couponApplied() ? 'Aplicado' : 'Aplicar' }}</span>
-              </button>
-            </div>
-            @if (couponMessage()) {
-              <div class="coupon-applied-alert">
-                <div style="display: flex; align-items: center; gap: 6px;">
-                  <svg class="icon-18 icon" style="color: var(--color-brand-green);" aria-hidden="true"><use href="/iconos-canchero.svg#verified"></use></svg>
-                  <span>{{ couponMessage() }}</span>
-                </div>
-                @if (couponApplied()) {
-                  <button type="button" class="btn-copy-icon" (click)="removeCoupon()" title="Remover cupón">
-                    <span style="font-size: 0.78rem; font-weight: 700;">Remover</span>
-                  </button>
+
+            @if (bookingBlock().isValid && bookingBlock().durationHours > 0) {
+              <div class="stack small" style="margin-top: 12px; border-top: 1px solid var(--line); padding-top: 12px;">
+                <span class="gallery-label" style="margin-bottom: 4px;">Desglose por tramo</span>
+                @for (tranche of bookingBlock().tranches; track tranche.hour) {
+                  <div class="list-line">
+                    <span>{{ tranche.displayTime }} ({{ tranche.rateType }})</span>
+                    <strong>{{ fmt(tranche.price) }}</strong>
+                  </div>
                 }
               </div>
             }
 
-            <!-- Desglose Final -->
-            <div style="border-top: 1px solid var(--color-border); padding-top: 1rem;">
-              <div class="summary-row">
-                <span>Tarifa base ({{ selectedSlots().length }} h)</span>
-                <span>{{ fmt(subtotal()) }}</span>
+            <button
+              type="button"
+              class="btn primary"
+              style="width: 100%; justify-content: center; margin-top: 16px; height: 42px;"
+              [disabled]="!canProceedToPaso2()"
+              (click)="goToPaso(2)"
+            >
+              <span class="material-symbols-outlined icon" aria-hidden="true">arrow_forward</span>
+              Continuar al pago
+            </button>
+          </aside>
+        </div>
+      }
+
+      @case (2) {
+        <!-- ==================== PASO 2: MODELO DE PAGO ==================== -->
+        <div class="checkout-layout">
+          <section class="stack" style="gap: 20px;">
+            <div class="card" style="padding: 20px;">
+              <h2 style="font-size: 16px; margin: 0 0 12px 0;">Datos del partido</h2>
+              <div class="list">
+                <div class="list-line"><span>Sede</span><strong>{{ selectedComplejo().name }}</strong></div>
+                <div class="list-line"><span>Dirección</span><strong>{{ selectedComplejo().address }}</strong></div>
+                <div class="list-line"><span>Cancha</span><strong>{{ resolvedCourt()?.nombre || selectedTipoCancha() }}</strong></div>
+                <div class="list-line"><span>Fecha y bloque</span><strong>{{ summaryDateText() }} · {{ horarioText() }}</strong></div>
+                <div class="list-line"><span>Titular / Capitán</span><strong>{{ currentUser()?.nombre || 'Sin sesión iniciada' }}</strong></div>
               </div>
-              @if (couponApplied()) {
-                <div class="summary-row discount">
-                  <span>Descuento {{ couponCodeInput() }} ({{ couponPercentText() }})</span>
-                  <span>- {{ fmt(discountAmount()) }}</span>
+            </div>
+
+            <!-- Método de Pago -->
+            <div class="card" style="padding: 20px;">
+              <h2 style="font-size: 16px; margin: 0 0 12px 0;">Método de pago</h2>
+              <div class="stack" style="gap: 10px; margin-bottom: 16px;">
+                <label class="check">
+                  <input type="radio" checked name="metodo">
+                  Tarjeta (100% Online · Confirmación inmediata)
+                </label>
+                <label class="check muted" title="Yape deshabilitado para reservas online">
+                  <input type="radio" disabled name="metodo">
+                  Yape · No disponible online
+                </label>
+                <label class="check muted" title="Plin deshabilitado para reservas online">
+                  <input type="radio" disabled name="metodo">
+                  Plin · No disponible online
+                </label>
+              </div>
+
+              <!-- Panel de Tarjeta -->
+              <div class="stack" style="gap: 12px; background: var(--page); padding: 16px; border-radius: var(--radius); border: 1px solid var(--line);">
+                <div class="field">
+                  <label for="card-num" style="font-size: 12px; font-weight: 600;">Número de tarjeta</label>
+                  <input id="card-num" type="text" class="control" placeholder="4532 0000 0000 4242" maxlength="19" [(ngModel)]="cardNumber">
                 </div>
-              }
-              <div class="breakdown-divider"></div>
-              <div class="summary-row total">
-                <span>Total a pagar</span>
-                <span style="color: var(--color-brand-green);">{{ fmt(total()) }}</span>
+                <div class="row" style="gap: 12px;">
+                  <div class="field" style="flex: 1;">
+                    <label for="card-exp" style="font-size: 12px; font-weight: 600;">Vencimiento</label>
+                    <input id="card-exp" type="text" class="control" placeholder="MM / AA" maxlength="5" [(ngModel)]="cardExpiry">
+                  </div>
+                  <div class="field" style="flex: 1;">
+                    <label for="card-cvv" style="font-size: 12px; font-weight: 600;">CVV</label>
+                    <input id="card-cvv" type="password" class="control" placeholder="CVV" maxlength="4" [(ngModel)]="cardCvv">
+                  </div>
+                </div>
+                <div class="field">
+                  <label for="card-holder" style="font-size: 12px; font-weight: 600;">Titular de la tarjeta</label>
+                  <input id="card-holder" type="text" class="control" placeholder="Nombre completo del titular" [(ngModel)]="cardHolder">
+                </div>
+
+                <!-- Simulador de Respuesta para Auditoría y QA -->
+                <div style="margin-top: 8px; border-top: 1px dashed var(--line); padding-top: 10px;">
+                  <small class="muted" style="display: block; margin-bottom: 6px; font-weight: 600; text-transform: uppercase;">Simulador de respuesta de pago</small>
+                  <div class="row" style="gap: 6px; flex-wrap: wrap;">
+                    <button
+                      type="button"
+                      class="btn"
+                      [class.primary]="cardSimulationOutcome() === 'approved'"
+                      (click)="cardSimulationOutcome.set('approved')"
+                    >
+                      ✓ Aprobado (100%)
+                    </button>
+                    <button
+                      type="button"
+                      class="btn"
+                      [style.background]="cardSimulationOutcome() === 'rejected' ? 'var(--danger)' : ''"
+                      [style.color]="cardSimulationOutcome() === 'rejected' ? 'white' : ''"
+                      (click)="cardSimulationOutcome.set('rejected')"
+                    >
+                      ✕ Rechazado
+                    </button>
+                    <button
+                      type="button"
+                      class="btn"
+                      [style.background]="cardSimulationOutcome() === 'timeout' ? 'var(--warning)' : ''"
+                      [style.color]="cardSimulationOutcome() === 'timeout' ? 'white' : ''"
+                      (click)="cardSimulationOutcome.set('timeout')"
+                    >
+                      ⏱ Timeout
+                    </button>
+                  </div>
+                </div>
               </div>
+            </div>
+
+            <!-- Calculadora Informativa de Convocados (División del Costo) -->
+            <div class="card" style="padding: 20px;">
+              <div class="row spread" style="align-items: center; margin-bottom: 12px;">
+                <h2 style="font-size: 16px; margin: 0;">Convocados para la pichanga</h2>
+                <span class="badge">{{ convocadosText() }}</span>
+              </div>
+              <p class="muted small" style="margin-top: 0;">Calculadora de cuota por amigo. Como titular pagas el 100% de la reserva online y compartes el código por WhatsApp.</p>
+
+              <div class="row" style="gap: 8px; margin-bottom: 16px; flex-wrap: wrap;">
+                <input type="tel" class="control" style="width: 130px;" placeholder="Celular" [(ngModel)]="newPlayerPhone" maxlength="9">
+                <input type="text" class="control" style="flex: 1; min-width: 150px;" placeholder="Nombre del jugador..." [(ngModel)]="newPlayerName">
+                <select class="control" style="width: 120px;" [(ngModel)]="newPlayerTipo">
+                  <option value="Registrado">Registrado</option>
+                  <option value="Invitado">Invitado</option>
+                </select>
+                <button type="button" class="btn" (click)="addPlayer()">
+                  <span class="material-symbols-outlined icon" aria-hidden="true">person_add</span>
+                  Agregar
+                </button>
+              </div>
+
+              <div class="list">
+                @for (player of players(); track player.id) {
+                  <div class="list-line" style="align-items: center;">
+                    <div class="row" style="align-items: center; gap: 8px;">
+                      <span class="avatar" style="width: 28px; height: 28px; font-size: 11px;">{{ player.name.charAt(0) }}</span>
+                      <span><strong>{{ player.name }}</strong> {{ player.isCaptain ? '(Tú · Capitán)' : '' }}</span>
+                    </div>
+                    <div class="row" style="align-items: center; gap: 8px;">
+                      @if (player.isCaptain) {
+                        <span class="badge success">Pagando ahora</span>
+                      } @else {
+                        <span class="badge">{{ fmt(cuotaPerPlayer()) }}</span>
+                        <button type="button" class="btn icon-only" style="padding: 2px;" (click)="removePlayer(player.id)" title="Quitar">
+                          <span class="material-symbols-outlined icon" aria-hidden="true">close</span>
+                        </button>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <!-- Estado de Autenticación -->
+            @if (!isLoggedIn()) {
+              <div class="notice warning">
+                <span class="material-symbols-outlined icon" aria-hidden="true">lock</span>
+                <div style="flex: 1;">
+                  <strong>Inicia sesión para reservar</strong>
+                  <p>Debes ingresar con tu cuenta de jugador para continuar con la reserva. Conservaremos la cancha y horarios seleccionados al volver.</p>
+                </div>
+                <a [routerLink]="['/login']" [queryParams]="{ returnUrl: returnUrl() }" class="btn primary">
+                  Iniciar sesión
+                </a>
+              </div>
+            } @else {
+              <div class="notice success">
+                <span class="material-symbols-outlined icon" aria-hidden="true">account_circle</span>
+                <div>
+                  <strong>Sesión activa: {{ currentUser()?.nombre }} ({{ currentUser()?.email }})</strong>
+                  <p>La reserva se confirmará de forma inmediata en el servidor tras el cobro.</p>
+                </div>
+              </div>
+            }
+
+            <!-- Alerta de Error de Confirmación -->
+            @if (confirmError()) {
+              <div class="notice danger" role="alert">
+                <span class="material-symbols-outlined icon" aria-hidden="true">error</span>
+                <div>
+                  <strong>Error al procesar reserva</strong>
+                  <p>{{ confirmError() }}</p>
+                </div>
+              </div>
+            }
+
+            <!-- Botones de Navegación del Paso 2 -->
+            <div class="row spread" style="margin-top: 8px;">
+              <button type="button" class="btn" (click)="goToPaso(1)">
+                <span class="material-symbols-outlined icon" aria-hidden="true">arrow_back</span>
+                Volver a Horarios
+              </button>
+              <button
+                type="button"
+                class="btn primary"
+                [disabled]="!canSubmitReservation()"
+                (click)="confirmarReserva()"
+              >
+                @if (submitting()) {
+                  <span class="material-symbols-outlined icon" aria-hidden="true">hourglass_empty</span>
+                  <span>Registrando reserva...</span>
+                } @else {
+                  <span class="material-symbols-outlined icon" aria-hidden="true">lock</span>
+                  <span>Confirmar y pagar {{ fmt(totalToPayNow()) }}</span>
+                }
+              </button>
             </div>
           </section>
 
-          <!-- Confirmar y Enviar Reserva -->
-          <section class="checkout-card">
-            @if (confirmError()) {
-              <div style="background: var(--color-danger-50); border: 1px solid var(--color-danger-200); color: var(--color-danger-600); border-radius: var(--radius-md); padding: 0.75rem 1rem; font-size: 0.84rem; font-weight: 600;">
-                {{ confirmError() }}
+          <!-- Resumen Sticky Col -->
+          <aside class="summary" aria-label="Resumen de pago">
+            <h2>Resumen</h2>
+            <div class="list">
+              <div class="list-line"><span>Cancha</span><strong>{{ resolvedCourt()?.nombre || selectedTipoCancha() }}</strong></div>
+              <div class="list-line"><span>Fecha</span><strong>{{ summaryDateText() }}</strong></div>
+              <div class="list-line"><span>Bloque</span><strong>{{ horarioText() }}</strong></div>
+              <div class="list-line"><span>Duración</span><strong>{{ horasLabel() }}</strong></div>
+              <div class="list-line"><span>Tarifa base</span><strong>{{ fmt(subtotal()) }}</strong></div>
+              @if (couponApplied()) {
+                <div class="list-line" style="color: var(--primary);">
+                  <span>Descuento {{ couponCodeInput() }}</span>
+                  <strong>- {{ fmt(discountAmount()) }}</strong>
+                </div>
+              }
+              <div class="list-line">
+                <span>Total a pagar</span>
+                <strong class="total">{{ fmt(total()) }}</strong>
               </div>
-            }
+            </div>
+
+            <!-- Cupón de Descuento -->
+            <div style="border-top: 1px solid var(--line); padding-top: 12px; margin-top: 8px;">
+              <small class="muted" style="display: block; margin-bottom: 6px; font-weight: 600;">¿Tienes un cupón?</small>
+              <div class="row" style="gap: 6px;">
+                <input type="text" class="control" placeholder="Ej: PROMO10" [(ngModel)]="couponCodeInput" style="flex: 1;">
+                <button type="button" class="btn" (click)="applyCoupon()">Aplicar</button>
+              </div>
+              @if (couponMessage()) {
+                <p class="small muted" style="margin-top: 4px;">{{ couponMessage() }}</p>
+              }
+            </div>
+
+            <p class="muted small" style="margin-top: 8px;">Pago online del 100%. Sin recargo automático al jugador.</p>
+
             <button
               type="button"
-              class="btn-checkout-submit"
-              [disabled]="submitting()"
+              class="btn primary"
+              style="width: 100%; justify-content: center; margin-top: 8px; height: 42px;"
+              [disabled]="!canSubmitReservation()"
               (click)="confirmarReserva()"
             >
               @if (submitting()) {
-                <svg class="icon-18 icon" style="animation: spin 1s linear infinite;" aria-hidden="true"><use href="/iconos-canchero.svg#sync"></use></svg>
-                <span>Enviando reserva...</span>
+                <span>Procesando...</span>
               } @else {
-                <svg class="icon-18 icon" aria-hidden="true"><use href="/iconos-canchero.svg#verified_user"></use></svg>
-                <span>Confirmar y Enviar Reserva ({{ fmt(totalToPayNow()) }})</span>
+                <span>Pagar {{ fmt(totalToPayNow()) }}</span>
               }
             </button>
-            <div style="display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 0.78rem; color: var(--color-ink-500);">
-              <svg class="icon-16 icon" style="color: var(--color-brand-green);" aria-hidden="true"><use href="/iconos-canchero.svg#lock"></use></svg>
-              <span>Pago protegido con cifrado SSL bancario</span>
-            </div>
-            <div style="background: #f8fafc; border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 0.5rem; text-align: center; font-size: 0.78rem; color: var(--color-ink-700);">
-              <svg class="icon-14 icon" style="color: var(--color-brand-orange); vertical-align: middle;" aria-hidden="true"><use href="/iconos-canchero.svg#verified"></use></svg>
-              Cancelación gratuita hasta 6 horas antes del partido
-            </div>
-          </section>
-        }
+          </aside>
+        </div>
       }
-    </div>
 
-    <!-- COLUMNA DERECHA: Resumen Sticky -->
-    <aside class="checkout-sticky-col">
-      <div class="summary-card">
-        <div class="summary-header">
-          <h3 class="summary-title">Resumen de la Reserva</h3>
-          <span class="context-court-pill" style="font-size: 0.7rem;">{{ selectedTipoCancha() }}</span>
-        </div>
-
-        <!-- Info de Sede Seleccionada -->
-        <div style="display: flex; gap: 0.75rem; padding-bottom: 1rem; border-bottom: 1px solid var(--color-border);">
-          <img [src]="selectedComplejo().img" alt="Cancha" style="width: 60px; height: 60px; border-radius: var(--radius-md); object-fit: cover;">
-          <div>
-            <div style="font-weight: 700; font-size: 0.95rem; color: var(--color-ink-900);">{{ selectedComplejo().name }}</div>
-            <div style="font-size: 0.8rem; color: var(--color-ink-500);">{{ selectedTipoCancha() }}</div>
-            <div style="font-size: 0.8rem; color: var(--color-brand-green); font-weight: 600; margin-top: 2px;">{{ summaryDateText() }}</div>
-          </div>
-        </div>
-
-        <!-- Turnos Seleccionados -->
-        <div>
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.35rem;">
-            <span style="font-size: 0.8rem; font-weight: 600; color: var(--color-ink-500); text-transform: uppercase;">{{ selectionCountText() }}</span>
-          </div>
-          @for (slot of selectedSlots(); track slot.id) {
-            <div class="selected-slot-chip">
-              <span style="font-weight: 700; color: var(--color-ink-900);">{{ slot.dayDisplay }} {{ slot.time }}</span>
-              <button type="button" class="chip-del" (click)="removeSlot(slot.id)" title="Quitar turno">
-                <svg class="icon-16 icon" aria-hidden="true"><use href="/iconos-canchero.svg#close"></use></svg>
-              </button>
+      @case (3) {
+        <!-- ==================== PASO 3: CONFIRMACIÓN ==================== -->
+        <div class="result-page">
+          <div class="result-heading success">
+            <span class="result-symbol"><span class="material-symbols-outlined icon" aria-hidden="true">check_circle</span></span>
+            <div>
+              <span class="badge success">Reserva confirmada</span>
+              <h1 style="font-size: 24px; margin: 6px 0 4px;">¡Tu partido ya tiene cancha!</h1>
+              <p class="muted small" style="margin: 0;">Un solo bloque continuo confirmado en el servidor.</p>
             </div>
-          } @empty {
-            <p style="font-size: 0.8rem; color: var(--color-ink-500); margin: 0;">Aún no seleccionas turnos.</p>
-          }
-        </div>
-
-        <!-- Desglose Económico -->
-        <div style="border-top: 1px solid var(--color-border); padding-top: 1rem;">
-          <div class="summary-row">
-            <span>Tarifa base ({{ selectedSlots().length }} h)</span>
-            <span>{{ fmt(subtotal()) }}</span>
           </div>
-          @if (couponApplied()) {
-            <div class="summary-row discount">
-              <span>Descuento {{ couponCodeInput() }}</span>
-              <span>- {{ fmt(discountAmount()) }}</span>
+
+          <div class="result-layout">
+            <div>
+              <dl class="booking-facts">
+                <div><dt>Código</dt><dd style="color: var(--orange); font-weight: 700;">{{ reservaCode() }}</dd></div>
+                <div><dt>Estado</dt><dd style="color: var(--primary);">{{ reservaStatus() }}</dd></div>
+                <div><dt>Sede</dt><dd>{{ selectedComplejo().name }}</dd></div>
+                <div><dt>Cancha</dt><dd>{{ resolvedCourt()?.nombre || selectedTipoCancha() }}</dd></div>
+                <div><dt>Fecha</dt><dd>{{ summaryDateText() }}</dd></div>
+                <div><dt>Bloque</dt><dd>{{ horarioText() }} ({{ horasLabel() }})</dd></div>
+                <div><dt>Ubicación</dt><dd>{{ selectedComplejo().address }}</dd></div>
+              </dl>
+
+              <div class="result-actions" style="margin-top: 24px;">
+                <a routerLink="/itinerario" class="btn primary">
+                  <span class="material-symbols-outlined icon" aria-hidden="true">event_available</span>
+                  Ir a Mi Itinerario
+                </a>
+                <a routerLink="/sedes" class="btn">
+                  <span class="material-symbols-outlined icon" aria-hidden="true">sports_soccer</span>
+                  Ver más canchas
+                </a>
+              </div>
             </div>
-          }
-          <div class="breakdown-divider"></div>
-          <div class="summary-row total">
-            <span>Total a pagar</span>
-            <span id="summaryTotal" style="color: var(--color-brand-green);">{{ fmt(total()) }}</span>
+
+            <aside class="summary">
+              <h2>Resumen del bloque</h2>
+              <div class="list">
+                <div class="list-line"><span>Monto pagado</span><strong style="color: var(--primary);">{{ fmt(paidAmount()) }}</strong></div>
+                <div class="list-line"><span>Saldo pendiente</span><strong>{{ fmt(balanceAmount()) }}</strong></div>
+                @if (paymentOpNumber()) {
+                  <div class="list-line"><span>Operación</span><code style="font-family: monospace;">{{ paymentOpNumber() }}</code></div>
+                }
+              </div>
+              <p class="muted small">Pago con tarjeta · Saldo cubierto al 100% online.</p>
+            </aside>
           </div>
         </div>
+      }
+    }
+  </main>
 
-        <!-- Cuota Estimada por Jugador -->
-        <div class="summary-quota">
-          <div><strong>{{ cuotaLabel() }}</strong></div>
-          <div style="font-size: 1.15rem; font-weight: 800; margin: 0.2rem 0;">{{ fmt(cuotaPerPlayer()) }}</div>
-          <div style="font-size: 0.75rem; opacity: 0.9;">Dividido entre {{ players().length }} jugadores convocados</div>
+  <!-- ==================== MODAL DE CONFIRMACIÓN DE RESERVA ==================== -->
+  @if (showSuccess()) {
+    <div class="dialog-backdrop is-visible" (click)="onModalBackdrop($event)">
+      <div class="dialog result-modal" role="dialog" aria-modal="true" aria-label="Reserva confirmada">
+        <div class="dialog-header">
+          <div class="row" style="align-items: center; gap: 8px;">
+            <span class="material-symbols-outlined icon" style="color: var(--primary); font-size: 22px;" aria-hidden="true">verified</span>
+            <h2 style="font-size: 16px; margin: 0;">Reserva Confirmada</h2>
+          </div>
+          <button type="button" class="btn icon-only" (click)="showSuccess.set(false)" title="Cerrar modal" aria-label="Cerrar">
+            <span class="material-symbols-outlined icon" aria-hidden="true">close</span>
+          </button>
+        </div>
+
+        <div class="dialog-body" style="padding: 20px;">
+          <div class="result-heading success" style="border: none; padding-bottom: 12px; margin-bottom: 12px;">
+            <span class="result-symbol"><span class="material-symbols-outlined icon" aria-hidden="true">check_circle</span></span>
+            <div>
+              <span class="badge success">Pago 100% online aprobado</span>
+              <h1 style="font-size: 20px; margin: 4px 0 2px;">{{ reservaCode() }}</h1>
+              <p class="muted small" style="margin: 0;">¡Tu reserva y pago 100% online fueron procesados con éxito!</p>
+            </div>
+          </div>
+
+          <dl class="booking-facts" style="border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); margin: 0 0 16px 0;">
+            <div><dt>Código</dt><dd style="color: var(--orange); font-weight: 700;">{{ reservaCode() }}</dd></div>
+            <div><dt>Estado reserva</dt><dd style="color: var(--primary);">{{ reservaStatus() }}</dd></div>
+            <div><dt>Estado pago</dt><dd style="color: var(--primary);">{{ paymentStatus() }}</dd></div>
+            @if (paymentOpNumber()) {
+              <div><dt>Operación</dt><dd style="font-family: monospace;">{{ paymentOpNumber() }}</dd></div>
+            }
+            <div><dt>Sede</dt><dd>{{ selectedComplejo().name }}</dd></div>
+            <div><dt>Cancha</dt><dd>{{ resolvedCourt()?.nombre || selectedTipoCancha() }}</dd></div>
+            <div><dt>Fecha y hora</dt><dd>{{ summaryDateText() }} · {{ horarioText() }}</dd></div>
+            <div><dt>Total pagado</dt><dd style="color: var(--primary); font-weight: 700;">{{ fmt(paidAmount()) }}</dd></div>
+            <div><dt>Saldo pendiente</dt><dd>{{ fmt(balanceAmount()) }}</dd></div>
+          </dl>
+
+          <div class="row" style="gap: 8px; justify-content: flex-end;">
+            <button type="button" class="btn" (click)="showSuccess.set(false)">
+              Seguir navegando
+            </button>
+            <a routerLink="/itinerario" class="btn primary">
+              <span class="material-symbols-outlined icon" aria-hidden="true">event_available</span>
+              Ver en Mi Itinerario
+            </a>
+          </div>
         </div>
       </div>
-    </aside>
-  </div>
-</main>
-
-<!-- ==========================================================================
-     MODAL DE ÉXITO (POST-RESERVA)
-     ========================================================================== -->
-<div class="modal-backdrop-classic" [class.is-visible]="showSuccess()" (click)="onModalBackdrop($event)">
-  <div class="modal-card-classic" role="dialog" aria-modal="true" aria-label="Reserva confirmada">
-    <!-- Icono y Botón Cerrar -->
-    <div style="display: flex; align-items: center; justify-content: space-between;">
-      <div style="width: 44px; height: 44px; border-radius: 50%; background: #dcfce7; color: var(--color-brand-green); display: flex; align-items: center; justify-content: center;">
-        <svg class="icon-24 icon" aria-hidden="true"><use href="/iconos-canchero.svg#sports_soccer"></use></svg>
-      </div>
-      <button type="button" class="modal-close-btn" (click)="showSuccess.set(false)" title="Cerrar modal">
-        <svg class="icon-18 icon" aria-hidden="true"><use href="/iconos-canchero.svg#close"></use></svg>
-      </button>
     </div>
+  }
+}
 
-    <!-- Título de Éxito -->
-    <div style="text-align: center;">
-      <h3 style="font-size: 1.35rem; font-weight: 800; color: var(--color-ink-900); margin: 0;">{{ reservaCode() }}</h3>
-      <p style="font-size: 0.88rem; color: var(--color-ink-500); margin: 4px 0 0 0;">
-        ¡Tu reserva fue enviada con éxito! Tu turno está reservado mientras validamos tu comprobante.
-      </p>
-    </div>
-
-    <!-- Alerta de Validación en Progreso -->
-    <div style="background: #fff7ed; border: 1px solid #fed7aa; border-radius: var(--radius-md); padding: 0.85rem 1rem; display: flex; gap: 0.65rem; color: #9a3412; font-size: 0.84rem;">
-      <svg class="icon-20 icon" style="color: var(--color-brand-orange); flex-shrink: 0; margin-top: 1px;" aria-hidden="true"><use href="/iconos-canchero.svg#hourglass_top"></use></svg>
-      <div>
-        <strong style="color: var(--color-brand-orange); display: block; margin-bottom: 2px;">Verificación en progreso (30 min):</strong>
-        <span>Tu turno está reservado mientras el administrador de {{ selectedComplejo().name }} valida tu transferencia {{ paymentMethodName() }}.</span>
-      </div>
-    </div>
-
-    <!-- Ficha de Detalles -->
-    <div style="background: #f8fafc; border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; gap: 0.4rem; font-size: 0.86rem;">
-      <div style="display: flex; justify-content: space-between;">
-        <span style="color: var(--color-ink-500);">Código de Reserva:</span>
-        <span style="font-weight: 800; color: var(--color-brand-orange);">{{ reservaCode() }}</span>
-      </div>
-      <div style="display: flex; justify-content: space-between;">
-        <span style="color: var(--color-ink-500);">Cancha:</span>
-        <span style="font-weight: 700; color: var(--color-ink-900);">{{ selectedTipoCancha() }} — {{ selectedComplejo().name }}</span>
-      </div>
-      <div style="display: flex; justify-content: space-between;">
-        <span style="color: var(--color-ink-500);">Fecha y Horario:</span>
-        <span style="font-weight: 700; color: var(--color-ink-900);">{{ summaryDateText() }} • {{ horarioText() }}</span>
-      </div>
-      <div style="display: flex; justify-content: space-between; border-top: 1px solid var(--color-border); padding-top: 0.4rem; margin-top: 0.2rem;">
-        <span style="color: var(--color-ink-500);">Monto a pagar (Capitán):</span>
-        <span style="font-weight: 800; color: var(--color-brand-green);">{{ fmt(total()) }}</span>
-      </div>
-    </div>
-
-    <!-- Botones de Acción -->
-    <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.25rem;">
-      <a routerLink="/itinerario" class="btn-action-green">
-        <span>Ver en Mi Itinerario →</span>
-      </a>
-      <button type="button" class="btn-action-outline" (click)="showSuccess.set(false)">
-        Seguir navegando
-      </button>
-    </div>
-  </div>
-</div>

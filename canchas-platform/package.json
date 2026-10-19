@@ -17,14 +17,17 @@
     "supabase:start": "supabase start",
     "supabase:functions:deploy": "supabase functions deploy",
     "db:generate:types": "supabase gen types typescript --project-id ibnnkjqcmionynytkqqh > packages/types/supabase.types.ts",
-    "prepare": "husky install"
+    "prepare": "cd .. && husky .husky"
   },
   "devDependencies": {
     "husky": "^9.0.0",
-    "lint-staged": "^15.0.0"
+    "lint-staged": "^17.6.0"
+  },
+  "lint-staged": {
+    "apps/web/src/**/*.{ts,html,css}": "prettier --write"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": "^22.22.3 || ^24.15.0 || >=26.0.0"
   },
-  "packageManager": "npm@10.0.0"
+  "packageManager": "npm@11.17.0"
 }

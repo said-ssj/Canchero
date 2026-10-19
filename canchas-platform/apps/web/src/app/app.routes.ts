@@ -16,6 +16,22 @@ export const routes: Routes = [
       { path: 'registro', loadComponent: () => import('./features/jugador/auth/registro/registro').then(m => m.Registro) },
     ],
   },
-  { path: 'admin', loadComponent: () => import('./features/admin/admin').then(m => m.Admin), canActivate: [authGuard] },
+  {
+    path: 'admin',
+    loadComponent: () => import('./features/admin/layout/admin-layout').then(m => m.AdminLayout),
+    canActivate: [authGuard],
+    canActivateChild: [authGuard],
+    children: [
+      { path: '', redirectTo: 'sedes', pathMatch: 'full' },
+      { path: 'sedes', loadComponent: () => import('./features/admin/sedes/admin-sedes').then(m => m.AdminSedes) },
+      { path: 'canchas', loadComponent: () => import('./features/admin/canchas/admin-canchas').then(m => m.AdminCanchas) },
+      { path: 'reservas', loadComponent: () => import('./features/admin/reservas/admin-reservas').then(m => m.AdminReservas) },
+      { path: 'caja', loadComponent: () => import('./features/admin/caja/admin-caja').then(m => m.AdminCaja) },
+      { path: 'pos', loadComponent: () => import('./features/admin/pos/admin-pos').then(m => m.AdminPos) },
+      { path: 'finanzas', loadComponent: () => import('./features/admin/finanzas/admin-finanzas').then(m => m.AdminFinanzas) },
+      { path: 'personalizacion', loadComponent: () => import('./features/admin/personalizacion/admin-personalizacion').then(m => m.AdminPersonalizacion) },
+      { path: 'configuracion', loadComponent: () => import('./features/admin/configuracion/admin-configuracion').then(m => m.AdminConfiguracion) },
+    ],
+  },
   { path: '**', redirectTo: '' },
 ];

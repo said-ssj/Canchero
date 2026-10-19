@@ -1,11 +1,13 @@
-import { Component, computed, DestroyRef, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { DatabaseService } from '@core/supabase/database.service';
 import { AuthService } from '@core/auth/auth.service';
 import type { Venue, Court } from '@shared/models/venue.model';
+import type { CourtSlotAvailability, SlotState, BookingBlock, BookingTranche } from '@shared/models/availability.model';
+import { getLimaDate, buildBookingBlock, getCourtOperatingHours } from '@core/utils/availability.utils';
 
-interface WeekDay {
+export interface WeekDay {
   dateStr: string;
   year: number;
   dayName: string;
@@ -17,7 +19,7 @@ interface WeekDay {
   displayFull: string;
 }
 
-interface Slot {
+export interface Slot {
   id: string;
   dateStr: string;
   dayDisplay: string;
@@ -55,8 +57,17 @@ interface Complejo {
 export class Checkout {
   private readonly db = inject(DatabaseService);
   private readonly auth = inject(AuthService);
-  private readonly destroyRef = inject(DestroyRef);
   private readonly route = inject(ActivatedRoute);
+
+  protected readonly fallbackCourtImg =
+    'https://images.unsplash.com/photo-1529900241929-58a47400d705?q=80&w=300&auto=format&fit=crop';
+
+  protected onImgError(event: Event): void {
+    const img = event.target as HTMLImageElement;
+    if (img && img.src !== this.fallbackCourtImg) {
+      img.src = this.fallbackCourtImg;
+    }
+  }
 
   protected readonly complejos = computed<Complejo[]>(() => {
     const venues = this.db.getVenuesPublicos();
@@ -72,27 +83,113 @@ export class Checkout {
   });
 
   protected readonly filterOptions: { key: 'all' | 'afternoon' | 'prime'; label: string }[] = [
-    { key: 'all', label: 'Todos los turnos (08:00 - 23:00)' },
-    { key: 'afternoon', label: 'Tarde y Noche (15:00 - 23:00)' },
-    { key: 'prime', label: 'Noche Prime (18:00 - 23:00)' },
+    { key: 'all', label: 'Todos los turnos (08:00 - 00:00)' },
+    { key: 'afternoon', label: 'Tarde y Noche (15:00 - 00:00)' },
+    { key: 'prime', label: 'Noche Prime (18:00 - 00:00)' },
   ];
 
-  protected readonly selectedComplejoId = signal('1');
-  protected readonly selectedTipoCancha = signal('Grass 7');
+  protected readonly queryCourtId = signal<string | null>(
+    this.route.snapshot.queryParamMap.get('courtId'),
+  );
+
+  protected readonly isLoadingCatalog = computed(() => this.db.catalogLoading());
+
+  protected readonly resolvedData = computed<{ court: Court; venue: Venue } | null>(() => {
+    const id = this.queryCourtId();
+    if (!id) return null;
+    return this.db.getCourtPublica(id) ?? null;
+  });
+
+  protected readonly resolvedCourt = computed<Court | null>(() => this.resolvedData()?.court ?? null);
+  protected readonly resolvedVenue = computed<Venue | null>(() => this.resolvedData()?.venue ?? null);
+
+  protected readonly contextError = computed<string | null>(() => {
+    if (this.isLoadingCatalog()) return null;
+    const id = this.queryCourtId();
+    if (!id) {
+      return 'No se ha seleccionado ninguna cancha. Debes elegir una cancha concreta desde el catálogo de sedes.';
+    }
+    if (!this.resolvedData()) {
+      return `La cancha solicitada (ID: ${id}) no existe o no se encuentra activa en el sistema.`;
+    }
+    return null;
+  });
+
+  protected readonly isLoggedIn = computed(() => this.auth.isLoggedIn());
+  protected readonly currentUser = computed(() => this.auth.currentUser());
+  protected readonly returnUrl = computed(() => {
+    const id = this.queryCourtId();
+    return id ? `/checkout?courtId=${id}` : '/sedes';
+  });
+
   protected readonly weekOffset = signal(0);
   protected readonly timeFilter = signal<'all' | 'afternoon' | 'prime'>('all');
   protected readonly selectedSlots = signal<Slot[]>([]);
   protected readonly activePaso = signal<1 | 2 | 3>(1);
 
+  protected readonly isLoadingAvailability = signal(false);
+  protected readonly availabilityError = signal<string | null>(null);
+  protected readonly effectiveAvailabilityError = computed<string | null>(() => {
+    const manualErr = this.availabilityError();
+    if (manualErr) return manualErr;
+    const loadErrs = (this.db as any).loadErrors?.();
+    if (Array.isArray(loadErrs)) {
+      if (
+        loadErrs.includes('availability') ||
+        loadErrs.includes('reserva') ||
+        loadErrs.includes('bloqueo_mantenimiento') ||
+        loadErrs.includes('tipo_horario') ||
+        loadErrs.includes('catalogo')
+      ) {
+        return 'No se pudo comprobar la disponibilidad actual de la cancha.';
+      }
+    } else if (loadErrs && typeof loadErrs === 'object') {
+      const msg =
+        loadErrs['availability'] ||
+        loadErrs['reserva'] ||
+        loadErrs['bloqueo_mantenimiento'] ||
+        loadErrs['tipo_horario'] ||
+        loadErrs['catalogo'];
+      if (msg) return String(msg);
+    }
+    return null;
+  });
+  protected readonly requestSeq = signal(0);
+  private quoteSeq = 0;
+  protected readonly serverQuote = signal<BookingBlock | null>(null);
+  private lastSessionUserId: string | null | undefined = undefined;
+
   protected readonly players = signal<Player[]>([
-    { id: 'carlos', name: 'Carlos Jugador', role: 'Tú', phone: '987 654 321', registrado: true, isCaptain: true, paid: true },
-    { id: 'roberto', name: 'Roberto Mendoza', role: 'Amigo', phone: '912 345 678', registrado: true, isCaptain: false, paid: false },
-    { id: 'diego', name: 'Diego Valdivia', role: 'Amigo', phone: '945 678 123', registrado: true, isCaptain: false, paid: true },
-    { id: 'juan', name: 'Juan Invitado', role: 'Barrio', phone: '998 112 233', registrado: false, isCaptain: false, paid: false },
+    { id: 'capitan', name: 'Tú (Titular)', role: 'Tú', phone: '', registrado: true, isCaptain: true, paid: true },
   ]);
 
-  protected readonly paymentMethod = signal<'yape' | 'plin' | 'card'>('yape');
-  protected readonly isSplitActive = signal(true);
+  protected readonly paymentMethod = signal<'card' | 'yape' | 'plin'>('card');
+  protected readonly isSplitActive = signal(false);
+
+  // Campos de tarjeta simulada y estados explícitos (Fase 5)
+  protected readonly cardNumber = signal('4532 0000 0000 4242');
+  protected readonly cardExpiry = signal('12/28');
+  protected readonly cardCvv = signal('123');
+  protected readonly cardHolder = signal('Carlos Jugador');
+  protected readonly cardSimulationOutcome = signal<'approved' | 'rejected' | 'timeout'>('approved');
+
+  protected readonly reservaStatus = signal('Confirmada');
+  protected readonly paymentStatus = signal('aprobado');
+  protected readonly paidAmount = signal(0);
+  protected readonly balanceAmount = signal(0);
+  protected readonly paymentOpNumber = signal('');
+
+  protected readonly isCardValid = computed<boolean>(() => {
+    const num = this.cardNumber().replace(/\s+/g, '');
+    const exp = this.cardExpiry().trim();
+    const cvv = this.cardCvv().trim();
+    const holder = this.cardHolder().trim();
+    const expMatch = exp.match(/^(\d{2})\/(\d{2})$/);
+    if (!expMatch) return false;
+    const month = parseInt(expMatch[1], 10);
+    if (month < 1 || month > 12) return false;
+    return num.length >= 15 && num.length <= 19 && cvv.length >= 3 && holder.length > 0;
+  });
 
   protected readonly newPlayerName = signal('');
   protected readonly newPlayerPhone = signal('');
@@ -116,57 +213,127 @@ export class Checkout {
   protected readonly reservaCode = signal('');
   protected readonly reservaTimeText = signal('');
 
-  private readonly retentionSeconds = signal(15 * 60);
-
-  protected readonly retentionText = computed(() => {
-    const s = this.retentionSeconds();
-    const m = Math.floor(s / 60).toString().padStart(2, '0');
-    const sec = (s % 60).toString().padStart(2, '0');
-    return `${m}:${sec} min`;
+  protected readonly nightStartHour = computed<number>(() => {
+    const court = this.resolvedCourt();
+    if (!court?.horaInicioNoche) return 18;
+    const parts = court.horaInicioNoche.split(':');
+    return parseInt(parts[0], 10) || 18;
   });
 
   protected readonly pad2 = (n: number): string => String(n).padStart(2, '0');
 
   constructor() {
-    const qId = this.route.snapshot.queryParamMap.get('id');
-    if (qId && this.complejos().some((c) => c.id === qId)) {
-      this.selectedComplejoId.set(qId);
-    }
-    const qCancha = this.route.snapshot.queryParamMap.get('cancha');
-    if (qCancha) {
-      this.selectedTipoCancha.set(qCancha);
-    }
+    this.route.queryParamMap.subscribe((params) => {
+      const cId = params.get('courtId');
+      const changed = cId !== this.queryCourtId();
+      if (changed) {
+        this.selectedSlots.set([]);
+        this.serverQuote.set(null);
+        this.availabilityError.set(null);
+      }
+      this.queryCourtId.set(cId);
+      if (cId) {
+        void this.loadWeekAvailability(cId, this.weekOffset());
+      }
+    });
 
-    const interval = setInterval(() => {
-      this.retentionSeconds.update((s) => Math.max(0, s - 1));
-    }, 1000);
-    this.destroyRef.onDestroy(() => clearInterval(interval));
+    effect(() => {
+      const user = this.currentUser();
+      const userId = user?.id ?? null;
+      if (this.lastSessionUserId !== undefined && this.lastSessionUserId !== userId) {
+        this.confirmError.set('');
+        this.showSuccess.set(false);
+      }
+      this.lastSessionUserId = userId;
+      const captainName = user?.nombre ? user.nombre : 'Tú (Titular)';
+      this.players.update((list) =>
+        list.map((p) => (p.isCaptain ? { ...p, name: captainName } : p)),
+      );
+    });
   }
 
-  protected readonly selectedComplejo = computed(
-    () => this.complejos().find((c) => c.id === this.selectedComplejoId()) ?? this.complejos()[0],
-  );
+  protected readonly selectedComplejo = computed<Complejo>(() => {
+    const v = this.resolvedVenue();
+    if (!v) {
+      return {
+        id: '',
+        name: '',
+        price: 0,
+        address: '',
+        img: 'https://images.unsplash.com/photo-1529900241929-58a47400d705?q=80&w=300&auto=format&fit=crop',
+        courts: [],
+      };
+    }
+    return {
+      id: v.id,
+      name: v.nombre,
+      price: v.precioBase,
+      address: v.direccion,
+      img: v.fotos[0] ?? 'https://images.unsplash.com/photo-1529900241929-58a47400d705?q=80&w=300&auto=format&fit=crop',
+      courts: v.canchas,
+      phone: v.telefono,
+    };
+  });
+
+  protected readonly selectedTipoCancha = computed<string>(() => {
+    const c = this.resolvedCourt();
+    return c ? `${c.nombre} (${c.tipo})` : '';
+  });
 
   protected readonly currentWeekDays = computed(() => this.getDaysForWeek(this.weekOffset()));
 
   protected readonly filteredHours = computed(() => {
-    const all = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22];
+    const all = getCourtOperatingHours(this.resolvedCourt(), this.db.horarios?.() ?? []);
     if (this.timeFilter() === 'afternoon') return all.filter((h) => h >= 15);
     if (this.timeFilter() === 'prime') return all.filter((h) => h >= 18);
     return all;
   });
 
-  protected readonly basePrice = computed(() => {
-    const price = this.selectedComplejo().price;
-    const tipo = this.selectedTipoCancha();
-    if (tipo === 'Grass 5') return Math.round(price * 0.75);
-    if (tipo === 'Futsal Techado') return Math.round(price * 0.85);
-    return price;
+  protected readonly basePrice = computed<number>(() => {
+    const c = this.resolvedCourt();
+    return c ? c.precioHora : 0;
   });
 
-  protected readonly subtotal = computed(() =>
-    this.selectedSlots().reduce((acc, s) => acc + s.price, 0),
-  );
+  protected readonly bookingBlock = computed<BookingBlock>(() => {
+    const localBlock = buildBookingBlock(this.selectedSlots(), this.nightStartHour());
+    const srv = this.serverQuote();
+    if (
+      localBlock.isValid &&
+      srv &&
+      srv.isValid &&
+      srv.dateStr === localBlock.dateStr &&
+      srv.durationHours === localBlock.durationHours &&
+      srv.timeStart === localBlock.timeStart &&
+      srv.timeEnd === localBlock.timeEnd
+    ) {
+      return {
+        ...localBlock,
+        tranches: srv.tranches.length === localBlock.tranches.length ? srv.tranches : localBlock.tranches,
+        subtotal: srv.subtotal,
+      };
+    }
+    return localBlock;
+  });
+
+  protected readonly canProceedToPaso2 = computed<boolean>(() => {
+    if (this.isLoadingCatalog() || this.isLoadingAvailability()) return false;
+    if (this.effectiveAvailabilityError()) return false;
+    if (this.selectedSlots().length === 0) return false;
+    return this.bookingBlock().isValid;
+  });
+
+  protected readonly selectionValidationMessage = computed<string | null>(() => {
+    if (this.selectedSlots().length === 0) return null;
+    const block = this.bookingBlock();
+    if (!block.isValid) return block.errorMessage || 'Selección de turnos no permitida.';
+    return null;
+  });
+
+  protected readonly subtotal = computed(() => {
+    const block = this.bookingBlock();
+    if (block.isValid) return block.subtotal;
+    return this.selectedSlots().reduce((acc, s) => acc + s.price, 0);
+  });
 
   protected readonly discountAmount = computed(() => this.subtotal() * this.couponPercent());
 
@@ -179,9 +346,7 @@ export class Checkout {
     return this.total() / count;
   });
 
-  protected readonly totalToPayNow = computed(() =>
-    this.isSplitActive() ? this.cuotaPerPlayer() : this.total(),
-  );
+  protected readonly totalToPayNow = computed(() => this.total());
 
   protected readonly paidCount = computed(
     () => this.players().filter((p) => p.paid || p.isCaptain).length,
@@ -196,6 +361,10 @@ export class Checkout {
   });
 
   protected readonly horasLabel = computed(() => {
+    const block = this.bookingBlock();
+    if (block.isValid) {
+      return `${block.durationHours} ${block.durationHours === 1 ? 'hora' : 'horas continuas'}`;
+    }
     const n = this.selectedSlots().length;
     return `${n} ${n === 1 ? 'hora' : 'horas'}`;
   });
@@ -208,17 +377,29 @@ export class Checkout {
   });
 
   protected readonly summaryDateText = computed(() => {
+    const block = this.bookingBlock();
+    if (block.isValid && block.dayDisplay) {
+      return `${block.dayDisplay} (${block.displayRange})`;
+    }
     const dates = [...new Set(this.selectedSlots().map((s) => s.dayDisplay))];
     return dates.length ? dates.join(', ') : 'Sin horarios elegidos';
   });
 
-  protected readonly horarioText = computed(() =>
-    this.selectedSlots().map((s) => `${s.dayDisplay}: ${s.time}`).join(', '),
-  );
+  protected readonly horarioText = computed(() => {
+    const block = this.bookingBlock();
+    if (block.isValid && block.fullLabel) {
+      return block.fullLabel;
+    }
+    return this.selectedSlots().map((s) => `${s.dayDisplay}: ${s.time}`).join(', ');
+  });
 
-  protected readonly contextTimeText = computed(
-    () => this.selectedSlots()[0]?.time ?? '--:-- - --:--',
-  );
+  protected readonly contextTimeText = computed(() => {
+    const block = this.bookingBlock();
+    if (block.isValid && block.displayRange) {
+      return block.displayRange;
+    }
+    return this.selectedSlots()[0]?.time ?? '--:-- - --:--';
+  });
 
   protected readonly weekLabelText = computed(() => {
     const days = this.currentWeekDays();
@@ -265,8 +446,8 @@ export class Checkout {
 
   protected readonly voucherStatusText = computed(() =>
     this.voucherUploaded()
-      ? '✓ Voucher adjuntado y listo para validar'
-      : '⏳ Esperando verificación de recepción',
+      ? 'Voucher adjuntado y listo para validar'
+      : 'Esperando verificación de recepción',
   );
 
   protected readonly convocadosText = computed(
@@ -293,9 +474,18 @@ export class Checkout {
   }
 
   protected goToPaso(paso: 1 | 2 | 3): void {
-    if (paso === 2 && this.selectedSlots().length === 0) {
-      this.confirmError.set('Por favor, selecciona al menos un turno en el calendario de la semana.');
-      return;
+    if (paso === 2 || paso === 3) {
+      this.reprice();
+      if (this.selectedSlots().length === 0) {
+        this.confirmError.set('Por favor, selecciona al menos un turno en el calendario de la semana.');
+        return;
+      }
+      const block = this.bookingBlock();
+      if (!block.isValid) {
+        this.confirmError.set(block.errorMessage || 'Los turnos seleccionados no forman un bloque continuo válido.');
+        return;
+      }
+      void this.syncServerQuote();
     }
     this.confirmError.set('');
     this.activePaso.set(paso);
@@ -317,6 +507,7 @@ export class Checkout {
     const monday = this.getMondayOfWeek(today, weekOffset);
     const dayNames = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
     const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    const todayStr = getLimaDate();
     const days: WeekDay[] = [];
     for (let i = 0; i < 7; i++) {
       const cur = new Date(monday);
@@ -325,8 +516,8 @@ export class Checkout {
       const month = String(cur.getMonth() + 1).padStart(2, '0');
       const day = String(cur.getDate()).padStart(2, '0');
       const dateStr = `${year}-${month}-${day}`;
-      const isPast = cur.getTime() < today.getTime();
-      const isToday = cur.getTime() === today.getTime();
+      const isPast = dateStr < todayStr;
+      const isToday = dateStr === todayStr;
       days.push({
         dateStr,
         year,
@@ -342,98 +533,212 @@ export class Checkout {
     return days;
   }
 
-  protected getSlotPrice(hour: number, base: number): number {
-    if (hour >= 18 && hour <= 21) return base + 10;
-    if (hour < 15) return Math.max(40, base - 10);
-    return base;
+  protected getSlot(day: WeekDay, hour: number): CourtSlotAvailability {
+    const court = this.resolvedCourt();
+    if (!court) {
+      return {
+        id: `${day.dateStr}_${hour}`,
+        dateStr: day.dateStr,
+        hour,
+        time: `${this.pad2(hour)}:00 - ${hour === 23 ? '00:00' : this.pad2(hour + 1) + ':00'}`,
+        state: 'closed',
+        price: 0,
+        isNight: false,
+        reason: 'Cancha no resuelta',
+      };
+    }
+    return this.db.getCourtSlotAvailability(court, day.dateStr, hour);
   }
 
-  private isSlotOccupied(complejoId: string, dateStr: string, hour: number): boolean {
-    const hourStr = `${this.pad2(hour)}:00`;
-    const dateNum = parseInt(dateStr.replace(/-/g, ''), 10);
-    const dateObj = new Date(`${dateStr}T00:00:00`);
-    const dayOfWeek = dateObj.getDay();
-    const hash = Math.abs((dateNum * 19 + Number(complejoId || 1) * 23 + hour * 11) % 100);
-    if ((dayOfWeek === 5 || dayOfWeek === 6) && hour >= 18 && hour <= 21) return hash % 10 < 6;
-    if (hour >= 19 && hour <= 21) return hash % 10 < 5;
-    if (hour >= 16 && hour <= 18) return hash % 10 < 3;
-    return hash % 10 < 2;
+  protected slotStatus(day: WeekDay, hour: number): SlotState {
+    if (this.effectiveAvailabilityError() || this.isLoadingAvailability()) return 'closed';
+    return this.getSlot(day, hour).state;
   }
 
-  protected slotStatus(day: WeekDay, hour: number): 'past' | 'occupied' | 'available' {
-    if (day.isPast) return 'past';
-    const now = new Date();
-    if (day.isToday && hour <= now.getHours()) return 'past';
-    if (this.isSlotOccupied(this.selectedComplejoId(), day.dateStr, hour)) return 'occupied';
-    return 'available';
+  protected slotPriceAt(day: WeekDay, hour: number): number {
+    return this.getSlot(day, hour).price;
+  }
+
+  protected isNightHour(hour: number): boolean {
+    return hour >= this.nightStartHour();
   }
 
   protected isSlotSelected(day: WeekDay, hour: number): boolean {
     return this.selectedSlots().some((s) => s.id === `${day.dateStr}_${hour}`);
   }
 
-  protected slotPriceAt(hour: number): number {
-    return this.getSlotPrice(hour, this.basePrice());
-  }
-
   protected toggleSlot(day: WeekDay, hour: number): void {
+    if (this.slotStatus(day, hour) !== 'available') return;
     const id = `${day.dateStr}_${hour}`;
     const exists = this.selectedSlots().some((s) => s.id === id);
     if (exists) {
       this.selectedSlots.update((slots) => slots.filter((s) => s.id !== id));
     } else {
+      const slotPrice = this.slotPriceAt(day, hour);
       const slot: Slot = {
         id,
         dateStr: day.dateStr,
         dayDisplay: day.displayShort,
-        time: `${this.pad2(hour)}:00 - ${this.pad2(hour + 1)}:00`,
+        time: `${this.pad2(hour)}:00 - ${hour === 23 ? '00:00' : this.pad2(hour + 1) + ':00'}`,
         hour,
-        price: this.slotPriceAt(hour),
+        price: slotPrice,
       };
       this.selectedSlots.update((slots) => [...slots, slot]);
     }
     this.confirmError.set('');
+    void this.syncServerQuote();
   }
 
   protected removeSlot(id: string): void {
     this.selectedSlots.update((slots) => slots.filter((s) => s.id !== id));
+    this.confirmError.set('');
+    void this.syncServerQuote();
+  }
+
+  protected removeSlotByHour(hour: number, dateStr?: string): void {
+    this.selectedSlots.update((slots) =>
+      slots.filter((s) => !(s.hour === hour && (!dateStr || s.dateStr === dateStr))),
+    );
+    this.confirmError.set('');
+    void this.syncServerQuote();
   }
 
   protected clearSlots(): void {
     this.selectedSlots.set([]);
+    this.serverQuote.set(null);
   }
 
   protected prevWeek(): void {
-    if (this.weekOffset() > 0) this.weekOffset.update((w) => w - 1);
+    if (this.weekOffset() > 0) {
+      this.setWeekOffset(this.weekOffset() - 1);
+    }
   }
 
   protected nextWeek(): void {
-    this.weekOffset.update((w) => w + 1);
+    this.setWeekOffset(this.weekOffset() + 1);
   }
 
   protected todayWeek(): void {
-    this.weekOffset.set(0);
+    this.setWeekOffset(0);
+  }
+
+  private setWeekOffset(offset: number): void {
+    this.weekOffset.set(offset);
+    void this.loadWeekAvailability(this.queryCourtId(), offset);
+  }
+
+  protected retryAvailability(): void {
+    this.availabilityError.set(null);
+    void this.db.refreshCatalogo();
+    void this.loadWeekAvailability(this.queryCourtId(), this.weekOffset());
   }
 
   protected setTimeFilter(f: 'all' | 'afternoon' | 'prime'): void {
     this.timeFilter.set(f);
   }
 
-  protected onComplejoChange(id: string): void {
-    this.selectedComplejoId.set(id);
-    this.reprice();
+  protected onComplejoChange(_id: string): void {}
+
+  protected onTipoChange(_tipo: string): void {}
+
+  private async loadWeekAvailability(courtId: string | null, offset: number): Promise<void> {
+    const seq = this.requestSeq() + 1;
+    this.requestSeq.set(seq);
+    if (!courtId || typeof this.db.fetchCourtAvailability !== 'function') {
+      return;
+    }
+    const days = this.getDaysForWeek(offset);
+    if (!days.length) return;
+    const from = days[0].dateStr;
+    const to = days[days.length - 1].dateStr;
+
+    this.isLoadingAvailability.set(true);
+    this.availabilityError.set(null);
+    try {
+      const result = await this.db.fetchCourtAvailability(courtId, from, to);
+      // Ignorar respuestas obsoletas si cambió la cancha o la semana mientras cargaba
+      if (this.requestSeq() !== seq || this.queryCourtId() !== courtId || this.weekOffset() !== offset) {
+        return;
+      }
+      const loadErrs = (this.db as any).loadErrors?.();
+      const availErr =
+        Array.isArray(loadErrs) && loadErrs.includes('availability')
+          ? 'No se pudo comprobar la disponibilidad actual de la cancha.'
+          : loadErrs && typeof loadErrs === 'object'
+            ? loadErrs['availability']
+            : null;
+      if (result === null && availErr) {
+        this.availabilityError.set(String(availErr));
+      } else {
+        this.reprice();
+        void this.syncServerQuote();
+      }
+    } catch {
+      if (this.requestSeq() === seq && this.queryCourtId() === courtId && this.weekOffset() === offset) {
+        this.availabilityError.set('No se pudo verificar la disponibilidad en tiempo real. Intenta nuevamente.');
+      }
+    } finally {
+      if (this.requestSeq() === seq) {
+        this.isLoadingAvailability.set(false);
+      }
+    }
   }
 
-  protected onTipoChange(tipo: string): void {
-    this.selectedTipoCancha.set(tipo);
-    this.reprice();
+  private async syncServerQuote(): Promise<void> {
+    const seq = ++this.quoteSeq;
+    const court = this.resolvedCourt();
+    const localBlock = buildBookingBlock(this.selectedSlots(), this.nightStartHour());
+    if (!court || !localBlock.isValid || localBlock.durationHours === 0 || !localBlock.dateStr) {
+      this.serverQuote.set(null);
+      return;
+    }
+    if (typeof this.db.quoteCourtBooking !== 'function') {
+      this.serverQuote.set(null);
+      return;
+    }
+    const hours = localBlock.tranches.map((t) => t.hour);
+    const quote = await this.db.quoteCourtBooking(court.id, localBlock.dateStr, hours);
+    if (this.quoteSeq !== seq) return;
+    const quoteCourtId = (quote as any)?.courtId;
+    if (
+      quote &&
+      (!quoteCourtId || String(quoteCourtId) === String(court.id) || String(quoteCourtId) === String(court.id_cancha ?? '')) &&
+      quote.dateStr === localBlock.dateStr
+    ) {
+      this.serverQuote.set(quote);
+      // Sincronizar precios por tramo recibidos del servidor con las casillas seleccionadas
+      if (quote.isValid && quote.tranches.length === hours.length) {
+        const priceByHour = new Map(quote.tranches.map((t) => [t.hour, t.price]));
+        this.selectedSlots.update((slots) =>
+          slots.map((s) =>
+            s.dateStr === quote.dateStr && priceByHour.has(s.hour)
+              ? { ...s, price: priceByHour.get(s.hour)! }
+              : s,
+          ),
+        );
+      }
+    }
   }
 
-  private reprice(): void {
-    const base = this.basePrice();
-    this.selectedSlots.update((slots) =>
-      slots.map((s) => ({ ...s, price: this.getSlotPrice(s.hour, base) })),
-    );
+  protected reprice(): void {
+    const court = this.resolvedCourt();
+    if (!court) return;
+    this.selectedSlots.update((slots) => {
+      const refreshed: Slot[] = [];
+      let hadUnavailable = false;
+      for (const s of slots) {
+        const avail = this.db.getCourtSlotAvailability(court, s.dateStr, s.hour);
+        if (avail.state !== 'available') {
+          hadUnavailable = true;
+        } else {
+          refreshed.push({ ...s, price: avail.price });
+        }
+      }
+      if (hadUnavailable) {
+        this.confirmError.set('Uno o más turnos seleccionados ya no se encuentran disponibles y fueron removidos.');
+      }
+      return refreshed;
+    });
   }
 
   protected addPlayer(): void {
@@ -472,7 +777,7 @@ export class Checkout {
 
   protected quotaStatus(p: Player): { text: string; cls: string } {
     if (p.isCaptain) return { text: 'A pagar hoy', cls: 'green' };
-    if (p.paid) return { text: 'Pagado ✓', cls: 'green' };
+    if (p.paid) return { text: 'Pagado', cls: 'green' };
     if (p.registrado) return { text: 'Pendiente app', cls: 'orange' };
     return { text: 'En mesa / efec', cls: 'muted' };
   }
@@ -501,7 +806,7 @@ export class Checkout {
     if (coupon) {
       this.couponApplied.set(true);
       this.couponPercent.set(coupon.percent);
-      this.couponMessage.set(`✓ ¡Cupón ${coupon.code} de ${coupon.label} aplicado!`);
+      this.couponMessage.set(`Cupón ${coupon.code} de ${coupon.label} aplicado`);
     } else {
       this.couponApplied.set(false);
       this.couponPercent.set(0);
@@ -544,8 +849,8 @@ export class Checkout {
   }
 
   protected readonly qrSvg = computed(() => {
-    const comp = this.selectedComplejo();
-    const data = `https://canchero.pe/checkout?id=${comp.id}&cancha=${this.selectedTipoCancha()}`;
+    const court = this.resolvedCourt();
+    const data = `https://canchero.pe/checkout?courtId=${court?.id ?? ''}`;
     return this.generarQRSVG(data);
   });
 
@@ -556,7 +861,12 @@ export class Checkout {
   }
 
   protected selectPayment(m: 'yape' | 'plin' | 'card'): void {
-    this.paymentMethod.set(m);
+    if (m !== 'card') {
+      this.confirmError.set('En reservas online solo está habilitado el pago al 100% con tarjeta. Yape y Plin están deshabilitados para reservas online.');
+      return;
+    }
+    this.confirmError.set('');
+    this.paymentMethod.set('card');
   }
 
   protected copyNumber(): void {
@@ -581,12 +891,12 @@ export class Checkout {
     const cuota = this.cuotaPerPlayer().toFixed(2);
     const phone = comp.phone?.replace(/[^0-9]/g, '') ?? '987654321';
     const msg = encodeURIComponent(
-      `⚽ ¡Habla equipo! Pichanga confirmada:\n\n` +
-        `🏟️ Sede: ${comp.name}\n` +
-        `📅 Cancha: ${this.selectedTipoCancha()}\n` +
-        `⏰ Horario(s): ${slotTexts}\n` +
-        `💵 Cuota individual: S/ ${cuota} (Yape/Plin al ${phone})\n\n` +
-        `¡Confirmen su asistencia para no quedarnos sin gente!`,
+      `Habla equipo. Pichanga confirmada:\n\n` +
+        `Sede: ${comp.name}\n` +
+        `Cancha: ${this.selectedTipoCancha()}\n` +
+        `Horario(s): ${slotTexts}\n` +
+        `Cuota individual: S/ ${cuota} (Yape/Plin al ${phone})\n\n` +
+        `Confirmen su asistencia para no quedarnos sin gente.`,
     );
     window.open(`https://api.whatsapp.com/send?text=${msg}`, '_blank');
   }
@@ -624,54 +934,152 @@ export class Checkout {
     this.voucherUploaded.set(true);
   }
 
-  protected confirmarReserva(): void {
+  private lastIdempotencySignature: string | null = null;
+  private lastIdempotencyKey: string | null = null;
+
+  protected readonly canSubmitReservation = computed<boolean>(() => {
+    return (
+      this.isLoggedIn() &&
+      !!this.resolvedCourt() &&
+      !this.effectiveAvailabilityError() &&
+      !this.isLoadingAvailability() &&
+      this.bookingBlock().isValid &&
+      this.bookingBlock().durationHours > 0 &&
+      this.isCardValid() &&
+      !this.submitting()
+    );
+  });
+
+  private getOrCreateIdempotencyKey(
+    userId: string,
+    courtId: string,
+    dateStr: string,
+    displayRange: string,
+  ): string {
+    const signature = `${userId}|${courtId}|${dateStr}|${displayRange}`;
+    if (this.lastIdempotencySignature === signature && this.lastIdempotencyKey) {
+      return this.lastIdempotencyKey;
+    }
+    const randomSuffix = Math.random().toString(36).substring(2, 10);
+    const key = `chk-${courtId}-${dateStr}-${displayRange.replace(/\s+/g, '')}-${randomSuffix}`.slice(0, 96);
+    this.lastIdempotencySignature = signature;
+    this.lastIdempotencyKey = key;
+    return key;
+  }
+
+  protected async confirmarReserva(): Promise<void> {
+    if (this.submitting()) {
+      return;
+    }
+    if (!this.isLoggedIn()) {
+      this.confirmError.set('Debes iniciar sesión con tu cuenta de jugador para continuar.');
+      return;
+    }
+    const court = this.resolvedCourt();
+    if (!court) {
+      this.confirmError.set('La cancha seleccionada no es válida o no está disponible.');
+      return;
+    }
     if (this.selectedSlots().length === 0) {
       this.confirmError.set('Por favor, selecciona al menos un turno en el calendario de la semana.');
       return;
     }
-    this.confirmError.set('');
-    this.submitting.set(true);
-    const first = this.selectedSlots()[0];
-    const fecha = first.dateStr;
-    const [horaInicio = '19:00', horaFin = '20:00'] = first.time
-      .split(' - ')
-      .map((t) => t.trim());
-
-    const tipo = this.selectedTipoCancha();
-    let cancha = this.db.canchas().find((c) => c.activa && (tipo.toLowerCase().includes('5') ? c.tipo.includes('5') : c.tipo.includes('7')));
-    if (!cancha) {
-      cancha = this.db.getCanchasPublicasActivas()[0];
-    }
-    if (!cancha) {
-      this.confirmError.set('No hay canchas activas disponibles. Crea una desde el panel admin.');
-      this.submitting.set(false);
+    const beforeCount = this.selectedSlots().length;
+    this.reprice();
+    if (this.selectedSlots().length !== beforeCount) {
       return;
     }
-    const emailA = this.auth.currentUser()?.email ?? 'jugador@canchero.pe';
-    const authUser = this.auth.currentUser();
-    const jugador = this.db.usuarios().find((u) => u.email.toLowerCase() === 'jugador@canchero.pe')
-      ?? this.db.usuarios().find((u) => u.email.toLowerCase() === emailA.toLowerCase())
-      ?? this.db.usuarios().find((u) => u.rol === 'cliente');
+    const block = this.bookingBlock();
+    if (!block.isValid || block.durationHours === 0 || !block.dateStr || !block.displayRange) {
+      this.confirmError.set(
+        block.errorMessage || 'Los turnos seleccionados deben formar un único bloque continuo en la misma fecha.',
+      );
+      return;
+    }
 
-    const reserva = this.db.createReservaConPago(
-      {
-        cancha_id: cancha.id,
-        cliente_id: authUser?.id || '',
-        usuario_id: jugador?.id ?? 2,
-        fecha_reserva: fecha,
-        hora_inicio: horaInicio,
-        hora_fin: horaFin,
-        monto: Number(this.total().toFixed(2)),
-      },
-      {
-        metodo_pago: this.paymentMethod() === 'card' ? 'POS Tarjeta' : this.paymentMethod() === 'plin' ? 'Plin' : 'Yape',
-        codigo_operacion: this.opCode(),
-      },
+    const dateStr = block.dateStr;
+    const displayRange = block.displayRange;
+    const user = this.currentUser();
+    const userId = String(user?.id ?? user?.id_usuario ?? 'auth-user');
+    const venue = this.resolvedVenue();
+    const idempotencyKey = this.getOrCreateIdempotencyKey(
+      userId,
+      String(court.id),
+      dateStr,
+      displayRange,
     );
-    this.reservaCode.set(reserva.codigo_pase ?? `#CAN-${1000 + reserva.id}`);
-    this.reservaTimeText.set(this.horarioText());
-    this.submitting.set(false);
-    this.showSuccess.set(true);
+    const metodoPagoLabel = 'Tarjeta';
+
+    this.submitting.set(true);
+    this.confirmError.set('');
+    try {
+      const result = await this.db.createOnlineBooking({
+        courtId: court.id,
+        venueId: venue?.id,
+        courtName: court.nombre,
+        venueName: venue?.nombre,
+        fecha: dateStr,
+        horario: displayRange,
+        hours: block.tranches.map((t) => t.hour),
+        total: block.subtotal,
+        metodoPago: metodoPagoLabel,
+        jugadores: this.players().map((p) => p.name),
+        idempotencyKey,
+        numeroOperacion: this.opCode().trim() || undefined,
+        paymentOutcome: this.cardSimulationOutcome(),
+        cardNumber: this.cardNumber().replace(/\s+/g, ''),
+        cardHolder: this.cardHolder().trim() || this.currentUser()?.nombre || 'Titular Tarjeta',
+      });
+
+      const passCode =
+        result?.reserva?.codigo_pase ||
+        result?.response?.codigoPase ||
+        '#CAN-0000';
+      this.reservaCode.set(passCode);
+      this.reservaTimeText.set(result?.response?.horario || displayRange);
+      this.reservaStatus.set(result?.response?.status || result?.reserva?.estado || 'Confirmada');
+      this.paymentStatus.set(result?.response?.paymentStatus || result?.pago?.estado || 'aprobado');
+      this.paidAmount.set(Number(result?.response?.paidAmount ?? block.subtotal));
+      this.balanceAmount.set(Number(result?.response?.balanceAmount ?? 0));
+      this.paymentOpNumber.set(result?.response?.paymentOperationNumber || result?.pago?.numero_operacion || '');
+      this.showSuccess.set(true);
+      void this.loadWeekAvailability(String(court.id), this.weekOffset());
+    } catch (err: any) {
+      const status = err?.status;
+      const serverMsg =
+        err?.error?.message ||
+        err?.error?.error ||
+        (typeof err?.error === 'string' ? err.error : null);
+
+      if (status === 402) {
+        this.confirmError.set(
+          serverMsg || 'El pago simulado con tarjeta fue rechazado por la entidad emisora. La reserva no fue confirmada.',
+        );
+      } else if (status === 504) {
+        this.confirmError.set(
+          serverMsg || 'Tiempo de espera agotado al conectar con el procesador de pagos. No se realizó ningún cargo.',
+        );
+      } else if (status === 409) {
+        this.lastIdempotencyKey = null;
+        this.lastIdempotencySignature = null;
+        await this.loadWeekAvailability(String(court.id), this.weekOffset());
+        this.reprice();
+        this.confirmError.set(
+          serverMsg ||
+            'El horario seleccionado acaba de ser ocupado por otro jugador o cambió su disponibilidad. Hemos actualizado el calendario.',
+        );
+      } else if (status === 401) {
+        this.confirmError.set(
+          serverMsg || 'Tu sesión ha expirado. Inicia sesión nuevamente para confirmar la reserva.',
+        );
+      } else {
+        this.confirmError.set(
+          serverMsg || 'No se pudo registrar la reserva en el servidor. Verifica tu conexión e intenta nuevamente.',
+        );
+      }
+    } finally {
+      this.submitting.set(false);
+    }
   }
 
   protected onModalBackdrop(e: Event): void {

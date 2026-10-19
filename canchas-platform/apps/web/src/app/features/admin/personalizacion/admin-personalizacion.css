@@ -1,0 +1,239 @@
+/* ==========================================================================
+   ADMIN PERSONALIZACIÓN & MARCA DE SEDE
+   Basado en el modelo de referencia personalizacion.html de Canchero:
+   - Layout local adaptado de operacion.css; utilidades globales del proyecto.
+   - Sin transiciones hover decorativas (transform, translateY, scale, shadows).
+   - Radio base de 6px a 8px en tarjetas, botones e inputs.
+   - Iconos consistentes Material Symbols Outlined.
+   ========================================================================== */
+
+.admin-personalizacion {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.qr-render-box {
+  width: 140px;
+  height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border: 1px solid var(--line, #dfe3e8);
+  border-radius: var(--radius, 6px);
+  padding: 8px;
+  flex: 0 0 140px;
+  overflow: hidden;
+}
+
+/* --- Skeletons y Estados --- */
+.personalizacion-skeleton {
+  padding: 24px 0;
+}
+
+.personalizacion-error-banner {
+  margin: 24px 0;
+}
+
+:host {
+  display: block;
+  min-width: 0;
+  --mat-sys-hover-state-layer-opacity: 0;
+  --mat-sys-pressed-state-layer-opacity: 0;
+}
+
+.admin-personalizacion {
+  min-width: 0;
+}
+.admin-personalizacion h2 {
+  font-size: 18px;
+  line-height: 1.4;
+}
+.admin-personalizacion .btn {
+  min-height: 36px;
+  border-radius: 6px;
+  font-size: 13px;
+  gap: 8px;
+  letter-spacing: 0;
+  box-shadow: none;
+  transition: none;
+}
+.op-brand-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
+  gap: 28px;
+  align-items: start;
+}
+.management-editor-section {
+  display: grid;
+  gap: 16px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #dfe3e8;
+  min-width: 0;
+}
+.op-swatches {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.op-swatch {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 46px;
+  padding: 10px;
+  text-align: left;
+  background: #fff;
+  border: 1px solid #dfe3e8;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #191919;
+  cursor: pointer;
+}
+.op-swatch span {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1px solid #dfe3e8;
+}
+.op-swatch[aria-pressed='true'] {
+  border-color: #191919;
+  outline: 1px solid #191919;
+  outline-offset: 1px;
+}
+.field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  font-size: 13px;
+}
+.field > span {
+  font-weight: 600;
+}
+.field input,
+.field textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid #dfe3e8;
+  border-radius: 6px;
+  background: #fff;
+  color: #191919;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.field textarea {
+  resize: vertical;
+  min-height: 130px;
+}
+.counter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.counter output {
+  font-size: 12px;
+  font-weight: 400;
+  color: #626a72;
+}
+.op-qr {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+.op-qr > div:not(.qr-render-box) {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+.op-qr p {
+  overflow-wrap: anywhere;
+  margin: 6px 0 12px;
+}
+.segmented {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.segmented button {
+  min-height: 36px;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 13px;
+}
+.admin-personalizacion button:disabled,
+.admin-personalizacion input:disabled {
+  background: #e5e7eb;
+  border-color: #d1d5db;
+  color: #6b7280;
+  cursor: default;
+  opacity: 1;
+}
+.op-brand-preview {
+  min-width: 0;
+  position: sticky;
+  top: 20px;
+}
+.op-brand-preview > p {
+  margin-bottom: 10px;
+}
+.op-brand-preview .card {
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid #dfe3e8;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: none;
+}
+.op-brand-photo {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+}
+.op-brand-preview .card-pad {
+  padding: 18px;
+}
+.op-brand-preview h2 {
+  font-size: 18px;
+  overflow-wrap: anywhere;
+}
+.op-brand-preview p {
+  font-size: 13px;
+  overflow-wrap: anywhere;
+  margin-bottom: 0;
+}
+.op-accent-label {
+  color: var(--preview-accent, #25832a);
+  font-size: 13px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.op-brand-preview .btn {
+  align-self: start;
+}
+
+@media (max-width: 1000px) {
+  .op-brand-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .op-brand-preview {
+    position: static;
+    max-width: 460px;
+    width: 100%;
+  }
+}
+@media (max-width: 480px) {
+  .op-swatches {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .op-qr {
+    align-items: start;
+    gap: 16px;
+  }
+}

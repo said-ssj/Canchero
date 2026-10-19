@@ -72,7 +72,7 @@ serve(async (req: Request) => {
         const { error } = await supabase
           .from('bloqueo_mantenimiento')
           .delete()
-          .eq('id', bloqueo_id);
+          .eq('id_bloqueo', bloqueo_id);
         
         if (error) throw error;
         return jsonResponse({ success: true });
@@ -82,7 +82,7 @@ serve(async (req: Request) => {
         const auth = await verifyAuth(req, supabase);
         if ('error' in auth) return errorResponse(auth.error, auth.status);
         
-        const { cancha_id, fecha, hora_inicio, hora_fin, monto, metodo_pago } = await req.json();
+        const { cancha_id, cliente_id, fecha, hora_inicio, hora_fin, monto } = await req.json();
         
         // Verificar disponibilidad en tiempo real
         const disponible = await verificarDisponibilidad(supabase, cancha_id, fecha, hora_inicio, hora_fin);
@@ -90,17 +90,27 @@ serve(async (req: Request) => {
           return errorResponse('Horario no disponible', 409);
         }
         
+        const idCliente = cliente_id || await getClienteId(supabase, auth.user.id);
+        if (!idCliente) return errorResponse('No existe un cliente vinculado al usuario autenticado', 400);
+
         // Crear reserva pendiente
         const { data: reserva, error } = await supabase
           .from('reserva')
           .insert({
-            cancha_id,
-            usuario_id: await getUserId(supabase, auth.user.id),
-            fecha,
+            id_cancha: cancha_id,
+            id_cliente: idCliente,
+            id_estado_reserva: 1,
+            id_usuario: auth.user.id,
+            fecha_reserva: fecha,
             hora_inicio,
             hora_fin,
-            estado: 'pendiente',
+            monto_total: Number(monto || 0),
+            adelanto: 0,
+            saldo: Number(monto || 0),
+            estado: 'A',
             codigo_pase: `#CAN-${Math.floor(1000 + Math.random() * 9000)}`,
+            usucre: 'EDGE',
+            pccre: 'SUPABASE',
           })
           .select()
           .single();
@@ -119,19 +129,18 @@ serve(async (req: Request) => {
         // Solo dueño de la cancha puede confirmar
         const { data: reserva } = await supabase
           .from('reserva')
-          .select('cancha:cancha_id(sede:sede_id(dueno_id))')
-          .eq('id', reserva_id)
+          .select('id_cliente, id_usuario, cancha:id_cancha(sede:id_sede(id_dueno))')
+          .eq('id_reserva', reserva_id)
           .single();
         
-        const userId = await getUserId(supabase, auth.user.id);
-        if (reserva?.cancha?.sede?.dueno_id !== userId) {
+        if (reserva?.cancha?.sede?.id_dueno !== auth.user.id) {
           return errorResponse('No autorizado', 403);
         }
         
         const { data, error } = await supabase
           .from('reserva')
-          .update({ estado: 'confirmada', actualizado_en: new Date().toISOString() })
-          .eq('id', reserva_id)
+          .update({ id_estado_reserva: 2, fecmod: new Date().toISOString(), usmod: 'EDGE' })
+          .eq('id_reserva', reserva_id)
           .select()
           .single();
         
@@ -140,11 +149,11 @@ serve(async (req: Request) => {
         // Notificar al jugador
         await supabase.functions.invoke('notificaciones/enviar', {
           body: {
-            usuario_id: data.usuario_id,
+            usuario_id: data.id_usuario,
             tipo: 'reserva_confirmada',
-            titulo: '¡Reserva confirmada!',
-            mensaje: `Tu reserva para ${data.fecha} de ${data.hora_inicio} a ${data.hora_fin} ha sido confirmada.`,
-            datos: { reserva_id: data.id },
+            titulo: 'Reserva confirmada',
+            mensaje: `Tu reserva para ${data.fecha_reserva} de ${data.hora_inicio} a ${data.hora_fin} ha sido confirmada.`,
+            datos: { reserva_id: data.id_reserva },
           },
         });
         
@@ -160,13 +169,13 @@ serve(async (req: Request) => {
         // Verificar permisos (jugador dueño o dueño de cancha)
         const { data: reserva } = await supabase
           .from('reserva')
-          .select('usuario_id, cancha:cancha_id(sede:sede_id(dueno_id))')
-          .eq('id', reserva_id)
+          .select('id_cliente, id_usuario, cancha:id_cancha(sede:id_sede(id_dueno))')
+          .eq('id_reserva', reserva_id)
           .single();
         
-        const userId = await getUserId(supabase, auth.user.id);
-        const esJugador = reserva?.usuario_id === userId;
-        const esDueno = reserva?.cancha?.sede?.dueno_id === userId;
+        const clienteId = await getClienteId(supabase, auth.user.id);
+        const esJugador = reserva?.id_usuario === auth.user.id || reserva?.id_cliente === clienteId;
+        const esDueno = reserva?.cancha?.sede?.id_dueno === auth.user.id;
         
         if (!esJugador && !esDueno) {
           return errorResponse('No autorizado', 403);
@@ -174,8 +183,8 @@ serve(async (req: Request) => {
         
         const { data, error } = await supabase
           .from('reserva')
-          .update({ estado: 'cancelada', actualizado_en: new Date().toISOString() })
-          .eq('id', reserva_id)
+          .update({ id_estado_reserva: 3, fecmod: new Date().toISOString(), usmod: 'EDGE' })
+          .eq('id_reserva', reserva_id)
           .select()
           .single();
         
@@ -213,12 +222,12 @@ async function getDisponibilidad(supabase: any, req: AvailabilityRequest): Promi
   // Obtener canchas de la sede
   let query = supabase
     .from('cancha')
-    .select('id, nombre, tipo, precio_hora, precio_hora_noche')
-    .eq('sede_id', req.sede_id)
-    .eq('activa', true);
+    .select('id_cancha, nombre_numero, id_tipo_cancha')
+    .eq('id_sede', req.sede_id)
+    .eq('estado', 'A');
   
   if (cancha_ids?.length) {
-    query = query.in('id', cancha_ids);
+    query = query.in('id_cancha', cancha_ids);
   }
   
   const { data: canchas, error } = await query;
@@ -227,15 +236,16 @@ async function getDisponibilidad(supabase: any, req: AvailabilityRequest): Promi
   // Obtener reservas del día
   const { data: reservas } = await supabase
     .from('reserva')
-    .select('cancha_id, hora_inicio, hora_fin, id')
-    .in('cancha_id', canchas.map(c => c.id))
-    .eq('fecha', fecha)
-    .in('estado', ['pendiente', 'confirmada']);
+    .select('id_reserva, id_cancha, hora_inicio, hora_fin')
+    .in('id_cancha', canchas.map(c => c.id_cancha))
+    .eq('fecha_reserva', fecha)
+    .in('id_estado_reserva', [1, 2])
+    .eq('estado', 'A');
   
   // Obtener bloqueos del día
   const { data: bloqueos } = await supabase
     .from('bloqueo_mantenimiento')
-    .select('cancha_id, fecha_inicio, fecha_fin, motivo')
+    .select('id_cancha, fecha_inicio, fecha_fin, motivo')
     .lte('fecha_inicio', `${fecha}T23:59:59`)
     .gte('fecha_fin', `${fecha}T00:00:00`);
   
@@ -243,15 +253,15 @@ async function getDisponibilidad(supabase: any, req: AvailabilityRequest): Promi
   const slots = generateTimeSlots(6, 23);
   
   return canchas.map(cancha => {
-    const canchaReservas = reservas?.filter(r => r.cancha_id === cancha.id) || [];
-    const canchaBloqueos = bloqueos?.filter(b => b.cancha_id === cancha.id) || [];
+    const canchaReservas = reservas?.filter(r => r.id_cancha === cancha.id_cancha) || [];
+    const canchaBloqueos = bloqueos?.filter(b => b.id_cancha === cancha.id_cancha) || [];
     
     return {
-      cancha_id: cancha.id,
-      nombre: cancha.nombre,
-      tipo: cancha.tipo,
-      precio_hora: cancha.precio_hora,
-      precio_hora_noche: cancha.precio_hora_noche || cancha.precio_hora,
+      cancha_id: cancha.id_cancha,
+      nombre: cancha.nombre_numero,
+      tipo: `Tipo ${cancha.id_tipo_cancha}`,
+      precio_hora: 0,
+      precio_hora_noche: 0,
       slots: slots.map(slot => {
         const horaInicio = slot.inicio;
         const horaFin = slot.fin;
@@ -275,7 +285,7 @@ async function getDisponibilidad(supabase: any, req: AvailabilityRequest): Promi
           disponible: !reserva && !bloqueo,
           bloqueado: !!bloqueo,
           motivo_bloqueo: bloqueo?.motivo,
-          reserva_id: reserva?.id,
+          reserva_id: reserva?.id_reserva,
         };
       }),
     };
@@ -295,20 +305,21 @@ function generateTimeSlots(inicio: number, fin: number): { inicio: string; fin: 
 async function verificarDisponibilidad(supabase: any, cancha_id: number, fecha: string, hora_inicio: string, hora_fin: string): Promise<boolean> {
   const { data: reserva } = await supabase
     .from('reserva')
-    .select('id')
-    .eq('cancha_id', cancha_id)
-    .eq('fecha', fecha)
+    .select('id_reserva')
+    .eq('id_cancha', cancha_id)
+    .eq('fecha_reserva', fecha)
     .lt('hora_inicio', hora_fin)
     .gt('hora_fin', hora_inicio)
-    .in('estado', ['pendiente', 'confirmada'])
+    .in('id_estado_reserva', [1, 2])
+    .eq('estado', 'A')
     .maybeSingle();
   
   if (reserva) return false;
   
   const { data: bloqueo } = await supabase
     .from('bloqueo_mantenimiento')
-    .select('id')
-    .eq('cancha_id', cancha_id)
+    .select('id_bloqueo')
+    .eq('id_cancha', cancha_id)
     .lte('fecha_inicio', `${fecha}T${hora_fin}:00`)
     .gte('fecha_fin', `${fecha}T${hora_inicio}:00`)
     .maybeSingle();
@@ -320,13 +331,13 @@ async function crearBloqueo(supabase: any, req: BlockRequest, userId: string): P
   const { data, error } = await supabase
     .from('bloqueo_mantenimiento')
     .insert({
-      cancha_id: req.cancha_id,
+      id_cancha: req.cancha_id,
       motivo: req.motivo,
       fecha_inicio: req.fecha_inicio,
       fecha_fin: req.fecha_fin,
-      recurrente: req.recurrente || false,
-      dia_semana: req.dia_semana,
-      creado_por: userId,
+      estado: 'A',
+      usucre: userId,
+      pccre: 'SUPABASE',
     })
     .select()
     .single();
@@ -335,11 +346,11 @@ async function crearBloqueo(supabase: any, req: BlockRequest, userId: string): P
   return data;
 }
 
-async function getUserId(supabase: any, authUid: string): Promise<number> {
+async function getClienteId(supabase: any, authUid: string): Promise<string | null> {
   const { data } = await supabase
-    .from('usuario')
-    .select('id')
-    .eq('auth_uid', authUid)
-    .single();
-  return data?.id || 0;
+    .from('cliente')
+    .select('id_cliente')
+    .eq('id_usuario', authUid)
+    .maybeSingle();
+  return data?.id_cliente || null;
 }

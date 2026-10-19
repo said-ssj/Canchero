@@ -44,6 +44,12 @@ const anonKey = value(
   fileValues.SUPABASE_ANON_KEY,
   fileValues.VITE_SUPABASE_ANON_KEY,
 );
+const googleMapsApiKey = value(
+  process.env.GOOGLE_MAPS_API_KEY,
+  process.env.VITE_GOOGLE_MAPS_API_KEY,
+  fileValues.GOOGLE_MAPS_API_KEY,
+  fileValues.VITE_GOOGLE_MAPS_API_KEY,
+);
 
 if (!supabaseUrl || !anonKey) {
   if (existsSync(outputPath)) unlinkSync(outputPath);
@@ -81,6 +87,7 @@ try {
 const generated = {
   url: supabaseUrl.replace(/\/+$/, ''),
   anonKey,
+  googleMapsApiKey: googleMapsApiKey || undefined,
 };
 
 writeFileSync(

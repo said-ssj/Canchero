@@ -1,5 +1,20 @@
 # Canchero
 
+Para modificar la interfaz, empieza por la [guía de edición](GUIA-EDICION.md). Incluye el mapa de archivos, ejemplos de Angular normal y Material, y dónde ajustar tamaños, textos y estilos.
+
+Puedes abrir `../../Canchero-UI.code-workspace` con VS Code para trabajar directamente con el frontend.
+
+Desde esta carpeta, los comandos del proyecto son:
+
+```powershell
+npm run start -- --host localhost --prebundle=false
+npm run build
+```
+
+El panel está en `http://localhost:4200/admin` y requiere una sesión válida. Para operaciones de datos, mantén también el backend Spring Boot en ejecución.
+
+---
+
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.1.8.
 
 ## Development server

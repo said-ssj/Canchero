@@ -1,0 +1,523 @@
+<header class="section-header page-title">
+  <div>
+    <h1>Reservas y operaciones</h1>
+    <p>
+      {{ venueName() || 'Sede seleccionada' }} ·
+      @if (presentialOperationsAvailable) {
+        <button type="button" class="deposit-badge" (click)="openDepositConfig()">
+          Adelanto mínimo: {{ minimumDepositPercent() }}%
+          <span class="material-symbols-outlined icon" aria-hidden="true" style="font-size: 16px;">edit</span>
+        </button>
+      }
+    </p>
+  </div>
+  <div class="actions">
+    <button mat-stroked-button [disableRipple]="true" [disabled]="loading() || !!error() || !filteredRows().length" (click)="exportCsv()">
+      <span class="material-symbols-outlined icon" aria-hidden="true" style="font-size: 18px; margin-right: 6px;">download</span>
+      <span>Exportar CSV</span>
+    </button>
+    <button mat-flat-button [disableRipple]="true" [disabled]="!presentialOperationsAvailable || (loading() || !!error() || venueId() === null || !courts().length)" (click)="openNewBooking()">
+      <span class="material-symbols-outlined icon" aria-hidden="true" style="font-size: 18px; margin-right: 6px;">add</span>
+      <span>Reserva presencial</span>
+    </button>
+  </div>
+</header>
+
+<div class="filters filterbar">
+  <mat-button-toggle-group aria-label="Periodo de reservas" [value]="filter()" (change)="setFilter($event.value)">
+    <mat-button-toggle value="pendientes" [disableRipple]="true">Por verificar ({{ pendingCount() }})</mat-button-toggle>
+    <mat-button-toggle value="hoy" [disableRipple]="true">Hoy</mat-button-toggle>
+    <mat-button-toggle value="semana" [disableRipple]="true">Próximos 7 días</mat-button-toggle>
+    <mat-button-toggle value="todas" [disableRipple]="true">Todas</mat-button-toggle>
+  </mat-button-toggle-group>
+  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <mat-label>Buscar reserva</mat-label>
+    <mat-icon matIconPrefix fontSet="material-symbols-outlined" aria-hidden="true">search</mat-icon>
+    <input matInput #searchInput [value]="query()" (input)="search(searchInput.value)" placeholder="Código, titular o teléfono">
+  </mat-form-field>
+  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <mat-label>Cancha</mat-label>
+    <mat-select [value]="courtId()" (selectionChange)="selectCourt($event.value)">
+      <mat-option [value]="null">Todas las canchas</mat-option>
+      @for (court of courts(); track court.id) {
+        <mat-option [value]="court.id">{{ court.nombre }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+  <button mat-icon-button [disableRipple]="true" aria-label="Actualizar reservas" title="Actualizar reservas" [disabled]="loading()" (click)="reload()">
+    <span class="material-symbols-outlined icon" aria-hidden="true">refresh</span>
+  </button>
+</div>
+
+@if (loading()) {
+  <div class="skeletons" role="status" aria-label="Cargando reservas" aria-busy="true">
+    <span class="skeleton short"></span>
+    <span class="skeleton"></span>
+    <span class="skeleton photo"></span>
+    <span class="skeleton button"></span>
+  </div>
+} @else if (error()) {
+  <div class="state notice danger" role="alert">
+    <span class="material-symbols-outlined icon" aria-hidden="true">error</span>
+    <div>
+      <p>{{ error() }}</p>
+    </div>
+    <button mat-stroked-button [disableRipple]="true" (click)="reload()">Reintentar</button>
+  </div>
+} @else if (!scopedRows().length) {
+  <article class="card state">
+    <span class="material-symbols-outlined icon" aria-hidden="true">event_note</span>
+    <h2>No hay reservas</h2>
+    <p>{{ venueId() === null ? 'Selecciona una sede para consultar sus reservas.' : 'No hay reservas registradas en esta sede.' }}</p>
+  </article>
+} @else {
+  <div class="table-scroll" tabindex="0" role="region" aria-label="Reservas de la sede">
+    <table>
+      <thead>
+        <tr>
+          <th>Fecha y horario</th>
+          <th>Cancha</th>
+          <th>Titular</th>
+          <th>Estado</th>
+          <th class="numeric">Pago y saldo</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of pageRows(); track row.reserva.id) {
+          <tr>
+            <td>
+              <strong>{{ row.fechaLabel }}</strong>
+              <span>{{ row.horario }}</span>
+              <small>{{ row.codigoPase }}</small>
+            </td>
+            <td>
+              <strong>{{ row.canchaNombre }}</strong>
+              <span>{{ row.canchaTag1 }} · {{ row.canchaTag2 }}</span>
+            </td>
+            <td>
+              <strong>{{ row.jugadorNombre }}</strong>
+              @if (row.esClienteSinCuenta) {
+                <span class="badge-guest">Presencial (sin cuenta)</span>
+              }
+              <span>{{ row.telefono || 'Sin teléfono registrado' }}</span>
+            </td>
+            <td>
+              <span class="status" [class.pending]="row.estado === 'pendiente'" [class.cancelled]="row.estado === 'cancelada'" [class.completed]="row.estado === 'completada'">
+                {{ row.estado }}
+              </span>
+              @if (row.checkInRealizado) {
+                <span class="badge-checkin">✓ En cancha</span>
+              }
+            </td>
+            <td class="numeric">
+              <strong>Total: {{ row.montoTotal | currency:'PEN':'S/ ':'1.2-2' }}</strong>
+              <small>Pagado: {{ row.adelanto | currency:'PEN':'S/ ':'1.2-2' }} ({{ row.metodo }})</small>
+              @if (row.saldo > 0) {
+                <span class="saldo-alert">Saldo pendiente: {{ row.saldo | currency:'PEN':'S/ ':'1.2-2' }}</span>
+              } @else {
+                <span class="saldo-zero">Pagado 100%</span>
+              }
+            </td>
+            <td>
+              <div class="row-actions">
+                <button mat-stroked-button [disableRipple]="true" (click)="openDetails(row)">Ver detalle</button>
+                @if (row.saldo > 0 && row.estado !== 'cancelada') {
+                  <button [disabled]="!presentialOperationsAvailable" mat-stroked-button color="primary" [disableRipple]="true" (click)="openCollectBalance(row)" title="Cobrar saldo antes de jugar">
+                    Cobrar saldo
+                  </button>
+                }
+                @if (row.saldo === 0 && !row.checkInRealizado && row.estado !== 'cancelada') {
+                  <button [disabled]="!presentialOperationsAvailable" mat-stroked-button class="btn-checkin" [disableRipple]="true" (click)="confirmCheckIn(row)" title="Registrar llegada del equipo">
+                    Check-in
+                  </button>
+                }
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr><td colspan="6" class="state">No hay reservas que coincidan con los filtros.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <mat-paginator [length]="filteredRows().length" [pageIndex]="effectivePage()" [pageSize]="pageSize()" [pageSizeOptions]="[10,25,50]" (page)="paginate($event)" aria-label="Páginas de reservas" />
+}
+
+<!-- DIALOG: Detalle de Reserva -->
+<ng-template #reservationDetail>
+  @if (selected(); as row) {
+    <h2 mat-dialog-title>Reserva {{ row.codigoPase }}</h2>
+    <mat-dialog-content>
+      <dl class="details">
+        <dt>Cancha</dt><dd>{{ row.canchaNombre }}</dd>
+        <dt>Fecha</dt><dd>{{ row.fechaLabel }} · {{ row.horario }}</dd>
+        <dt>Titular</dt>
+        <dd>
+          {{ row.jugadorNombre }}
+          @if (row.esClienteSinCuenta) {
+            <span class="badge-guest">Cliente sin cuenta</span>
+          }
+        </dd>
+        <dt>Teléfono</dt>
+        <dd>
+          {{ row.telefono || 'Sin teléfono registrado' }}
+          @if (row.waLink) {
+            <a [href]="row.waLink" target="_blank" rel="noopener" class="wa-btn">
+              <span class="material-symbols-outlined icon" aria-hidden="true" style="font-size: 16px; margin-right: 4px;">chat</span>
+              <span>WhatsApp</span>
+            </a>
+          }
+        </dd>
+        <dt>Estado</dt><dd><span class="status">{{ row.estado }}</span></dd>
+        <dt>Total acordado</dt><dd><strong>{{ row.montoTotal | currency:'PEN':'S/ ':'1.2-2' }}</strong></dd>
+        <dt>Abonado</dt><dd>{{ row.adelanto | currency:'PEN':'S/ ':'1.2-2' }} ({{ row.metodo }})</dd>
+        <dt>Saldo pendiente</dt>
+        <dd>
+          @if (row.saldo > 0) {
+            <span class="saldo-alert">S/ {{ row.saldo | number:'1.2-2' }} (requerido antes de jugar)</span>
+          } @else {
+            <span class="saldo-zero">S/ 0.00 (Totalmente cancelado)</span>
+          }
+        </dd>
+        <dt>Operación</dt><dd>{{ row.operacion || 'Sin referencia registrada' }}</dd>
+        <dt>Acreditación</dt>
+        <dd>{{ row.checkInRealizado ? '✓ Check-in realizado (En cancha)' : 'Pendiente de acreditación' }}</dd>
+      </dl>
+
+      @if (row.saldo > 0) {
+        <div class="balance-warning-box">
+          <span class="material-symbols-outlined icon" aria-hidden="true" style="color: #9a3412;">warning</span>
+          <div>
+            <strong>Saldo pendiente de cobro: {{ row.saldo | currency:'PEN':'S/ ':'1.2-2' }}</strong>
+            <p>Por regla de negocio, el saldo debe ser cobrado en ventanilla antes de autorizar el ingreso a la cancha.</p>
+          </div>
+        </div>
+      }
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+      <button mat-button [disableRipple]="true" mat-dialog-close>Cerrar</button>
+      @if (row.saldo > 0 && row.estado !== 'cancelada') {
+        <button [disabled]="!presentialOperationsAvailable" mat-flat-button color="primary" [disableRipple]="true" (click)="openCollectBalance(row)">Cobrar Saldo</button>
+      }
+      @if (row.saldo === 0 && !row.checkInRealizado && row.estado !== 'cancelada') {
+        <button [disabled]="!presentialOperationsAvailable" mat-flat-button class="btn-checkin-flat" [disableRipple]="true" (click)="confirmCheckIn(row)">Check-In Llegada</button>
+      }
+      <button mat-stroked-button [disableRipple]="true" (click)="openVerifiablePass(row)">Pase Verificable</button>
+      @if (row.estado === 'pendiente') {
+        <button mat-stroked-button [disableRipple]="true" (click)="requestAction('reject', row)">Rechazar</button>
+        <button mat-flat-button [disableRipple]="true" (click)="requestAction('approve', row)">Aprobar</button>
+      }
+      @if (row.estado !== 'cancelada') {
+        <button [disabled]="!presentialOperationsAvailable" mat-button color="warn" [disableRipple]="true" (click)="openCancelReservation(row)">Cancelar</button>
+      }
+    </mat-dialog-actions>
+  }
+</ng-template>
+
+<!-- DIALOG: Nueva Reserva Presencial -->
+<ng-template #bookingDialog>
+  <h2 mat-dialog-title>Nueva Reserva Presencial</h2>
+  <mat-dialog-content>
+    <p class="dialog-subtitle">Alquiler de cancha en ventanilla con cálculo automático de tramos y saldo.</p>
+
+    <div class="booking-grid">
+      <!-- Cancha -->
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Cancha</mat-label>
+        <mat-select [value]="bookingCourtId()" (selectionChange)="bookingCourtId.set($event.value)">
+          @for (c of courts(); track c.id) {
+            <mat-option [value]="c.id">{{ c.nombre }} (Día: S/{{ c.precio_hora || 80 }} · Noche: S/{{ c.precio_hora_noche || c.precio_hora || 100 }})</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <!-- Fecha -->
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Fecha de juego</mat-label>
+        <input matInput type="date" [value]="bookingDate()" (input)="bookingDate.set($any($event.target).value)">
+      </mat-form-field>
+
+      <!-- Hora Inicio -->
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Hora de inicio</mat-label>
+        <mat-select [value]="bookingStartHour()" (selectionChange)="bookingStartHour.set($event.value)">
+          @for (h of horasInicio; track h) {
+            <mat-option [value]="h">{{ h }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <!-- Duración -->
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Duración</mat-label>
+        <mat-select [value]="bookingDuration()" (selectionChange)="bookingDuration.set($event.value)">
+          @for (d of duraciones; track d.horas) {
+            <mat-option [value]="d.horas">{{ d.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <!-- Resumen de Horario y Tarifas -->
+    <div class="pricing-card">
+      <div class="pricing-header">
+        <div>
+          <strong>Horario seleccionado: {{ bookingStartHour() }} - {{ bookingEndHour() }}</strong>
+          <span>{{ bookingDuration() }} hora(s) consecutiva(s)</span>
+        </div>
+        <div class="pricing-total">
+          <span>Total</span>
+          <strong>{{ bookingTotal() | currency:'PEN':'S/ ':'1.2-2' }}</strong>
+        </div>
+      </div>
+      <div class="pricing-tranches">
+        @for (t of pricingCalculation().breakdown; track t.tranche) {
+          <div class="tranche-item">
+            <span>{{ t.tranche }}</span>
+            <span class="tranche-badge" [class.night]="t.isNight">{{ t.isNight ? 'Nocturna' : 'Diurna' }}</span>
+            <strong>{{ t.price | currency:'PEN':'S/ ':'1.2-2' }}</strong>
+          </div>
+        }
+      </div>
+      <div class="pricing-deposit-info">
+        <span>Adelanto mínimo configurado para la sede ({{ minimumDepositPercent() }}%):</span>
+        <strong>{{ bookingMinDeposit() | currency:'PEN':'S/ ':'1.2-2' }}</strong>
+      </div>
+    </div>
+
+    <!-- Advertencia de Conflicto -->
+    @if (bookingConflict(); as conflict) {
+      <div class="conflict-alert notice danger" role="alert">
+        <span class="material-symbols-outlined icon" aria-hidden="true">error_outline</span>
+        <div>
+          <strong>Horario no disponible</strong>
+          <p>Se superpone con la reserva existente <strong>{{ conflict.codigoPase }}</strong> ({{ conflict.horario }}) a nombre de {{ conflict.jugadorNombre }}.</p>
+        </div>
+      </div>
+    }
+
+    <!-- Datos del Cliente -->
+    <div class="client-section">
+      <h3>Titular de la reserva</h3>
+      <div class="client-toggle">
+        <mat-button-toggle-group [value]="bookingEsClienteSinCuenta() ? 'sin_cuenta' : 'registrado'" (change)="bookingEsClienteSinCuenta.set($event.value === 'sin_cuenta')">
+          <mat-button-toggle value="sin_cuenta" [disableRipple]="true">Cliente presencial sin cuenta</mat-button-toggle>
+          <mat-button-toggle value="registrado" [disableRipple]="true">Cliente registrado</mat-button-toggle>
+        </mat-button-toggle-group>
+      </div>
+
+      <div class="booking-grid">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Nombre y Apellidos</mat-label>
+          <input matInput [value]="bookingNombreCliente()" (input)="bookingNombreCliente.set($any($event.target).value)" placeholder="Ej. Carlos Mendoza" required>
+        </mat-form-field>
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Teléfono / WhatsApp</mat-label>
+          <input matInput [value]="bookingTelefonoCliente()" (input)="bookingTelefonoCliente.set($any($event.target).value)" placeholder="Ej. 987654321" required>
+        </mat-form-field>
+      </div>
+      <small class="helper-text">El cliente sin cuenta no requiere registro previo. Se asocian directamente sus datos de contacto.</small>
+    </div>
+
+    <!-- Modalidad de Pago Presencial -->
+    <div class="payment-section">
+      <h3>Cobro inicial en ventanilla</h3>
+      <div class="payment-type-toggle">
+        <mat-button-toggle-group [value]="bookingTipoPago()" (change)="bookingTipoPago.set($event.value)">
+          <mat-button-toggle value="total" [disableRipple]="true">Pago Total 100% ({{ bookingTotal() | currency:'PEN':'S/ ':'1.2-2' }})</mat-button-toggle>
+          <mat-button-toggle value="adelanto" [disableRipple]="true">Abonar Adelanto (Mín. {{ minimumDepositPercent() }}%)</mat-button-toggle>
+        </mat-button-toggle-group>
+      </div>
+
+      <div class="booking-grid">
+        @if (bookingTipoPago() === 'adelanto') {
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Monto de adelanto (S/)</mat-label>
+            <input matInput type="number" [min]="bookingMinDeposit()" [max]="bookingTotal()" [value]="effectiveDeposit()" (input)="bookingMontoAdelantoManual.set(+$any($event.target).value)">
+            <mat-hint>Mínimo: {{ bookingMinDeposit() | currency:'PEN':'S/ ':'1.2-2' }}</mat-hint>
+          </mat-form-field>
+          <div class="saldo-preview-box">
+            <span>Saldo pendiente a pagar antes de jugar:</span>
+            <strong>{{ bookingSaldo() | currency:'PEN':'S/ ':'1.2-2' }}</strong>
+          </div>
+        }
+
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Método de pago presencial</mat-label>
+          <mat-select [value]="bookingMetodoPago()" (selectionChange)="bookingMetodoPago.set($event.value)">
+            @for (m of metodosPago; track m) {
+              <mat-option [value]="m">{{ m }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Nº de Operación / Referencia</mat-label>
+          <input matInput [value]="bookingNumeroOperacion()" (input)="bookingNumeroOperacion.set($any($event.target).value)" placeholder="Opcional">
+        </mat-form-field>
+      </div>
+    </div>
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-button [disableRipple]="true" mat-dialog-close>Cancelar</button>
+    <button mat-flat-button [disableRipple]="true" color="primary" [disabled]="!presentialOperationsAvailable || (!canSubmitBooking())" (click)="submitBooking()">
+      Guardar Reserva Presencial
+    </button>
+  </mat-dialog-actions>
+</ng-template>
+
+<!-- DIALOG: Cobrar Saldo -->
+<ng-template #balanceDialog>
+  @if (selected(); as row) {
+    <h2 mat-dialog-title>Cobrar Saldo Pendiente</h2>
+    <mat-dialog-content>
+      <div class="balance-dialog-summary">
+        <div><strong>Reserva:</strong> {{ row.codigoPase }} ({{ row.canchaNombre }})</div>
+        <div><strong>Titular:</strong> {{ row.jugadorNombre }}</div>
+        <div><strong>Fecha y horario:</strong> {{ row.fechaLabel }} · {{ row.horario }}</div>
+        <div class="balance-metric-row">
+          <div><span>Total:</span> <strong>{{ row.montoTotal | currency:'PEN':'S/ ':'1.2-2' }}</strong></div>
+          <div><span>Abonado:</span> <strong>{{ row.adelanto | currency:'PEN':'S/ ':'1.2-2' }}</strong></div>
+          <div class="highlight"><span>Saldo por cobrar:</span> <strong>{{ row.saldo | currency:'PEN':'S/ ':'1.2-2' }}</strong></div>
+        </div>
+      </div>
+
+      <div class="booking-grid" style="margin-top: 16px;">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Método de pago</mat-label>
+          <mat-select [value]="saldoMetodoPago()" (selectionChange)="saldoMetodoPago.set($event.value)">
+            @for (m of metodosPago; track m) {
+              <mat-option [value]="m">{{ m }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Nº de Operación / Referencia</mat-label>
+          <input matInput [value]="saldoOperacion()" (input)="saldoOperacion.set($any($event.target).value)" placeholder="Opcional">
+        </mat-form-field>
+      </div>
+      <p class="dialog-notice">Al registrar el cobro, el saldo quedará liquidado en S/ 0.00 y se habilitará el check-in de ingreso a la cancha.</p>
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+      <button mat-button [disableRipple]="true" mat-dialog-close>Cancelar</button>
+      <button [disabled]="!presentialOperationsAvailable" mat-flat-button color="primary" [disableRipple]="true" (click)="confirmCollectBalance()">
+        Confirmar Cobro de {{ row.saldo | currency:'PEN':'S/ ':'1.2-2' }}
+      </button>
+    </mat-dialog-actions>
+  }
+</ng-template>
+
+<!-- DIALOG: Pase Verificable -->
+<ng-template #passDialog>
+  @if (selected(); as row) {
+    <h2 mat-dialog-title>Pase de Acceso Verificable</h2>
+    <mat-dialog-content>
+      <div class="verifiable-pass-card">
+        <div class="pass-header">
+          <span class="pass-logo">CANCHERO</span>
+          <span class="pass-code">{{ row.codigoPase }}</span>
+        </div>
+
+        <div class="pass-status-box" [class.granted]="row.saldo === 0" [class.pending]="row.saldo > 0">
+          @if (row.checkInRealizado) {
+            <span class="material-symbols-outlined icon" aria-hidden="true" style="color: #25832a;">verified</span>
+            <strong>CHECK-IN REALIZADO - EQUIPO EN CANCHA</strong>
+          } @else if (row.saldo === 0) {
+            <span class="material-symbols-outlined icon" aria-hidden="true" style="color: #25832a;">check_circle</span>
+            <strong>SALDO CANCELADO AL 100% - LISTO PARA INGRESAR</strong>
+          } @else {
+            <span class="material-symbols-outlined icon" aria-hidden="true" style="color: #9a3412;">warning</span>
+            <strong>SALDO PENDIENTE: {{ row.saldo | currency:'PEN':'S/ ':'1.2-2' }} - COBRAR ANTES DE JUGAR</strong>
+          }
+        </div>
+
+        <div class="pass-details-grid">
+          <div><span>Sede:</span> <strong>{{ venueName() }}</strong></div>
+          <div><span>Cancha:</span> <strong>{{ row.canchaNombre }}</strong></div>
+          <div><span>Fecha:</span> <strong>{{ row.fechaLabel }}</strong></div>
+          <div><span>Horario:</span> <strong>{{ row.horario }}</strong></div>
+          <div><span>Titular:</span> <strong>{{ row.jugadorNombre }}</strong></div>
+          <div><span>Teléfono:</span> <strong>{{ row.telefono || 'Sin teléfono' }}</strong></div>
+          <div><span>Total:</span> <strong>{{ row.montoTotal | currency:'PEN':'S/ ':'1.2-2' }}</strong></div>
+          <div><span>Saldo:</span> <strong>{{ row.saldo | currency:'PEN':'S/ ':'1.2-2' }}</strong></div>
+        </div>
+
+        <div class="pass-security-footer">
+          <small>Código seguro de verificación: <code>{{ row.codigoCorto }}-{{ row.reserva.id }}</code></small>
+        </div>
+      </div>
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+      <button mat-button [disableRipple]="true" mat-dialog-close>Cerrar</button>
+      @if (row.saldo === 0 && !row.checkInRealizado && row.estado !== 'cancelada') {
+        <button [disabled]="!presentialOperationsAvailable" mat-flat-button class="btn-checkin-flat" [disableRipple]="true" (click)="confirmCheckIn(row)">
+          Confirmar Check-in
+        </button>
+      }
+      @if (row.saldo > 0 && row.estado !== 'cancelada') {
+        <button [disabled]="!presentialOperationsAvailable" mat-flat-button color="primary" [disableRipple]="true" (click)="openCollectBalance(row)">
+          Cobrar Saldo Pendiente
+        </button>
+      }
+    </mat-dialog-actions>
+  }
+</ng-template>
+
+<!-- DIALOG: Cancelar Reserva -->
+<ng-template #cancelDialog>
+  @if (selected(); as row) {
+    <h2 mat-dialog-title>Cancelar Reserva {{ row.codigoPase }}</h2>
+    <mat-dialog-content>
+      <p>Indique el motivo y el importe de devolución autorizado por el dueño para la reserva de <strong>{{ row.jugadorNombre }}</strong> en <strong>{{ row.canchaNombre }}</strong>.</p>
+      
+      <div style="margin-bottom: 16px;">
+        <span>Monto pagado previamente: <strong>{{ row.adelanto | currency:'PEN':'S/ ':'1.2-2' }}</strong></span>
+      </div>
+
+      <div class="booking-grid">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" style="grid-column: 1 / -1;">
+          <mat-label>Motivo de cancelación (obligatorio)</mat-label>
+          <input matInput [value]="cancelMotivo()" (input)="cancelMotivo.set($any($event.target).value)" placeholder="Ej. Lluvia torrencial / Solicitud del capitán" required>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" style="grid-column: 1 / -1;">
+          <mat-label>Importe de devolución (S/)</mat-label>
+          <input matInput type="number" min="0" [max]="row.adelanto" [value]="cancelDevolucion()" (input)="cancelDevolucion.set(+$any($event.target).value)">
+          <mat-hint>Máximo devolvible: {{ row.adelanto | currency:'PEN':'S/ ':'1.2-2' }}</mat-hint>
+        </mat-form-field>
+      </div>
+      <small class="helper-text">La comisión de plataforma se revertirá proporcionalmente al importe devuelto.</small>
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+      <button mat-button [disableRipple]="true" mat-dialog-close>Volver</button>
+      <button mat-flat-button color="warn" [disableRipple]="true" [disabled]="!presentialOperationsAvailable || (!cancelMotivo().trim())" (click)="confirmCancelReservation()">
+        Confirmar Cancelación
+      </button>
+    </mat-dialog-actions>
+  }
+</ng-template>
+
+<!-- DIALOG: Configurar Adelanto Mínimo de Sede -->
+<ng-template #depositConfigDialog>
+  <h2 mat-dialog-title>Adelanto Mínimo de la Sede</h2>
+  <mat-dialog-content>
+    <p class="dialog-subtitle">{{ venueName() }}</p>
+    <p>Configure el porcentaje mínimo común para toda la sede (entre 10% y 90%). Aplica a todas las reservas con pago fraccionado.</p>
+
+    <div style="margin: 20px 0; text-align: center;">
+      <div style="font-size: 36px; font-weight: 800; color: #23482e;">{{ depositPercentDraft() }}%</div>
+      <input type="range" min="10" max="90" step="5" [value]="depositPercentDraft()" (input)="depositPercentDraft.set(+$any($event.target).value)" style="width: 100%; margin-top: 12px; accent-color: #246b3a;">
+      <div style="display: flex; justify-content: space-between; font-size: 12px; color: #58636c; margin-top: 4px;">
+        <span>10% (mínimo)</span>
+        <span>50% (estándar)</span>
+        <span>90% (máximo)</span>
+      </div>
+    </div>
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-button [disableRipple]="true" mat-dialog-close>Cancelar</button>
+    <button [disabled]="!presentialOperationsAvailable" mat-flat-button color="primary" [disableRipple]="true" (click)="saveDepositConfig()">Guardar Configuración</button>
+  </mat-dialog-actions>
+</ng-template>

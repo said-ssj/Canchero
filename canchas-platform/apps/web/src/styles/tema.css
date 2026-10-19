@@ -1,0 +1,146 @@
+/* ==========================================================================
+   Variables de Diseño del Proyecto (Custom Properties)
+   ========================================================================== */
+
+:root {
+  /* ==========================================================================
+     Tokens Canónicos - Sistema de Diseño Canchero (tokens.css)
+     ========================================================================== */
+  --brand: #3CB043;
+  --primary: #25832A;
+  --orange: #F5821F;
+  --ink: #191919;
+  --muted: #626A72;
+  --page: #F5F7F9;
+  --surface: #FFFFFF;
+  --line: #DFE3E8;
+  --disabled: #E5E7EB;
+  --disabled-ink: #707983;
+  --soft: #EFFBF2;
+  --danger: #B91C1C;
+  --danger-bg: #FFF3F3;
+  --warning: #9A3412;
+  --warning-bg: #FFF7ED;
+  --info: #2458CB;
+  --info-bg: #EFF5FF;
+  --radius: 6px;
+  --card-radius: 8px;
+  --font: "Plus Jakarta Sans", sans-serif;
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 24px;
+  --s6: 32px;
+
+  /* Paleta de Colores - Marca */
+  --color-brand-green: #3CB043;
+  --color-brand-green-dark: #25832A;
+  --color-brand-green-light: #EFFBF2;
+  
+  --color-brand-orange: #F5821F;
+  --color-brand-orange-dark: #C5650D;
+  --color-brand-orange-light: #FEF5E7;
+
+  /* Colores de Texto y Fondo */
+  --color-ink-900: #1A1A1A;
+  --color-ink-800: #262626;
+  --color-ink-700: #333333;
+  --color-ink-500: #666666;
+  --color-ink-400: #888888;
+  --color-ink-300: #b0b0b0;
+
+  --color-surface: #FFFFFF;
+  --color-surface-muted: #F5F6F7;
+  --color-surface-card: #FFFFFF;
+  --color-border: #DFE3E8;
+
+  /* Escala de Grises Auxiliar (slate — fondos, bordes y textos secundarios) */
+  --color-slate-50: #F8FAFC;
+  --color-slate-100: #F1F5F9;
+  --color-slate-200: #E2E8F0;
+  --color-slate-300: #CBD5E1;
+  --color-slate-400: #94A3B8;
+  --color-slate-500: #64748B;
+  --color-slate-600: #475569;
+
+  /* Estados Semánticos (chips de disponibilidad, alertas y avisos) */
+  --color-success-50: #F0FDF4;
+  --color-success-100: #DCFCE7;
+  --color-success-200: #BBF7D0;
+  --color-success-400: #4ADE80;
+  --color-success-600: #15803D;
+  --color-success-700: #166534;
+
+  --color-warning-50: #FFF7ED;
+  --color-warning-100: #FFEDD5;
+  --color-warning-200: #FED7AA;
+  --color-warning-300: #FDBA74;
+  --color-warning-600: #C2410C;
+  --color-warning-700: #9A3412;
+
+  --color-danger-50: #FEF2F2;
+  --color-danger-200: #FECACA;
+  --color-danger-500: #EF4444;
+  --color-danger-600: #B91C1C;
+
+  /* Tipografías Oficiales Canchero (Figma: Plus Jakarta Sans única) */
+  --font-heading: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  /* ==========================================================================
+     Tokens Oficiales de Figma: Canchero - Sistema de diseno (39 familias / 175 variantes)
+     ========================================================================== */
+  --can-color-primary: #27802D;
+  --can-color-brand-green: #3CB043;
+  --can-color-brand-orange: #F5821F;
+  --can-color-surface: #FFFFFF;
+  --can-color-background: #F5F6F7;
+  --can-color-ink: #1A1A1A;
+  --can-color-ink-secondary: #666666;
+  --can-color-border: #DFE3E8;
+  --can-color-disabled-bg: #E5E7EB;
+  --can-color-disabled-text: #747E87;
+  --can-color-selected-row: #F0FDF4;
+
+  /* Escala de Radios (Controles 6px, Superficies 8px) */
+  --can-radius-control: 6px;
+  --can-radius-surface: 8px;
+
+  /* Escala de Espaciado (4, 8, 12, 16, 24, 32px) */
+  --can-space-xs: 4px;
+  --can-space-sm: 8px;
+  --can-space-md: 12px;
+  --can-space-lg: 16px;
+  --can-space-xl: 24px;
+  --can-space-2xl: 32px;
+
+  /* Sombras */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+  /* Bordes Redondeados */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* Transiciones */
+  --transition-fast: 150ms ease-in-out;
+  --transition-normal: 250ms ease-in-out;
+  --transition-slow: 400ms ease-in-out;
+
+  /* Ancho máximo de contenedor */
+  --max-width-container: 1200px;
+
+  --mat-sys-primary: var(--can-color-primary, #27802D);
+  --mat-sys-on-primary: #ffffff;
+  --mat-sys-secondary: var(--color-brand-orange);
+  --mat-sys-surface: #ffffff;
+  --mat-sys-background: #f5f6f7;
+  --mat-sys-outline: #dfe3e8;
+}
+

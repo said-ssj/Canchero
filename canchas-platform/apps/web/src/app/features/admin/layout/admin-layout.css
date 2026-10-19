@@ -1,0 +1,136 @@
+@import '../styles/01-base.css';
+@import '../styles/02-utilidades.css';
+@import '../styles/07-material.css';
+@import '../styles/08-mapa-perfil.css';
+@import '../styles/09-material-ajustes.css';
+@import '../styles/11-layout.css';
+
+:host {
+  --font-sans: 'Plus Jakarta Sans', sans-serif;
+  --font-heading: 'Plus Jakarta Sans', sans-serif;
+  font-family: var(--font-sans);
+  display: block;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.mat-admin-shell {
+  height: 100vh !important;
+  width: 100vw !important;
+  display: block;
+  background: var(--color-slate-50, #f8fafc);
+}
+
+.admin-main-body {
+  width: 100%;
+  min-height: calc(100vh - 74px);
+  padding: clamp(1rem, 2vw, 1.75rem);
+  box-sizing: border-box;
+}
+
+.admin-main-body > * {
+  display: block;
+  width: 100%;
+}
+
+.sidebar-status-badge {
+  margin-left: auto;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 9999px;
+  line-height: 1.2;
+}
+
+.sidebar-status-badge.is-warning {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.sidebar-status-badge.is-open {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.sidebar-status-badge.is-closed {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+/* Modal de perfil (Privacidad / Ayuda) */
+.profile-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1200;
+  padding: 1rem;
+}
+
+.profile-modal-card {
+  background: var(--color-surface, #ffffff);
+  border-radius: var(--radius-lg, 12px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  max-width: 480px;
+  width: 100%;
+  padding: 1.5rem;
+  box-sizing: border-box;
+}
+
+.profile-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.profile-modal-title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--color-ink-900, #0f172a);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Toast Global Notification Overlay */
+.toast-alert {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--color-ink-900, #111827);
+  color: #ffffff;
+  padding: 0.75rem 1.25rem;
+  border-radius: var(--radius-md, 8px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  font-size: 0.88rem;
+  font-weight: 600;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  transform: translateY(16px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.toast-alert.is-shown {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (max-width: 640px) {
+  .admin-top-actions .admin-public-link {
+    flex: 0 0 42px;
+    width: 42px;
+    min-width: 42px;
+    padding: 0;
+  }
+}

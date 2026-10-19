@@ -27,6 +27,10 @@
             ],
             "styles": [
               "src/styles.css"
+            ],
+            "allowedCommonJsDependencies": [
+              "leaflet",
+              "qrcode"
             ]
           },
           "configurations": {

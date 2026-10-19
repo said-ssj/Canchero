@@ -1,6 +1,8 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { DatabaseService } from '@core/supabase/database.service';
+import { CourtFilterService } from '@core/services/court-filter.service';
+import { MapsService } from '@core/services/maps.service';
 import type { Venue } from '@shared/models/venue.model';
 
 @Component({
@@ -12,15 +14,27 @@ import type { Venue } from '@shared/models/venue.model';
 export class Sedes {
   private readonly router = inject(Router);
   private readonly db = inject(DatabaseService);
+  protected readonly courtFilters = inject(CourtFilterService);
+  private readonly mapsService = inject(MapsService);
+
+  protected readonly isLoading = computed(() => this.db.catalogLoading());
+  protected readonly fallbackVenueImg =
+    '/images/venue-placeholder.svg';
 
   protected readonly venues = computed(() => this.db.getVenuesPublicos());
 
-  protected readonly cities = computed(() => [...new Set(this.venues().map((v) => v.ciudad))]);
+  protected readonly cities = computed(() => [...new Set(this.venues().map((v) => v.ciudad).filter(Boolean))].sort());
+
+  protected onImgError(event: Event): void {
+    const img = event.target as HTMLImageElement;
+    if (img && img.getAttribute('src') !== this.fallbackVenueImg) {
+      img.src = this.fallbackVenueImg;
+    }
+  }
 
   protected readonly ciudad = signal('all');
   protected readonly distrito = signal('all');
   protected readonly busqueda = signal('');
-  protected readonly deporte = signal('all');
   protected readonly view = signal<'all' | 'fav'>('all');
 
   protected readonly favorites = signal(new Set(this.db.getVenuesPublicos().filter((v) => v.favorita).map((v) => v.id)));
@@ -51,9 +65,9 @@ export class Sedes {
 
   protected readonly filteredVenues = computed<Venue[]>(() => {
     let venues = this.venues().filter((venue) => {
-      if (this.ciudad() !== 'all' && venue.ciudad !== this.ciudad()) return false;
-      if (this.distrito() !== 'all' && venue.distrito !== this.distrito()) return false;
-      if (this.deporte() !== 'all' && !this.matchesDeporte(venue, this.deporte())) return false;
+      if (this.ciudad() !== 'all' && venue.ciudad.toLowerCase() !== this.ciudad().toLowerCase()) return false;
+      if (this.distrito() !== 'all' && venue.distrito.toLowerCase() !== this.distrito().toLowerCase()) return false;
+      if (this.courtFilters.hasActiveCourtFilters() && !this.courtFilters.matchesVenue(venue)) return false;
       return true;
     });
     if (this.view() === 'fav') {
@@ -62,7 +76,7 @@ export class Sedes {
     const query = this.busqueda().trim().toLowerCase();
     if (query) {
       venues = venues.filter((venue) =>
-        `${venue.nombre} ${venue.distrito} ${venue.ciudad} ${venue.amenidades.join(' ')}`
+        `${venue.nombre} ${venue.distrito} ${venue.ciudad} ${venue.direccion} ${venue.canchas.map(c => c.nombre).join(' ')} ${venue.amenidades.join(' ')}`
           .toLowerCase()
           .includes(query),
       );
@@ -77,33 +91,17 @@ export class Sedes {
       this.ciudad() !== 'all' ||
       this.distrito() !== 'all' ||
       this.busqueda().trim() !== '' ||
-      this.deporte() !== 'all' ||
+      this.courtFilters.hasActiveCourtFilters() ||
       this.view() === 'fav',
   );
 
   protected readonly pills = computed(() => ({
-    all: this.view() !== 'fav' && this.ciudad() === 'all',
+    all: this.view() === 'all',
     fav: this.view() === 'fav',
   }));
 
   private getDistritosPorCiudad(ciudad: string): string[] {
-    return [...new Set(this.venues().filter((v) => v.ciudad === ciudad).map((v) => v.distrito))];
-  }
-
-  private matchesDeporte(venue: Venue, deporte: string): boolean {
-    const courtTypes = venue.canchas.map((c) => c.tipo.toLowerCase());
-    switch (deporte) {
-      case 'futbol-5':
-        return courtTypes.some((t) => t.includes('grass 5'));
-      case 'futbol-7':
-        return courtTypes.some((t) => t.includes('grass 7'));
-      case 'futbol-11':
-        return venue.amenidades.join(' ').toLowerCase().includes('fútbol 11');
-      case 'techado':
-        return courtTypes.some((t) => t.includes('techada'));
-      default:
-        return true;
-    }
+    return [...new Set(this.venues().filter((v) => v.ciudad.toLowerCase() === ciudad.toLowerCase()).map((v) => v.distrito).filter(Boolean))].sort();
   }
 
   protected capitalize(value: string): string {
@@ -111,10 +109,6 @@ export class Sedes {
       .split(' ')
       .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
       .join(' ');
-  }
-
-  protected countPorCiudad(city: string): number {
-    return this.venues().filter((v) => v.ciudad === city).length;
   }
 
   protected disponibleCount(venue: Venue): number {
@@ -130,22 +124,12 @@ export class Sedes {
     this.distrito.set((event.target as HTMLSelectElement).value);
   }
 
-  protected onDeporteChange(event: Event): void {
-    this.deporte.set((event.target as HTMLSelectElement).value);
-  }
-
   protected onSearch(event: Event): void {
     this.busqueda.set((event.target as HTMLInputElement).value);
   }
 
-  protected selectCityQuick(city: string): void {
-    this.view.set('all');
-    this.ciudad.set(city);
-    this.distrito.set('all');
-  }
-
-  protected setActiveFav(): void {
-    this.view.set('fav');
+  protected selectView(view: 'all' | 'fav'): void {
+    this.view.set(view);
   }
 
   protected resetFilters(): void {
@@ -153,11 +137,23 @@ export class Sedes {
     this.ciudad.set('all');
     this.distrito.set('all');
     this.busqueda.set('');
-    this.deporte.set('all');
+    this.courtFilters.resetCourtFilters();
   }
 
   protected goDetail(id: string): void {
     void this.router.navigate(['/sedes', id]);
+  }
+
+  protected getDirectionsUrl(venue: Venue): string {
+    const lat = venue.latitud != null ? Number(venue.latitud) : -14.06778;
+    const lng = venue.longitud != null ? Number(venue.longitud) : -75.72861;
+    return this.mapsService.getGoogleMapsDirectionsUrl(lat, lng);
+  }
+
+  protected hasVenueCoordinates(venue: Venue): boolean {
+    return venue.latitud != null && venue.longitud != null
+      && Number.isFinite(Number(venue.latitud)) && Number.isFinite(Number(venue.longitud))
+      && Math.abs(Number(venue.latitud)) <= 90 && Math.abs(Number(venue.longitud)) <= 180;
   }
 
   protected stop(event: Event): void {
@@ -172,7 +168,7 @@ export class Sedes {
       this.showToast('Eliminada de tus sedes favoritas', false);
     } else {
       next.add(id);
-      this.showToast('¡Añadida a tus sedes favoritas!', false);
+      this.showToast('Añadida a tus sedes favoritas', false);
     }
     this.favorites.set(next);
   }
