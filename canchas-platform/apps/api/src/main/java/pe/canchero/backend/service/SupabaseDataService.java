@@ -984,13 +984,14 @@ public class SupabaseDataService {
     }
 
     public List<CashBoxDto> listCashBoxesForOwner(String ownerId) {
+        UUID ownerUuid = resolveOperationalUserId(ownerId);
         return jdbc.query("""
                 select c.id_caja, c.nombre_identificador, c.id_sede
                 from caja c
                 join sede s on s.id_sede = c.id_sede
                 where c.estado = 'A' and s.estado = 'A' and s.id_dueno = ?
                 order by c.id_sede, c.id_caja
-                """, cashBoxRowMapper(), ownerId);
+                """, cashBoxRowMapper(), ownerUuid);
     }
 
     public Optional<CashSessionDto> getOpenCashSession(Integer cajaId) {
@@ -1007,11 +1008,12 @@ public class SupabaseDataService {
     }
 
     public Optional<CashSessionDto> getOpenCashSessionForOwner(String ownerId) {
+        UUID ownerUuid = resolveOperationalUserId(ownerId);
         return jdbc.query(cashSessionSql() + """
                 join sede s on s.id_sede = c.id_sede
                 where sc.estado = 'A' and sc.fecha_cierre is null and s.id_dueno = ?
                 order by sc.fecha_apertura desc limit 1
-                """, cashSessionRowMapper(), ownerId).stream().findFirst();
+                """, cashSessionRowMapper(), ownerUuid).stream().findFirst();
     }
 
     public List<CashMovementDto> listCashMovements(int sessionId) {
@@ -1054,6 +1056,7 @@ public class SupabaseDataService {
     }
 
     public List<CashAuditDto> listCashAuditsForOwner(String ownerId) {
+        UUID ownerUuid = resolveOperationalUserId(ownerId);
         return jdbc.query("""
                 select a.*, a.id_arqueo, a.id_sesion_caja, coalesce(c.nombre_identificador, 'Caja ' || sc.id_caja) as caja_nombre,
                        coalesce(u.nombre, 'Cajero') as cajero_nombre, a.fecha_arqueo,
@@ -1066,7 +1069,7 @@ public class SupabaseDataService {
                 left join usuario u on u.id_usuario = a.id_usuario
                 where a.estado = 'A' and s.id_dueno = ?
                 order by a.fecha_arqueo desc nulls last, a.id_arqueo desc
-                """, cashAuditRowMapper(), ownerId);
+                """, cashAuditRowMapper(), ownerUuid);
     }
 
     public CashSessionDto openCashSession(OpenCashSessionRequest request) {
@@ -2869,12 +2872,13 @@ public class SupabaseDataService {
     }
 
     public List<SesionCajaResponse> listSesionesCajaForOwner(String ownerId) {
+        UUID ownerUuid = resolveOperationalUserId(ownerId);
         String sql = cashSessionSql() + """
                 join sede s on s.id_sede = c.id_sede
                 where s.id_dueno = ?
                 order by sc.fecha_apertura desc
                 """;
-        return jdbc.query(sql, sesionCajaRowMapper(), ownerId);
+        return jdbc.query(sql, sesionCajaRowMapper(), ownerUuid);
     }
 
     private RowMapper<SesionCajaResponse> sesionCajaRowMapper() {
@@ -2961,7 +2965,14 @@ public class SupabaseDataService {
     }
 
     public List<VentaResponse> listVentasBySession(int sesionId) {
-        return listSales().stream()
+        List<Integer> venueIds = jdbc.queryForList("""
+                select c.id_sede
+                from sesion_caja sc
+                join caja c on c.id_caja = sc.id_caja
+                where sc.id_sesion_caja = ?
+                """, Integer.class, sesionId);
+        if (venueIds.isEmpty()) return List.of();
+        return listSales(venueIds.get(0)).stream()
                 .filter(v -> v.cajaId() != null && v.cajaId() == sesionId)
                 .map(this::toVentaResponse)
                 .toList();
@@ -2974,6 +2985,7 @@ public class SupabaseDataService {
     }
 
     public List<VentaResponse> listVentasForOwner(String ownerId) {
+        UUID ownerUuid = resolveOperationalUserId(ownerId);
         return jdbc.query("""
                 select v.id_venta, v.id_sede, v.fecha_venta, v.id_sesion_caja,
                        v.cajero_nombre, v.tipo_comprobante, v.numero_comprobante,
@@ -3007,17 +3019,30 @@ public class SupabaseDataService {
                 join sede s on s.id_sede = v.id_sede
                 where v.estado = 'A' and s.id_dueno = ?
                 order by v.fecha_venta desc, v.id_venta desc
-                """, (rs, rowNum) -> mapSale(rs, saleItems(rs.getInt("id_venta"))), ownerId).stream()
+                """, (rs, rowNum) -> mapSale(rs, saleItems(rs.getInt("id_venta"))), ownerUuid).stream()
                 .map(this::toVentaResponse)
                 .toList();
     }
 
     public Optional<VentaResponse> getVenta(int id) {
-        String key = "VNT-" + id;
-        return listSales().stream()
-                .filter(v -> v.id().equals(key))
-                .findFirst()
-                .map(this::toVentaResponse);
+        List<Integer> venueIds = jdbc.queryForList("""
+                select coalesce(c.id_sede, (
+                    select k.id_sede
+                    from venta_detalle vd
+                    join kardex k on k.id_producto = vd.id_producto
+                    where vd.id_venta = v.id_venta
+                      and k.estado = 'A'
+                      and k.motivo like ('Venta POS #' || v.id_venta || '%')
+                    order by coalesce(k.fecha, k.feccre) desc, k.id_kardex desc
+                    limit 1
+                )) as id_sede
+                from venta v
+                left join sesion_caja sc on sc.id_sesion_caja = v.id_sesion_caja
+                left join caja c on c.id_caja = sc.id_caja
+                where v.id_venta = ?
+                """, Integer.class, id);
+        if (venueIds.isEmpty() || venueIds.get(0) == null) return Optional.empty();
+        return getSale(id, venueIds.get(0)).map(this::toVentaResponse);
     }
 
     public VentaResponse createVenta(VentaRequest request) {

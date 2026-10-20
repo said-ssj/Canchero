@@ -118,7 +118,8 @@ export class AdminLayout implements OnInit, OnDestroy {
 
   constructor() {
     effect(() => {
-      if (!this.auth.currentUser() && !this.auth.restoring?.()) void this.router.navigate(['/login']);
+      if (!this.auth.currentUser() && !this.auth.restoring?.())
+        void this.router.navigate(['/login']);
     });
     effect(() => {
       if (this.context.loading()) return;
@@ -134,11 +135,14 @@ export class AdminLayout implements OnInit, OnDestroy {
   ngOnInit(): void {
     if (typeof window !== 'undefined') {
       const savedTheme = localStorage.getItem('canchero_theme');
-      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-      if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+      if (savedTheme === 'dark') {
         this.isDarkMode.set(true);
         document.documentElement.classList.add('dark-theme');
         document.body.classList.add('dark-theme');
+      } else {
+        this.isDarkMode.set(false);
+        document.documentElement.classList.remove('dark-theme');
+        document.body.classList.remove('dark-theme');
       }
     }
 
@@ -233,7 +237,11 @@ export class AdminLayout implements OnInit, OnDestroy {
       this.noticeSubscription.unsubscribe();
       this.noticeSubscription = undefined;
     }
-    if (componentRef && componentRef.notice && typeof componentRef.notice.subscribe === 'function') {
+    if (
+      componentRef &&
+      componentRef.notice &&
+      typeof componentRef.notice.subscribe === 'function'
+    ) {
       this.noticeSubscription = componentRef.notice.subscribe((msg: string) => {
         this.mostrarToast(msg);
       });

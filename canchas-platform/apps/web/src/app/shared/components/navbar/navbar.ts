@@ -38,11 +38,14 @@ export class Navbar {
   constructor() {
     if (typeof window !== 'undefined') {
       const savedTheme = localStorage.getItem('canchero_theme');
-      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-      if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+      if (savedTheme === 'dark') {
         this.isDarkMode.set(true);
         document.documentElement.classList.add('dark-theme');
         document.body.classList.add('dark-theme');
+      } else {
+        this.isDarkMode.set(false);
+        document.documentElement.classList.remove('dark-theme');
+        document.body.classList.remove('dark-theme');
       }
     }
   }
