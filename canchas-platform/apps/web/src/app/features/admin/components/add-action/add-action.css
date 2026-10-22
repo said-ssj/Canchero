@@ -1,0 +1,84 @@
+:host {
+  display: block;
+  min-width: 0;
+  font-family: var(--font-sans, 'Plus Jakarta Sans', sans-serif);
+}
+
+.add-action {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 16px 20px;
+  border: 1px solid var(--line, #dde3ea);
+  border-radius: var(--radius, 6px);
+  background: #ffffff;
+  color: var(--ink, #1f2937);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  box-shadow: none;
+  margin-bottom: 24px;
+}
+
+.add-action:hover {
+  background: #ffffff;
+  border-color: var(--line, #dde3ea);
+  box-shadow: none;
+  transform: none;
+}
+
+.add-action:focus-visible {
+  outline: 2px solid var(--primary, #3CB043);
+  outline-offset: 2px;
+}
+
+.add-action > .icon {
+  flex: 0 0 24px;
+  font-size: 24px;
+  color: var(--primary, #3CB043);
+}
+
+.add-action-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.add-action-copy strong {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink, #1f2937);
+}
+
+.add-action-copy small {
+  color: var(--muted, #64748b);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.add-action-arrow {
+  margin-left: auto;
+  font-size: 20px;
+  color: var(--muted, #64748b);
+  flex-shrink: 0;
+}
+
+@media (max-width: 760px) {
+  .add-action {
+    padding: 14px;
+    gap: 12px;
+  }
+  .add-action-copy strong {
+    font-size: 13px;
+  }
+  .add-action-copy small {
+    font-size: 11px;
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "name": "canchero",
+  "version": "0.0.0",
+  "scripts": {
+    "ng": "ng",
+    "lint": "npm run typecheck",
+    "pretypecheck": "node scripts/load-env.mjs",
+    "typecheck": "tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.spec.json --noEmit",
+    "prestart": "node scripts/load-env.mjs",
+    "start": "ng serve",
+    "prebuild": "node scripts/load-env.mjs",
+    "build": "ng build",
+    "prewatch": "node scripts/load-env.mjs",
+    "watch": "ng build --watch --configuration development",
+    "pretest": "node scripts/load-env.mjs",
+    "test": "ng test"
+  },
+  "private": true,
+  "packageManager": "npm@11.17.0",
+  "engines": {
+    "node": "^22.22.3 || ^24.15.0 || >=26.0.0"
+  },
+  "dependencies": {
+    "@angular/animations": "22.2.1",
+    "@angular/cdk": "22.2.1",
+    "@angular/common": "22.2.1",
+    "@angular/compiler": "22.2.1",
+    "@angular/core": "22.2.1",
+    "@angular/forms": "22.2.1",
+    "@angular/material": "22.2.1",
+    "@angular/platform-browser": "22.2.1",
+    "@angular/router": "22.2.1",
+    "@supabase/supabase-js": "^2.117.2",
+    "@types/leaflet": "^1.9.22",
+    "leaflet": "^1.9.4",
+    "qrcode": "^1.5.4",
+    "rxjs": "~7.8.0",
+    "tslib": "^2.3.0"
+  },
+  "devDependencies": {
+    "@angular/build": "22.2.1",
+    "@angular/cli": "22.2.1",
+    "@angular/compiler-cli": "22.2.1",
+    "@types/qrcode": "^1.5.6",
+    "jsdom": "^28.0.0",
+    "jsqr": "^1.4.0",
+    "prettier": "^3.8.1",
+    "typescript": "~6.0.2",
+    "vitest": "^4.0.8"
+  }
+}

@@ -1,0 +1,306 @@
+@if (isLoading()) {
+  <main class="container" style="padding: 2rem 0;" aria-busy="true">
+    <div class="crumb" aria-label="Ruta">
+      <span class="skeleton" style="width: 120px; height: 32px;"></span>
+    </div>
+    <div class="page-title">
+      <span class="skeleton" style="width: 280px; height: 32px;"></span>
+      <span class="skeleton" style="width: 200px; height: 16px; margin-top: 6px;"></span>
+    </div>
+    <div class="details-layout">
+      <div>
+        <div class="skeleton" style="height: 276px; width: 100%; border-radius: 8px; margin-bottom: 16px;"></div>
+        <div class="stack">
+          <div class="skeleton" style="height: 160px; border-radius: 8px;"></div>
+          <div class="skeleton" style="height: 160px; border-radius: 8px;"></div>
+        </div>
+      </div>
+      <aside class="summary">
+        <div class="skeleton" style="height: 24px; width: 60%;"></div>
+        <div class="skeleton" style="height: 48px; width: 100%;"></div>
+        <div class="skeleton" style="height: 40px; width: 100%;"></div>
+      </aside>
+    </div>
+  </main>
+} @else if (venue(); as v) {
+  <main class="container" id="main">
+    <nav class="crumb" aria-label="Ruta">
+      <a class="btn btn-sm btn-outline" routerLink="/sedes">
+        <span class="material-symbols-outlined icon-16" aria-hidden="true">arrow_back</span>
+        Sedes
+      </a>
+      <span>/</span>
+      <span>{{ capitalize(v.distrito) }}</span>
+    </nav>
+
+    <div class="page-title">
+      <h1>{{ v.nombre }}</h1>
+      <p>{{ v.distrito }}, {{ v.ciudad }} · {{ v.direccion }}</p>
+    </div>
+
+    <div class="details-layout">
+      <div>
+        <div class="venue-cover-wrapper">
+          <img class="venue-cover" [src]="currentHero()" [alt]="'Fotografía de ' + v.nombre">
+          <div class="carousel-top-controls">
+            <button id="btnFav" class="btn icon-only" type="button" aria-label="Agregar a favoritos" (click)="toggleFavorite()" [style.color]="favorito() ? 'var(--orange)' : ''">
+              <span class="material-symbols-outlined icon-18 icon" [class.fill-1]="favorito()" aria-hidden="true">star</span>
+            </button>
+            <button class="btn icon-only" type="button" disabled title="Notificaciones de horarios (próximamente)" aria-label="Notificaciones de horarios próximamente" [style.color]="'#94a3b8'" [style.cursor]="'default'">
+              <span class="material-symbols-outlined icon-18 icon" aria-hidden="true">notifications</span>
+            </button>
+          </div>
+          @if (heroImages().length > 1) {
+            <button class="btn icon-only carousel-prev" type="button" aria-label="Foto anterior" (click)="prevHeroImage()">
+              <span class="material-symbols-outlined icon-18 icon" aria-hidden="true">chevron_left</span>
+            </button>
+            <button class="btn icon-only carousel-next" type="button" aria-label="Siguiente foto" (click)="nextHeroImage()">
+              <span class="material-symbols-outlined icon-18 icon" aria-hidden="true">chevron_right</span>
+            </button>
+          }
+        </div>
+
+        <div class="row" style="gap: 8px; margin-bottom: 24px;">
+          <span class="badge success">Sede activa</span>
+          <span class="badge info">Instalación Verificada</span>
+          <span class="badge">{{ v.rating }} ★</span>
+          @if (v.amenidades[0]) {
+            <span class="badge">{{ v.amenidades[0] }}</span>
+          }
+        </div>
+
+        <section class="section">
+          <h2>El lugar de tu próximo partido</h2>
+          <p>{{ v.descripcion || 'Un espacio para compartir el fútbol, entrenar y disfrutar cada partido.' }}</p>
+          <div class="amenities">
+            @for (amenidad of v.amenidades; track amenidad) {
+              <span>
+                <span class="material-symbols-outlined icon-16" style="color: var(--primary);" aria-hidden="true">check_circle</span>
+                {{ amenidad }}
+              </span>
+            }
+          </div>
+        </section>
+
+        <section class="section" style="margin-top: 28px;">
+          <div class="row spread">
+            <h2>Canchas de la sede</h2>
+            <span class="small muted">{{ availableCount() }} {{ availableCount() === 1 ? 'cancha disponible' : 'canchas disponibles' }}</span>
+          </div>
+
+          <!-- Filtros de Cancha sincronizados -->
+          @if (v.canchas.length > 1) {
+            <div class="row" style="gap: 8px; margin: 12px 0 16px;">
+              <select class="field-select-sm" [value]="courtFilters.formato()" (change)="courtFilters.setFormato($any($event.target).value)">
+                @for (opt of courtFilters.formatoOptions; track opt.value) {
+                  <option [value]="opt.value">{{ opt.label }}</option>
+                }
+              </select>
+              <select class="field-select-sm" [value]="courtFilters.superficie()" (change)="courtFilters.setSuperficie($any($event.target).value)">
+                @for (opt of courtFilters.superficieOptions; track opt.value) {
+                  <option [value]="opt.value">{{ opt.label }}</option>
+                }
+              </select>
+              @if (courtFilters.hasActiveCourtFilters()) {
+                <button type="button" class="btn btn-outline btn-sm" (click)="courtFilters.resetCourtFilters()">
+                  Restablecer filtros
+                </button>
+              }
+            </div>
+          }
+
+          <div class="stack" style="margin-top: 16px;">
+            @for (cancha of filteredCanchas(); track cancha.id) {
+              <article class="card venue-card" [class.selected]="selectedCourtId() === cancha.id">
+                <img class="venue-photo" [src]="cancha.foto ?? v.fotos[0] ?? fallbackVenueImg" [alt]="cancha.nombre">
+                <div class="venue-body">
+                  <div class="row spread">
+                    <h3>{{ cancha.nombre }} · {{ cancha.superficie || 'Grass Sintético' }}</h3>
+                    <span class="badge" [class.success]="cancha.disponible" [class.warning]="!cancha.disponible">
+                      {{ cancha.disponible ? 'Operativa' : 'Ocupada' }}
+                    </span>
+                  </div>
+                  <p class="muted small">{{ cancha.tipo }} · {{ cancha.techada ? 'Techada' : 'Al aire libre' }} · {{ cancha.cobertura || 'Con iluminación' }}</p>
+                  <strong class="small">Tarifa S/ {{ cancha.precioHora }}.00 <small>/ hora</small></strong>
+                  <div class="row" style="gap: 8px; margin-top: 8px;">
+                    <button type="button" class="btn primary btn-sm" (click)="selectLosa(cancha)">
+                      <span class="material-symbols-outlined icon-16" aria-hidden="true">calendar_month</span>
+                      Elegir horario
+                    </button>
+                  </div>
+                </div>
+              </article>
+            }
+
+            @if (filteredCanchas().length === 0) {
+              <article class="card state">
+                <span class="material-symbols-outlined icon-32" aria-hidden="true">sports_soccer</span>
+                <h3>No hay canchas con estas características</h3>
+                <p>Prueba restableciendo los filtros para ver las demás canchas disponibles.</p>
+                <div class="row" style="justify-content: center; margin-top: 12px;">
+                  <button type="button" class="btn btn-outline btn-sm" (click)="courtFilters.resetCourtFilters()">
+                    Restablecer filtros
+                  </button>
+                </div>
+              </article>
+            }
+          </div>
+        </section>
+
+        <!-- Reseñas -->
+        <section class="section" style="margin-top: 28px;">
+          <div class="row spread">
+            <h2>Reseñas de jugadores</h2>
+            @if (reviews().length > 0 && canReview()) {
+              <button type="button" class="btn btn-outline btn-sm" (click)="openReviewModal()">
+                <span class="material-symbols-outlined icon-16" aria-hidden="true">rate_review</span>
+                Calificar mi partido
+              </button>
+            }
+          </div>
+
+          @if (reviewsLoading()) {
+            <p role="status" aria-busy="true">Cargando opiniones...</p>
+          } @else if (reviewsLoadError()) {
+            <div role="alert">
+              <p>{{ reviewsLoadError() }}</p>
+              <button type="button" class="btn btn-outline btn-sm" (click)="retryReviews()">Reintentar</button>
+            </div>
+          } @else if (reviews().length === 0) {
+            <article class="card state" style="margin-top: 16px;">
+              <span class="material-symbols-outlined icon-32" aria-hidden="true">reviews</span>
+              <h3>Sin reseñas en esta sede</h3>
+              <p>Las opiniones reales se mostrarán después de completar una reserva.</p>
+              @if (canReview()) {
+                <div class="row" style="justify-content: center; margin-top: 12px;">
+                  <button type="button" class="btn primary btn-sm" (click)="openReviewModal()">
+                    <span class="material-symbols-outlined icon-16" aria-hidden="true">rate_review</span>
+                    Publicar opinión
+                  </button>
+                </div>
+              }
+            </article>
+          } @else {
+            <div class="stack" style="margin-top: 16px;">
+              @for (review of reviews(); track review.id) {
+                <article class="card" style="padding: 16px;">
+                  <div class="row spread">
+                    <strong>{{ review.author }}</strong>
+                    <span style="color: var(--orange); font-weight: 600;">{{ review.rating }} ★</span>
+                  </div>
+                  <p style="margin-top: 8px; font-size: 13px; color: var(--ink);">{{ review.text }}</p>
+                </article>
+              }
+            </div>
+          }
+        </section>
+
+        <!-- Ubicación & Acceso -->
+        <section class="section" style="margin-top: 28px;">
+          <div class="row spread">
+            <h2>Ubicación & Acceso</h2>
+            <button type="button" class="btn btn-outline btn-sm" (click)="abrirComoLlegar()">
+              <span class="material-symbols-outlined icon-16" aria-hidden="true">explore</span>
+              ¿Cómo llegar?
+            </button>
+          </div>
+          <p class="muted small">{{ v.distrito }}, {{ v.ciudad }} · {{ v.direccion }}</p>
+          <div style="position: relative; border-radius: 8px; overflow: hidden; border: 1px solid var(--line); margin-top: 12px;">
+            <iframe [src]="safeMapUrl()" style="width: 100%; height: 260px; border: 0; display: block;" loading="lazy" title="Ubicación de la sede"></iframe>
+          </div>
+        </section>
+      </div>
+
+      <aside class="summary">
+        <h2>Tu próxima reserva</h2>
+        <p><strong>{{ v.nombre }}</strong> · {{ losaName() }}</p>
+        <div class="list-line">
+          <span>Desde</span>
+          <strong>S/ {{ selectedCourt()?.precioHora ?? v.precioBase }}.00 / h</strong>
+        </div>
+        <p class="muted small">Consulta la disponibilidad por fecha antes de reservar.</p>
+        <button type="button" class="btn primary btn-full" (click)="goToBookingFlow()">
+          <span class="material-symbols-outlined icon-16" aria-hidden="true">schedule</span>
+          Ver horarios
+        </button>
+        <div class="divider"></div>
+        <p class="small"><span class="material-symbols-outlined icon-16 icon" aria-hidden="true">location_on</span> {{ v.distrito }}, {{ v.ciudad }}</p>
+        <button type="button" class="btn btn-outline btn-full" (click)="abrirComoLlegar()">
+          <span class="material-symbols-outlined icon-16 icon" aria-hidden="true">directions</span>
+          Cómo llegar
+        </button>
+      </aside>
+    </div>
+
+    <!-- Modales: Review y Como Llegar -->
+    @if (reviewModalOpen()) {
+      <div class="modal-overlay-classic" (click)="closeReviewModal($event)">
+        <div class="modal-window-classic review-modal" role="dialog" aria-modal="true" aria-label="Calificar mi partido">
+          <button type="button" class="modal-close-btn" (click)="closeReviewModalDirect()" aria-label="Cerrar">
+            <span class="material-symbols-outlined icon-20" aria-hidden="true">close</span>
+          </button>
+          <h2 style="font-size: 18px; margin: 0 0 4px 0;">¿Cómo estuvo tu partido?</h2>
+          <p class="muted small" style="margin: 0 0 16px 0;">{{ v.nombre }}</p>
+          <div class="row" style="gap: 8px; margin-bottom: 16px;">
+            @for (star of [1, 2, 3, 4, 5]; track star) {
+              <button type="button" class="btn icon-only" (click)="setReviewStars(star)" [attr.aria-label]="'Calificación ' + star">
+                <span class="material-symbols-outlined icon-20" [class.fill-1]="star <= reviewStars()" [style.color]="star <= reviewStars() ? 'var(--orange)' : 'var(--muted)'" aria-hidden="true">star</span>
+              </button>
+            }
+          </div>
+          <textarea class="field" rows="4" style="width: 100%; resize: vertical; border: 1px solid var(--line); border-radius: var(--radius); padding: 8px 12px; font-family: inherit; font-size: 13px;" placeholder="Cuéntale a la comunidad cómo estuvo el grass, la iluminación y la atención..." (input)="onReviewInput($event)"></textarea>
+          <div class="row" style="margin-top: 16px; justify-content: flex-end;">
+            <button type="button" class="btn primary" [disabled]="reviewSubmitting() || reviewText().trim().length < 10" (click)="submitReview()">{{ reviewSubmitting() ? 'Publicando...' : 'Publicar opinión' }}</button>
+          </div>
+          @if (reviewError()) { <p role="alert">{{ reviewError() }}</p> }
+        </div>
+      </div>
+    }
+
+    @if (comoLlegarModalOpen()) {
+      <div class="modal-overlay-classic" (click)="closeComoLlegarModal($event)">
+        <div class="modal-window-classic" role="dialog" aria-modal="true" aria-label="Cómo llegar a la sede">
+          <button type="button" class="modal-close-btn" (click)="closeComoLlegarModalDirect()" aria-label="Cerrar">
+            <span class="material-symbols-outlined icon-20" aria-hidden="true">close</span>
+          </button>
+          <div class="row" style="gap: 12px; margin-bottom: 12px;">
+            <span class="material-symbols-outlined icon-24" style="color: var(--primary);" aria-hidden="true">explore</span>
+            <div>
+              <h3 style="margin: 0; font-size: 16px;">¿Cómo llegar?</h3>
+              <p class="muted small" style="margin: 0;">{{ v.nombre }} · {{ v.distrito }}</p>
+            </div>
+          </div>
+          <div style="background: var(--page); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; margin-bottom: 16px;">
+            <div class="small muted" style="font-weight: 700; text-transform: uppercase;">Dirección</div>
+            <div style="font-weight: 600; font-size: 14px; margin-top: 2px;">{{ v.direccion }}</div>
+          </div>
+          <div class="stack" style="gap: 8px;">
+            <button type="button" class="btn primary btn-full" (click)="irDirectoRutaNavegable()">
+              <span class="material-symbols-outlined icon-18" aria-hidden="true">map</span>
+              Abrir ruta en Google Maps
+            </button>
+            <button type="button" class="btn btn-outline btn-full" (click)="copiarCoordenadas(v)">
+              <span class="material-symbols-outlined icon-18" aria-hidden="true">content_copy</span>
+              Copiar Coordenadas GPS
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+
+    <div class="toast-popup" [class.show]="toastVisible()">
+      <span>{{ toastText() }}</span>
+    </div>
+  </main>
+} @else {
+  <main class="container" style="text-align: center; padding: 4rem 1rem;">
+    <article class="card state" style="max-width: 480px; margin: 0 auto;">
+      <span class="material-symbols-outlined icon-32" aria-hidden="true">search_off</span>
+      <h2>No encontramos esa sede</h2>
+      <p>La sede que buscas no existe o ya no se encuentra disponible.</p>
+      <div class="row" style="justify-content: center; margin-top: 16px;">
+        <a routerLink="/sedes" class="btn primary">Volver a Sedes</a>
+      </div>
+    </article>
+  </main>
+}

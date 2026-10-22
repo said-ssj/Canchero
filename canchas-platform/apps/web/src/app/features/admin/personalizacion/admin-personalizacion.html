@@ -1,0 +1,186 @@
+<div class="admin-personalizacion container" id="main">
+  @if (loading()) {
+    <!-- SKELETON SCREEN (Estático y sobrio según Reglas de Construcción) -->
+    <div class="personalizacion-skeleton" role="status" aria-busy="true" aria-label="Cargando personalización">
+      <div class="skeletons" aria-hidden="true">
+        <span class="skeleton short"></span>
+        <span class="skeleton"></span>
+        <span class="skeleton photo"></span>
+        <span class="skeleton button"></span>
+      </div>
+    </div>
+  } @else if (error()) {
+    <!-- ERROR STATE -->
+    <div class="personalizacion-error-banner notice danger" role="alert">
+      <span class="material-symbols-outlined icon" aria-hidden="true">error</span>
+      <div>
+        <strong>No se pudo cargar la información</strong>
+        <p>{{ error() }}</p>
+        <button matButton="outlined" disableRipple type="button" class="btn" (click)="db.refreshCatalogo()">
+          <span class="material-symbols-outlined icon" aria-hidden="true">refresh</span>
+          Reintentar consulta
+        </button>
+      </div>
+    </div>
+  } @else if (!sede()) {
+    <app-admin-venue-required title="Personalización y QR" description="Identidad visual, textos de marca y códigos QR de tu sede." icon="qr_code" />
+  } @else {
+    <!-- CONTENIDO COMPLETO DE PERSONALIZACIÓN & QR -->
+    <div class="page-title">
+      <h1>Personalización y QR</h1>
+      <p>Identidad pública de {{ venueName() }}</p>
+    </div>
+
+    <div class="op-brand-layout">
+      <!-- Columna Principal: Editor de Marca y QR -->
+      <div class="stack">
+        <!-- Bloque 1: Color de Acento -->
+        <section class="management-editor-section">
+          <h2>Color de acento</h2>
+          <div class="op-swatches" role="group" aria-label="Color de acento">
+            @for (col of paletaColores; track col.hex) {
+              <button
+                type="button"
+                class="op-swatch"
+                [attr.data-brand-color]="col.hex"
+                [attr.aria-pressed]="swatchActive(col.hex)"
+                [title]="col.nombre + ' (vista previa local)'"
+                (click)="seleccionarColorSwatch(col.hex, col.nombre)"
+              >
+                <span [style.background]="col.hex" aria-hidden="true"></span>
+                {{ col.nombre }}
+              </button>
+            }
+          </div>
+        </section>
+
+        <!-- Bloque 2: Textos del perfil público -->
+        <section class="management-editor-section">
+          <h2>Textos del perfil público</h2>
+          <label class="field">
+            <span>Frase de presentación</span>
+            <input
+              id="venue-tagline"
+              type="text"
+              maxlength="100"
+              placeholder="Ej. Tu próximo partido empieza aquí"
+              [ngModel]="previewTagline()"
+              (ngModelChange)="actualizarPreviewTagline($event)"
+            />
+          </label>
+          <label class="field">
+            <span class="counter">
+              Historia de la sede
+              <output id="char-counter">{{ historiaContador() }} / 500</output>
+            </span>
+            <textarea
+              id="venue-story"
+              maxlength="500"
+              rows="5"
+              placeholder="Describe la experiencia de juego, iluminación, calidad de césped y ambiente en tu sede..."
+              [ngModel]="liveVenueStory()"
+              (ngModelChange)="actualizarHistoria($event)"
+            ></textarea>
+          </label>
+          <div class="row">
+            <button matButton="outlined" disableRipple type="button" class="btn" id="btn-save-texts" disabled title="Guardado pendiente de confirmación persistida">
+              <span class="material-symbols-outlined icon" aria-hidden="true">check</span>
+              Guardar textos
+            </button>
+          </div>
+        </section>
+
+        <!-- Bloque 3: QR de mostrador y Billeteras Digitales -->
+        <section class="management-editor-section">
+          <h2>QR de mostrador</h2>
+          <div class="op-qr">
+            <div class="qr-render-box" [innerHTML]="qrSvgSafe()"></div>
+            <div>
+              <strong>QR del enlace público</strong>
+              <p class="small muted">{{ qrUrl() }}</p>
+              <div class="row" style="gap: 8px;">
+                <button matButton="outlined" disableRipple type="button" class="btn" id="btn-download-svg" (click)="descargarSvgQr()">
+                  <span class="material-symbols-outlined icon" aria-hidden="true">download</span>
+                  Descargar SVG
+                </button>
+                <button matButton="outlined" disableRipple type="button" class="btn" id="btn-download-pdf" (click)="descargarPdfQr()">
+                  <span class="material-symbols-outlined icon" aria-hidden="true">description</span>
+                  Ficha técnica TXT
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Selector de billetera y metadatos -->
+          <div style="margin-top: 16px;">
+            <p class="small muted">Billetera de recepción pendiente de integración</p>
+            <div class="segmented" role="group" aria-label="Billetera de recepción no disponible">
+              <button
+                type="button"
+                disabled
+              >
+                Yape Móvil
+              </button>
+              <button
+                type="button"
+                disabled
+              >
+                Plin Transfer
+              </button>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 14px;">
+            <label class="field">
+              <span>Nombre / Razón Social en billetera</span>
+              <input
+                id="qr-merchant-name"
+                disabled
+                type="text"
+                placeholder="Ej. Complejo Deportivo Magdalena S.A.C."
+                [ngModel]="totemMerchant()"
+                (ngModelChange)="totemMerchant.set($event)"
+              />
+            </label>
+            <label class="field">
+              <span>Celular asociado</span>
+              <input
+                id="qr-phone-number"
+                disabled
+                type="text"
+                placeholder="Ej. 987 654 321"
+                [ngModel]="totemPhone()"
+                (ngModelChange)="totemPhone.set($event)"
+              />
+            </label>
+          </div>
+        </section>
+
+        <!-- Guardar toda la personalización -->
+        <div class="row">
+          <button matButton="outlined" disableRipple type="button" class="btn" id="btn-save-all" disabled title="Publicación pendiente de confirmación persistida">
+            <span class="material-symbols-outlined icon" aria-hidden="true">check</span>
+            Guardar personalización
+          </button>
+        </div>
+      </div>
+
+      <!-- Columna Lateral: Vista Previa en Vivo (op-brand-preview) -->
+      <aside class="op-brand-preview" [style.--preview-accent]="colorAcento()">
+        <p class="small muted">Vista previa local</p>
+        <article class="card">
+          <img class="op-brand-photo" [src]="coverImage()" [alt]="'Portada de ' + venueName()" (error)="onCoverError($event)" />
+          <div class="card-pad stack">
+            <span class="op-accent-label">{{ venueName() }}</span>
+            <h2 id="preview-tagline">{{ previewTagline() || 'Tu próximo partido empieza aquí' }}</h2>
+            <p>{{ liveVenueStory() || 'Un espacio para compartir el fútbol con tu gente.' }}</p>
+            <a matButton="outlined" disableRipple class="btn" [routerLink]="['/sedes', sede()?.id]">
+              <span class="material-symbols-outlined icon" aria-hidden="true">open_in_new</span>
+              Ver sede pública
+            </a>
+          </div>
+        </article>
+      </aside>
+    </div>
+  }
+</div>

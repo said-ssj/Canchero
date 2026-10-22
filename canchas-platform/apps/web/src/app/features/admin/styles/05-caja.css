@@ -1,0 +1,192 @@
+/* ==========================================================================
+   ESTILOS DE CAJA OPERATIVA, TURNOS & ARQUEO FÍSICO (5.4)
+   ========================================================================== */
+
+.tab-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-md);
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--color-ink-600);
+  font-weight: 700;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.tab-nav-btn:hover {
+  background: #f1f5f9;
+  color: var(--color-ink-900);
+}
+
+.tab-nav-btn.active {
+  background: #ffffff;
+  color: var(--color-brand-green-dark);
+  border-color: var(--color-border);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.arqueo-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.arqueo-table th,
+.arqueo-table td {
+  padding: 0.85rem 1rem;
+  vertical-align: middle;
+}
+
+.arqueo-table tbody tr {
+  border-bottom: 1px solid var(--color-border);
+  transition: background var(--transition-fast);
+}
+
+.arqueo-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.arqueo-table tbody tr.row-highlight {
+  background: #f0fdf4;
+}
+
+.table-total-row {
+  background: #f1f5f9;
+  border-top: 2px solid var(--color-ink-900);
+}
+
+.stepper-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: #ffffff;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 2px;
+}
+
+.btn-stepper {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: #f1f5f9;
+  color: var(--color-ink-800);
+  font-weight: 800;
+  font-size: 1.1rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--transition-fast);
+}
+
+.btn-stepper:hover {
+  background: #e2e8f0;
+  color: var(--color-ink-900);
+}
+
+.input-stepper {
+  width: 60px;
+  height: 32px;
+  border: none;
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--color-ink-900);
+  outline: none;
+  background: transparent;
+}
+
+/* Balance Result Card */
+.balance-result-card {
+  padding: 1.25rem 1.5rem;
+  border-radius: var(--radius-lg);
+  border: 2px solid var(--color-border);
+  background: #ffffff;
+  transition: all var(--transition-fast);
+}
+
+.balance-result-card.is-cuadrada {
+  border-color: #10b981;
+  background: #ecfdf5;
+  color: #065f46;
+}
+
+.balance-result-card.is-faltante {
+  border-color: #ef4444;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.balance-result-card.is-sobrante {
+  border-color: #f59e0b;
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.balance-icon-circle {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.8);
+}
+
+/* Historial Card */
+.historial-arqueo-card {
+  padding: 1.25rem 1.5rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: #ffffff;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.historial-arqueo-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* Modal Caja Window */
+.modal-caja {
+  max-width: 520px;
+  width: 100%;
+}
+
+.ticket-arqueo-window {
+  max-width: 480px;
+  width: 100%;
+}
+
+.ticket-balance-box {
+  padding: 1rem;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--color-border);
+  text-align: center;
+  margin-top: 0.75rem;
+}
+
+.ticket-balance-box.is-cuadrada {
+  border-color: #10b981;
+  background: #ecfdf5;
+  color: #065f46;
+}
+
+.ticket-balance-box.is-faltante {
+  border-color: #ef4444;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.ticket-balance-box.is-sobrante {
+  border-color: #f59e0b;
+  background: #fffbeb;
+  color: #92400e;
+}
+

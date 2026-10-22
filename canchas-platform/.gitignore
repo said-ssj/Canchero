@@ -1,0 +1,149 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Descargas
+descargas/
+
+# Build outputs
+dist/
+build/
+*.jar
+*.war
+*.ear
+target/
+*.class
+
+# Angular
+apps/web/.angular/
+apps/web/dist/
+apps/web/coverage/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+.env.production
+.env.staging
+.env.development
+apps/web/src/environments/environment.local.ts
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Testing
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+
+# Supabase
+supabase/.temp/
+supabase/.branches/
+.supabase/
+
+# Vercel
+.vercel
+
+# Turbo
+.turbo/
+
+# Misc
+*.tsbuildinfo
+.eslintcache
+.stylelintcache
+
+# Credenciales y configuracion privada
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.local.json
+*.local.yml
+*.local.yaml
+*.key
+*.pem
+*.p12
+*.pfx
+*.jks
+*.keystore
+.npmrc.local
+.netrc
+.git-credentials
+secrets/
+private/
+
+# Herramientas personales de IA/MCP
+.mcp.json
+mcp.json
+mcp_config.json
+.vscode/mcp.json
+.cursor/
+.claude/
+.gemini/
+.agent/
+.agents/
+.codex/
+
+# Dependencias, compilacion y resultados
+node_modules/
+.angular/
+dist/
+target/
+coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo
+*.log
+
+# Personal tools, MCP, AI configurations and exported chats
+opencode.json
+**/opencode.json
+chat_export.md
+**/chat_export.md
+*.chat.md
+
+# AI agent instructions, internal prompts, and local audits
+AGENTS.md
+**/AGENTS.md
+canchero-informe/
+**/canchero-informe/
+docs/CONTEXTO_LOCAL.md
+docs/ESTADO_ACTUAL.md
+docs/PROMPT_*.md
+docs/AUDITORIA_*.md
+docs/COBERTURA_REDISENO.md
+docs/VERIFICACION_UI_*.md
+docs/README_HISTORICO.md
+docs/PROTOCOLO_AGENTES_Y_MCP.md
+docs/auditoria/
+
+# Entorno local
+*.code-workspace
+.idea/
+.DS_Store
+Thumbs.db
+
+# Respaldos y exportaciones privadas de BD
+backups/
+dumps/
+*.dump
+*.backup

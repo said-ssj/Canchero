@@ -1,0 +1,490 @@
+/* ==========================================================================
+   AJUSTE FINAL ADMIN MATERIAL - SIMPLE, COMPACTO Y CONSISTENTE
+   ========================================================================== */
+.mat-admin-shell {
+  --admin-green: var(--color-brand-green);
+  --admin-green-dark: #229E04;
+  --admin-orange: var(--color-brand-orange);
+  --admin-ink: #15181f;
+  --admin-muted: #64748b;
+  --admin-border: #dde3ea;
+  --admin-soft: #f7f9fb;
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.mat-admin-shell .admin-sidebar {
+  width: 286px;
+  background: #171717;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.mat-admin-shell .admin-content-wrapper {
+  margin-left: 286px;
+  background: #f6f8fa;
+}
+
+.mat-admin-shell .sidebar-header {
+  min-height: 92px;
+  padding: 1rem 1.1rem;
+}
+
+.mat-admin-shell .sidebar-nav {
+  gap: 0.35rem;
+  padding: 0.9rem 1rem;
+}
+
+.mat-admin-shell .sidebar-nav-item {
+  min-height: 54px;
+  padding: 0.75rem 0.9rem;
+  border-radius: 6px;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  color: #cbd5e1;
+  font-size: 0.9rem;
+  line-height: 1.25;
+}
+
+.mat-admin-shell .sidebar-nav-item:focus-visible {
+  outline: 2px solid var(--can-color-brand-green, #3CB043);
+  outline-offset: 2px;
+}
+
+.mat-admin-shell .sidebar-nav-item.active {
+  background: var(--can-color-primary, #27802D);
+  color: #ffffff;
+  box-shadow: none;
+}
+
+.mat-admin-shell .sidebar-nav-item > span:first-of-type {
+  min-width: 0;
+}
+
+.mat-admin-shell .sidebar-nav-icon {
+  width: 26px;
+  height: 26px;
+  font-size: 26px;
+}
+
+.mat-admin-shell .sidebar-status-badge {
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 8px;
+  margin-left: auto;
+  font-size: 0.72rem;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.mat-admin-shell .sidebar-status-badge.is-open,
+.mat-admin-shell .sidebar-status-badge.is-closed {
+  min-width: 64px;
+  height: 24px;
+  font-size: 0.68rem;
+}
+
+.mat-admin-shell .sidebar-status-badge.is-warning {
+  min-width: 22px;
+  background: rgba(245, 130, 31, 0.18);
+  color: #ffbd6b;
+  border-color: rgba(245, 130, 31, 0.35);
+}
+
+.mat-admin-shell .sidebar-nav-item.active .sidebar-status-badge.is-warning {
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.36);
+}
+
+.mat-admin-shell .sidebar-footer {
+  padding: 0.8rem 1rem 1rem;
+}
+
+.mat-admin-shell .user-profile-row {
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.mat-admin-shell .user-profile-info {
+  min-width: 0;
+}
+
+.mat-admin-shell .user-profile-info strong,
+.mat-admin-shell .user-profile-info span {
+  display: block;
+  line-height: 1.25;
+}
+
+.mat-admin-shell .user-profile-info strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mat-admin-shell .admin-top-header.mat-toolbar {
+  min-height: 66px;
+  padding: 0.45rem 1.25rem;
+  background: #ffffff;
+  color: var(--admin-ink);
+  border-bottom: 1px solid var(--admin-border);
+  box-shadow: 0 1px 5px rgba(15, 23, 42, 0.05);
+}
+
+.mat-admin-shell .venue-picker-field {
+  width: min(310px, 36vw);
+  flex: 0 1 auto;
+}
+
+.mat-admin-shell .venue-picker-field .mat-mdc-text-field-wrapper {
+  height: 48px;
+  background: #ffffff;
+  border-radius: 7px;
+}
+
+.mat-admin-shell .venue-picker-field .mat-mdc-form-field-flex {
+  height: 48px;
+}
+
+.mat-admin-shell .venue-picker-field .mat-mdc-form-field-infix {
+  min-height: 48px;
+  padding-top: 11px;
+  padding-bottom: 7px;
+}
+
+.mat-admin-shell .status-live-chip {
+  font-size: 0.83rem;
+  color: #6b7280;
+  font-weight: 800;
+}
+
+.mat-admin-shell .admin-public-link.mat-mdc-unelevated-button {
+  height: 42px;
+  border-radius: 8px;
+  padding: 0 1.25rem;
+  background: var(--admin-green);
+  color: #ffffff;
+  box-shadow: none;
+}
+
+.mat-admin-shell .admin-public-link.mat-mdc-unelevated-button:disabled {
+  background: #e5e7eb;
+  color: #747e87;
+  cursor: default;
+}
+
+.mat-admin-shell .btn-bell.mat-mdc-icon-button,
+.mat-admin-shell .profile-avatar-btn.mat-mdc-icon-button {
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  background: #f1f5f9;
+  border: 1px solid #e5e7eb;
+}
+
+.mat-admin-shell .profile-avatar-btn.mat-mdc-icon-button {
+  background: #ffffff;
+}
+
+.mat-admin-shell .admin-main-body {
+  padding: 1.8rem 2rem 3rem;
+}
+
+.mat-admin-shell .view-eyebrow {
+  font-size: 0.76rem;
+  letter-spacing: 0.08em;
+  color: var(--admin-green-dark);
+}
+
+.mat-admin-shell .view-heading {
+  font-size: clamp(2rem, 2.45vw, 2.8rem);
+  line-height: 1.04;
+  letter-spacing: 0;
+  color: var(--admin-ink);
+}
+
+.mat-admin-shell #view-pos .view-heading,
+.mat-admin-shell #view-caja .view-heading {
+  font-size: clamp(2rem, 3vw, 3.35rem);
+}
+
+.mat-admin-shell .view-subtitle {
+  color: #475569;
+  line-height: 1.45;
+}
+
+.mat-admin-shell .kpi-card,
+.mat-admin-shell .sede-card,
+.mat-admin-shell .cancha-card,
+.mat-admin-shell .pos-product-card.mat-mdc-card,
+.mat-admin-shell .pos-cart-card,
+.mat-admin-shell .pos-catalog-card,
+.mat-admin-shell .cash-card,
+.mat-admin-shell .alert-card,
+.mat-admin-shell .mat-mdc-card {
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+
+.mat-admin-shell .mat-mdc-button,
+.mat-admin-shell .mat-mdc-unelevated-button,
+.mat-admin-shell .mat-mdc-outlined-button,
+.mat-admin-shell .mat-mdc-raised-button {
+  border-radius: 8px;
+  font-family: inherit;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.mat-admin-shell .mat-mdc-outlined-button {
+  --mdc-outlined-button-outline-color: var(--admin-border);
+}
+
+.mat-admin-shell .mat-mdc-unelevated-button.mat-primary,
+.mat-admin-shell .mat-mdc-raised-button.mat-primary {
+  --mdc-filled-button-container-color: var(--admin-green);
+  --mdc-filled-button-label-text-color: #ffffff;
+  --mdc-protected-button-container-color: var(--admin-green);
+  --mdc-protected-button-label-text-color: #ffffff;
+}
+
+.mat-admin-shell .mat-mdc-chip,
+.mat-admin-shell .mat-mdc-standard-chip {
+  border-radius: 8px;
+  font-family: inherit;
+  font-weight: 800;
+}
+
+.mat-admin-shell .pos-mat-tabs {
+  border-radius: 8px;
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid var(--admin-border);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+
+.mat-admin-shell .pos-mat-tabs .mat-mdc-tab-header {
+  border-bottom: 0;
+}
+
+.mat-admin-shell .pos-mat-tabs .mat-mdc-tab-label-container {
+  overflow: hidden;
+}
+
+.mat-admin-shell .pos-mat-tabs .mdc-tab {
+  height: 48px;
+  min-width: 0;
+  flex: 1 1 0;
+  padding: 0 0.7rem;
+}
+
+.mat-admin-shell .pos-mat-tabs .mdc-tab__content {
+  min-width: 0;
+  gap: 0.4rem;
+  color: var(--admin-ink);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.mat-admin-shell .pos-mat-tabs .mdc-tab__text-label {
+  min-width: 0;
+}
+
+.mat-admin-shell .pos-mat-tabs .mdc-tab-indicator__content--underline {
+  border-color: var(--admin-green);
+  border-top-width: 2px;
+}
+
+.mat-admin-shell .pos-layout-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 440px);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.mat-admin-shell .pos-catalog-card {
+  padding: 1.1rem;
+  overflow: hidden;
+}
+
+.mat-admin-shell .pos-search-input.mat-mdc-form-field {
+  width: 100%;
+}
+
+.mat-admin-shell .pos-search-input .mat-mdc-text-field-wrapper {
+  border-radius: 7px;
+  background: #ffffff;
+}
+
+.mat-admin-shell .pos-category-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  overflow: visible;
+  padding: 0.25rem 0 0;
+}
+
+.mat-admin-shell .pos-chip-btn.mat-mdc-outlined-button,
+.mat-admin-shell .pos-category-chips .mat-mdc-button-base {
+  height: 34px;
+  min-width: auto;
+  padding: 0 0.85rem;
+  border-radius: 8px;
+  font-size: 0.76rem;
+  line-height: 1;
+}
+
+.mat-admin-shell .pos-chip-btn.is-active,
+.mat-admin-shell .pos-category-chips .is-active {
+  background: #111827;
+  color: #ffffff;
+  border-color: #111827;
+}
+
+.mat-admin-shell .pos-products-grid {
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.85rem;
+}
+
+.mat-admin-shell .pos-product-card.mat-mdc-card {
+  min-height: 0;
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.mat-admin-shell .pos-product-card.mat-mdc-card:hover {
+  transform: translateY(-1px);
+  border-color: rgba(60, 176, 67, 0.45);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+}
+
+.mat-admin-shell .pos-product-card .mat-mdc-card-content {
+  padding: 0.95rem;
+}
+
+.mat-admin-shell .favorite-btn,
+.mat-admin-shell .qty-btn,
+.mat-admin-shell .icon-btn,
+.mat-admin-shell .mat-mdc-icon-button {
+  border-radius: 8px;
+}
+
+.mat-admin-shell .pos-cart-card {
+  position: sticky;
+  top: 84px;
+  align-self: start;
+  padding: 1rem;
+}
+
+.mat-admin-shell .pos-total-box,
+.mat-admin-shell .pos-cash-panel {
+  border-radius: 7px;
+  border: 1px solid var(--admin-border);
+  background: #f8fafc;
+}
+
+.mat-admin-shell .pos-cash-panel.is-insuficiente {
+  background: #fff1f2;
+  border-color: #fecdd3;
+  color: #b91c1c;
+}
+
+.mat-admin-shell .pos-cash-panel.is-exacto {
+  background: #ecfdf3;
+  border-color: #bbf7d0;
+  color: #15803d;
+}
+
+.mat-admin-shell .pos-cash-panel.is-sobrante {
+  background: #ecfeff;
+  border-color: #a5f3fc;
+  color: #0e7490;
+}
+
+.mat-admin-shell .pos-pay-methods .mat-button-toggle-group {
+  width: 100%;
+  border-radius: 8px;
+  border-color: var(--admin-border);
+  overflow: hidden;
+}
+
+.mat-admin-shell .pos-pay-methods .mat-button-toggle {
+  flex: 1 1 0;
+  font-family: inherit;
+  font-weight: 800;
+}
+
+.mat-admin-shell .pos-pay-methods .mat-button-toggle-checked {
+  background: rgba(60, 176, 67, 0.12);
+  color: var(--admin-green-dark);
+}
+
+.mat-admin-shell .mat-mdc-table {
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--admin-border);
+  background: #ffffff;
+}
+
+.mat-admin-shell .mat-mdc-header-row {
+  background: #f8fafc;
+}
+
+.mat-admin-shell button:focus-visible,
+.mat-admin-shell a:focus-visible,
+.mat-admin-shell input:not([matInput]):focus-visible,
+.mat-admin-shell select:focus-visible,
+.mat-admin-shell textarea:not([matInput]):focus-visible {
+  outline: 2px solid rgba(60, 176, 67, 0.55);
+  outline-offset: 2px;
+}
+
+.profile-dropdown-menu {
+  display: none !important;
+}
+
+@media (max-width: 991px) {
+  .mat-admin-shell .admin-sidebar {
+    width: 286px;
+  }
+
+  .mat-admin-shell .admin-content-wrapper {
+    margin-left: 0;
+  }
+
+  .mat-admin-shell .mat-drawer-content {
+    margin-left: 0 !important;
+  }
+}
+
+@media (max-width: 1100px) {
+  .mat-admin-shell .pos-layout-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mat-admin-shell .pos-cart-card {
+    position: static;
+  }
+}
+
+@media (max-width: 720px) {
+  .mat-admin-shell .admin-main-body {
+    padding: 1.1rem;
+  }
+
+  .mat-admin-shell .venue-picker-field {
+    width: 100%;
+  }
+
+  .mat-admin-shell .admin-public-link.mat-mdc-unelevated-button span {
+    display: none;
+  }
+
+  .mat-admin-shell .view-heading,
+  .mat-admin-shell #view-pos .view-heading,
+  .mat-admin-shell #view-caja .view-heading {
+    font-size: 1.9rem;
+  }
+}
+

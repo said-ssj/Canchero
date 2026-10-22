@@ -1,0 +1,50 @@
+/* Textareas controlados: crecen solo hacia abajo y nunca rompen el ancho del panel */
+.mat-admin-shell textarea,
+.mat-admin-shell .admin-view-panel textarea,
+.mat-admin-shell #view-qr textarea,
+.mat-admin-shell #view-configuracion textarea {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  resize: vertical !important;
+  overflow-x: hidden !important;
+  border: 1px solid #d7dde5 !important;
+  border-radius: 8px !important;
+  background: #ffffff !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.mat-admin-shell textarea:focus,
+.mat-admin-shell .admin-view-panel textarea:focus,
+.mat-admin-shell #view-qr textarea:focus,
+.mat-admin-shell #view-configuracion textarea:focus {
+  border-color: #3CB043 !important;
+  box-shadow: 0 0 0 2px rgba(60, 176, 67, 0.12) !important;
+}
+
+.mat-admin-shell #view-qr textarea {
+  min-height: 132px !important;
+}
+
+.mat-admin-shell #view-qr .bg-surface-light:has(textarea),
+.mat-admin-shell #view-configuracion .bg-surface-light:has(textarea) {
+  overflow: hidden !important;
+}
+
+/* Acciones sin efecto iluminado */
+.cancha-empty-add-card:hover,
+.btn-long-green:hover,
+.sede-barra-larga:hover,
+.cancha-barra-larga:hover {
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.cancha-empty-add-card:hover,
+.sede-barra-larga:hover,
+.cancha-barra-larga:hover {
+  border-color: #dfe3e8 !important;
+}

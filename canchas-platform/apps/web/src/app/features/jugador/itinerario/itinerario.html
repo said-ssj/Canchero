@@ -1,0 +1,330 @@
+<main class="container" id="main">
+  <!-- Encabezado de página -->
+  <div class="page-title">
+    <nav class="crumb" aria-label="Ruta">
+      <a class="btn" routerLink="/"><span class="material-symbols-outlined icon" aria-hidden="true">arrow_back</span>Inicio</a>
+      <span>Mi Itinerario</span>
+    </nav>
+    <div class="row spread" style="align-items: baseline; margin-top: 8px;">
+      <div>
+        <h1>Mi Itinerario</h1>
+        <p>Tus partidos y pases de juego, reunidos en un solo lugar.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pestañas Segmentadas del Sistema de Diseño -->
+  <div class="segmented booking-tabs" role="tablist" aria-label="Filtrar reservas">
+    <button
+      type="button"
+      role="tab"
+      [attr.aria-selected]="tabActiva() === 'proximas'"
+      [class.active]="tabActiva() === 'proximas'"
+      (click)="setTab('proximas')"
+    >
+      Próximas ({{ countProximas() }})
+    </button>
+    <button
+      type="button"
+      role="tab"
+      [attr.aria-selected]="tabActiva() === 'historial'"
+      [class.active]="tabActiva() === 'historial'"
+      (click)="setTab('historial')"
+    >
+      Historial ({{ countHistorial() }})
+    </button>
+    <button
+      type="button"
+      role="tab"
+      [attr.aria-selected]="tabActiva() === 'todas'"
+      [class.active]="tabActiva() === 'todas'"
+      (click)="setTab('todas')"
+    >
+      Todas ({{ countTodas() }})
+    </button>
+  </div>
+
+  <!-- Alertas de Carga y Cancelación -->
+  @if (loadError()) {
+    <div class="notice danger" role="alert" style="margin-bottom: 20px;">
+      <span class="material-symbols-outlined icon" aria-hidden="true">error</span>
+      <div style="flex: 1;">
+        <strong>Error al cargar reservas</strong>
+        <p>{{ loadError() }}</p>
+      </div>
+      <button type="button" class="btn" (click)="retry()">
+        <span class="material-symbols-outlined icon" aria-hidden="true">refresh</span>
+        Reintentar
+      </button>
+    </div>
+  }
+
+  @if (cancelError()) {
+    <div class="notice warning" role="alert" style="margin-bottom: 20px;">
+      <span class="material-symbols-outlined icon" aria-hidden="true">warning</span>
+      <div>
+        <strong>Aviso de cancelación</strong>
+        <p>{{ cancelError() }}</p>
+      </div>
+    </div>
+  }
+
+  <div class="itinerario-layout">
+    <!-- Columna Principal de Partidos -->
+    <div class="itinerario-main-col">
+      <!-- Skeleton Loading State -->
+      @if (isLoading()) {
+        <div class="stack" aria-busy="true">
+          <div class="skeleton-card" style="height: 120px;"></div>
+          <div class="skeleton-card" style="height: 120px;"></div>
+        </div>
+      } @else {
+        <!-- Partido de Hoy Destacado -->
+        @if (hoyMatch(); as hoy) {
+          <div class="notice success" style="margin-bottom: 20px; align-items: center;">
+            <span class="material-symbols-outlined icon" aria-hidden="true">sports_soccer</span>
+            <div style="flex: 1;">
+              <strong>Hoy tienes partido · {{ hoy.horario }}</strong>
+              <p>{{ hoy.venueName }} · {{ hoy.courtName }}</p>
+            </div>
+          </div>
+        }
+
+        <!-- Lista de Reservas -->
+        <section class="booking-panel" aria-label="Listado de reservas">
+          @for (reserva of reservasVisibles(); track reserva.id) {
+            <article class="card booking-item">
+              <!-- Bloque de Fecha Canchero -->
+              <div class="booking-date">
+                <span>{{ fechaMes(reserva.fecha) }}</span>
+                <strong>{{ fechaDia(reserva.fecha) }}</strong>
+                <span>{{ fechaAnio(reserva.fecha) }}</span>
+              </div>
+
+              <!-- Información de Reserva -->
+              <div class="booking-info">
+                <div class="row" style="justify-content: space-between; align-items: flex-start;">
+                  <h3 style="margin: 0;">{{ reserva.venueName }}</h3>
+                  <span
+                    class="badge"
+                    [class.success]="reserva.status === 'CONFIRMADO'"
+                    [class.warning]="reserva.status === 'PENDIENTE' || reserva.status === 'EN_REVISION'"
+                    [class.danger]="reserva.status === 'CANCELADO'"
+                  >
+                    <span class="material-symbols-outlined icon" aria-hidden="true">{{ statusIcon(reserva.status) }}</span>
+                    {{ statusLabel(reserva.status) }}
+                  </span>
+                </div>
+
+                <p style="margin: 4px 0 2px 0;">{{ reserva.courtName }}</p>
+                <strong class="small" style="color: var(--ink);">{{ reserva.horario }}</strong>
+
+                <div class="row" style="gap: 12px; margin-top: 6px; font-size: 12px; color: var(--muted);">
+                  <span>Código: <strong style="color: var(--ink);">{{ reserva.codigoPase }}</strong></span>
+                  <span>Total: <strong style="color: var(--primary);">{{ fmtTotal(reserva) }}</strong></span>
+                  <span>Pagado: <strong style="color: var(--primary);">{{ fmtPaid(reserva) }}</strong></span>
+                  @if (reserva.balanceAmount && reserva.balanceAmount > 0) {
+                    <span>Saldo: <strong style="color: var(--warning);">{{ fmtBalance(reserva) }}</strong></span>
+                  }
+                  @if (reserva.paymentOperationNumber) {
+                    <span>Operación: <code style="font-family: monospace;">{{ reserva.paymentOperationNumber }}</code></span>
+                  }
+                </div>
+              </div>
+
+              <!-- Acciones de Reserva -->
+              <div class="booking-actions">
+                <button type="button" class="btn primary" (click)="openQr(reserva)">
+                  <span class="material-symbols-outlined icon" aria-hidden="true">qr_code</span>
+                  Ver pase QR
+                </button>
+                <button type="button" class="btn" (click)="compartirWhatsApp(reserva)" title="Compartir convocatoria por WhatsApp">
+                  <span class="material-symbols-outlined icon" aria-hidden="true">share</span>
+                  Compartir
+                </button>
+                @if (reserva.status === 'CONFIRMADO' || reserva.status === 'PENDIENTE') {
+                  <button
+                    type="button"
+                    class="btn"
+                    style="color: var(--danger); border-color: var(--line);"
+                    [disabled]="isCancelling() === reserva.id"
+                    (click)="cancelarReserva(reserva)"
+                  >
+                    <span class="material-symbols-outlined icon" aria-hidden="true">close</span>
+                    {{ isCancelling() === reserva.id ? 'Cancelando...' : 'Cancelar reserva' }}
+                  </button>
+                }
+              </div>
+            </article>
+          } @empty {
+            @if (!isLoggedIn()) {
+              <article class="card state" style="text-align: center; padding: 48px 24px;">
+                <span class="material-symbols-outlined icon" style="font-size: 40px; color: var(--muted);" aria-hidden="true">lock</span>
+                <h3 style="margin-top: 12px;">Inicia sesión para ver tu itinerario</h3>
+                <p style="color: var(--muted); max-width: 440px; margin: 8px auto 20px;">
+                  No has ingresado a ninguna cuenta de jugador. Inicia sesión para ver tus reservas confirmadas y tus pases QR de acceso.
+                </p>
+                <a routerLink="/login" class="btn primary" style="display: inline-flex; align-items: center; gap: 6px;">
+                  <span class="material-symbols-outlined icon" aria-hidden="true">lock_open</span>
+                  Iniciar sesión
+                </a>
+              </article>
+            } @else {
+              <article class="card state" style="text-align: center; padding: 48px 24px;">
+                <span class="material-symbols-outlined icon" style="font-size: 40px; color: var(--muted);" aria-hidden="true">calendar_month</span>
+                <h3 style="margin-top: 12px;">Aún no tienes reservas</h3>
+                <p style="color: var(--muted); max-width: 440px; margin: 8px auto 20px;">
+                  Explora canchas disponibles y arma tu próxima pichanga sin complicaciones.
+                </p>
+                <a routerLink="/sedes" class="btn primary" style="display: inline-flex; align-items: center; gap: 6px;">
+                  <span class="material-symbols-outlined icon" aria-hidden="true">search</span>
+                  Explorar canchas
+                </a>
+              </article>
+            }
+          }
+        </section>
+      }
+    </div>
+
+    <!-- Columna Lateral: Pase Rápido / Perfil -->
+    <aside class="itinerario-aside">
+      @if (isLoggedIn()) {
+        <div class="card" style="padding: 20px; margin-bottom: 20px;">
+          <div class="row" style="align-items: center; gap: 12px;">
+            <span class="avatar" style="width: 40px; height: 40px; font-size: 15px;">{{ cabeceraInicial(currentUser()?.nombre || 'J') }}</span>
+            <div style="overflow: hidden;">
+              <strong style="display: block; font-size: 14px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">{{ currentUser()?.nombre || 'Jugador' }}</strong>
+              <small class="muted" style="display: block; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">{{ currentUser()?.correo || currentUser()?.email || 'Cuenta verificada' }}</small>
+            </div>
+          </div>
+          <div class="list" style="margin-top: 16px; border-top: 1px solid var(--line); padding-top: 12px;">
+            <div class="list-line">
+              <span>Próximos partidos</span>
+              <strong>{{ countProximas() }}</strong>
+            </div>
+            <div class="list-line">
+              <span>Historial jugado</span>
+              <strong>{{ countHistorial() }}</strong>
+            </div>
+          </div>
+        </div>
+      }
+
+      @if (paseActivo(); as pase) {
+        <article class="card pass-ticket">
+          <div class="pass-ticket-header">
+            <span class="brand"><span class="brand-mark">C</span>Canchero</span>
+            <span class="badge success">Pase activo</span>
+          </div>
+          <div class="pass-qr">
+            <div class="qr-canvas-mock">
+              <span class="material-symbols-outlined icon" style="font-size: 120px; color: var(--ink);" aria-hidden="true">qr_code_2</span>
+            </div>
+            <strong>{{ pase.codigoPase }}</strong>
+            <p>Pase oficial de ingreso</p>
+          </div>
+          <div class="pass-ticket-data">
+            <h2>{{ pase.venueName }}</h2>
+            <p>{{ pase.courtName }}</p>
+            <div class="row spread">
+              <span>{{ fechaDisplay(pase.fecha) }}</span>
+              <strong>{{ pase.horario }}</strong>
+            </div>
+            <small class="muted">Titular: {{ pase.jugadores?.[0] ?? 'Tú' }}</small>
+          </div>
+          <div style="padding: 16px; border-top: 1px solid var(--line); display: grid; gap: 8px;">
+            <button type="button" class="btn primary" (click)="openQr(pase)">
+              <span class="material-symbols-outlined icon" aria-hidden="true">qr_code_scanner</span>
+              Ver QR completo
+            </button>
+            <button type="button" class="btn" (click)="copiarCodigoPase(pase)">
+              <span class="material-symbols-outlined icon" aria-hidden="true">content_copy</span>
+              Copiar código
+            </button>
+          </div>
+        </article>
+      } @else {
+        <div class="card state" style="padding: 24px; text-align: center;">
+          <span class="material-symbols-outlined icon" style="font-size: 32px; color: var(--muted);" aria-hidden="true">confirmation_number</span>
+          <h3 style="font-size: 15px; margin-top: 8px;">Sin pases activos</h3>
+          <p class="muted small" style="margin-top: 4px;">Cuando reserves una cancha, aquí aparecerá tu pase de acceso inmediato.</p>
+        </div>
+      }
+    </aside>
+  </div>
+</main>
+
+<!-- Modal de Pase de Acceso QR -->
+@if (qrAbierto() && reservaQr(); as reserva) {
+  <div class="dialog-backdrop is-visible" (click)="onBackdropClick($event)">
+    <div class="dialog pass-modal" role="dialog" aria-modal="true" aria-label="Código QR de tu pase">
+      <div class="dialog-header">
+        <h2 style="font-size: 16px; margin: 0;">Pase de Acceso Oficial</h2>
+        <button type="button" class="btn icon-only" (click)="closeQr()" title="Cerrar" aria-label="Cerrar modal">
+          <span class="material-symbols-outlined icon" aria-hidden="true">close</span>
+        </button>
+      </div>
+
+      <div class="dialog-body" style="padding: 0;">
+        <article class="pass-ticket" style="border: none; box-shadow: none;">
+          <div class="pass-ticket-header">
+            <span class="brand"><span class="brand-mark">C</span>Canchero</span>
+            <span class="badge success">{{ statusLabel(reserva.status) }}</span>
+          </div>
+
+          <div class="pass-qr">
+            <div class="qr-canvas-mock">
+              <span class="material-symbols-outlined icon" style="font-size: 160px; color: var(--ink);" aria-hidden="true">qr_code_2</span>
+            </div>
+            <strong>{{ reserva.codigoPase }}</strong>
+            <p>Pase oficial de ingreso</p>
+          </div>
+
+          <div class="pass-ticket-data">
+            <h2>{{ reserva.venueName }}</h2>
+            <p>{{ reserva.courtName }}</p>
+            <div class="row spread">
+              <span>{{ fechaDisplay(reserva.fecha) }}</span>
+              <strong>{{ reserva.horario }}</strong>
+            </div>
+            <div class="list" style="margin-top: 12px; border-top: 1px dashed var(--line); padding-top: 8px;">
+              <div class="list-line">
+                <span>Total Alquiler</span>
+                <strong>{{ fmtTotal(reserva) }}</strong>
+              </div>
+              <div class="list-line">
+                <span>Monto Pagado</span>
+                <strong style="color: var(--primary);">{{ fmtPaid(reserva) }}</strong>
+              </div>
+              @if (reserva.balanceAmount && reserva.balanceAmount > 0) {
+                <div class="list-line">
+                  <span>Saldo Pendiente</span>
+                  <strong style="color: var(--warning);">{{ fmtBalance(reserva) }}</strong>
+                </div>
+              }
+              @if (reserva.paymentOperationNumber) {
+                <div class="list-line">
+                  <span>Operación</span>
+                  <code style="font-family: monospace;">{{ reserva.paymentOperationNumber }}</code>
+                </div>
+              }
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <div class="dialog-footer">
+        <button type="button" class="btn" (click)="compartirWhatsApp(reserva)">
+          <span class="material-symbols-outlined icon" aria-hidden="true">share</span>
+          Compartir pase
+        </button>
+        <button type="button" class="btn primary" (click)="copiarCodigoPase(reserva)">
+          <span class="material-symbols-outlined icon" aria-hidden="true">content_copy</span>
+          Copiar código
+        </button>
+      </div>
+    </div>
+  </div>
+}
+

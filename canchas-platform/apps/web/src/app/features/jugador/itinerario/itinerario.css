@@ -1,0 +1,254 @@
+/* ==========================================================================
+   CANCHERO — Mi Itinerario Deportivo
+   Diseño canónico según prototipo itinerario.html y pase.html
+   ========================================================================== */
+
+.itinerario-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 28px;
+  align-items: start;
+  margin-top: 24px;
+}
+
+@media (max-width: 900px) {
+  .itinerario-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.itinerario-main-col {
+  display: grid;
+  gap: 20px;
+}
+
+.itinerario-aside {
+  display: grid;
+  gap: 20px;
+  position: sticky;
+  top: 80px;
+}
+
+/* Tabs Segmentadas Canchero */
+.segmented.booking-tabs {
+  display: inline-flex;
+  background: var(--page);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 3px;
+  gap: 2px;
+  margin: 16px 0 20px 0;
+}
+
+.segmented.booking-tabs button {
+  border: none;
+  background: transparent;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.segmented.booking-tabs button.active {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* Panel de Reservas */
+.booking-panel {
+  display: grid;
+  gap: 16px;
+}
+
+/* Tarjeta de Reserva Individual */
+.booking-item {
+  display: grid;
+  grid-template-columns: 100px minmax(0, 1fr) auto;
+  gap: 24px;
+  align-items: center;
+  padding: 20px;
+}
+
+@media (max-width: 768px) {
+  .booking-item {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+.booking-date {
+  border-right: 1px solid var(--line);
+  padding-right: 20px;
+  font-size: 12px;
+  display: grid;
+  gap: 2px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.booking-date strong {
+  font-size: 28px;
+  line-height: 1.2;
+  color: var(--ink);
+}
+
+@media (max-width: 768px) {
+  .booking-date {
+    border-right: none;
+    border-bottom: 1px solid var(--line);
+    padding-right: 0;
+    padding-bottom: 10px;
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+    justify-content: flex-start;
+  }
+}
+
+.booking-info {
+  display: grid;
+  gap: 4px;
+}
+
+.booking-info h3 {
+  font-size: 16px;
+  color: var(--ink);
+}
+
+.booking-info p {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.booking-actions {
+  display: grid;
+  gap: 8px;
+  justify-items: end;
+}
+
+@media (max-width: 768px) {
+  .booking-actions {
+    justify-items: stretch;
+    display: flex;
+    flex-wrap: wrap;
+  }
+}
+
+/* Pase Oficial de Ingreso (pase.html) */
+.pass-ticket {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--card-radius);
+  overflow: hidden;
+}
+
+.pass-ticket-header {
+  padding: 14px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+}
+
+.pass-ticket-header .brand {
+  font-size: 16px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--primary);
+}
+
+.pass-qr {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 20px;
+  background: var(--surface);
+  text-align: center;
+}
+
+.qr-canvas-mock {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 160px;
+  height: 160px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--page);
+}
+
+.pass-qr strong {
+  font-size: 16px;
+  color: var(--ink);
+  letter-spacing: 0.5px;
+}
+
+.pass-qr p {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary);
+  margin: 0;
+}
+
+.pass-ticket-data {
+  padding: 16px 20px;
+  border-top: 1px dashed var(--line);
+  display: grid;
+  gap: 6px;
+}
+
+.pass-ticket-data h2 {
+  font-size: 17px;
+  margin: 0;
+  color: var(--ink);
+}
+
+.pass-ticket-data p {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0;
+}
+
+/* Modal Dialog */
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.dialog.pass-modal {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--card-radius);
+  max-width: 440px;
+  width: 100%;
+  overflow: hidden;
+}
+
+.dialog-header {
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--line);
+}
+
+.dialog-footer {
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  border-top: 1px solid var(--line);
+  background: var(--page);
+}

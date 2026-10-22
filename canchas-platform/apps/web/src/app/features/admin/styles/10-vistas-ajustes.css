@@ -1,0 +1,335 @@
+/* ==========================================================================
+   PULIDO GENERAL: TIPOGRAFIA, MAPA, BOTONES, ALERTAS Y MODULOS TARDIOS
+   ========================================================================== */
+.mat-admin-shell,
+.mat-admin-shell *,
+.cdk-overlay-container,
+.cdk-overlay-container * {
+  font-family: var(--ui-admin-font, 'Plus Jakarta Sans', var(--font-sans), sans-serif) !important;
+}
+
+.mat-admin-shell .mat-icon,
+.mat-admin-shell .material-symbols-outlined,
+.cdk-overlay-container .mat-icon,
+.cdk-overlay-container .material-symbols-outlined {
+  font-family: 'Material Symbols Outlined' !important;
+}
+
+.mat-admin-shell .font-mono,
+.mat-admin-shell code,
+.mat-admin-shell pre,
+.mat-admin-shell .pos-receipt-paper,
+.mat-admin-shell .pos-receipt-paper * {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Courier New', monospace !important;
+}
+
+.mat-admin-shell {
+  --radius-full: 10px;
+}
+
+.mat-admin-shell .avatar-placeholder,
+.mat-admin-shell .user-avatar-badge,
+.mat-admin-shell .profile-header-avatar,
+.mat-admin-shell .user-avatar-sm,
+.mat-admin-shell .user-avatar-sm > *,
+.mat-admin-shell .pulse-dot,
+.mat-admin-shell .status-dot-mini,
+.mat-admin-shell .btn-bell.mat-mdc-icon-button,
+.mat-admin-shell .profile-avatar-btn.mat-mdc-icon-button,
+.mat-admin-shell .card-icon-pill,
+.mat-admin-shell .kpi-icon-pill,
+.mat-admin-shell .brand-icon-admin,
+.mat-admin-shell .cancha-empty-add-icon,
+.mat-admin-shell .cancha-barra-foto-badge,
+.mat-admin-shell .notification-switch,
+.mat-admin-shell .notification-switch-thumb,
+.mat-admin-shell .w-2,
+.mat-admin-shell .w-2\.5,
+.mat-admin-shell .w-5,
+.mat-admin-shell .w-8,
+.mat-admin-shell .w-10,
+.mat-admin-shell .w-14 {
+  border-radius: 999px !important;
+}
+
+.mat-admin-shell button:not(.mat-mdc-icon-button):not(.profile-avatar-btn):not(.btn-bell),
+.mat-admin-shell a[class*="btn"],
+.mat-admin-shell .btn,
+.mat-admin-shell .mat-mdc-button,
+.mat-admin-shell .mat-mdc-unelevated-button,
+.mat-admin-shell .mat-mdc-outlined-button,
+.mat-admin-shell .mat-mdc-raised-button,
+.mat-admin-shell .mat-button-toggle,
+.mat-admin-shell .chip-select-btn,
+.mat-admin-shell .period-pill,
+.mat-admin-shell .filter-pill,
+.mat-admin-shell .notification-channel-btn,
+.mat-admin-shell .freq-btn,
+.mat-admin-shell #view-qr a.rounded-full,
+.mat-admin-shell #view-qr button.rounded-full,
+.mat-admin-shell #view-configuracion a.rounded-full,
+.mat-admin-shell #view-configuracion button.rounded-full {
+  border-radius: var(--ui-admin-radius, 8px) !important;
+}
+
+.mat-admin-shell input,
+.mat-admin-shell select,
+.mat-admin-shell textarea,
+.mat-admin-shell .custom-input-pill,
+.mat-admin-shell .mat-mdc-text-field-wrapper,
+.mat-admin-shell .mat-mdc-form-field,
+.mat-admin-shell .mat-mdc-select,
+.mat-admin-shell .mat-mdc-chip,
+.mat-admin-shell .mat-mdc-standard-chip,
+.mat-admin-shell .badge,
+.mat-admin-shell .rounded-full:not(.w-2):not(.w-2\.5):not(.w-5):not(.w-8):not(.w-10):not(.w-14) {
+  border-radius: var(--ui-admin-radius, 8px) !important;
+}
+
+.mat-admin-shell .admin-card-box,
+.mat-admin-shell .kpi-card,
+.mat-admin-shell .sede-card,
+.mat-admin-shell .cancha-card,
+.mat-admin-shell .cash-card,
+.mat-admin-shell .pos-cart-card,
+.mat-admin-shell .pos-catalog-card,
+.mat-admin-shell .mat-mdc-card,
+.mat-admin-shell .rounded-2xl,
+.mat-admin-shell .rounded-lg {
+  border-radius: var(--ui-admin-radius, 8px) !important;
+}
+
+.mat-admin-shell .admin-public-link.mat-mdc-unelevated-button {
+  border-radius: 6px !important;
+  background: var(--can-color-primary, #27802D);
+}
+
+.mat-admin-shell .sidebar-nav-item {
+  border-radius: 6px !important;
+}
+
+.mat-admin-shell .venue-map-frame,
+.mat-admin-shell .venue-map-frame .leaflet-container {
+  background: #eef2f6 !important;
+}
+
+.mat-admin-shell .venue-map-frame .leaflet-tile-pane {
+  filter: saturate(0.94) contrast(0.98);
+}
+
+.mat-admin-shell .venue-map-frame .leaflet-control-attribution {
+  font-size: 10px;
+}
+
+.mat-admin-shell .cancha-photo-dropzone {
+  cursor: default !important;
+  border-radius: 8px !important;
+}
+
+.mat-admin-shell .cancha-photo-dropzone > button {
+  cursor: pointer !important;
+}
+
+.mat-admin-shell .chips-cat-block {
+  display: grid;
+  grid-template-columns: minmax(180px, 230px) minmax(0, 1fr);
+  align-items: start;
+  gap: 1rem;
+  padding: 0.95rem 0;
+  border-top: 1px solid #eef2f6;
+}
+
+.mat-admin-shell .chips-cat-block:first-of-type {
+  border-top: 0;
+}
+
+.mat-admin-shell .chips-cat-title {
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: #334155;
+}
+
+.mat-admin-shell .chips-container-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.mat-admin-shell .chip-select-btn {
+  min-height: 38px;
+  justify-content: flex-start;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid #dfe3e8;
+  background: #ffffff;
+  color: #1f2937;
+  font-size: 0.82rem;
+  box-shadow: none;
+}
+
+.mat-admin-shell .chip-select-btn.is-active {
+  background: #f2f8f3;
+  color: #1f7a32;
+  border-color: rgba(60, 176, 67, 0.45);
+  box-shadow: none;
+}
+
+.mat-admin-shell .kardex-alert-banner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid #f2d3a5;
+  background: #fffaf0;
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.mat-admin-shell .kardex-alert-banner strong {
+  font-size: 0.82rem !important;
+}
+
+.mat-admin-shell .kardex-alert-banner span {
+  font-size: 0.74rem !important;
+}
+
+.mat-admin-shell .kardex-alert-banner .badge {
+  background: #ffffff !important;
+  color: #9a4d00 !important;
+  border: 1px solid #f2d3a5 !important;
+  font-size: 0.7rem !important;
+}
+
+.mat-admin-shell .btn-bell {
+  position: relative;
+}
+
+.mat-admin-shell .btn-bell::after {
+  content: '';
+  position: absolute;
+  inset: auto 8px 8px auto;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--admin-orange);
+  opacity: 0;
+}
+
+.mat-admin-shell .btn-bell.mat-badge-overlap::after {
+  opacity: 0;
+}
+
+.mat-admin-shell #view-finanzas .admin-alert-banner,
+.mat-admin-shell #view-configuracion .bg-surface-light,
+.mat-admin-shell #view-qr .bg-surface-light {
+  background: #ffffff !important;
+  border: 1px solid #dfe3e8 !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06) !important;
+}
+
+.mat-admin-shell #view-finanzas .admin-alert-banner[style*="gradient"] {
+  color: #1f2937 !important;
+}
+
+.mat-admin-shell #view-finanzas .admin-alert-banner[style*="gradient"] * {
+  color: inherit !important;
+}
+
+.mat-admin-shell #view-finanzas .kpi-highlight {
+  border-color: #dfe3e8 !important;
+  background: #ffffff !important;
+}
+
+.mat-admin-shell #view-finanzas .kpi-value,
+.mat-admin-shell #view-finanzas .kpi-title,
+.mat-admin-shell #view-finanzas .kpi-footer {
+  color: #1f2937 !important;
+}
+
+.mat-admin-shell #view-qr,
+.mat-admin-shell #view-configuracion {
+  color: #1f2937;
+}
+
+.mat-admin-shell #view-qr .bg-turf-green,
+.mat-admin-shell #view-qr .text-turf-green,
+.mat-admin-shell #view-qr .focus\:ring-turf-green,
+.mat-admin-shell #view-qr .accent-turf-green {
+  color: var(--qr-accent, #3CB043) !important;
+  accent-color: var(--qr-accent, #3CB043) !important;
+}
+
+.mat-admin-shell #view-qr .bg-turf-green {
+  background-color: var(--qr-accent, #3CB043) !important;
+  color: #ffffff !important;
+}
+
+.mat-admin-shell #view-qr .color-swatch-btn {
+  min-height: 54px;
+  border: 1px solid #dfe3e8 !important;
+  outline-offset: 0 !important;
+  box-shadow: none !important;
+}
+
+.mat-admin-shell #view-qr .color-swatch-btn:hover,
+.mat-admin-shell #view-qr .color-swatch-btn:focus-visible {
+  border-color: #94a3b8 !important;
+}
+
+.mat-admin-shell #view-qr #preview-action-btn {
+  background-color: var(--qr-accent, #3CB043) !important;
+  border-radius: 8px !important;
+}
+
+.mat-admin-shell #view-configuracion section,
+.mat-admin-shell #view-configuracion .rounded-2xl,
+.mat-admin-shell #view-configuracion .rounded-DEFAULT,
+.mat-admin-shell #view-configuracion .bg-surface-container-low,
+.mat-admin-shell #view-configuracion .bg-surface-container {
+  border-radius: 8px !important;
+}
+
+.mat-admin-shell #view-configuracion input {
+  border: 1px solid #dfe3e8 !important;
+  background: #ffffff !important;
+  box-shadow: none !important;
+}
+
+.mat-admin-shell #view-configuracion .notification-channel-btn.is-active,
+.mat-admin-shell #view-configuracion .notification-switch.is-on {
+  background: #2f9f3b !important;
+  color: #ffffff !important;
+}
+
+.mat-admin-shell #view-configuracion .bg-secondary-fixed\/30 {
+  background: #fff7ed !important;
+  border: 1px solid #fed7aa !important;
+}
+
+.mat-admin-shell #view-configuracion .shadow-sm,
+.mat-admin-shell #view-configuracion .shadow-md,
+.mat-admin-shell #view-configuracion .shadow-xl,
+.mat-admin-shell #view-qr .shadow-sm,
+.mat-admin-shell #view-qr .shadow-md,
+.mat-admin-shell #view-qr .shadow-xl {
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06) !important;
+}
+
+.mat-admin-shell .admin-view-panel.active {
+  opacity: 1 !important;
+  filter: none !important;
+  transform: none !important;
+  pointer-events: auto !important;
+}
+
+@media (max-width: 980px) {
+  .mat-admin-shell .chips-cat-block {
+    grid-template-columns: 1fr;
+  }
+
+  .mat-admin-shell .chips-container-row {
+    grid-template-columns: 1fr;
+  }
+}
+

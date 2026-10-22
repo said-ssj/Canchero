@@ -1,0 +1,898 @@
+<div class="mat-admin-shell admin-canchas-shell">
+  @if (errorOperatividad()) {
+    <div class="notice danger" role="alert">{{ errorOperatividad() }}</div>
+  }
+  @if (!formularioCanchaAbierto()) {
+    <!-- ENCABEZADO OFICIAL CANCHERO -->
+    <div class="page-title">
+      <h1>Mis Canchas</h1>
+      <p>Canchas de {{ sedeDelDueno()?.nombre || 'tu sede' }}.</p>
+    </div>
+
+    <!-- MÉTRICAS OPERATIVAS (COMPONENTES DE GESTIÓN) -->
+    <div class="management-stats">
+      <div>
+        <span>Canchas</span>
+        <strong>{{ totalLosas() }}</strong>
+      </div>
+      <div>
+        <span>Operativas</span>
+        <strong>{{ activasCount() }}</strong>
+      </div>
+      <div>
+        <span>En mantenimiento</span>
+        <strong>{{ mantenimientoCount() }}</strong>
+      </div>
+    </div>
+
+    <!-- SECCIÓN DE CANCHAS: CARGA, ERROR, VACÍO O LISTADO -->
+    @if (isLoading()) {
+      <!-- Skeletons estáticos para canchas -->
+      <div class="skeletons" aria-busy="true" role="status" aria-label="Cargando canchas">
+        <span class="skeleton short"></span>
+        <span class="skeleton"></span>
+        <span class="skeleton photo"></span>
+        <span class="skeleton button"></span>
+      </div>
+    } @else if (hasError()) {
+      <!-- Estado de Error de Catálogo -->
+      <div class="notice danger" role="alert">
+        <span class="material-symbols-outlined icon" aria-hidden="true">error</span>
+        <div>
+          <strong>Error al cargar canchas</strong>
+          <p>{{ errorMessage() || 'No se pudo cargar el catálogo de canchas.' }}</p>
+          <button type="button" class="btn" (click)="db.refreshCatalogo?.()" style="margin-top: 8px;">
+            <span class="material-symbols-outlined icon" aria-hidden="true">refresh</span>
+            <span>Reintentar</span>
+          </button>
+        </div>
+      </div>
+    } @else if (canchasDelDueno().length === 0) {
+      @if (sedesDelDueno().length === 0) {
+        <!-- Estado cuando NO existe ninguna sede registrada -->
+        <article class="card state">
+          <span class="material-symbols-outlined icon" aria-hidden="true">domain_disabled</span>
+          <h3>No puedes registrar canchas sin una sede</h3>
+          <p>Para registrar y configurar losas deportivas, primero necesitas registrar el complejo deportivo o sede donde estarán ubicadas.</p>
+          <button type="button" class="btn primary" (click)="irARegistrarSede()">
+            <span class="material-symbols-outlined icon" aria-hidden="true">add_business</span>
+            <span>Registrar mi primera sede</span>
+          </button>
+        </article>
+      } @else {
+        <!-- Estado vacío con sede seleccionada -->
+        <article class="card state">
+          <span class="material-symbols-outlined icon" aria-hidden="true">sports_soccer</span>
+          <h3>Todavía no tienes canchas</h3>
+          <p>Agrega la primera cancha de esta sede.</p>
+          <button type="button" class="btn primary" (click)="abrirModalCrearCancha()">
+            <span class="material-symbols-outlined icon" aria-hidden="true">add</span>
+            <span>Agregar cancha</span>
+          </button>
+        </article>
+
+        <app-admin-add-action
+          label="Agregar nueva cancha"
+          description="Datos, fotografías y tarifas."
+          (activated)="abrirModalCrearCancha()"
+        />
+      }
+    } @else {
+      <!-- LISTADO DE CANCHAS -->
+      <div class="stack">
+        @for (cancha of canchasDelDueno(); track cancha.id) {
+          <article class="card management-card" [class.is-mantenimiento]="!cancha.activa">
+            <div class="management-card-photo-wrap">
+              <img [src]="cancha.foto_url || fallbackCourtImg" [alt]="cancha.nombre" (error)="onCourtImgError($event)">
+            </div>
+            <div class="management-card-body">
+              <div class="row spread">
+                <h2>{{ cancha.nombre }} · {{ cancha.superficie || 'Grass Sintético' }}</h2>
+                @if (tieneCierreActivo(cancha.id)) {
+                  <span class="badge warning">Cierre activo</span>
+                } @else if (cancha.activa) {
+                  <span class="badge success">Operativa</span>
+                } @else {
+                  <span class="badge">En mantenimiento</span>
+                }
+              </div>
+
+              <p class="muted small">
+                {{ getCanchaTipoCorto(cancha.tipo || cancha.formato) }} · {{ cancha.cobertura || (cancha.techada ? 'Techada' : 'Al Aire Libre') }} · {{ cancha.usar_horario_sede === false ? 'Horario individual' : 'Horario sede' }}
+              </p>
+
+              <p class="small">{{ cancha.descripcion || 'Una cancha para compartir el partido con tu equipo.' }}</p>
+
+              <strong class="small">Día {{ fmtPEN(cancha.precio_hora) }} · Noche {{ fmtPEN(cancha.precio_hora_noche || cancha.precio_hora) }}</strong>
+              <small class="muted">Tarifa nocturna desde las {{ cancha.hora_inicio_noche || '18:00' }}</small>
+
+              <div class="row">
+                <button type="button" class="btn" (click)="editarCancha(cancha)">
+                  <span class="material-symbols-outlined icon" aria-hidden="true">edit</span>
+                  <span>Editar</span>
+                </button>
+                <button type="button" class="btn" (click)="abrirGestionCancha(cancha, 'horarios')">
+                  <span class="material-symbols-outlined icon" aria-hidden="true">schedule</span>
+                  <span>Horarios</span>
+                </button>
+                <button type="button" class="btn" (click)="abrirGestionCancha(cancha, 'cierres')">
+                  <span class="material-symbols-outlined icon" aria-hidden="true">event_busy</span>
+                  <span>Cierres</span>
+                </button>
+                <button type="button" class="btn" [disabled]="cambiandoOperatividad()" (click)="toggleOperativaCancha(cancha.id)">
+                  <span class="material-symbols-outlined icon" aria-hidden="true">{{ cancha.activa ? 'pause_circle' : 'play_circle' }}</span>
+                  <span>{{ cancha.activa ? 'Mantenimiento' : 'Habilitar' }}</span>
+                </button>
+              </div>
+            </div>
+          </article>
+        }
+
+        <!-- BOTÓN AGREGAR NUEVA CANCHA -->
+        <app-admin-add-action
+          label="Agregar nueva cancha"
+          description="Datos, fotografías y tarifas."
+          (activated)="abrirModalCrearCancha()"
+        />
+      </div>
+    }
+  } @else {
+    <!-- ======================================================================
+         EDITOR DE CANCHA (Referencia: editar-cancha.html)
+         ====================================================================== -->
+    <nav class="crumb" aria-label="Ruta">
+      <button type="button" class="btn" (click)="cerrarFormularioCancha()">
+        <span class="material-symbols-outlined icon" aria-hidden="true">arrow_back</span>
+        <span>Mis Canchas</span>
+      </button>
+      <span>Editor de cancha</span>
+    </nav>
+
+    <div class="row spread management-editor-heading">
+      <div class="page-title">
+        <h1>{{ canchaEnEdicion() ? 'Editar cancha' : 'Nueva cancha' }}</h1>
+        <p>{{ canchaEnEdicion() ? 'Modifica los datos y tarifas de tu cancha deportiva.' : 'Completa la información de tu nueva cancha deportiva.' }}</p>
+      </div>
+      <span class="badge info">{{ canchaEnEdicion() ? 'Modo edición' : 'Nueva cancha' }}</span>
+    </div>
+
+    <!-- Layout de Editor a 2 Columnas -->
+    <div class="management-editor">
+      <!-- Columna Principal: Formulario -->
+      <div class="management-editor-fields">
+        <!-- 01 Identidad -->
+        <section class="management-editor-section">
+          <h2><span>01</span>Identidad</h2>
+
+          <label class="field">
+            <span>Nombre de cancha</span>
+            <input
+              type="text"
+              [value]="nuevaCanchaNombre()"
+              (input)="nuevaCanchaNombre.set($any($event.target).value)"
+              placeholder="Ej. Cancha 1 · Grass Sintético">
+          </label>
+
+          <div class="grid two">
+            <label class="field">
+              <span>Sede</span>
+              @if (sedesDelDueno().length === 0) {
+                <select disabled>
+                  <option value="">Sin sedes disponibles</option>
+                </select>
+              } @else {
+                <select [value]="nuevaCanchaSedeId() || ''" (change)="nuevaCanchaSedeId.set($any($event.target).value ? +$any($event.target).value : null)">
+                  @for (s of sedesDelDueno(); track s.id) {
+                    <option [value]="s.id" [selected]="s.id === nuevaCanchaSedeId()">{{ s.nombre }}</option>
+                  }
+                </select>
+              }
+              <small class="muted">Sede a la que pertenece esta cancha.</small>
+            </label>
+
+            <label class="field">
+              <span>Formato</span>
+              <select [value]="nuevaCanchaFormato()" (change)="nuevaCanchaFormato.set($any($event.target).value)">
+                @for (fmt of formatosCancha; track fmt) {
+                  <option [value]="fmt" [selected]="fmt === nuevaCanchaFormato()">{{ fmt }}</option>
+                }
+              </select>
+              <small class="muted">Cantidad de jugadores por equipo.</small>
+            </label>
+          </div>
+        </section>
+
+        <!-- 02 Atributos de juego -->
+        <section class="management-editor-section">
+          <h2><span>02</span>Atributos de juego</h2>
+
+          <div class="grid two">
+            <label class="field">
+              <span>Superficie</span>
+              <select [value]="nuevaCanchaSuperficie()" (change)="nuevaCanchaSuperficie.set($any($event.target).value)">
+                @for (sup of superficiesCancha; track sup) {
+                  <option [value]="sup" [selected]="sup === nuevaCanchaSuperficie()">{{ sup }}</option>
+                }
+              </select>
+            </label>
+
+            <label class="field">
+              <span>Cobertura</span>
+              <select [value]="nuevaCanchaCobertura()" (change)="nuevaCanchaCobertura.set($any($event.target).value)">
+                @for (cob of coberturasCancha; track cob) {
+                  <option [value]="cob" [selected]="cob === nuevaCanchaCobertura()">{{ cob }}</option>
+                }
+              </select>
+            </label>
+          </div>
+
+          <fieldset class="management-checks">
+            <legend>Equipamiento</legend>
+            @for (eq of equipamientosCancha; track eq) {
+              <label class="check">
+                <input
+                  type="checkbox"
+                  [checked]="nuevaCanchaEquipamiento().includes(eq)"
+                  (change)="toggleEquipamientoCancha(eq)">
+                <span>{{ eq }}</span>
+              </label>
+            }
+          </fieldset>
+
+          <label class="field">
+            <span>Descripción adicional</span>
+            <textarea
+              rows="3"
+              [value]="nuevaCanchaDesc()"
+              (input)="nuevaCanchaDesc.set($any($event.target).value)"
+              placeholder="Detalles sobre las dimensiones, recomendaciones de calzado o comodidades...">
+            </textarea>
+          </label>
+        </section>
+
+        <!-- 03 Tarifas y disponibilidad -->
+        <section class="management-editor-section">
+          <h2><span>03</span>Tarifas y disponibilidad</h2>
+
+          <div class="grid two">
+            <label class="field">
+              <span>Tarifa diurna (S/)</span>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                [value]="nuevaCanchaTarifa()"
+                (input)="nuevaCanchaTarifa.set(+$any($event.target).value)">
+            </label>
+
+            <label class="field">
+              <span>Tarifa nocturna (S/)</span>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                [value]="nuevaCanchaTarifaNoc()"
+                (input)="nuevaCanchaTarifaNoc.set(+$any($event.target).value)">
+            </label>
+
+            <label class="field">
+              <span>Inicio de tarifa nocturna</span>
+              <input
+                type="time"
+                [value]="nuevaCanchaHoraInicioNoche()"
+                (input)="nuevaCanchaHoraInicioNoche.set($any($event.target).value)">
+            </label>
+          </div>
+
+          <div class="row" style="gap: 12px; margin-top: 8px;">
+            <label class="check">
+              <input
+                type="checkbox"
+                [checked]="nuevaCanchaUsarHorarioSede()"
+                (change)="nuevaCanchaUsarHorarioSede.set($any($event.target).checked)">
+              <span>Usar horario común de la sede</span>
+            </label>
+          </div>
+        </section>
+
+        <!-- 04 Fotografías (Dropzone preservando selectores para pruebas) -->
+        <section class="management-editor-section">
+          <h2><span>04</span>Fotografías</h2>
+
+          <div class="management-gallery">
+            <div class="management-gallery-head">
+              <div>
+                <h3>Fotografías de la cancha</h3>
+                <small class="muted">Hasta 12 imágenes · Selección y carga a la plataforma</small>
+              </div>
+            </div>
+
+            <!-- Input oculto para carga de imágenes de la cancha -->
+            <input
+              #courtPhotoInput
+              type="file"
+              id="cancha-foto-upload-input"
+              class="hidden-input"
+              style="display: none;"
+              accept="image/*"
+              multiple
+              (change)="onCanchaFotoSelected($event)">
+
+            <!-- Zona Dropzone exigida por admin-canchas.spec.ts (.cancha-photo-dropzone button) -->
+            <div class="cancha-photo-dropzone management-map" style="padding: 20px;">
+              <button type="button" class="btn primary" (click)="triggerInputFotoCancha(); $event.stopPropagation();">
+                <span class="material-symbols-outlined icon" aria-hidden="true">add</span>
+                <span>Seleccionar fotos</span>
+              </button>
+              <p class="small muted" style="margin-top: 8px;">
+                {{ nuevaCanchaFotos().length > 0 ? (nuevaCanchaFotos().length + ' foto(s) seleccionadas') : 'Haz clic en el botón para explorar tus imágenes' }}
+              </p>
+              @if (subiendoFoto()) {
+                <small class="muted">Subiendo fotos a la plataforma...</small>
+              }
+            </div>
+
+            <!-- Grilla de fotos cargadas -->
+            @if (nuevaCanchaFotos().length > 0) {
+              <div class="management-photo-grid">
+                @for (foto of nuevaCanchaFotos(); track $index) {
+                  <div class="management-photo">
+                    <img [src]="foto" alt="Foto cancha">
+                    <div class="row spread">
+                      <label class="check" style="font-size: 10px;">
+                        <input
+                          type="radio"
+                          name="cancha-cover"
+                          [checked]="nuevaCanchaFoto() === foto"
+                          (change)="seleccionarFotoPrincipal(foto)">
+                        <span>Portada</span>
+                      </label>
+                      <button
+                        type="button"
+                        class="btn icon-only"
+                        (click)="removerFotoDeLista($index); $event.stopPropagation();"
+                        title="Quitar foto"
+                        aria-label="Quitar foto">
+                        <span class="material-symbols-outlined icon" aria-hidden="true">close</span>
+                      </button>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </section>
+
+        <!-- Acciones Inferiores del Editor -->
+        <div class="management-editor-actions">
+          <button type="button" class="btn" (click)="cerrarFormularioCancha()">
+            <span class="material-symbols-outlined icon" aria-hidden="true">arrow_back</span>
+            <span>Volver a mis canchas</span>
+          </button>
+          <button type="button" class="btn primary" (click)="guardarNuevaCancha()">
+            <span class="material-symbols-outlined icon" aria-hidden="true">{{ canchaEnEdicion() ? 'save' : 'check' }}</span>
+            <span>{{ canchaEnEdicion() ? 'Guardar cambios' : 'Registrar cancha' }}</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Columna Lateral: Vista Previa de la Cancha -->
+      <aside class="management-preview">
+        <p class="gallery-label" style="font-size: 12px; font-weight: 700; color: var(--muted); margin: 0;">Vista previa de la cancha</p>
+        <article class="card">
+          <img class="management-preview-photo" [src]="nuevaCanchaFoto() || fallbackCourtImg" alt="Vista previa referencial">
+          <div class="card-pad stack">
+            <span class="badge success">Operativa</span>
+            <h3>{{ nuevaCanchaNombre() || 'Cancha 1 · Grass Sintético' }}</h3>
+            <p class="small muted">
+              {{ getCanchaTipoCorto(nuevaCanchaFormato()) }} · {{ nuevaCanchaSuperficie() }} · {{ nuevaCanchaCobertura() }}
+            </p>
+            <strong class="small">
+              Día {{ fmtPEN(nuevaCanchaTarifa()) }} · Noche {{ fmtPEN(nuevaCanchaTarifaNoc()) }}
+            </strong>
+            <small class="muted">Tarifa nocturna desde las {{ nuevaCanchaHoraInicioNoche() }}</small>
+            <button type="button" class="btn primary" disabled>Reservar</button>
+          </div>
+        </article>
+        <small class="muted">Previsualización en vivo según los atributos y tarifas ingresados.</small>
+      </aside>
+    </div>
+  }
+
+  <!-- ======================================================================
+       PANEL MODAL / DRAWER: HORARIOS, DESCANSOS & CIERRES (REGLA 5)
+       ====================================================================== -->
+  @if (panelGestionAbierto()) {
+    <div class="admin-drawer is-open">
+      <div class="admin-drawer-overlay" (click)="cerrarGestionCancha()" tabindex="-1"></div>
+      <section class="admin-drawer-panel" style="max-width: 680px;" role="dialog" aria-modal="true" aria-labelledby="gestion-cancha-title">
+
+        <!-- Header del Panel -->
+        <header class="hours-header">
+          <div>
+            <h2 id="gestion-cancha-title">{{ canchaGestion()?.nombre || 'Gestión de Cancha' }}</h2>
+            <p>Horarios, descansos y cierres temporales.</p>
+          </div>
+          <button type="button" class="btn icon-only" (click)="cerrarGestionCancha()" aria-label="Cerrar panel">
+            <span class="material-symbols-outlined icon" aria-hidden="true">close</span>
+          </button>
+        </header>
+
+        <!-- Pestañas de Navegación del Panel -->
+        <div class="segmented" style="padding: 12px 16px; border-bottom: 1px solid var(--line);">
+          <button
+            type="button"
+            class="segmented-btn"
+            [class.active]="tabGestion() === 'horarios'"
+            (click)="tabGestion.set('horarios')">
+            <span class="material-symbols-outlined icon" aria-hidden="true">schedule</span>
+            <span>Horarios</span>
+          </button>
+          <button
+            type="button"
+            class="segmented-btn"
+            [class.active]="tabGestion() === 'descansos'"
+            (click)="tabGestion.set('descansos')">
+            <span class="material-symbols-outlined icon" aria-hidden="true">coffee</span>
+            <span>Descansos ({{ descansosCancha().length }})</span>
+          </button>
+          <button
+            type="button"
+            class="segmented-btn"
+            [class.active]="tabGestion() === 'cierres'"
+            (click)="tabGestion.set('cierres')">
+            <span class="material-symbols-outlined icon" aria-hidden="true">event_busy</span>
+            <span>Cierres @if (reservasAfectadasPorCierres().length > 0) { ({{ reservasAfectadasPorCierres().length }}) }</span>
+          </button>
+        </div>
+
+        <div class="hours-body">
+
+          <!-- TAB 1: HORARIO SEMANAL (COMÚN VS INDIVIDUAL) -->
+          @if (tabGestion() === 'horarios') {
+            <div class="stack" style="gap: 16px;">
+              <div class="management-hours-context">
+                <div class="row spread">
+                  <div>
+                    <strong>Régimen de horario</strong>
+                    <p class="small muted">
+                      {{ horarioModo() === 'comun' ? 'Hereda los horarios de atención de la sede.' : 'Horario individualizado para esta cancha.' }}
+                    </p>
+                  </div>
+                  <div class="btn-group">
+                    <button
+                      type="button"
+                      class="btn"
+                      [class.primary]="horarioModo() === 'comun'"
+                      (click)="cambiarModoHorario('comun')">
+                      Común de sede
+                    </button>
+                    <button
+                      type="button"
+                      class="btn"
+                      [class.primary]="horarioModo() === 'individual'"
+                      (click)="cambiarModoHorario('individual')">
+                      Individual
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              @if (horarioModo() === 'comun') {
+                <article class="card state">
+                  <span class="material-symbols-outlined icon" aria-hidden="true">domain</span>
+                  <h3>Horario Común de la Sede</h3>
+                  <p>Esta cancha utiliza los días y horas de apertura configurados en la sede.</p>
+                  <button type="button" class="btn" (click)="abrirDrawerHorarios()">
+                    <span class="material-symbols-outlined icon" aria-hidden="true">schedule</span>
+                    <span>Ver horarios de la sede</span>
+                  </button>
+                </article>
+              } @else {
+                <div class="management-hours">
+                  @for (item of horariosIndividualesSemana(); track item.diaSemana) {
+                    <section class="schedule-day">
+                      <div class="schedule-day-heading">
+                        <h2>{{ item.diaSemana === 1 ? 'Lunes' : item.diaSemana === 2 ? 'Martes' : item.diaSemana === 3 ? 'Miércoles' : item.diaSemana === 4 ? 'Jueves' : item.diaSemana === 5 ? 'Viernes' : item.diaSemana === 6 ? 'Sábado' : 'Domingo' }}</h2>
+                        <label class="check">
+                          <input
+                            type="checkbox"
+                            [checked]="item.activo"
+                            (change)="actualizarHorarioIndividual(item.diaSemana, 'activo', $any($event.target).checked)">
+                          <span>{{ item.activo ? 'Abierto' : 'Cerrado' }}</span>
+                        </label>
+                      </div>
+
+                      @if (item.activo) {
+                        <div class="schedule-ranges">
+                          <div class="schedule-range">
+                            <label class="field">
+                              <span>Apertura</span>
+                              <input
+                                type="time"
+                                [value]="item.apertura"
+                                (change)="actualizarHorarioIndividual(item.diaSemana, 'apertura', $any($event.target).value)">
+                            </label>
+                            <span class="muted">—</span>
+                            <label class="field">
+                              <span>Cierre</span>
+                              <input
+                                type="time"
+                                [value]="item.cierre"
+                                (change)="actualizarHorarioIndividual(item.diaSemana, 'cierre', $any($event.target).value)">
+                            </label>
+                          </div>
+                        </div>
+                      }
+                    </section>
+                  }
+                </div>
+              }
+
+              <div class="row" style="justify-content: flex-end; margin-top: 12px;">
+                <button type="button" class="btn primary" disabled title="Pendiente de persistencia del horario individual en la API">
+                  <span class="material-symbols-outlined icon" aria-hidden="true">save</span>
+                  <span>Guardar horarios</span>
+                </button>
+              </div>
+            </div>
+          }
+
+          <!-- TAB 2: DESCANSOS RECURRENTES (REGLA 5) -->
+          @if (tabGestion() === 'descansos') {
+            <div class="stack" style="gap: 16px;">
+              <div class="notice info">
+                <span class="material-symbols-outlined icon" aria-hidden="true">info</span>
+                <div>
+                  <strong>Descansos y Mantenimientos Recurrentes</strong>
+                  <p>Bloqueos periódicos para mantenimiento, regado o limpieza. Se admiten franjas nocturnas que terminen al día siguiente.</p>
+                </div>
+              </div>
+
+              <!-- Lista de descansos -->
+              @if (descansosCancha().length === 0) {
+                <article class="card state">
+                  <span class="material-symbols-outlined icon" aria-hidden="true">coffee</span>
+                  <h3>Sin descansos programados</h3>
+                  <p>No hay descansos recurrentes activos en esta cancha.</p>
+                </article>
+              } @else {
+                <div class="stack" style="gap: 8px;">
+                  @for (desc of descansosCancha(); track desc.id) {
+                    <div class="card" style="padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;">
+                      <div>
+                        <strong>{{ desc.nombre }}</strong>
+                        <p class="small muted" style="margin: 2px 0 0 0;">
+                          {{ getDiasNombres(desc.dias) }} · {{ desc.hora_inicio }} a {{ desc.hora_fin }}
+                          @if (desc.hora_inicio > desc.hora_fin) {
+                            <span>(termina al día siguiente)</span>
+                          }
+                        </p>
+                      </div>
+                      <div class="row" style="gap: 8px;">
+                        <button type="button" class="btn" disabled title="Pendiente de persistencia de descansos en la API">
+                          <span class="material-symbols-outlined icon" aria-hidden="true">{{ desc.activo ? 'pause' : 'play_arrow' }}</span>
+                          <span>{{ desc.activo ? 'Pausar' : 'Reanudar' }}</span>
+                        </button>
+                        <button type="button" class="btn danger icon-only" disabled title="Pendiente de persistencia de descansos en la API" aria-label="Eliminar">
+                          <span class="material-symbols-outlined icon" aria-hidden="true">delete</span>
+                        </button>
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+
+              <!-- Formulario de nuevo descanso -->
+              <div class="card card-pad stack" style="gap: 12px;">
+                <h3>Añadir nuevo descanso recurrente</h3>
+
+                <label class="field">
+                  <span>Motivo o nombre</span>
+                  <input
+                    type="text"
+                    [value]="nuevoDescansoNombre()"
+                    (input)="nuevoDescansoNombre.set($any($event.target).value)"
+                    placeholder="Ej. Regado de grass y cepillado">
+                </label>
+
+                <div class="field">
+                  <span>Días aplicables</span>
+                  <div class="btn-group" style="flex-wrap: wrap;">
+                    @for (item of diasSemanaLabels; track item.dia) {
+                      <button
+                        type="button"
+                        class="btn"
+                        [class.primary]="nuevoDescansoDias().includes(item.dia)"
+                        (click)="toggleDiaDescanso(item.dia)">
+                        {{ item.label.slice(0, 3) }}
+                      </button>
+                    }
+                  </div>
+                </div>
+
+                <div class="grid two">
+                  <label class="field">
+                    <span>Hora inicio</span>
+                    <input
+                      type="time"
+                      [value]="nuevoDescansoHoraInicio()"
+                      (change)="nuevoDescansoHoraInicio.set($any($event.target).value)">
+                  </label>
+                  <label class="field">
+                    <span>Hora fin</span>
+                    <input
+                      type="time"
+                      [value]="nuevoDescansoHoraFin()"
+                      (change)="nuevoDescansoHoraFin.set($any($event.target).value)">
+                  </label>
+                </div>
+
+                @if (nuevoDescansoHoraInicio() > nuevoDescansoHoraFin()) {
+                  <small class="muted" style="color: var(--primary);">
+                    Franja nocturna: el descanso finaliza en la madrugada del día siguiente.
+                  </small>
+                }
+
+                @if (errorDescanso()) {
+                  <p class="small" style="color: #dc2626; font-weight: 700;">{{ errorDescanso() }}</p>
+                }
+
+                <div class="row" style="justify-content: flex-end;">
+                  <button type="button" class="btn primary" disabled title="Pendiente de persistencia de descansos en la API">
+                    <span class="material-symbols-outlined icon" aria-hidden="true">add</span>
+                    <span>Añadir descanso</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          }
+
+          <!-- TAB 3: CIERRES TEMPORALES & RESERVAS AFECTADAS (REGLA 5) -->
+          @if (tabGestion() === 'cierres') {
+            <div class="stack" style="gap: 16px;">
+              <!-- Banner Regla 5 -->
+              <div class="notice info">
+                <span class="material-symbols-outlined icon" aria-hidden="true">info</span>
+                <div>
+                  <strong>Regla de negocio Canchero:</strong>
+                  <p>Un cierre impide nuevas reservas en su franja. Las reservas existentes <strong>NO se cancelan ni devuelven automáticamente</strong>. Coordina la reprogramación con el cliente.</p>
+                </div>
+              </div>
+
+              <!-- Listado de cierres registrados -->
+              <div class="row spread">
+                <strong>Cierres registrados ({{ cierresSedeYCancha().length }})</strong>
+                @if (!mostrarFormularioNuevoCierre()) {
+                  <button type="button" class="btn primary" (click)="abrirFormularioCierre()">
+                    <span class="material-symbols-outlined icon" aria-hidden="true">add</span>
+                    <span>Nuevo cierre</span>
+                  </button>
+                }
+              </div>
+
+              @if (cierresSedeYCancha().length === 0) {
+                <article class="card state">
+                  <span class="material-symbols-outlined icon" aria-hidden="true">event_available</span>
+                  <h3>Sin cierres registrados</h3>
+                  <p>La cancha opera con normalidad.</p>
+                </article>
+              } @else {
+                <div class="stack" style="gap: 8px;">
+                  @for (cierre of cierresSedeYCancha(); track cierre.id) {
+                    <div class="card" style="padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;">
+                      <div>
+                        <div class="row" style="gap: 6px;">
+                          <strong>{{ cierre.motivo }}</strong>
+                          <span class="badge" [class.warning]="cierre.tipo === 'inmediato'">
+                            {{ cierre.tipo === 'inmediato' ? 'Inmediato' : 'Programado' }}
+                          </span>
+                          <span class="badge">
+                            {{ cierre.alcance === 'sede' ? 'Toda la sede' : 'Solo esta cancha' }}
+                          </span>
+                        </div>
+                        <p class="small muted" style="margin: 2px 0 0 0;">
+                          Desde: {{ cierre.fecha_inicio | date:'dd/MM/yyyy HH:mm' }}
+                          @if (cierre.fecha_fin) {
+                            · Hasta: {{ cierre.fecha_fin | date:'dd/MM/yyyy HH:mm' }}
+                          } @else {
+                            · Hasta reapertura manual
+                          }
+                        </p>
+                      </div>
+                      <div>
+                        @if (cierre.activo) {
+                          <button type="button" class="btn" (click)="reabrirCierre(cierre.id)">
+                            <span class="material-symbols-outlined icon" aria-hidden="true">lock_open</span>
+                            <span>Reabrir</span>
+                          </button>
+                        } @else {
+                          <span class="badge success">Reabierto</span>
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+
+              <!-- Formulario de nuevo cierre -->
+              @if (mostrarFormularioNuevoCierre()) {
+                <div class="card card-pad stack" style="gap: 12px;">
+                  <h3>Registrar cierre temporal</h3>
+
+                  <div class="field">
+                    <span>Alcance del cierre</span>
+                    <div class="btn-group">
+                      <button
+                        type="button"
+                        class="btn"
+                        [class.primary]="nuevoCierreAlcance() === 'cancha'"
+                        (click)="nuevoCierreAlcance.set('cancha')">
+                        Solo esta cancha
+                      </button>
+                      <button
+                        type="button"
+                        class="btn"
+                        [class.primary]="nuevoCierreAlcance() === 'sede'"
+                        (click)="nuevoCierreAlcance.set('sede')">
+                        Toda la sede
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="field">
+                    <span>Tipo de cierre</span>
+                    <div class="btn-group">
+                      <button
+                        type="button"
+                        class="btn"
+                        [class.primary]="nuevoCierreTipo() === 'inmediato'"
+                        (click)="nuevoCierreTipo.set('inmediato')">
+                        Inmediato
+                      </button>
+                      <button
+                        type="button"
+                        class="btn"
+                        [class.primary]="nuevoCierreTipo() === 'programado'"
+                        (click)="nuevoCierreTipo.set('programado')">
+                        Programado
+                      </button>
+                    </div>
+                  </div>
+
+                  @if (nuevoCierreTipo() === 'programado') {
+                    <div class="grid two">
+                      <label class="field">
+                        <span>Fecha inicio</span>
+                        <input
+                          type="date"
+                          [value]="nuevoCierreFechaInicio()"
+                          (change)="nuevoCierreFechaInicio.set($any($event.target).value)">
+                      </label>
+                      <label class="field">
+                        <span>Fecha fin</span>
+                        <input
+                          type="date"
+                          [value]="nuevoCierreFechaFin()"
+                          (change)="nuevoCierreFechaFin.set($any($event.target).value)">
+                      </label>
+                    </div>
+                  }
+
+                  <label class="field">
+                    <span>Motivo del cierre</span>
+                    <input
+                      type="text"
+                      [value]="nuevoCierreMotivo()"
+                      (input)="nuevoCierreMotivo.set($any($event.target).value)"
+                      placeholder="Mantenimiento de luminarias, lluvia, etc.">
+                  </label>
+
+                  @if (errorCierre()) {
+                    <p class="small" style="color: #dc2626; font-weight: 700;">{{ errorCierre() }}</p>
+                  }
+
+                  <div class="row" style="justify-content: flex-end; gap: 8px;">
+                    <button type="button" class="btn" (click)="cancelarFormularioCierre()">
+                      Cancelar
+                    </button>
+                    <button type="button" class="btn primary" (click)="aplicarCierre()">
+                      <span class="material-symbols-outlined icon" aria-hidden="true">event_busy</span>
+                      <span>Aplicar cierre</span>
+                    </button>
+                  </div>
+                </div>
+              }
+
+              <!-- Reservas Afectadas por Cierres -->
+              @if (reservasAfectadasPorCierres().length > 0) {
+                <div class="stack" style="gap: 12px; margin-top: 12px;">
+                  <h3 style="color: #dc2626;">Reservas Afectadas ({{ reservasAfectadasPorCierres().length }})</h3>
+                  <p class="small muted">Coordina la reprogramación o devolución manual con el cliente.</p>
+
+                  @for (afectada of reservasAfectadasPorCierres(); track afectada.reservaId) {
+                    <article class="card closure-booking">
+                      <div>
+                        <h3>{{ afectada.codigoPase }} · {{ afectada.canchaNombre }}</h3>
+                        <p class="muted small">{{ afectada.fecha }} · {{ afectada.horario }}</p>
+                        <p class="small">Cliente: {{ afectada.jugadorNombre }} ({{ afectada.telefono }}) · Pagado: {{ fmtPEN(afectada.monto) }}</p>
+                      </div>
+                      <div class="row">
+                        <button type="button" class="btn" (click)="abrirModalReprogramar(afectada)">
+                          <span class="material-symbols-outlined icon" aria-hidden="true">edit_calendar</span>
+                          <span>Reprogramar</span>
+                        </button>
+                      </div>
+                    </article>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+        <footer class="hours-footer">
+          <button type="button" class="btn" (click)="cerrarGestionCancha()">
+            Cerrar panel
+          </button>
+        </footer>
+      </section>
+    </div>
+  }
+
+  <!-- MODAL: REPROGRAMAR RESERVA AFECTADA -->
+  @if (reservaEnReprogramacion()) {
+    <div class="admin-drawer is-open">
+      <div class="admin-drawer-overlay" (click)="cerrarModalReprogramar()"></div>
+      <section class="admin-drawer-panel" style="max-width: 480px;" role="dialog" aria-modal="true" aria-labelledby="reprogramar-modal-title">
+        <header class="hours-header">
+          <div>
+            <h2 id="reprogramar-modal-title">Reprogramar reserva</h2>
+            <p>{{ reservaEnReprogramacion()?.codigoPase }} · {{ reservaEnReprogramacion()?.jugadorNombre }}</p>
+          </div>
+          <button type="button" class="btn icon-only" (click)="cerrarModalReprogramar()" aria-label="Cerrar modal">
+            <span class="material-symbols-outlined icon" aria-hidden="true">close</span>
+          </button>
+        </header>
+
+        <div class="hours-body">
+          <div class="stack" style="gap: 12px;">
+            <label class="field">
+              <span>Nueva fecha</span>
+              <input
+                type="date"
+                [value]="reprogramarFecha()"
+                (change)="reprogramarFecha.set($any($event.target).value)">
+            </label>
+
+            <div class="grid two">
+              <label class="field">
+                <span>Hora inicio</span>
+                <input
+                  type="time"
+                  [value]="reprogramarHoraInicio()"
+                  (change)="reprogramarHoraInicio.set($any($event.target).value)">
+              </label>
+              <label class="field">
+                <span>Hora fin</span>
+                <input
+                  type="time"
+                  [value]="reprogramarHoraFin()"
+                  (change)="reprogramarHoraFin.set($any($event.target).value)">
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <footer class="hours-footer">
+          <button type="button" class="btn" (click)="cerrarModalReprogramar()">
+            Volver
+          </button>
+          <button type="button" class="btn primary" (click)="confirmarReprogramacion()">
+            Confirmar reprogramación
+          </button>
+        </footer>
+      </section>
+    </div>
+  }
+</div>

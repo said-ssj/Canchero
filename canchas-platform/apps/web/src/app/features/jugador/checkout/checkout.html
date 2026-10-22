@@ -1,0 +1,606 @@
+@if (isLoadingCatalog()) {
+  <div class="container" style="padding: 48px 0;" aria-busy="true">
+    <div class="card" style="padding: 24px; margin-bottom: 24px;">
+      <div class="skeleton-card" style="height: 20px; width: 240px; margin-bottom: 12px;"></div>
+      <div class="skeleton-card" style="height: 14px; width: 360px;"></div>
+    </div>
+    <div class="card" style="padding: 24px;">
+      <div class="skeleton-card" style="height: 18px; width: 180px; margin-bottom: 16px;"></div>
+      <div class="skeleton-card" style="height: 200px;"></div>
+      <p class="muted small" style="margin-top: 16px;">Cargando información de la cancha y disponibilidad oficial...</p>
+    </div>
+  </div>
+} @else if (contextError(); as errorMsg) {
+  <section class="container" style="padding: 64px 0;">
+    <div class="card state" style="max-width: 520px; margin: 0 auto; text-align: center; padding: 40px 24px;">
+      <span class="material-symbols-outlined icon" style="font-size: 40px; color: var(--danger); margin-bottom: 12px;" aria-hidden="true">error_outline</span>
+      <h2 style="font-size: 18px; margin: 0 0 8px 0;">Cancha no disponible</h2>
+      <p style="color: var(--muted); font-size: 13px; line-height: 1.5; margin: 0 0 20px 0;">
+        {{ errorMsg }}
+      </p>
+      <a routerLink="/sedes" class="btn primary" style="display: inline-flex; align-items: center; gap: 8px;">
+        <span class="material-symbols-outlined icon" aria-hidden="true">arrow_back</span>
+        Volver al catálogo de sedes
+      </a>
+    </div>
+  </section>
+} @else {
+  <main class="container" id="main">
+    <!-- Migas de pan y contexto de cancha -->
+    <nav class="crumb" aria-label="Ruta">
+      <a class="btn" routerLink="/sedes"><span class="material-symbols-outlined icon" aria-hidden="true">arrow_back</span>Sedes</a>
+      <span>{{ selectedComplejo().name }} / {{ activePaso() === 1 ? 'Horarios' : (activePaso() === 2 ? 'Pago' : 'Confirmación') }}</span>
+    </nav>
+
+    <div class="court-context">
+      <img [src]="selectedComplejo().img || fallbackCourtImg" (error)="onImgError($event)" alt="Fotografía referencial de la cancha">
+      <div>
+        <h1>{{ resolvedCourt()?.nombre || selectedComplejo().name }} · {{ selectedTipoCancha() }}</h1>
+        <p class="muted small">{{ selectedComplejo().name }} · {{ selectedComplejo().address }}</p>
+        <div class="row">
+          <span class="badge">{{ resolvedCourt()?.tipo || 'Fútbol 7' }}</span>
+          <span class="badge">{{ resolvedCourt()?.superficie || 'Grass Sintético' }}</span>
+          <span class="badge">{{ resolvedCourt()?.cobertura || 'Techada' }}</span>
+          <span class="badge success">Tarifa base: S/ {{ basePrice() }}/h</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stepper Canchero -->
+    <div class="steps" aria-label="Pasos de reserva">
+      <strong [style.color]="activePaso() === 1 ? 'var(--primary)' : 'var(--muted)'">1. Horarios</strong>
+      <strong [style.color]="activePaso() === 2 ? 'var(--primary)' : 'var(--muted)'">2. Pago</strong>
+      <strong [style.color]="activePaso() === 3 ? 'var(--primary)' : 'var(--muted)'">3. Confirmación</strong>
+    </div>
+
+    @switch (activePaso()) {
+      @case (1) {
+        <!-- ==================== PASO 1: SELECCIÓN DE HORARIOS ==================== -->
+        <div class="checkout-layout">
+          <section>
+            <!-- Cabecera de Calendario -->
+            <div class="calendar-header">
+              <div>
+                <h2 style="margin: 0; font-size: 18px;">Selecciona tus horas</h2>
+                <p class="muted small" style="margin: 4px 0 0 0;">Visualiza la disponibilidad completa de la semana y arma tu bloque continuo</p>
+              </div>
+              <div class="row" style="align-items: center; gap: 8px;">
+                <div class="btn-group">
+                  <button type="button" class="btn icon-only" (click)="prevWeek()" [disabled]="weekOffset() === 0" title="Semana anterior" aria-label="Semana anterior">
+                    <span class="material-symbols-outlined icon" aria-hidden="true">chevron_left</span>
+                  </button>
+                  <button type="button" class="btn" (click)="todayWeek()">Esta semana</button>
+                  <button type="button" class="btn icon-only" (click)="nextWeek()" title="Semana siguiente" aria-label="Semana siguiente">
+                    <span class="material-symbols-outlined icon" aria-hidden="true">chevron_right</span>
+                  </button>
+                </div>
+                <span class="badge" [style.background]="weekBadgeBg()" [style.color]="weekBadgeColor()">{{ weekLabelText() }}</span>
+              </div>
+            </div>
+
+            <!-- Filtros de Franja Horaria -->
+            <div class="segmented" style="margin: 16px 0;">
+              @for (option of filterOptions; track option.key) {
+                <button
+                  type="button"
+                  [class.active]="timeFilter() === option.key"
+                  (click)="setTimeFilter(option.key)"
+                >
+                  {{ option.label }}
+                </button>
+              }
+            </div>
+
+            <!-- Leyenda Canchero -->
+            <div class="calendar-legend">
+              <span class="legend">Disponible</span>
+              <span class="legend chosen">Elegido</span>
+              <span class="legend busy">Ocupado</span>
+              <span class="legend closed">Cerrado</span>
+            </div>
+
+            <!-- Alerta de Error de Disponibilidad -->
+            @if (effectiveAvailabilityError(); as err) {
+              <div class="notice danger" role="alert" style="margin-bottom: 16px;">
+                <span class="material-symbols-outlined icon" aria-hidden="true">error</span>
+                <div style="flex: 1;">
+                  <strong>Error al verificar disponibilidad</strong>
+                  <p>{{ err }}</p>
+                </div>
+                <button type="button" class="btn" (click)="retryAvailability()">
+                  <span class="material-symbols-outlined icon" aria-hidden="true">refresh</span>
+                  Reintentar
+                </button>
+              </div>
+            }
+
+            @if (isLoadingAvailability()) {
+              <div class="notice" style="margin-bottom: 16px;" aria-busy="true">
+                <span class="material-symbols-outlined icon" aria-hidden="true">hourglass_empty</span>
+                <div>
+                  <strong>Actualizando turnos...</strong>
+                  <p>Comprobando disponibilidad en tiempo real con el servidor.</p>
+                </div>
+              </div>
+            }
+
+            <!-- Matriz de Calendario Semanal -->
+            <div class="table-wrap" tabindex="0" role="region" aria-label="Calendario semanal de turnos">
+              <table class="calendar-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Hora</th>
+                    @for (day of currentWeekDays(); track day.dateStr) {
+                      <th scope="col" [class.is-today]="day.isToday">
+                        {{ day.dayName }}
+                        <strong>{{ day.dayNum }}</strong>
+                        {{ day.monthName }}
+                      </th>
+                    }
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (hour of filteredHours(); track hour) {
+                    <tr>
+                      <th scope="row">
+                        {{ hour < 10 ? '0' + hour : hour }}:00
+                        <small class="muted" style="display: block; font-size: 9px; font-weight: normal;">{{ isNightHour(hour) ? 'Noche' : 'Día' }}</small>
+                      </th>
+                      @for (day of currentWeekDays(); track day.dateStr) {
+                        <td>
+                          <button
+                            type="button"
+                            class="slot cell-slot-btn"
+                            [class.available]="slotStatus(day, hour) === 'available'"
+                            [class.occupied]="slotStatus(day, hour) === 'occupied'"
+                            [class.blocked]="slotStatus(day, hour) === 'blocked'"
+                            [class.closed]="slotStatus(day, hour) === 'closed'"
+                            [class.past]="slotStatus(day, hour) === 'past'"
+                            [class.chosen]="isSlotSelected(day, hour)"
+                            [attr.aria-pressed]="isSlotSelected(day, hour)"
+                            [disabled]="slotStatus(day, hour) !== 'available'"
+                            (click)="slotStatus(day, hour) === 'available' && toggleSlot(day, hour)"
+                            [attr.aria-label]="'Turno ' + day.dayName + ' ' + day.dayNum + ' a las ' + hour + ':00'"
+                          >
+                            @if (isSlotSelected(day, hour)) {
+                              <strong>Elegido</strong>
+                              <small>{{ hour }}:00–{{ hour + 1 }}:00</small>
+                            } @else if (slotStatus(day, hour) === 'available') {
+                              <strong>{{ fmt(slotPriceAt(day, hour)) }}</strong>
+                              <small>{{ hour }}:00–{{ hour + 1 }}:00</small>
+                            } @else if (slotStatus(day, hour) === 'occupied') {
+                              <span>Ocupado</span>
+                            } @else if (slotStatus(day, hour) === 'closed' || slotStatus(day, hour) === 'blocked') {
+                              <span>Cerrado</span>
+                            } @else {
+                              <span>Pasado</span>
+                            }
+                          </button>
+                        </td>
+                      }
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            <p class="calendar-note">America/Lima · Disponibilidad oficial de la cancha verificada con el servidor.</p>
+
+            <!-- Línea de Selección y Limpieza -->
+            <div class="selection-line" aria-live="polite">
+              <output data-selection-label>{{ selectionCountText() }}</output>
+              @if (selectedSlots().length > 0) {
+                <button type="button" class="btn" (click)="clearSlots()">
+                  <span class="material-symbols-outlined icon" aria-hidden="true">close</span>
+                  Limpiar selección
+                </button>
+              }
+            </div>
+
+            <!-- Alerta de Validación de Continuidad de Bloque -->
+            @if (selectionValidationMessage()) {
+              <div class="notice danger" style="margin-top: 12px;">
+                <span class="material-symbols-outlined icon" aria-hidden="true">warning</span>
+                <div>
+                  <strong>Selección no válida</strong>
+                  <p>{{ selectionValidationMessage() }}</p>
+                </div>
+              </div>
+            }
+
+            <button
+              type="button"
+              class="btn primary btn-checkout-submit"
+              style="margin-top: 20px; width: 100%; justify-content: center; height: 42px;"
+              [disabled]="!canProceedToPaso2()"
+              (click)="goToPaso(2)"
+            >
+              <span>Continuar al pago</span>
+              <span class="material-symbols-outlined icon" aria-hidden="true">arrow_forward</span>
+            </button>
+          </section>
+
+          <!-- Columna Lateral Sticky Resumen -->
+          <aside class="summary" aria-label="Resumen de selección">
+            <h2>Tu reserva</h2>
+            <p>{{ resolvedCourt()?.nombre || selectedTipoCancha() }} · {{ selectedComplejo().name }}</p>
+
+            <div class="list">
+              <div class="list-line"><span>Fecha</span><strong data-summary-date>{{ summaryDateText() }}</strong></div>
+              <div class="list-line"><span>Bloque</span><strong data-summary-block>{{ horarioText() }}</strong></div>
+              <div class="list-line"><span>Duración</span><strong data-summary-duration>{{ horasLabel() }}</strong></div>
+              <div class="list-line"><span>Total</span><strong class="total" data-summary-total>{{ fmt(total()) }}</strong></div>
+            </div>
+
+            @if (bookingBlock().isValid && bookingBlock().durationHours > 0) {
+              <div class="stack small" style="margin-top: 12px; border-top: 1px solid var(--line); padding-top: 12px;">
+                <span class="gallery-label" style="margin-bottom: 4px;">Desglose por tramo</span>
+                @for (tranche of bookingBlock().tranches; track tranche.hour) {
+                  <div class="list-line">
+                    <span>{{ tranche.displayTime }} ({{ tranche.rateType }})</span>
+                    <strong>{{ fmt(tranche.price) }}</strong>
+                  </div>
+                }
+              </div>
+            }
+
+            <button
+              type="button"
+              class="btn primary"
+              style="width: 100%; justify-content: center; margin-top: 16px; height: 42px;"
+              [disabled]="!canProceedToPaso2()"
+              (click)="goToPaso(2)"
+            >
+              <span class="material-symbols-outlined icon" aria-hidden="true">arrow_forward</span>
+              Continuar al pago
+            </button>
+          </aside>
+        </div>
+      }
+
+      @case (2) {
+        <!-- ==================== PASO 2: MODELO DE PAGO ==================== -->
+        <div class="checkout-layout">
+          <section class="stack" style="gap: 20px;">
+            <div class="card" style="padding: 20px;">
+              <h2 style="font-size: 16px; margin: 0 0 12px 0;">Datos del partido</h2>
+              <div class="list">
+                <div class="list-line"><span>Sede</span><strong>{{ selectedComplejo().name }}</strong></div>
+                <div class="list-line"><span>Dirección</span><strong>{{ selectedComplejo().address }}</strong></div>
+                <div class="list-line"><span>Cancha</span><strong>{{ resolvedCourt()?.nombre || selectedTipoCancha() }}</strong></div>
+                <div class="list-line"><span>Fecha y bloque</span><strong>{{ summaryDateText() }} · {{ horarioText() }}</strong></div>
+                <div class="list-line"><span>Titular / Capitán</span><strong>{{ currentUser()?.nombre || 'Sin sesión iniciada' }}</strong></div>
+              </div>
+            </div>
+
+            <!-- Método de Pago -->
+            <div class="card" style="padding: 20px;">
+              <h2 style="font-size: 16px; margin: 0 0 12px 0;">Método de pago</h2>
+              <div class="stack" style="gap: 10px; margin-bottom: 16px;">
+                <label class="check">
+                  <input type="radio" checked name="metodo">
+                  Tarjeta (100% Online · Confirmación inmediata)
+                </label>
+                <label class="check muted" title="Yape deshabilitado para reservas online">
+                  <input type="radio" disabled name="metodo">
+                  Yape · No disponible online
+                </label>
+                <label class="check muted" title="Plin deshabilitado para reservas online">
+                  <input type="radio" disabled name="metodo">
+                  Plin · No disponible online
+                </label>
+              </div>
+
+              <!-- Panel de Tarjeta -->
+              <div class="stack" style="gap: 12px; background: var(--page); padding: 16px; border-radius: var(--radius); border: 1px solid var(--line);">
+                <div class="field">
+                  <label for="card-num" style="font-size: 12px; font-weight: 600;">Número de tarjeta</label>
+                  <input id="card-num" type="text" class="control" placeholder="4532 0000 0000 4242" maxlength="19" [(ngModel)]="cardNumber">
+                </div>
+                <div class="row" style="gap: 12px;">
+                  <div class="field" style="flex: 1;">
+                    <label for="card-exp" style="font-size: 12px; font-weight: 600;">Vencimiento</label>
+                    <input id="card-exp" type="text" class="control" placeholder="MM / AA" maxlength="5" [(ngModel)]="cardExpiry">
+                  </div>
+                  <div class="field" style="flex: 1;">
+                    <label for="card-cvv" style="font-size: 12px; font-weight: 600;">CVV</label>
+                    <input id="card-cvv" type="password" class="control" placeholder="CVV" maxlength="4" [(ngModel)]="cardCvv">
+                  </div>
+                </div>
+                <div class="field">
+                  <label for="card-holder" style="font-size: 12px; font-weight: 600;">Titular de la tarjeta</label>
+                  <input id="card-holder" type="text" class="control" placeholder="Nombre completo del titular" [(ngModel)]="cardHolder">
+                </div>
+
+                <!-- Simulador de Respuesta para Auditoría y QA -->
+                <div style="margin-top: 8px; border-top: 1px dashed var(--line); padding-top: 10px;">
+                  <small class="muted" style="display: block; margin-bottom: 6px; font-weight: 600; text-transform: uppercase;">Simulador de respuesta de pago</small>
+                  <div class="row" style="gap: 6px; flex-wrap: wrap;">
+                    <button
+                      type="button"
+                      class="btn"
+                      [class.primary]="cardSimulationOutcome() === 'approved'"
+                      (click)="cardSimulationOutcome.set('approved')"
+                    >
+                      ✓ Aprobado (100%)
+                    </button>
+                    <button
+                      type="button"
+                      class="btn"
+                      [style.background]="cardSimulationOutcome() === 'rejected' ? 'var(--danger)' : ''"
+                      [style.color]="cardSimulationOutcome() === 'rejected' ? 'white' : ''"
+                      (click)="cardSimulationOutcome.set('rejected')"
+                    >
+                      ✕ Rechazado
+                    </button>
+                    <button
+                      type="button"
+                      class="btn"
+                      [style.background]="cardSimulationOutcome() === 'timeout' ? 'var(--warning)' : ''"
+                      [style.color]="cardSimulationOutcome() === 'timeout' ? 'white' : ''"
+                      (click)="cardSimulationOutcome.set('timeout')"
+                    >
+                      ⏱ Timeout
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Calculadora Informativa de Convocados (División del Costo) -->
+            <div class="card" style="padding: 20px;">
+              <div class="row spread" style="align-items: center; margin-bottom: 12px;">
+                <h2 style="font-size: 16px; margin: 0;">Convocados para la pichanga</h2>
+                <span class="badge">{{ convocadosText() }}</span>
+              </div>
+              <p class="muted small" style="margin-top: 0;">Calculadora de cuota por amigo. Como titular pagas el 100% de la reserva online y compartes el código por WhatsApp.</p>
+
+              <div class="row" style="gap: 8px; margin-bottom: 16px; flex-wrap: wrap;">
+                <input type="tel" class="control" style="width: 130px;" placeholder="Celular" [(ngModel)]="newPlayerPhone" maxlength="9">
+                <input type="text" class="control" style="flex: 1; min-width: 150px;" placeholder="Nombre del jugador..." [(ngModel)]="newPlayerName">
+                <select class="control" style="width: 120px;" [(ngModel)]="newPlayerTipo">
+                  <option value="Registrado">Registrado</option>
+                  <option value="Invitado">Invitado</option>
+                </select>
+                <button type="button" class="btn" (click)="addPlayer()">
+                  <span class="material-symbols-outlined icon" aria-hidden="true">person_add</span>
+                  Agregar
+                </button>
+              </div>
+
+              <div class="list">
+                @for (player of players(); track player.id) {
+                  <div class="list-line" style="align-items: center;">
+                    <div class="row" style="align-items: center; gap: 8px;">
+                      <span class="avatar" style="width: 28px; height: 28px; font-size: 11px;">{{ player.name.charAt(0) }}</span>
+                      <span><strong>{{ player.name }}</strong> {{ player.isCaptain ? '(Tú · Capitán)' : '' }}</span>
+                    </div>
+                    <div class="row" style="align-items: center; gap: 8px;">
+                      @if (player.isCaptain) {
+                        <span class="badge success">Pagando ahora</span>
+                      } @else {
+                        <span class="badge">{{ fmt(cuotaPerPlayer()) }}</span>
+                        <button type="button" class="btn icon-only" style="padding: 2px;" (click)="removePlayer(player.id)" title="Quitar">
+                          <span class="material-symbols-outlined icon" aria-hidden="true">close</span>
+                        </button>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <!-- Estado de Autenticación -->
+            @if (!isLoggedIn()) {
+              <div class="notice warning">
+                <span class="material-symbols-outlined icon" aria-hidden="true">lock</span>
+                <div style="flex: 1;">
+                  <strong>Inicia sesión para reservar</strong>
+                  <p>Debes ingresar con tu cuenta de jugador para continuar con la reserva. Conservaremos la cancha y horarios seleccionados al volver.</p>
+                </div>
+                <a [routerLink]="['/login']" [queryParams]="{ returnUrl: returnUrl() }" class="btn primary">
+                  Iniciar sesión
+                </a>
+              </div>
+            } @else {
+              <div class="notice success">
+                <span class="material-symbols-outlined icon" aria-hidden="true">account_circle</span>
+                <div>
+                  <strong>Sesión activa: {{ currentUser()?.nombre }} ({{ currentUser()?.email }})</strong>
+                  <p>La reserva se confirmará de forma inmediata en el servidor tras el cobro.</p>
+                </div>
+              </div>
+            }
+
+            <!-- Alerta de Error de Confirmación -->
+            @if (confirmError()) {
+              <div class="notice danger" role="alert">
+                <span class="material-symbols-outlined icon" aria-hidden="true">error</span>
+                <div>
+                  <strong>Error al procesar reserva</strong>
+                  <p>{{ confirmError() }}</p>
+                </div>
+              </div>
+            }
+
+            <!-- Botones de Navegación del Paso 2 -->
+            <div class="row spread" style="margin-top: 8px;">
+              <button type="button" class="btn" (click)="goToPaso(1)">
+                <span class="material-symbols-outlined icon" aria-hidden="true">arrow_back</span>
+                Volver a Horarios
+              </button>
+              <button
+                type="button"
+                class="btn primary"
+                [disabled]="!canSubmitReservation()"
+                (click)="confirmarReserva()"
+              >
+                @if (submitting()) {
+                  <span class="material-symbols-outlined icon" aria-hidden="true">hourglass_empty</span>
+                  <span>Registrando reserva...</span>
+                } @else {
+                  <span class="material-symbols-outlined icon" aria-hidden="true">lock</span>
+                  <span>Confirmar y pagar {{ fmt(totalToPayNow()) }}</span>
+                }
+              </button>
+            </div>
+          </section>
+
+          <!-- Resumen Sticky Col -->
+          <aside class="summary" aria-label="Resumen de pago">
+            <h2>Resumen</h2>
+            <div class="list">
+              <div class="list-line"><span>Cancha</span><strong>{{ resolvedCourt()?.nombre || selectedTipoCancha() }}</strong></div>
+              <div class="list-line"><span>Fecha</span><strong>{{ summaryDateText() }}</strong></div>
+              <div class="list-line"><span>Bloque</span><strong>{{ horarioText() }}</strong></div>
+              <div class="list-line"><span>Duración</span><strong>{{ horasLabel() }}</strong></div>
+              <div class="list-line"><span>Tarifa base</span><strong>{{ fmt(subtotal()) }}</strong></div>
+              @if (couponApplied()) {
+                <div class="list-line" style="color: var(--primary);">
+                  <span>Descuento {{ couponCodeInput() }}</span>
+                  <strong>- {{ fmt(discountAmount()) }}</strong>
+                </div>
+              }
+              <div class="list-line">
+                <span>Total a pagar</span>
+                <strong class="total">{{ fmt(total()) }}</strong>
+              </div>
+            </div>
+
+            <!-- Cupón de Descuento -->
+            <div style="border-top: 1px solid var(--line); padding-top: 12px; margin-top: 8px;">
+              <small class="muted" style="display: block; margin-bottom: 6px; font-weight: 600;">¿Tienes un cupón?</small>
+              <div class="row" style="gap: 6px;">
+                <input type="text" class="control" placeholder="Ej: PROMO10" [(ngModel)]="couponCodeInput" style="flex: 1;">
+                <button type="button" class="btn" (click)="applyCoupon()">Aplicar</button>
+              </div>
+              @if (couponMessage()) {
+                <p class="small muted" style="margin-top: 4px;">{{ couponMessage() }}</p>
+              }
+            </div>
+
+            <p class="muted small" style="margin-top: 8px;">Pago online del 100%. Sin recargo automático al jugador.</p>
+
+            <button
+              type="button"
+              class="btn primary"
+              style="width: 100%; justify-content: center; margin-top: 8px; height: 42px;"
+              [disabled]="!canSubmitReservation()"
+              (click)="confirmarReserva()"
+            >
+              @if (submitting()) {
+                <span>Procesando...</span>
+              } @else {
+                <span>Pagar {{ fmt(totalToPayNow()) }}</span>
+              }
+            </button>
+          </aside>
+        </div>
+      }
+
+      @case (3) {
+        <!-- ==================== PASO 3: CONFIRMACIÓN ==================== -->
+        <div class="result-page">
+          <div class="result-heading success">
+            <span class="result-symbol"><span class="material-symbols-outlined icon" aria-hidden="true">check_circle</span></span>
+            <div>
+              <span class="badge success">Reserva confirmada</span>
+              <h1 style="font-size: 24px; margin: 6px 0 4px;">¡Tu partido ya tiene cancha!</h1>
+              <p class="muted small" style="margin: 0;">Un solo bloque continuo confirmado en el servidor.</p>
+            </div>
+          </div>
+
+          <div class="result-layout">
+            <div>
+              <dl class="booking-facts">
+                <div><dt>Código</dt><dd style="color: var(--orange); font-weight: 700;">{{ reservaCode() }}</dd></div>
+                <div><dt>Estado</dt><dd style="color: var(--primary);">{{ reservaStatus() }}</dd></div>
+                <div><dt>Sede</dt><dd>{{ selectedComplejo().name }}</dd></div>
+                <div><dt>Cancha</dt><dd>{{ resolvedCourt()?.nombre || selectedTipoCancha() }}</dd></div>
+                <div><dt>Fecha</dt><dd>{{ summaryDateText() }}</dd></div>
+                <div><dt>Bloque</dt><dd>{{ horarioText() }} ({{ horasLabel() }})</dd></div>
+                <div><dt>Ubicación</dt><dd>{{ selectedComplejo().address }}</dd></div>
+              </dl>
+
+              <div class="result-actions" style="margin-top: 24px;">
+                <a routerLink="/itinerario" class="btn primary">
+                  <span class="material-symbols-outlined icon" aria-hidden="true">event_available</span>
+                  Ir a Mi Itinerario
+                </a>
+                <a routerLink="/sedes" class="btn">
+                  <span class="material-symbols-outlined icon" aria-hidden="true">sports_soccer</span>
+                  Ver más canchas
+                </a>
+              </div>
+            </div>
+
+            <aside class="summary">
+              <h2>Resumen del bloque</h2>
+              <div class="list">
+                <div class="list-line"><span>Monto pagado</span><strong style="color: var(--primary);">{{ fmt(paidAmount()) }}</strong></div>
+                <div class="list-line"><span>Saldo pendiente</span><strong>{{ fmt(balanceAmount()) }}</strong></div>
+                @if (paymentOpNumber()) {
+                  <div class="list-line"><span>Operación</span><code style="font-family: monospace;">{{ paymentOpNumber() }}</code></div>
+                }
+              </div>
+              <p class="muted small">Pago con tarjeta · Saldo cubierto al 100% online.</p>
+            </aside>
+          </div>
+        </div>
+      }
+    }
+  </main>
+
+  <!-- ==================== MODAL DE CONFIRMACIÓN DE RESERVA ==================== -->
+  @if (showSuccess()) {
+    <div class="dialog-backdrop is-visible" (click)="onModalBackdrop($event)">
+      <div class="dialog result-modal" role="dialog" aria-modal="true" aria-label="Reserva confirmada">
+        <div class="dialog-header">
+          <div class="row" style="align-items: center; gap: 8px;">
+            <span class="material-symbols-outlined icon" style="color: var(--primary); font-size: 22px;" aria-hidden="true">verified</span>
+            <h2 style="font-size: 16px; margin: 0;">Reserva Confirmada</h2>
+          </div>
+          <button type="button" class="btn icon-only" (click)="showSuccess.set(false)" title="Cerrar modal" aria-label="Cerrar">
+            <span class="material-symbols-outlined icon" aria-hidden="true">close</span>
+          </button>
+        </div>
+
+        <div class="dialog-body" style="padding: 20px;">
+          <div class="result-heading success" style="border: none; padding-bottom: 12px; margin-bottom: 12px;">
+            <span class="result-symbol"><span class="material-symbols-outlined icon" aria-hidden="true">check_circle</span></span>
+            <div>
+              <span class="badge success">Pago 100% online aprobado</span>
+              <h1 style="font-size: 20px; margin: 4px 0 2px;">{{ reservaCode() }}</h1>
+              <p class="muted small" style="margin: 0;">¡Tu reserva y pago 100% online fueron procesados con éxito!</p>
+            </div>
+          </div>
+
+          <dl class="booking-facts" style="border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); margin: 0 0 16px 0;">
+            <div><dt>Código</dt><dd style="color: var(--orange); font-weight: 700;">{{ reservaCode() }}</dd></div>
+            <div><dt>Estado reserva</dt><dd style="color: var(--primary);">{{ reservaStatus() }}</dd></div>
+            <div><dt>Estado pago</dt><dd style="color: var(--primary);">{{ paymentStatus() }}</dd></div>
+            @if (paymentOpNumber()) {
+              <div><dt>Operación</dt><dd style="font-family: monospace;">{{ paymentOpNumber() }}</dd></div>
+            }
+            <div><dt>Sede</dt><dd>{{ selectedComplejo().name }}</dd></div>
+            <div><dt>Cancha</dt><dd>{{ resolvedCourt()?.nombre || selectedTipoCancha() }}</dd></div>
+            <div><dt>Fecha y hora</dt><dd>{{ summaryDateText() }} · {{ horarioText() }}</dd></div>
+            <div><dt>Total pagado</dt><dd style="color: var(--primary); font-weight: 700;">{{ fmt(paidAmount()) }}</dd></div>
+            <div><dt>Saldo pendiente</dt><dd>{{ fmt(balanceAmount()) }}</dd></div>
+          </dl>
+
+          <div class="row" style="gap: 8px; justify-content: flex-end;">
+            <button type="button" class="btn" (click)="showSuccess.set(false)">
+              Seguir navegando
+            </button>
+            <a routerLink="/itinerario" class="btn primary">
+              <span class="material-symbols-outlined icon" aria-hidden="true">event_available</span>
+              Ver en Mi Itinerario
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+}
+

@@ -1,0 +1,232 @@
+<main class="container" id="main">
+  <div class="page-title">
+    <h1>Sedes deportivas</h1>
+    <p>Encuentra una cancha para tu próximo partido.</p>
+  </div>
+
+  <div class="catalog-layout">
+    <aside class="filters" aria-label="Filtros">
+      <h2>Encuentra tu sede</h2>
+
+      <label class="field">
+        <span>Nombre o ubicación</span>
+        <input
+          type="text"
+          id="searchInput"
+          placeholder="Sede, distrito o dirección"
+          autocomplete="off"
+          [value]="busqueda()"
+          (input)="onSearch($event)">
+      </label>
+
+      <label class="field">
+        <span>Ciudad</span>
+        <select id="citySelect" [value]="ciudad()" (change)="onCityChange($event)">
+          <option value="all">Todas las ciudades</option>
+          @for (city of cities(); track city) {
+            <option [value]="city">{{ capitalize(city) }}</option>
+          }
+        </select>
+      </label>
+
+      <label class="field">
+        <span>Distrito</span>
+        <select id="districtSelect" [value]="distrito()" (change)="onDistritoChange($event)">
+          <option value="all">{{ distritoOptions().topLabel }}</option>
+          @for (group of distritoOptions().groups; track group.label) {
+            <optgroup [attr.label]="group.label">
+              @for (dist of group.districts; track dist) {
+                <option [value]="dist">{{ capitalize(dist) }}</option>
+              }
+            </optgroup>
+          }
+        </select>
+      </label>
+
+      <label class="field">
+        <span>Formato</span>
+        <select id="formatoSelect" [value]="courtFilters.formato()" (change)="courtFilters.setFormato($any($event.target).value)">
+          @for (opt of courtFilters.formatoOptions; track opt.value) {
+            <option [value]="opt.value">{{ opt.label }}</option>
+          }
+        </select>
+      </label>
+
+      <label class="field">
+        <span>Superficie</span>
+        <select id="superficieSelect" [value]="courtFilters.superficie()" (change)="courtFilters.setSuperficie($any($event.target).value)">
+          @for (opt of courtFilters.superficieOptions; track opt.value) {
+            <option [value]="opt.value">{{ opt.label }}</option>
+          }
+        </select>
+      </label>
+
+      <label class="field">
+        <span>Cobertura</span>
+        <select id="coberturaSelect" [value]="courtFilters.cobertura()" (change)="courtFilters.setCobertura($any($event.target).value)">
+          @for (opt of courtFilters.coberturaOptions; track opt.value) {
+            <option [value]="opt.value">{{ opt.label }}</option>
+          }
+        </select>
+      </label>
+
+      <label class="field">
+        <span>Equipamiento</span>
+        <select id="equipamientoSelect" [value]="courtFilters.equipamiento()" (change)="courtFilters.setEquipamiento($any($event.target).value)">
+          @for (opt of courtFilters.equipamientoOptions; track opt.value) {
+            <option [value]="opt.value">{{ opt.label }}</option>
+          }
+        </select>
+      </label>
+
+      <!-- Píldoras de filtro rápido: Todas / Favoritas -->
+      <div class="filter-group">
+        <strong class="small">Vistas rápidas</strong>
+        <div class="row" style="gap: 8px;">
+          <button type="button" class="btn btn-sm" [class.primary]="pills().all" (click)="selectView('all')">
+            <span class="material-symbols-outlined icon-16" aria-hidden="true">grid_view</span>
+            Todas las Sedes
+          </button>
+          <button type="button" class="btn btn-sm" disabled title="Favoritos pendientes de conexión con tu cuenta">
+            <span class="material-symbols-outlined icon-16 fill-1" style="color: var(--orange);" aria-hidden="true">star</span>
+            Mis Favoritas (<span>{{ countFav() }}</span>)
+          </button>
+        </div>
+      </div>
+
+      <button type="button" class="btn btn-outline" (click)="resetFilters()">
+        <span class="material-symbols-outlined icon-16" aria-hidden="true">filter_alt_off</span>
+        Limpiar filtros
+      </button>
+    </aside>
+
+    <section class="catalog-results" aria-label="Resultados">
+      <div class="results-head">
+        <p><strong data-results-count>{{ filteredVenues().length }}</strong> sedes encontradas</p>
+        <span class="muted small">{{ ciudad() === 'all' ? 'Todas las ciudades' : capitalize(ciudad()) }}</span>
+      </div>
+
+      @if (isLoading()) {
+        <div class="stack" aria-busy="true">
+          @for (i of [1, 2, 3]; track i) {
+            <article class="card venue-card" aria-label="Cargando">
+              <div class="photo-placeholder skeleton" style="height: 100%; min-height: 170px;"></div>
+              <div class="venue-body">
+                <div class="skeletons" aria-hidden="true">
+                  <span class="skeleton short"></span>
+                  <span class="skeleton"></span>
+                  <span class="skeleton photo"></span>
+                  <span class="skeleton button"></span>
+                </div>
+              </div>
+            </article>
+          }
+        </div>
+      } @else {
+        <div class="stack" id="venuesContainer">
+          @for (venue of filteredVenues(); track venue.id) {
+            <article class="card public-venue">
+              <div class="photo-wrapper">
+                <img class="venue-photo" [src]="venue.fotos[0] || fallbackVenueImg" (error)="onImgError($event)" [alt]="venue.nombre">
+                <button type="button" class="btn icon-only fav-btn" disabled title="Favoritos pendientes de conexión con tu cuenta" aria-label="Guardar en favoritos, próximamente">
+                  <span class="material-symbols-outlined icon-18 icon" [class.fill-1]="favorites().has(venue.id)" aria-hidden="true">star</span>
+                </button>
+                <button type="button" class="btn icon-only alert-btn" disabled title="Notificaciones de horarios (próximamente)" aria-label="Notificaciones de horarios próximamente">
+                  <span class="material-symbols-outlined icon-18 icon" aria-hidden="true">notifications</span>
+                </button>
+              </div>
+
+              <div class="venue-body">
+                <div class="row spread">
+                  <h3>{{ venue.nombre }}</h3>
+                  <span class="badge success">Sede activa</span>
+                </div>
+
+                <p class="venue-location">
+                  <span class="material-symbols-outlined icon-16" aria-hidden="true">location_on</span>
+                  {{ venue.distrito ? (venue.distrito + ', ' + venue.ciudad) : venue.direccion }}
+                </p>
+
+                <div class="row" style="gap: 6px;">
+                  @for (amenidad of venue.amenidades.slice(0, 4); track amenidad) {
+                    <span class="badge">{{ amenidad }}</span>
+                  }
+                  @if (venue.amenidades.length > 4) {
+                    <span class="badge muted">+{{ venue.amenidades.length - 4 }}</span>
+                  }
+                </div>
+
+                <p class="venue-description">
+                  {{ venue.direccion }} ·
+                  <span class="live-status">
+                    <span class="pulse-dot"></span>
+                    {{ disponibleCount(venue) }} canchas libres
+                  </span>
+                </p>
+
+                <div class="row spread" style="align-items: center; margin-top: 8px;">
+                  <span class="price">
+                    S/ {{ venue.precioBase }}.00 <small>/ hora · desde</small>
+                  </span>
+                  <div class="row" style="gap: 8px;">
+                    @if (hasVenueCoordinates(venue)) {
+                    <a [href]="getDirectionsUrl(venue)" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm" title="¿Cómo llegar? Abrir ruta en Google Maps">
+                      <span class="material-symbols-outlined icon-14" aria-hidden="true">explore</span>
+                      Ruta
+                    </a>
+                    } @else {
+                      <button type="button" class="btn btn-outline btn-sm" disabled title="La sede no tiene una ubicación registrada">
+                        <span class="material-symbols-outlined icon-14" aria-hidden="true">explore</span>Ruta
+                      </button>
+                    }
+                    <a [routerLink]="['/sedes', venue.id]" class="btn primary btn-sm" (click)="stop($event)">
+                      <span class="material-symbols-outlined icon-16" aria-hidden="true">arrow_forward</span>
+                      Ver canchas
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </article>
+          }
+        </div>
+      }
+
+      @if (filteredVenues().length === 0 && !isLoading()) {
+        @if (venues().length === 0) {
+          <div class="results-empty">
+            <article class="card state">
+              <span class="material-symbols-outlined icon-32" aria-hidden="true">sports_soccer</span>
+              <h3>Actualmente no hay canchas disponibles. Vuelve pronto.</h3>
+              <p>¿Eres dueño o administrador de un complejo deportivo? Forma parte de la red de Canchero y empieza a llenar tus horarios libres con jugadores cercanos.</p>
+              <div class="row" style="justify-content: center; margin-top: 12px;">
+                <a routerLink="/registro" [queryParams]="{ rol: 'dueno' }" class="btn primary">
+                  <span class="material-symbols-outlined icon-18" aria-hidden="true">storefront</span>
+                  Publica tu cancha aquí
+                </a>
+              </div>
+            </article>
+          </div>
+        } @else {
+          <div class="results-empty">
+            <article class="card state">
+              <span class="material-symbols-outlined icon-32" aria-hidden="true">search_off</span>
+              <h3>No encontramos sedes con ese criterio</h3>
+              <p>Intenta buscando en otro distrito o seleccionando "Todas las opciones" en el tipo de cancha.</p>
+              <div class="row" style="justify-content: center; margin-top: 12px;">
+                <button type="button" class="btn primary" (click)="resetFilters()">
+                  <span class="material-symbols-outlined icon-18" aria-hidden="true">refresh</span>
+                  Restablecer Filtros
+                </button>
+              </div>
+            </article>
+          </div>
+        }
+      }
+    </section>
+  </div>
+
+  <div class="toast-popup" [class.show]="toastVisible()">
+    <span class="material-symbols-outlined icon-20 icon" [style.color]="toastAlert() ? 'var(--orange)' : 'var(--primary)'" aria-hidden="true">{{ toastAlert() ? 'notifications_active' : 'check_circle' }}</span>
+    <span>{{ toastText() }}</span>
+  </div>
+</main>

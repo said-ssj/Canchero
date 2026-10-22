@@ -1,0 +1,264 @@
+/* ==========================================================================
+   CANCHERO — Detalle de Sede (detalle.html)
+   Sistema de diseño: layout detalles 2 columnas + resumen sticky + venue-card
+   ========================================================================== */
+
+.crumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.crumb a {
+  text-decoration: none;
+}
+
+.details-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 32px;
+  align-items: start;
+}
+
+.venue-cover-wrapper {
+  position: relative;
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.venue-cover {
+  width: 100%;
+  height: 276px;
+  border-radius: var(--card-radius);
+  object-fit: cover;
+  object-position: center 55%;
+  border: 1px solid var(--line);
+  display: block;
+}
+
+.carousel-top-controls {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  gap: 8px;
+  z-index: 2;
+}
+
+.carousel-prev,
+.carousel-next {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+.carousel-prev {
+  left: 12px;
+}
+
+.carousel-next {
+  right: 12px;
+}
+
+.amenities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.amenities span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.venue-card {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  min-height: 170px;
+  border: 1px solid var(--line);
+  border-radius: var(--card-radius);
+  background: var(--surface);
+  overflow: hidden;
+  padding: 0;
+}
+
+.venue-card.selected {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 1px var(--primary);
+}
+
+.venue-card .venue-photo {
+  height: 100%;
+  width: 200px;
+  min-height: 170px;
+  object-fit: cover;
+  display: block;
+}
+
+.venue-card .venue-body {
+  padding: 18px 20px;
+  display: grid;
+  align-content: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.venue-card .venue-body h3 {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--ink);
+}
+
+.field-select-sm {
+  height: 32px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0 8px;
+  font-size: 12px;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.summary {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--card-radius);
+  padding: 24px;
+  display: grid;
+  gap: 16px;
+  position: sticky;
+  top: 24px;
+}
+
+.summary h2 {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--ink);
+}
+
+.list-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+}
+
+.divider {
+  height: 1px;
+  background: var(--line);
+  margin: 4px 0;
+}
+
+/* Modales */
+.modal-overlay-classic {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.modal-window-classic {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--card-radius);
+  padding: 24px;
+  max-width: 480px;
+  width: 100%;
+  position: relative;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.15);
+}
+
+.modal-close-btn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toast-popup {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--ink);
+  color: #ffffff;
+  padding: 10px 18px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 600;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  pointer-events: none;
+}
+
+.toast-popup.show {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+@media (max-width: 1060px) {
+  .details-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 760px) {
+  .details-layout {
+    gap: 20px;
+  }
+  .venue-cover {
+    height: 200px;
+  }
+  .venue-card {
+    grid-template-columns: 88px minmax(0, 1fr);
+  }
+  .venue-card .venue-photo {
+    width: 88px;
+    min-height: 100%;
+  }
+  .venue-card .venue-body {
+    padding: 12px;
+  }
+  .venue-card .venue-body h3 {
+    font-size: 15px;
+  }
+  .summary {
+    padding: 18px;
+  }
+}

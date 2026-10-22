@@ -1,0 +1,12 @@
+.footer { margin-top: 32px; }
+
+.footer-pending {
+  display: inline-block;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #a5abb2;
+  font: inherit;
+  text-align: left;
+  cursor: default;
+}

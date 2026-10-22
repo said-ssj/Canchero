@@ -1,0 +1,38 @@
+import { Injectable, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { environment } from '@env/environment';
+
+export interface ReviewResponse {
+  id: string;
+  venueId?: string;
+  sedeId?: string;
+  playerName?: string;
+  clienteNombre?: string;
+  puntuacion: number;
+  comentario: string;
+  fecha?: string;
+}
+
+export interface PublishReviewData {
+  venueId: string;
+  playerId: string;
+  bookingId: string;
+  puntuacion: number;
+  comentario: string;
+  playerName?: string;
+}
+
+@Injectable({ providedIn: 'root' })
+export class ReviewService {
+  private readonly http = inject(HttpClient);
+  getByVenue(venueId: string): Observable<ReviewResponse[]> {
+    return this.http
+      .get<ReviewResponse[]>(`${environment.apiUrl}/reviews/sede/${venueId}`);
+  }
+
+  publish(data: PublishReviewData): Observable<ReviewResponse> {
+    return this.http
+      .post<ReviewResponse>(`${environment.apiUrl}/reviews`, data);
+  }
+}

@@ -1,0 +1,445 @@
+/* ==========================================================================
+   CANCHERO — Horarios, Selección, Checkout y Modelo de Pago
+   Diseño canónico según prototipo checkout.html, pago.html, confirmacion.html
+   ========================================================================== */
+
+/* Contexto superior de la Cancha */
+.court-context {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.court-context img {
+  width: 88px;
+  height: 72px;
+  border-radius: var(--radius);
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.court-context h1 {
+  font-size: 22px;
+  margin: 0 0 4px 0;
+  color: var(--ink);
+}
+
+@media (max-width: 600px) {
+  .court-context {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .court-context img {
+    width: 100%;
+    height: 140px;
+  }
+}
+
+/* Indicador de Pasos Canchero */
+.steps {
+  display: flex;
+  gap: 24px;
+  font-size: 13px;
+  color: var(--muted);
+  margin: 16px 0 24px 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+.steps strong {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+/* Layout Principal de 2 Columnas */
+.checkout-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 320px);
+  gap: 28px;
+  align-items: start;
+}
+
+.checkout-layout > * {
+  min-width: 0;
+}
+
+@media (max-width: 900px) {
+  .checkout-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Encabezado del Calendario */
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+/* Matriz de Calendario Semanal */
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.calendar-table {
+  table-layout: fixed;
+  min-width: 620px;
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.calendar-table th,
+.calendar-table td {
+  text-align: center;
+  padding: 6px 4px;
+  white-space: normal;
+  border-bottom: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+}
+
+.calendar-table th:last-child,
+.calendar-table td:last-child {
+  border-right: none;
+}
+
+.calendar-table thead tr:last-child th {
+  border-bottom: 2px solid var(--line);
+}
+
+.calendar-table th {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 500;
+  background: var(--page);
+}
+
+.calendar-table th strong {
+  display: block;
+  font-size: 15px;
+  color: var(--ink);
+  margin: 2px 0;
+}
+
+.calendar-table th.is-today {
+  background: var(--soft);
+  color: var(--primary);
+}
+
+.calendar-table th.is-today strong {
+  color: var(--primary);
+}
+
+.calendar-table th:first-child,
+.calendar-table td:first-child {
+  width: 68px;
+  background: var(--page);
+  font-weight: 600;
+  font-size: 11px;
+}
+
+/* Slot Interactivo de Horario */
+.calendar-table .slot {
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--ink);
+  width: 100%;
+  min-height: 44px;
+  height: 48px;
+  font-size: 11px;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  text-align: center;
+  gap: 1px;
+  padding: 4px 2px;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.slot small {
+  font-size: 9px;
+  color: var(--muted);
+}
+
+.slot:disabled {
+  background: #f1f3f5;
+  color: var(--disabled-ink);
+  border-color: #e5e7eb;
+  cursor: not-allowed;
+}
+
+.calendar-table .slot.chosen,
+.calendar-table .slot[aria-pressed="true"] {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+}
+
+.calendar-table .slot.chosen small,
+.calendar-table .slot[aria-pressed="true"] small {
+  color: white;
+}
+
+.slot:disabled.closed,
+.slot.closed:disabled {
+  background: #fef3eb;
+  color: var(--warning);
+  border-color: #f9d8c3;
+}
+
+/* Leyenda del Calendario */
+.calendar-legend {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  margin: 12px 0 16px 0;
+}
+
+.legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+}
+
+.legend:before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border: 1px solid var(--line);
+  background: white;
+  border-radius: 2px;
+}
+
+.legend.chosen:before {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.legend.busy:before {
+  background: #e5e7eb;
+  border-color: #d1d5db;
+}
+
+.legend.closed:before {
+  background: #fef3eb;
+  border-color: #f9d8c3;
+}
+
+/* Línea de Selección */
+.selection-line {
+  padding: 12px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  font-size: 13px;
+}
+
+.selection-line output {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.calendar-note {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 8px;
+}
+
+/* Resumen Lateral Sticky */
+.summary {
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+  align-self: start;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--card-radius);
+  padding: 24px;
+  display: grid;
+  gap: 16px;
+  position: sticky;
+  top: 80px;
+}
+
+.summary > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.summary > p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.checkout-layout .list-line {
+  display: grid;
+  grid-template-columns: minmax(56px, 0.7fr) minmax(0, 1.3fr);
+  align-items: start;
+  gap: 12px;
+  min-width: 0;
+}
+
+.checkout-layout .list-line > :is(span, strong) {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.checkout-layout .list-line > strong {
+  text-align: right;
+}
+
+.summary > .btn {
+  width: 100%;
+  min-width: 0;
+  white-space: normal;
+  justify-content: center;
+}
+
+.summary h2 {
+  font-size: 18px;
+  margin: 0;
+  color: var(--ink);
+}
+
+.summary .total {
+  font-size: 22px;
+  color: var(--primary);
+}
+
+/* Pantalla de Confirmación y Resultados (confirmacion.html) */
+.result-page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 16px 0;
+}
+
+.result-heading {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  padding: 12px 0 24px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 24px;
+}
+
+.result-symbol {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius);
+  background: var(--soft);
+  color: var(--primary);
+}
+
+.result-symbol .icon {
+  font-size: 28px;
+}
+
+.result-heading.success .result-symbol {
+  background: var(--soft);
+  color: var(--primary);
+}
+
+.result-heading.danger .result-symbol {
+  background: #fee2e2;
+  color: var(--danger);
+}
+
+.result-heading.warning .result-symbol {
+  background: #ffedd5;
+  color: var(--warning);
+}
+
+.result-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 32px;
+}
+
+@media (max-width: 768px) {
+  .result-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.booking-facts {
+  display: grid;
+  gap: 0;
+  margin: 0;
+}
+
+.booking-facts > div {
+  display: grid;
+  grid-template-columns: 130px minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+}
+
+.booking-facts dt {
+  color: var(--muted);
+}
+
+.booking-facts dd {
+  margin: 0;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.result-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+/* Modal Dialog */
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.dialog.result-modal {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--card-radius);
+  max-width: 520px;
+  width: 100%;
+  overflow: hidden;
+}
+
+.dialog-header {
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--line);
+}
+
+.dialog-body {
+  padding: 20px;
+}

@@ -1,0 +1,15 @@
+/* Entry point. Keep this order: later files refine the earlier styles. */
+@import './styles/01-base.css';
+@import './styles/02-utilidades.css';
+@import './styles/03-sedes.css';
+@import './styles/04-canchas.css';
+@import './styles/05-caja.css';
+@import './styles/06-pos.css';
+@import './styles/07-material.css';
+@import './styles/08-mapa-perfil.css';
+@import './styles/09-material-ajustes.css';
+@import './styles/10-vistas-ajustes.css';
+@import './styles/11-layout.css';
+@import './styles/12-formularios.css';
+@import './styles/13-horarios.css';
+@import './styles/personalizacion.css';

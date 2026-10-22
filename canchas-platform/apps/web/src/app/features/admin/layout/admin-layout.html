@@ -1,0 +1,265 @@
+<mat-sidenav-container class="admin-shell mat-admin-shell" [class.sidebar-collapsed]="sidebarCollapsed()">
+
+  <!-- ==========================================================================
+       1. SIDEBAR FIJO A LA IZQUIERDA
+       ========================================================================== -->
+  <mat-sidenav class="admin-sidebar" id="adminSidebar" mode="side" [opened]="true" [class.is-open]="mobileSidebarOpen()" [class.is-collapsed]="sidebarCollapsed()">
+    <div class="sidebar-content">
+      <!-- Cabecera del Sidebar -->
+      <div class="sidebar-header">
+        <div class="sidebar-brand">
+          <div class="brand-icon-admin">
+            <mat-icon aria-hidden="true">sports_soccer</mat-icon>
+          </div>
+          <div class="sidebar-brand-text">
+            <span class="sidebar-brand-name">Canchero<span class="brand-accent">.MVP</span></span>
+            <span class="sidebar-brand-tag">Admin Sede</span>
+          </div>
+        </div>
+        <button mat-icon-button id="closeMobileSidebar" (click)="closeMobileSidebar()" aria-label="Cerrar menú lateral" class="sidebar-close-btn">
+          <mat-icon aria-hidden="true">close</mat-icon>
+        </button>
+      </div>
+
+      <!-- Menú de Navegación del Administrador -->
+      <nav class="sidebar-nav">
+        <!-- 1. Mi Sede -->
+        <a class="sidebar-nav-item" routerLink="/admin/sedes" routerLinkActive="active" (click)="closeMobileSidebar()" matRipple>
+          <span class="material-symbols-outlined icon sidebar-nav-icon" aria-hidden="true">stadium</span>
+          <span>Mi Sede</span>
+        </a>
+
+        <!-- 2. Mis Canchas -->
+        <a class="sidebar-nav-item" routerLink="/admin/canchas" routerLinkActive="active" (click)="closeMobileSidebar()" matRipple>
+          <span class="material-symbols-outlined icon sidebar-nav-icon" aria-hidden="true">sports_soccer</span>
+          <span>Mis Canchas</span>
+        </a>
+
+        <!-- 3. Reservas & Operaciones -->
+        <a class="sidebar-nav-item" routerLink="/admin/reservas" routerLinkActive="active" (click)="closeMobileSidebar()" matRipple>
+          <span class="material-symbols-outlined icon sidebar-nav-icon" aria-hidden="true">calendar_month</span>
+          <span>Reservas & Operaciones</span>
+          @if (pendientesCount() > 0) {
+            <span class="sidebar-status-badge is-warning">{{ pendientesBadgeText() }}</span>
+          }
+        </a>
+
+        <!-- 4. Caja Operativa & Turnos -->
+        <a class="sidebar-nav-item" routerLink="/admin/caja" routerLinkActive="active" (click)="closeMobileSidebar()" matRipple>
+          <span class="material-symbols-outlined icon sidebar-nav-icon" aria-hidden="true">point_of_sale</span>
+          <span>Caja Operativa & Turnos</span>
+          @if (cajaAbierta()) {
+            <span class="sidebar-status-badge is-open">Abierta</span>
+          } @else {
+            <span class="sidebar-status-badge is-closed">Cerrada</span>
+          }
+        </a>
+
+        <!-- 4.5. Punto de Venta (POS) & Kardex -->
+        <a class="sidebar-nav-item" routerLink="/admin/pos" routerLinkActive="active" (click)="closeMobileSidebar()" matRipple>
+          <span class="material-symbols-outlined icon sidebar-nav-icon" aria-hidden="true">shopping_cart</span>
+          <span>Punto de Venta (POS) & Kardex</span>
+          @if (stockCriticoCount() > 0) {
+            <span class="sidebar-status-badge is-warning">{{ stockCriticoCount() }}</span>
+          }
+        </a>
+
+        <!-- 5. Finanzas & Liquidación -->
+        <a class="sidebar-nav-item" routerLink="/admin/finanzas" routerLinkActive="active" (click)="closeMobileSidebar()" matRipple>
+          <span class="material-symbols-outlined icon sidebar-nav-icon" aria-hidden="true">payments</span>
+          <span>Finanzas & Liquidación</span>
+        </a>
+
+        <!-- 6. Personalización & QR -->
+        <a class="sidebar-nav-item" routerLink="/admin/personalizacion" routerLinkActive="active" (click)="closeMobileSidebar()" matRipple>
+          <span class="material-symbols-outlined icon sidebar-nav-icon" aria-hidden="true">qr_code_2</span>
+          <span>Personalización & QR</span>
+        </a>
+
+        <!-- 7. Configuración -->
+        <a class="sidebar-nav-item" routerLink="/admin/configuracion" routerLinkActive="active" (click)="closeMobileSidebar()" matRipple>
+          <span class="material-symbols-outlined icon sidebar-nav-icon" aria-hidden="true">settings</span>
+          <span>Configuración</span>
+        </a>
+      </nav>
+    </div>
+
+    <!-- Pie del Sidebar: Perfil & Logout -->
+    <div class="sidebar-footer">
+      <div class="user-profile-row">
+        <div class="user-avatar-sm">
+          <div class="avatar-placeholder" matRipple [matRippleCentered]="true">
+            {{ initials(nombreAdmin()) }}
+          </div>
+        </div>
+        <div class="user-profile-info">
+          <strong>{{ nombreAdmin() }}</strong>
+          <span>Dueño Sede</span>
+        </div>
+      </div>
+      <button type="button" class="btn-logout-sidebar" (click)="cerrarSesionAdmin()" matRipple>
+        <mat-icon class="icon-16" aria-hidden="true">logout</mat-icon>
+        <span>Cerrar Sesión</span>
+      </button>
+    </div>
+  </mat-sidenav>
+
+  <!-- ==========================================================================
+       2. CONTENEDOR DERECHO (TopBar Superior + Contenido que cambia)
+       ========================================================================== -->
+  <mat-sidenav-content class="admin-content-wrapper">
+
+    <!-- Header Superior Fijo del Dashboard -->
+    <mat-toolbar class="admin-top-header" color="primary">
+      <div class="admin-top-left">
+        <button id="openMobileSidebar" mat-icon-button (click)="toggleSidebar()" aria-label="Alternar menú lateral" class="mobile-menu-btn">
+          <mat-icon aria-hidden="true">menu</mat-icon>
+        </button>
+
+        <!-- Selector de Sede con mat-select -->
+        <mat-form-field class="venue-picker-field" appearance="outline" subscriptSizing="dynamic">
+          <mat-label>{{ context.loading() ? 'Cargando sedes' : sedesDelDueno().length ? 'Sede' : 'Sin sedes disponibles' }}</mat-label>
+          <mat-icon matPrefix aria-hidden="true">location_on</mat-icon>
+          <mat-select [disabled]="context.loading() || !sedesDelDueno().length" [value]="sedeDelDueno()?.id || ''" (selectionChange)="seleccionarSede($event.value)">
+            @for (sedeOpt of sedesDelDueno(); track sedeOpt.id) {
+              <mat-option [value]="sedeOpt.id">{{ sedeOpt.nombre }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <!-- Estado de las canchas -->
+        <div class="status-live-chip">
+          <span class="pulse-dot"></span>
+          <span>{{ activasCount() }} de {{ totalLosas() }} losas operativas</span>
+        </div>
+      </div>
+
+      <div class="admin-top-actions">
+        <!-- Ver página pública -->
+        <button mat-flat-button color="accent" class="admin-public-link" [disabled]="!sedeDelDueno()" (click)="abrirPaginaPublica()" aria-label="Ver página pública de la sede" matTooltip="Ver página pública de la sede" matTooltipPosition="below">
+          <mat-icon aria-hidden="true">arrow_outward</mat-icon>
+          <span>Ver mi página pública</span>
+        </button>
+
+        <!-- Notificaciones con mat-badge -->
+        <button mat-icon-button class="btn-bell" [matBadge]="pendientesBadgeText()" [matBadgeHidden]="pendientesCount() <= 0" matBadgeColor="warn" matBadgeSize="small" matBadgeOverlap="false" [routerLink]="['/admin/reservas']" matTooltip="{{ pendientesCount() }} notificaciones operativas" aria-label="Notificaciones">
+          <mat-icon aria-hidden="true">notifications</mat-icon>
+        </button>
+
+        <!-- Perfil con mat-menu -->
+        <button mat-icon-button [matMenuTriggerFor]="adminProfileMenu" class="profile-avatar-btn" aria-label="Menú de usuario" aria-haspopup="true">
+          <span class="user-avatar-badge">{{ initials(nombreAdmin()) }}</span>
+        </button>
+
+        <mat-menu #adminProfileMenu="matMenu" class="profile-mat-menu" xPosition="before">
+          <div class="profile-menu-header">
+            <div class="profile-header-avatar">{{ initials(nombreAdmin()) }}</div>
+            <div class="profile-header-info">
+              <span class="profile-full-name">{{ nombreAdmin() }}</span>
+              <span class="profile-user-email">{{ perfilEmail() }}</span>
+            </div>
+          </div>
+
+          <button mat-menu-item [routerLink]="['/admin/configuracion']">
+            <mat-icon matMenuItemIcon aria-hidden="true">settings</mat-icon>
+            <span>Configuración</span>
+          </button>
+
+          <button mat-menu-item (click)="abrirPrivacidadAdmin()">
+            <mat-icon matMenuItemIcon aria-hidden="true">lock</mat-icon>
+            <span>Privacidad</span>
+          </button>
+
+          <button mat-menu-item (click)="abrirAyudaAdmin()">
+            <mat-icon matMenuItemIcon aria-hidden="true">help</mat-icon>
+            <span>Ayuda</span>
+          </button>
+
+          <button mat-menu-item (click)="toggleDarkMode()">
+            <mat-icon matMenuItemIcon aria-hidden="true">{{ isDarkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+            <span>Modo Oscuro</span>
+          </button>
+
+          <mat-divider></mat-divider>
+
+          <button mat-menu-item (click)="cerrarSesionAdmin()" class="logout-menu-item">
+            <mat-icon matMenuItemIcon aria-hidden="true">logout</mat-icon>
+            <span>Cerrar Sesión</span>
+          </button>
+        </mat-menu>
+      </div>
+    </mat-toolbar>
+
+    <!-- Contenido Dinámico Enrutado Principal -->
+    <main class="admin-main-body" role="main">
+      <router-outlet (activate)="onActivate($event)" (deactivate)="onDeactivate()" />
+    </main>
+
+  </mat-sidenav-content>
+</mat-sidenav-container>
+
+<!-- TOAST NOTIFICATION GLOBAL -->
+<div id="toastNotification" class="toast-alert" [class.is-shown]="toastVisible()" role="status" aria-live="polite">
+  <mat-icon style="color: var(--color-brand-green, #229e04); font-size: 20px; width: 20px; height: 20px;">check_circle</mat-icon>
+  <span id="toastMessage">{{ toastMessage() }}</span>
+</div>
+
+<!-- MODAL: PRIVACIDAD (ADMIN) -->
+@if (adminModalPrivacidadOpen()) {
+  <div class="profile-modal-backdrop" (click)="cerrarModalesAdmin()">
+    <div class="profile-modal-card" (click)="$event.stopPropagation()">
+      <div class="profile-modal-header">
+        <h3 class="profile-modal-title">
+          <span class="material-symbols-outlined" style="color: var(--color-brand-green);">lock</span>
+          Privacidad y Seguridad
+        </h3>
+        <button type="button" mat-icon-button class="btn-close-modal" (click)="cerrarModalesAdmin()" aria-label="Cerrar">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+      <div class="profile-modal-body" style="display: flex; flex-direction: column; gap: 0.85rem; font-size: 0.85rem; color: var(--color-ink-700); line-height: 1.5;">
+        <p>En <strong>Canchero</strong> nos tomamos muy en serio la seguridad y privacidad de tus datos de administración, finanzas, ventas POS y control de sedes.</p>
+        <div style="background: var(--color-surface-muted); padding: 0.85rem; border-radius: var(--radius-md); border: 1px solid var(--color-border); display: flex; flex-direction: column; gap: 0.5rem;">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span class="material-symbols-outlined icon-16" style="color: var(--color-brand-green);">verified_user</span>
+            <strong>Protección de Datos Cifrada</strong>
+          </div>
+          <span style="font-size: 0.78rem; color: var(--color-ink-500);">Tus credenciales y datos contables se encuentran protegidos mediante Supabase Auth con políticas RLS activadas.</span>
+        </div>
+        <p style="font-size: 0.8rem; color: var(--color-ink-500);">Los registros de caja y kardex solo son accesibles por personal autorizado de tu complejo deportivo.</p>
+        <button type="button" mat-stroked-button style="width: 100%; justify-content: center;" (click)="cerrarModalesAdmin()">Entendido</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- MODAL: AYUDA (ADMIN) -->
+@if (adminModalAyudaOpen()) {
+  <div class="profile-modal-backdrop" (click)="cerrarModalesAdmin()">
+    <div class="profile-modal-card" (click)="$event.stopPropagation()">
+      <div class="profile-modal-header">
+        <h3 class="profile-modal-title">
+          <span class="material-symbols-outlined" style="color: var(--color-brand-green);">help</span>
+          Soporte para Administradores Canchero
+        </h3>
+        <button type="button" mat-icon-button class="btn-close-modal" (click)="cerrarModalesAdmin()" aria-label="Cerrar">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+      <div class="profile-modal-body" style="display: flex; flex-direction: column; gap: 0.85rem; font-size: 0.85rem; color: var(--color-ink-700); line-height: 1.5;">
+        <p>¿Necesitas asistencia técnica con la configuración de tus canchas, turnos de caja o medios de cobro?</p>
+        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+          <a href="https://wa.me/51987654321" target="_blank" rel="noopener" style="display: flex; align-items: center; gap: 8px; padding: 0.75rem 1rem; border-radius: var(--radius-md); background: #DCFCE7; color: #166534; font-weight: 700; text-decoration: none;">
+            <span class="material-symbols-outlined icon-20">support_agent</span>
+            <span>Contactar soporte directo para dueños (+51 987 654 321)</span>
+          </a>
+          <div style="background: var(--color-surface-muted); padding: 0.85rem; border-radius: var(--radius-md); border: 1px solid var(--color-border); font-size: 0.8rem; color: var(--color-ink-500);">
+            <strong>Línea exclusiva para negocios afiliados:</strong><br>
+            Atención prioritaria para incidencias operativas en cancha, caja y comprobantes internos.
+          </div>
+        </div>
+        <button type="button" mat-stroked-button style="width: 100%; justify-content: center;" (click)="cerrarModalesAdmin()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+}

@@ -1,0 +1,47 @@
+<article class="card management-card">
+  <div class="management-card-photo-wrap">
+    @if (sede().imagen_url || sede().logo_url) {
+      <img [src]="sede().imagen_url || sede().logo_url" [alt]="sede().nombre" (error)="onImgError($event)">
+    } @else {
+      <div class="sede-placeholder">
+        <span class="material-symbols-outlined icon placeholder-icon" aria-hidden="true">stadium</span>
+        <span>{{ (sede().nombre || 'CD').substring(0, 2).toUpperCase() }}</span>
+        <small>{{ sede().ciudad || 'Sede' }}</small>
+      </div>
+    }
+  </div>
+
+  <div class="management-card-body">
+    <div class="row spread">
+      <h2>{{ sede().nombre }}</h2>
+      <span class="badge success">Sede activa</span>
+    </div>
+
+    @if (sede().direccion) {
+      <p class="muted small">
+        <span class="material-symbols-outlined icon" aria-hidden="true">location_on</span>
+        {{ sede().ciudad ? (sede().ciudad + ' · ' + sede().direccion) : sede().direccion }}
+        @if (sede().telefono) {
+          · <span class="material-symbols-outlined icon" aria-hidden="true">call</span> {{ sede().telefono }}
+        }
+      </p>
+    }
+
+    <p class="small">{{ sede().descripcion || 'Sin descripción registrada' }}</p>
+
+    <div class="row">
+      <button type="button" class="btn" (click)="viewCourts.emit()">
+        <span class="material-symbols-outlined icon" aria-hidden="true">sports_soccer</span>
+        <span>Ver canchas</span>
+      </button>
+      <button type="button" class="btn" (click)="edit.emit()">
+        <span class="material-symbols-outlined icon" aria-hidden="true">edit</span>
+        <span>Editar</span>
+      </button>
+      <button type="button" class="btn" (click)="hours.emit()">
+        <span class="material-symbols-outlined icon" aria-hidden="true">schedule</span>
+        <span>Horarios</span>
+      </button>
+    </div>
+  </div>
+</article>

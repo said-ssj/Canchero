@@ -1,0 +1,32 @@
+<div class="page-title">
+  <h1>{{ title() }}</h1>
+  <p>{{ description() }}</p>
+</div>
+
+<article class="card state venue-required" role="status" aria-live="polite">
+  <span class="material-symbols-outlined icon" aria-hidden="true">{{ icon() }}</span>
+  @if (!context.ownerId()) {
+    <h2>Inicia sesión para continuar</h2>
+    <p>Necesitas la cuenta del dueño para acceder a sus sedes.</p>
+  } @else {
+    <h2>No hay una sede disponible para esta cuenta</h2>
+    <p>Revisa tus sedes o vuelve a consultar el catálogo.</p>
+  }
+  <div class="row" style="gap: 8px; justify-content: center; margin-top: 12px;">
+    @if (!context.ownerId()) {
+      <a class="btn primary" routerLink="/login">
+        <span class="material-symbols-outlined icon" aria-hidden="true">login</span>
+        <span>Ingresar con mi cuenta</span>
+      </a>
+    } @else {
+      <a class="btn primary" routerLink="/admin/sedes">
+        <span class="material-symbols-outlined icon" aria-hidden="true">stadium</span>
+        <span>Ir a Mis sedes</span>
+      </a>
+    }
+    <button class="btn" type="button" [disabled]="context.loading()" (click)="db.refreshCatalogo()">
+      <span class="material-symbols-outlined icon" aria-hidden="true">refresh</span>
+      <span>Volver a consultar</span>
+    </button>
+  </div>
+</article>

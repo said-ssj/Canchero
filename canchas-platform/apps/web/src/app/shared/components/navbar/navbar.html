@@ -1,0 +1,207 @@
+<header class="navbar">
+  <div class="container navbar-content">
+    <a routerLink="/" class="brand-logo">
+      <div class="brand-icon">C</div>
+      <span class="brand-name">Canchero<span class="brand-badge">.MVP</span></span>
+    </a>
+
+    <nav id="navMenu" class="nav-menu" [class.is-open]="menuOpen()">
+      <a routerLink="/" class="nav-link" (click)="menuOpen.set(false)">Inicio</a>
+      <a routerLink="/sedes" class="nav-link" (click)="menuOpen.set(false)">Sedes</a>
+      <a routerLink="/itinerario" class="nav-link" (click)="menuOpen.set(false)">Mi Itinerario</a>
+      <span class="nav-link" style="opacity: 0.6; cursor: default;">Torneos (Próximamente)</span>
+      @if (isOwner()) {
+        <a routerLink="/admin" class="nav-link" (click)="menuOpen.set(false)">Administración</a>
+      }
+    </nav>
+
+    <div class="nav-actions">
+      @if (user(); as u) {
+        <!-- Perfil Compacto (Solo 2 iniciales / letras) con Menú Desplegable -->
+        <div class="user-profile-menu-wrapper" (click)="$event.stopPropagation()">
+          <button
+            type="button"
+            class="profile-avatar-btn"
+            (click)="toggleProfileMenu()"
+            [attr.aria-expanded]="profileMenuOpen()"
+            title="Abrir menú de perfil">
+            <span class="user-avatar-badge">{{ initials(u.nombre) }}</span>
+            <span class="material-symbols-outlined avatar-arrow" [class.rotated]="profileMenuOpen()">expand_more</span>
+          </button>
+
+          <!-- Menú desplegable hamburguesa de perfil -->
+          @if (profileMenuOpen()) {
+            <div class="profile-dropdown-menu" role="menu">
+              <!-- [Nombre Completo] -->
+              <div class="profile-menu-header">
+                <div class="profile-header-avatar">
+                  {{ initials(u.nombre) }}
+                </div>
+                <div class="profile-header-info">
+                  <span class="profile-full-name">{{ u.nombre }}</span>
+                  <span class="profile-user-email">{{ u.correo || u.email || 'usuario@canchero.pe' }}</span>
+                </div>
+              </div>
+
+              <!-- Lista de opciones del menú -->
+              <div class="profile-menu-items">
+                <!-- Configuración -->
+                <button type="button" class="profile-menu-item" (click)="abrirConfiguracion()">
+                  <span class="material-symbols-outlined menu-icon" aria-hidden="true">settings</span>
+                  <span class="menu-label">Configuración</span>
+                </button>
+
+                <!-- Privacidad -->
+                <button type="button" class="profile-menu-item" (click)="abrirPrivacidad()">
+                  <span class="material-symbols-outlined menu-icon" aria-hidden="true">lock</span>
+                  <span class="menu-label">Privacidad</span>
+                </button>
+
+                <!-- Ayuda -->
+                <button type="button" class="profile-menu-item" (click)="abrirAyuda()">
+                  <span class="material-symbols-outlined menu-icon" aria-hidden="true">help</span>
+                  <span class="menu-label">Ayuda</span>
+                </button>
+
+                <!-- Modo Oscuro -->
+                <button type="button" class="profile-menu-item" (click)="toggleDarkMode()">
+                  <span class="material-symbols-outlined menu-icon" aria-hidden="true">
+                    {{ isDarkMode() ? 'light_mode' : 'dark_mode' }}
+                  </span>
+                  <span class="menu-label">Modo Oscuro</span>
+                  <span class="theme-switch-pill" [class.active]="isDarkMode()">
+                    <span class="theme-switch-circle"></span>
+                  </span>
+                </button>
+
+                <div class="profile-menu-divider"></div>
+
+                <!-- Cerrar Sesión -->
+                <button type="button" class="profile-menu-item logout-item" (click)="logout()">
+                  <span class="material-symbols-outlined menu-icon" aria-hidden="true">logout</span>
+                  <span class="menu-label">Cerrar Sesión</span>
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      } @else {
+        <a routerLink="/login" class="nav-login">Ingresar</a>
+      }
+      <button type="button" id="mobileMenuBtn" class="mobile-menu-btn" (click)="menuOpen.set(!menuOpen())" aria-label="Abrir menú">
+        <span class="material-symbols-outlined">menu</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- MODAL: CONFIGURACIÓN -->
+@if (modalConfigOpen()) {
+  <div class="profile-modal-backdrop" (click)="cerrarModales()">
+    <div class="profile-modal-card" (click)="$event.stopPropagation()">
+      <div class="profile-modal-header">
+        <h3 class="profile-modal-title">
+          <span class="material-symbols-outlined" style="color: var(--color-brand-green);">settings</span>
+          Configuración de Cuenta
+        </h3>
+        <button type="button" class="btn-close-modal" (click)="cerrarModales()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="profile-modal-body" style="display: flex; flex-direction: column; gap: 1rem;">
+        @if (user(); as u) {
+          <div style="background: var(--color-surface-muted); padding: 1rem; border-radius: var(--radius-md); border: 1px solid var(--color-border); display: flex; align-items: center; gap: 0.75rem;">
+            <div class="profile-header-avatar" style="width: 44px; height: 44px; font-size: 1rem;">{{ initials(u.nombre) }}</div>
+            <div>
+              <strong style="font-size: 0.95rem; color: var(--color-ink-900); display: block;">{{ u.nombre }}</strong>
+              <span style="font-size: 0.8rem; color: var(--color-ink-500);">{{ u.correo || u.email }}</span>
+              <span style="display: inline-block; font-size: 0.7rem; font-weight: 700; color: var(--color-brand-green); background: rgba(34, 158, 4, 0.1); padding: 2px 6px; border-radius: 4px; margin-top: 4px;">
+                {{ u.rol || 'Usuario Activo' }}
+              </span>
+            </div>
+          </div>
+        }
+        <div style="display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.85rem; color: var(--color-ink-700);">
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--color-border);">
+            <span>Notificaciones de reservas</span>
+            <span style="color: var(--color-brand-green); font-weight: 700;">WhatsApp &amp; Email</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--color-border);">
+            <span>Tema visual actual</span>
+            <span style="font-weight: 700;">{{ isDarkMode() ? 'Modo Oscuro' : 'Modo Claro' }}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0;">
+            <span>Seguridad de autenticación</span>
+            <span style="color: var(--color-brand-green); font-weight: 700;">Sesión Activa</span>
+          </div>
+        </div>
+        @if (isOwner()) {
+          <button type="button" class="btn btn-primary" style="width: 100%; justify-content: center; gap: 6px;" (click)="irAAdmin()">
+            <span class="material-symbols-outlined icon-18">admin_panel_settings</span>
+            <span>Ir al Panel de Administración</span>
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+}
+
+<!-- MODAL: PRIVACIDAD -->
+@if (modalPrivacidadOpen()) {
+  <div class="profile-modal-backdrop" (click)="cerrarModales()">
+    <div class="profile-modal-card" (click)="$event.stopPropagation()">
+      <div class="profile-modal-header">
+        <h3 class="profile-modal-title">
+          <span class="material-symbols-outlined" style="color: var(--color-brand-green);">lock</span>
+          Privacidad y Seguridad
+        </h3>
+        <button type="button" class="btn-close-modal" (click)="cerrarModales()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="profile-modal-body" style="display: flex; flex-direction: column; gap: 0.85rem; font-size: 0.85rem; color: var(--color-ink-700); line-height: 1.5;">
+        <p>En <strong>Canchero</strong> nos tomamos muy en serio la seguridad y privacidad de tus datos personales, reservas deportivas y métodos de pago.</p>
+        <div style="background: var(--color-surface-muted); padding: 0.85rem; border-radius: var(--radius-md); border: 1px solid var(--color-border); display: flex; flex-direction: column; gap: 0.5rem;">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span class="material-symbols-outlined icon-16" style="color: var(--color-brand-green);">verified_user</span>
+            <strong>Protección de Datos Cifrada</strong>
+          </div>
+          <span style="font-size: 0.78rem; color: var(--color-ink-500);">Tus credenciales, reservas y datos de cobro se gestionan mediante canales seguros de la plataforma.</span>
+        </div>
+        <p style="font-size: 0.8rem; color: var(--color-ink-500);">No compartimos tus datos de contacto con terceros ni los utilizamos para fines ajenos a la reserva de tus losas deportivas.</p>
+        <button type="button" class="btn btn-secondary" style="width: 100%; justify-content: center;" (click)="cerrarModales()">Entendido</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- MODAL: AYUDA -->
+@if (modalAyudaOpen()) {
+  <div class="profile-modal-backdrop" (click)="cerrarModales()">
+    <div class="profile-modal-card" (click)="$event.stopPropagation()">
+      <div class="profile-modal-header">
+        <h3 class="profile-modal-title">
+          <span class="material-symbols-outlined" style="color: var(--color-brand-green);">help</span>
+          Centro de Ayuda Canchero
+        </h3>
+        <button type="button" class="btn-close-modal" (click)="cerrarModales()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="profile-modal-body" style="display: flex; flex-direction: column; gap: 0.85rem; font-size: 0.85rem; color: var(--color-ink-700); line-height: 1.5;">
+        <p>¿Tienes dudas sobre cómo reservar, reprogramar o administrar tus canchas deportivas?</p>
+        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+          <a href="https://wa.me/51987654321" target="_blank" rel="noopener" style="display: flex; align-items: center; gap: 8px; padding: 0.75rem 1rem; border-radius: var(--radius-md); background: #DCFCE7; color: #166534; font-weight: 700; text-decoration: none;">
+            <span class="material-symbols-outlined icon-20">chat</span>
+            <span>Contactar soporte vía WhatsApp (+51 987 654 321)</span>
+          </a>
+          <div style="background: var(--color-surface-muted); padding: 0.85rem; border-radius: var(--radius-md); border: 1px solid var(--color-border); font-size: 0.8rem; color: var(--color-ink-500);">
+            <strong>Horarios de atención:</strong><br>
+            Lunes a Domingo de 08:00 AM a 11:00 PM (Soporte prioritario para partidos en vivo).
+          </div>
+        </div>
+        <button type="button" class="btn btn-secondary" style="width: 100%; justify-content: center;" (click)="cerrarModales()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+}

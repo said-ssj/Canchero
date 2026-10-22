@@ -1,0 +1,690 @@
+/* Shared editor primitives stay in their existing sources during the migration. */
+@import '../styles/01-base.css';
+@import '../styles/02-utilidades.css';
+@import '../styles/03-sedes.css';
+@import '../styles/07-material.css';
+@import '../styles/09-material-ajustes.css';
+@import '../styles/12-formularios.css';
+
+/* ==========================================================================
+   ESTILOS DE BARRA LARGA HORIZONTAL PARA CANCHAS (MIS CANCHAS)
+   ========================================================================== */
+.cancha-barra-larga {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  box-shadow: var(--shadow-sm);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  position: relative;
+}
+
+
+.cancha-barra-larga.is-mantenimiento {
+  background: #fdfbf7;
+  border-color: rgba(242, 169, 59, 0.4);
+}
+
+.cancha-barra-foto-wrap {
+  width: 140px;
+  height: 95px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: #1A1A1A;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.cancha-barra-foto {
+  width: 80%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.mat-admin-shell .cancha-card {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  grid-template-areas:
+    "foto datos"
+    "foto acciones";
+  min-height: 160px;
+  overflow: hidden;
+}
+
+.mat-admin-shell .cancha-card-image {
+  grid-area: foto;
+  position: relative;
+}
+
+.mat-admin-shell .cancha-card-image > img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mat-admin-shell .cancha-status-chip {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+}
+
+.mat-admin-shell .cancha-card-content {
+  grid-area: datos;
+  min-width: 0;
+  padding: 12px 16px 6px;
+}
+
+.mat-admin-shell .cancha-card-actions {
+  grid-area: acciones;
+  padding: 0 16px 16px;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 640px) {
+  .mat-admin-shell .cancha-card {
+    grid-template-columns: 88px minmax(0, 1fr);
+  }
+}
+
+.cancha-barra-foto-badge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: var(--radius-full);
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #ffffff;
+  box-shadow: var(--shadow-sm);
+}
+
+.cancha-barra-foto-badge.badge-green {
+  background: var(--color-brand-green);
+}
+
+.cancha-barra-foto-badge.badge-orange {
+  background: var(--color-brand-orange);
+}
+
+.status-dot-mini {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #ffffff;
+  display: inline-block;
+}
+
+.cancha-barra-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cancha-barra-nombre-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cancha-barra-nombre {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--color-ink-900);
+  margin: 0;
+}
+
+.cancha-chip-format {
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  background: #f1f5f9;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-ink-800);
+}
+
+.cancha-chip-surface {
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  background: rgba(34, 158, 4, 0.1);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-brand-green-dark);
+}
+
+.cancha-chip-coverage {
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  background: #ede9fe;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #6d28d9;
+}
+
+.cancha-barra-equipamiento {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.cancha-equip-pill {
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  background: #f8fafc;
+  border: 1px solid var(--color-border);
+  font-size: 0.72rem;
+  color: var(--color-ink-700);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cancha-barra-desc {
+  font-size: 0.8rem;
+  color: var(--color-ink-600);
+  margin: 0;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.cancha-barra-meta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 0.8rem;
+  color: var(--color-ink-600);
+  margin-top: 2px;
+  flex-wrap: wrap;
+}
+
+.cancha-tarifa-item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+}
+
+.cancha-tarifa-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-ink-500);
+}
+
+.cancha-tarifa-val {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--color-brand-green);
+}
+
+.cancha-tarifa-sub {
+  font-size: 0.72rem;
+  color: var(--color-ink-500);
+}
+
+.cancha-tarifa-val-noc {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: var(--color-ink-800);
+}
+
+.cancha-barra-actions {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cancha-switch-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  border-radius: var(--radius-md);
+  background: #f8fafc;
+  border: 1px solid var(--color-border);
+}
+
+.cancha-switch-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--color-brand-orange);
+}
+
+.cancha-switch-label.is-active {
+  color: var(--color-brand-green);
+}
+
+@media (max-width: 900px) {
+  .cancha-barra-larga {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .cancha-barra-foto-wrap {
+    width: 100%;
+    height: 140px;
+  }
+  .cancha-barra-actions {
+    margin-top: 0.5rem;
+    justify-content: space-between;
+    width: 100%;
+    flex-wrap: wrap;
+  }
+}
+
+/* ==========================================================================
+   FORMULARIO RÁPIDO & CHIPS PARA MODAL DE CANCHAS
+   ========================================================================== */
+.modal-cancha-card {
+  max-width: 740px !important;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 1.75rem !important;
+}
+
+.chips-cat-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.chips-cat-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--color-ink-800);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.chips-container-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip-select-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--radius-full);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-ink-700);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  user-select: none;
+}
+
+
+.chip-select-btn.is-active {
+  border-color: var(--color-brand-green);
+  background: rgba(34, 158, 4, 0.12);
+  color: var(--color-brand-green-dark);
+  font-weight: 800;
+  box-shadow: 0 1px 3px rgba(34, 158, 4, 0.15);
+}
+
+.cancha-photo-preview-wrap {
+  width: 100%;
+  height: 140px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  position: relative;
+  background: #1a1a1a;
+  border: 1px solid var(--color-border);
+}
+
+.cancha-photo-preview-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.cancha-photo-overlay-actions {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  display: flex;
+  gap: 6px;
+}
+
+
+
+.mat-admin-shell .kpi-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.mat-admin-shell .kpi-card {
+  min-height: 118px;
+}
+
+.mat-admin-shell .kpi-card .mat-mdc-card-content {
+  padding: 1rem !important;
+}
+
+.mat-admin-shell .kpi-content {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 38px;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.mat-admin-shell .kpi-info {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.mat-admin-shell .kpi-label {
+  color: #475569;
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.mat-admin-shell .kpi-value-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.mat-admin-shell .kpi-value {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.25rem;
+  color: #111827;
+  font-size: 1.85rem !important;
+  line-height: 1;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.mat-admin-shell .kpi-value.warning {
+  color: #b45309;
+}
+
+.mat-admin-shell .kpi-unit,
+.mat-admin-shell .kpi-sub,
+.mat-admin-shell .kpi-detail {
+  color: #64748b;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  font-weight: 700;
+}
+
+.mat-admin-shell .kpi-icon {
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: end;
+  border-radius: 8px !important;
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.mat-admin-shell .kpi-icon.primary {
+  background: #ecfdf3;
+  color: #2f9f3b;
+}
+
+.mat-admin-shell .kpi-icon.warning {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+@media (max-width: 1180px) {
+  .mat-admin-shell .kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .mat-admin-shell .kpi-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+:host { display: block; min-width: 0; }
+.admin-canchas-shell { display: block; min-width: 0; height: auto; background: transparent; }
+.admin-canchas-shell mat-icon { font-family: 'Material Symbols Outlined'; }
+.admin-canchas-shell .editor-layout-grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 24px; }
+.admin-canchas-shell input, .admin-canchas-shell select, .admin-canchas-shell button { font-family: inherit; border-radius: 8px; }
+.admin-canchas-shell .view-heading { font-size: 26px; letter-spacing: 0; }
+.admin-canchas-shell .empty-state-card { text-align: center; padding: 24px; }
+.admin-canchas-shell .empty-state-card h2 { font-size: 20px; }
+.admin-canchas-shell .empty-state-card mat-icon { width: 24px; height: 24px; font-size: 24px; line-height: 24px; }
+.admin-canchas-shell .empty-state-card button mat-icon { width: 18px; height: 18px; font-size: 18px; line-height: 18px; }
+.admin-canchas-shell .kpi-value { white-space: normal; }
+@media (max-width: 980px) {
+  .admin-canchas-shell .editor-layout-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ==========================================================================
+   DRAWER / MODAL: HORARIOS, DESCANSOS & CIERRES
+   ========================================================================== */
+.cancha-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(2px);
+  z-index: 1000;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.cancha-drawer-container {
+  width: 100%;
+  max-width: 640px;
+  height: 100vh;
+  background: #ffffff;
+  border-left: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
+  z-index: 1001;
+}
+
+.cancha-drawer-header {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.cancha-drawer-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--color-border);
+  background: #f8fafc;
+  padding: 0 1rem;
+  gap: 4px;
+  overflow-x: auto;
+}
+
+.drawer-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.75rem 1rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--color-ink-600);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.drawer-tab-btn.is-active {
+  color: var(--color-brand-green);
+  border-bottom-color: var(--color-brand-green);
+  background: #ffffff;
+}
+
+.tab-badge {
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 0.68rem;
+  padding: 2px 6px;
+  border-radius: 999px;
+  font-weight: 800;
+}
+
+.cancha-drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
+}
+
+.cancha-drawer-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  justify-content: flex-end;
+  background: #f8fafc;
+}
+
+/* Horarios table */
+.horarios-table-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0.75rem;
+}
+
+.horario-dia-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.horario-dia-row:last-child {
+  border-bottom: none;
+}
+
+.input-time {
+  padding: 6px 10px;
+  font-size: 0.82rem;
+  width: 95px;
+}
+
+/* Descansos y Cierres cards */
+.descanso-item-card,
+.cierre-item-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1rem;
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  gap: 10px;
+}
+
+.descanso-item-card.is-paused {
+  background: #f8fafc;
+  opacity: 0.75;
+}
+
+.cierre-item-card.is-inactivo {
+  background: #f8fafc;
+  opacity: 0.6;
+}
+
+/* Reservas Afectadas card */
+.reserva-afectada-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1rem;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: var(--radius-md);
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.badge-afectada {
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  background: #fef3c7;
+  color: #92400e;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* Reprogramar modal */
+.reprogramar-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.reprogramar-modal-box {
+  width: 100%;
+  max-width: 440px;
+  background: #ffffff;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  padding: 1.5rem;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.chip-cierre {
+  background: #fee2e2 !important;
+  color: #b91c1c !important;
+}
+
+.schedule-chip.is-individual {
+  background: #ecfdf5 !important;
+  color: #065f46 !important;
+}
+

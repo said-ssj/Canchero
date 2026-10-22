@@ -1,0 +1,87 @@
+# ==============================================================================
+# CANCHERO - Configuración de exclusiones Git (.gitignore)
+# ==============================================================================
+
+# Private configuration and credentials
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.local.json
+*.local.yml
+*.local.yaml
+*.local.ts
+apps/web/src/environments/environment.local.ts
+canchas-platform/apps/web/src/environments/environment.local.ts
+*.key
+*.pem
+*.p12
+*.pfx
+*.jks
+*.keystore
+.netrc
+.git-credentials
+secrets/
+private/
+
+# Personal tools, MCP, AI configurations and exported chats
+opencode.json
+**/opencode.json
+chat_export.md
+**/chat_export.md
+*.chat.md
+.mcp.json
+mcp.json
+mcp_config.json
+.vscode/mcp.json
+.cursor/
+.claude/
+.gemini/
+.agent/
+.agents/
+.codex/
+
+# AI agent instructions, internal prompts, and local audits
+AGENTS.md
+**/AGENTS.md
+descargas/
+canchero-informe/
+**/canchero-informe/
+canchas-platform/docs/CONTEXTO_LOCAL.md
+canchas-platform/docs/ESTADO_ACTUAL.md
+canchas-platform/docs/PROMPT_*.md
+canchas-platform/docs/AUDITORIA_*.md
+canchas-platform/docs/COBERTURA_REDISENO.md
+canchas-platform/docs/VERIFICACION_UI_*.md
+canchas-platform/docs/README_HISTORICO.md
+canchas-platform/docs/PROTOCOLO_AGENTES_Y_MCP.md
+canchas-platform/docs/auditoria/
+
+# Historical application folders (antecedents kept outside active repository)
+canchero-frontend/
+canchero-backend/
+
+# Dependencies and generated build artifacts
+node_modules/
+.angular/
+dist/
+target/
+build/
+*.jar
+*.war
+coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo
+*.log
+
+# Editor and OS files
+*.code-workspace
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+backups/
+dumps/
+*.dump
+*.backup

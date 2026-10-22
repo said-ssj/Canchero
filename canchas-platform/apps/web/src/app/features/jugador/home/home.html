@@ -1,0 +1,38 @@
+<main id="inicio" class="flex-1">
+
+  <section class="hero-section">
+    <div class="hero-background" style="background-color: #1A1A1A;"></div>
+    <div class="container hero-content">
+      <h1 class="hero-title">
+        Reserva tu cancha <br>
+        <span class="hero-highlight">fácil y rápido</span>
+      </h1>
+      <p class="hero-subtitle">
+        Encuentra los mejores complejos deportivos cerca de ti. Compara horarios, tarifas y asegura tu partido en minutos.
+      </p>
+
+      <div class="hero-cta">
+        <a routerLink="/sedes" class="btn btn-primary btn-lg">Descubre nuestras canchas</a>
+      </div>
+    </div>
+  </section>
+
+  <section style="background-color: var(--color-surface); padding: 5rem 0; position: relative; overflow: hidden;">
+
+    <div class="container" style="position: relative; z-index: 1;">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 3rem; align-items: center;">
+        <div style="text-align: left;">
+          <h2 style="color: var(--color-brand-green-dark); font-size: 2.25rem; margin-bottom: 1.5rem;">Pasión por el Deporte</h2>
+          <p style="font-size: 1.15rem; line-height: 1.8; color: var(--color-ink-700); margin-bottom: 2.5rem;">
+            Canchero es el ecosistema digital diseñado para conectar de manera instantánea a los jugadores con los mejores recintos deportivos de la ciudad, simplificando la búsqueda y garantizando una reserva rápida y segura para que tu única preocupación sea disfrutar del partido en la cancha.
+          </p>
+          <a routerLink="/sedes" class="btn btn-primary btn-lg btn-wide">Descúbrenos</a>
+        </div>
+        <div>
+          <img [src]="heroImage()" alt="Cancha destacada" style="width: 100%; border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); object-fit: cover; height: 350px;">
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>

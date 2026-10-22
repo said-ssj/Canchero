@@ -1,0 +1,898 @@
+<div class="admin-pos">
+  @if (loading()) {
+    <div class="skeleton-grid" role="status" aria-busy="true" aria-label="Cargando inventario">
+      @for (item of [1,2,3,4]; track item) { <div class="skeleton skeleton-card"></div> }
+    </div>
+  } @else if (error()) {
+    <div role="alert" class="view-error-state">
+      <h2>No se pudo cargar el punto de venta</h2>
+      <p>{{ error() }}</p>
+      <button mat-stroked-button (click)="db.refreshCatalogo(); posService.recargar()">Reintentar</button>
+    </div>
+  } @else if (!venueId()) {
+    <p>Selecciona una sede para consultar su inventario.</p>
+  } @else {
+  <!-- Cabecera de la Vista POS -->
+  <header class="admin-view-header">
+    <div>
+      <div class="pos-venue-tag">
+        <span class="pos-venue-badge">Control Comercial &amp; Almacén (Módulo 5.5)</span>
+        <span class="pos-venue-dot"></span>
+        <span class="pos-venue-name">{{ venueName() }}</span>
+      </div>
+      <h1 class="view-title">
+        <mat-icon class="view-title-icon" aria-hidden="true">shopping_cart</mat-icon>
+        Punto de Venta (POS) &amp; Kardex
+      </h1>
+      <p class="view-subtitle">
+        Catálogo visual de cafetería/tienda, carrito rápido con desglose de IGV (18%) y control de stock continuo.
+      </p>
+    </div>
+
+    <!-- Botón de Acción Rápida -->
+    <div class="pos-header-actions">
+      <button
+        type="button"
+        mat-stroked-button
+        class="pos-btn-action"
+        [disabled]="posService.productos().length === 0"
+        (click)="abrirModalIngresoMercaderia()"
+      >
+        <mat-icon aria-hidden="true">add_box</mat-icon>
+        <span>Ingreso de mercadería</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Banner de Alerta de Stock Mínimo Crítico (si existen productos) -->
+  @if (posService.productosStockCritico().length > 0) {
+    <div class="kardex-alert-banner" role="alert">
+      <div class="alert-info">
+        <mat-icon class="alert-icon" aria-hidden="true">warning</mat-icon>
+        <div>
+          <strong class="alert-title">
+            ¡Alerta de Reposición en Almacén! {{ posService.productosStockCritico().length }} producto(s) llegaron a su stock mínimo
+          </strong>
+          <span class="alert-description">
+            Revisa las existencias y registra el ingreso de mercadería para evitar desabastecimiento en mostrador.
+          </span>
+        </div>
+      </div>
+      <div class="alert-chips">
+        @for (critico of posService.productosStockCritico(); track critico.id) {
+          <button
+            type="button"
+            class="badge badge-warning alert-item-btn"
+            (click)="abrirModalIngresoMercaderia(critico.id)"
+          >
+            {{ critico.nombre }} (Stock: {{ critico.stock }}/{{ critico.stockMinimo }})
+          </button>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Pestañas de Navegación del Módulo POS -->
+  <mat-button-toggle-group
+    class="pos-tabs-nav"
+    aria-label="Secciones de punto de venta"
+    [value]="posSubTab()"
+    (change)="switchPosSubTab($event.value)"
+  >
+    <mat-button-toggle value="caja_pos" [disableRipple]="true">Caja POS &amp; Mostrador</mat-button-toggle>
+    <mat-button-toggle value="kardex" [disableRipple]="true">Kardex ({{ posService.kardex().length }})</mat-button-toggle>
+    <mat-button-toggle value="historial_ventas" [disableRipple]="true">Ventas ({{ posService.ventas().length }})</mat-button-toggle>
+  </mat-button-toggle-group>
+
+  <!-- ================= SUB-TAB 1: CAJA POS & MOSTRADOR ================= -->
+  @if (posSubTab() === 'caja_pos') {
+    <div class="pos-layout-grid">
+
+      <!-- COLUMNA IZQUIERDA: Catálogo de Productos y Filtros -->
+      <div class="pos-catalog-column">
+
+        <!-- Barra de Búsqueda y Categorías -->
+        <mat-card class="pos-search-card" appearance="outlined">
+          <mat-form-field class="pos-search-field" appearance="outline" subscriptSizing="dynamic">
+            <mat-icon matPrefix aria-hidden="true">search</mat-icon>
+            <input
+              matInput
+              type="text"
+              placeholder="Buscar por nombre, código de barras o categoría"
+              [value]="posService.filtroBusqueda()"
+              (input)="onBuscarProductoPOS($event)"
+            />
+            @if (posService.filtroBusqueda()) {
+              <button
+                type="button"
+                mat-icon-button
+                matSuffix
+                class="pos-search-clear"
+                (click)="posService.filtroBusqueda.set('')"
+                aria-label="Limpiar búsqueda"
+              >
+                <mat-icon aria-hidden="true">close</mat-icon>
+              </button>
+            }
+          </mat-form-field>
+
+          <!-- Chips de Categorías -->
+          <div class="pos-category-chips">
+            <button
+              type="button"
+              mat-stroked-button
+              class="pos-chip-btn pos-favorites-filter"
+              [class.active]="posService.soloFavoritos()"
+              [attr.aria-pressed]="posService.soloFavoritos()"
+              (click)="posService.soloFavoritos.set(!posService.soloFavoritos())"
+            >
+              <mat-icon aria-hidden="true">star</mat-icon>
+              <span class="pos-category-label">Favoritos</span>
+            </button>
+            @for (cat of posService.categorias(); track cat.id) {
+              <button
+                type="button"
+                mat-stroked-button
+                class="pos-chip-btn"
+                [class.active]="posService.categoriaSeleccionada() === cat.id"
+                [attr.aria-pressed]="posService.categoriaSeleccionada() === cat.id"
+                [title]="cat.nombre"
+                (click)="setCategoriaPOS(cat.id)"
+              >
+                <mat-icon aria-hidden="true">{{ cat.icono }}</mat-icon>
+                <span class="pos-category-label">{{ cat.nombre }}</span>
+              </button>
+            }
+          </div>
+        </mat-card>
+
+        <!-- Grid Visual de Productos -->
+        <div class="pos-products-grid">
+          @for (prod of posService.productosFiltrados(); track prod.id) {
+            <mat-card
+              class="pos-product-card"
+              appearance="outlined"
+              [class.is-low-stock]="prod.stock <= prod.stockMinimo && prod.stock > 0"
+              [class.is-out-of-stock]="prod.stock <= 0"
+              (click)="prod.stock > 0 && agregarAlCarritoPOS(prod)"
+            >
+              <!-- Badge de Stock y Favorito -->
+              <div class="pos-product-badge-row">
+                <span class="pos-barcode-tag" [title]="prod.codigoBarras">{{ prod.codigoBarras }}</span>
+                <button
+                  type="button"
+                  mat-icon-button
+                  class="pos-product-favorite-btn"
+                  [class.active]="esProductoFavoritoPOS(prod.id)"
+                  [attr.aria-label]="esProductoFavoritoPOS(prod.id) ? 'Quitar de favoritos' : 'Agregar a favoritos'"
+                  (click)="toggleFavoritoProductoPOS(prod.id, $event)"
+                >
+                  <mat-icon aria-hidden="true">star</mat-icon>
+                </button>
+                @if (prod.stock <= 0) {
+                  <span class="badge badge-error">AGOTADO</span>
+                } @else if (prod.stock <= prod.stockMinimo) {
+                  <span class="badge badge-warning">STOCK BAJO: {{ prod.stock }}</span>
+                } @else {
+                  <span class="badge badge-success">Stock: {{ prod.stock }}</span>
+                }
+              </div>
+
+              <!-- Icono Central del Producto -->
+              <div class="pos-product-icon-box">
+                <mat-icon aria-hidden="true">{{ prod.icono || 'inventory_2' }}</mat-icon>
+              </div>
+
+              <!-- Datos del Producto -->
+              <div class="pos-product-details">
+                <span class="pos-product-cat">{{ prod.categoriaNombre }}</span>
+                <h4 class="pos-product-name">{{ prod.nombre }}</h4>
+              </div>
+
+              <!-- Precio y Acción Rápida -->
+              <div class="pos-product-footer">
+                <div class="pos-product-price">
+                  <span class="pos-currency">S/</span>
+                  <span class="pos-amount">{{ prod.precioVenta.toFixed(2) }}</span>
+                </div>
+                <button
+                  type="button"
+                  mat-stroked-button
+                  class="pos-add-btn"
+                  [disabled]="prod.stock <= 0"
+                  (click)="$event.stopPropagation(); agregarAlCarritoPOS(prod)"
+                >
+                  <mat-icon aria-hidden="true">add_shopping_cart</mat-icon>
+                  <span>Agregar</span>
+                </button>
+              </div>
+            </mat-card>
+          } @empty {
+            <div class="pos-empty-products">
+              <mat-icon class="empty-icon" aria-hidden="true">search_off</mat-icon>
+              @if (posService.productos().length === 0) {
+                <p class="empty-title">Esta sede no tiene productos vinculados</p>
+                <span class="empty-subtitle">No hay registros de inventario asociados a esta sede.</span>
+              } @else {
+                <p class="empty-title">No se encontraron productos coincidentes</p>
+                <span class="empty-subtitle">Intenta cambiar el término de búsqueda o la categoría seleccionada.</span>
+              }
+            </div>
+          }
+        </div>
+
+      </div>
+
+      <!-- COLUMNA DERECHA: Carrito POS Rápido y Desglose de Venta -->
+      <div class="pos-cart-column">
+        <mat-card class="pos-cart-card" appearance="outlined">
+
+          <!-- Cabecera del Carrito -->
+          <div class="pos-cart-header">
+            <div class="pos-cart-header-title">
+              <mat-icon class="pos-cart-header-icon" aria-hidden="true">shopping_bag</mat-icon>
+              <h3>Comanda / Carrito</h3>
+              <span class="badge badge-brand">{{ posService.totalUnidadesCarrito() }} items</span>
+            </div>
+            @if (posService.carrito().length > 0) {
+              <button
+                type="button"
+                mat-button
+                class="pos-cart-clear-btn"
+                (click)="vaciarCarritoPOS()"
+              >
+                Vaciar
+              </button>
+            }
+          </div>
+
+          <!-- Lista de Ítems en Carrito -->
+          <div class="pos-cart-items-list">
+            @for (item of posService.carrito(); track item.producto.id) {
+              <div class="pos-cart-item-row">
+                <div class="pos-cart-item-info">
+                  <strong class="pos-cart-item-title">{{ item.producto.nombre }}</strong>
+                  <span class="pos-cart-item-unit-price">
+                    S/ {{ item.producto.precioVenta.toFixed(2) }} c/u
+                  </span>
+                </div>
+
+                <!-- Stepper de Cantidad -->
+                <div class="pos-stepper-control">
+                  <button
+                    type="button"
+                    mat-icon-button
+                    class="pos-step-btn"
+                    (click)="modificarCantidadCarritoPOS(item.producto.id, -1)"
+                    aria-label="Disminuir cantidad"
+                  >
+                    <mat-icon aria-hidden="true">remove</mat-icon>
+                  </button>
+                  <span class="pos-step-value">{{ item.cantidad }}</span>
+                  <button
+                    type="button"
+                    mat-icon-button
+                    class="pos-step-btn"
+                    [disabled]="item.cantidad >= item.producto.stock"
+                    (click)="modificarCantidadCarritoPOS(item.producto.id, 1)"
+                    aria-label="Aumentar cantidad"
+                  >
+                    <mat-icon aria-hidden="true">add</mat-icon>
+                  </button>
+                </div>
+
+                <!-- Subtotal de Línea -->
+                <div class="pos-cart-item-subtotal">
+                  <strong>S/ {{ item.subtotal.toFixed(2) }}</strong>
+                </div>
+
+                <!-- Eliminar Ítem -->
+                <button
+                  type="button"
+                  mat-icon-button
+                  class="pos-cart-remove-btn"
+                  (click)="eliminarDelCarritoPOS(item.producto.id)"
+                  aria-label="Eliminar producto"
+                >
+                  <mat-icon aria-hidden="true">delete</mat-icon>
+                </button>
+              </div>
+            } @empty {
+              <div class="pos-cart-empty-state">
+                <mat-icon class="empty-cart-icon" aria-hidden="true">remove_shopping_cart</mat-icon>
+                <p class="empty-cart-title">El carrito está vacío</p>
+                <span class="empty-cart-sub">Haz clic en cualquier producto del catálogo para agregarlo a la venta.</span>
+              </div>
+            }
+          </div>
+
+          <!-- Desglose de venta oficial (Perú) -->
+          <div class="pos-tax-summary-box">
+            <div class="pos-summary-row">
+              <span class="pos-summary-label">Subtotal (Base Imponible):</span>
+              <span class="pos-summary-val">S/ {{ posService.subtotalCarrito().toFixed(2) }}</span>
+            </div>
+            <div class="pos-summary-row">
+              <span class="pos-summary-label">IGV (18% Perú):</span>
+              <span class="pos-summary-val">S/ {{ posService.igvCarrito().toFixed(2) }}</span>
+            </div>
+            <div class="pos-summary-row pos-total-row">
+              <span class="pos-total-label">TOTAL A COBRAR:</span>
+              <span class="pos-total-val">S/ {{ posService.totalCarrito().toFixed(2) }}</span>
+            </div>
+          </div>
+
+          <!-- Selección de Tipo de Comprobante -->
+          <div class="pos-checkout-section">
+            <div class="pos-section-header">
+              <label class="pos-section-title">Tipo de Comprobante:</label>
+              <span class="pos-internal-badge">Control Interno</span>
+            </div>
+            <div class="pos-voucher-types-grid">
+              <button
+                type="button"
+                class="pos-voucher-type-btn"
+                [class.active]="posTipoComprobante() === 'boleta'"
+                (click)="setTipoComprobantePOS('boleta')"
+              >
+                <span class="pos-v-name">Boleta</span>
+                <span class="pos-v-serie">B001-XXXX</span>
+              </button>
+              <button
+                type="button"
+                class="pos-voucher-type-btn"
+                [class.active]="posTipoComprobante() === 'factura'"
+                (click)="setTipoComprobantePOS('factura')"
+              >
+                <span class="pos-v-name">Factura</span>
+                <span class="pos-v-serie">F001-XXXX</span>
+              </button>
+              <button
+                type="button"
+                class="pos-voucher-type-btn"
+                [class.active]="posTipoComprobante() === 'ticket'"
+                (click)="setTipoComprobantePOS('ticket')"
+              >
+                <span class="pos-v-name">Nota de Venta</span>
+                <span class="pos-v-serie">NV01-XXXX</span>
+              </button>
+            </div>
+
+            <!-- Datos del Cliente -->
+            <div class="pos-client-inputs-row">
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="pos-client-field">
+                <mat-label>Nombre / Razón Social</mat-label>
+                <input matInput [value]="posClienteNombre()" (input)="setClienteNombrePOS($event)">
+              </mat-form-field>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="pos-client-field">
+                <mat-label>{{ posTipoComprobante() === 'factura' ? 'RUC (11 dígitos)' : 'DNI (opcional)' }}</mat-label>
+                <input matInput [value]="posClienteDocumento()" (input)="setClienteDocumentoPOS($event)">
+              </mat-form-field>
+            </div>
+
+            <!-- Métodos de Pago -->
+            <label class="pos-section-title">Método de Pago:</label>
+            <mat-button-toggle-group
+              class="pos-payment-toggle-group"
+              [value]="posMetodoPago()"
+              (change)="setMetodoPagoPOS($event.value)"
+              aria-label="Método de pago"
+            >
+              <mat-button-toggle value="efectivo">
+                <mat-icon aria-hidden="true">payments</mat-icon>
+                <span>Efectivo</span>
+              </mat-button-toggle>
+              <mat-button-toggle value="yape">
+                <mat-icon aria-hidden="true">phone_iphone</mat-icon>
+                <span>Yape</span>
+              </mat-button-toggle>
+              <mat-button-toggle value="plin">
+                <mat-icon aria-hidden="true">contactless</mat-icon>
+                <span>Plin</span>
+              </mat-button-toggle>
+              <mat-button-toggle value="tarjeta">
+                <mat-icon aria-hidden="true">credit_card</mat-icon>
+                <span>Tarjeta</span>
+              </mat-button-toggle>
+              <mat-button-toggle value="mixto"><mat-icon aria-hidden="true">splitscreen</mat-icon><span>Mixto</span></mat-button-toggle>
+            </mat-button-toggle-group>
+            @if (posMetodoPago() === 'mixto') {
+              <div class="row" style="flex-wrap: wrap; gap: 8px;">
+                @for (medio of mediosMixtos; track medio) {
+                  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                    <mat-label>{{ medio }}</mat-label>
+                    <input matInput type="number" min="0" step="0.01" [value]="pagosMixtos()[medio]" (input)="setImporteMixto(medio, $event)">
+                  </mat-form-field>
+                }
+              </div>
+            }
+
+            <!-- Pago en Efectivo y Cálculo de Vuelto -->
+            @if (posMetodoPago() === 'efectivo') {
+              <mat-card class="pos-cash-calc-card" appearance="outlined">
+                <mat-card-content>
+                  <mat-form-field class="pos-cash-input-field" appearance="outline" subscriptSizing="dynamic">
+                    <mat-label>Efectivo Recibido</mat-label>
+                    <span matPrefix>S/</span>
+                    <input
+                      matInput
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      [value]="posMontoPagado()"
+                      (input)="setMontoPagadoPOS($event)"
+                      [class.is-short]="posPagoEstado() === 'insuficiente'"
+                      [class.is-exact]="posPagoEstado() === 'exacto'"
+                      [class.is-over]="posPagoEstado() === 'sobrante'"
+                    />
+                  </mat-form-field>
+
+                  <!-- Botones de Efectivo Rápido -->
+                  <div class="pos-cash-quick-buttons">
+                    <button mat-stroked-button class="pos-quick-cash-btn" (click)="setMontoRapidoPOS(posService.totalCarrito())">
+                      Exacto
+                    </button>
+                    @for (monto of montosRapidosPOS; track monto) {
+                      <button mat-stroked-button class="pos-quick-cash-btn" (click)="setMontoRapidoPOS(monto)">
+                        S/ {{ monto < 1 ? monto.toFixed(2) : monto }}
+                      </button>
+                    }
+                  </div>
+
+                  <!-- Vuelto Calculado -->
+                  <div class="pos-vuelto-row">
+                    <span>{{ posPagoResumenLabel() }}</span>
+                    <strong
+                      class="pos-cash-result"
+                      [class.result-short]="posPagoEstado() === 'insuficiente'"
+                      [class.result-exact]="posPagoEstado() === 'exacto'"
+                      [class.result-over]="posPagoEstado() === 'sobrante'"
+                    >
+                      S/ {{ posPagoResumenMonto().toFixed(2) }}
+                    </strong>
+                  </div>
+
+                  @if (cajaService.tieneSesionActiva()) {
+                    <div class="pos-cash-integration">
+                      <mat-icon aria-hidden="true" class="icon-14 cash-active-icon">check_circle</mat-icon>
+                      <span>Integrado al Turno de Caja Operativa Activo</span>
+                    </div>
+                  } @else {
+                    <div class="pos-cash-integration cash-warning">
+                      <mat-icon aria-hidden="true" class="icon-14">warning</mat-icon>
+                      <span>Caja cerrada: abre turno en Caja Operativa antes de cobrar</span>
+                    </div>
+                  }
+                </mat-card-content>
+              </mat-card>
+            }
+
+            <!-- Botón Principal de Cobro -->
+            @if (!posService.loading() && !posService.paymentsReady()) {
+              <p role="status">Cobros temporalmente no disponibles: actualizacion de pagos pendiente.</p>
+            }
+            <button
+              type="button"
+              mat-flat-button
+              color="primary"
+              class="pos-btn-checkout"
+              [disabled]="!posService.paymentsReady() || posService.processing() || posService.totalCarrito() <= 0 || (posMetodoPago() === 'efectivo' && posPagoEstado() === 'insuficiente')"
+              (click)="procesarCobroPOS()"
+            >
+              <mat-icon aria-hidden="true">receipt</mat-icon>
+              <span>Cobrar S/ {{ posService.totalCarrito().toFixed(2) }}</span>
+            </button>
+          </div>
+
+        </mat-card>
+      </div>
+
+    </div>
+  }
+
+  <!-- ================= SUB-TAB 2: KARDEX CONTINUO DE ALMACÉN ================= -->
+  @if (posSubTab() === 'kardex') {
+    <div class="pos-tab-wrapper">
+
+      <!-- Barra Superior del Kardex -->
+      <mat-card class="kardex-header-card" appearance="outlined">
+        <mat-card-content>
+          <div class="kardex-header-content">
+            <div>
+              <h3>Libro de Movimientos Kardex Físico</h3>
+              <p>Auditoría continua de entradas (+ reposiciones) y salidas (- ventas mostrador) en almacén.</p>
+            </div>
+            <button mat-flat-button color="primary" class="btn-sm" [disabled]="posService.productos().length === 0" (click)="abrirModalIngresoMercaderia()">
+              <mat-icon aria-hidden="true">add_circle</mat-icon>
+              <span>Registrar entrada de mercadería</span>
+            </button>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Tabla de Movimientos Kardex -->
+      <mat-card class="pos-table-card" appearance="outlined">
+        @if (posService.kardex().length > 0) {
+          <div class="table-scroll-container">
+            <table mat-table [dataSource]="posService.kardex()" class="pos-data-table">
+              <ng-container matColumnDef="fecha">
+                <th mat-header-cell *matHeaderCellDef>Fecha / Hora</th>
+                <td mat-cell *matCellDef="let mov">{{ mov.fecha | date:'dd/MM/yyyy HH:mm' }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="producto">
+                <th mat-header-cell *matHeaderCellDef>Producto</th>
+                <td mat-cell *matCellDef="let mov"><strong>{{ mov.productoNombre }}</strong></td>
+              </ng-container>
+
+              <ng-container matColumnDef="operacion">
+                <th mat-header-cell *matHeaderCellDef>Operación</th>
+                <td mat-cell *matCellDef="let mov">
+                  @if (mov.tipo === '+') {
+                    <span class="badge badge-success">+ Entrada</span>
+                  } @else {
+                    <span class="badge badge-error">- Salida</span>
+                  }
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="cantidad">
+                <th mat-header-cell *matHeaderCellDef class="cell-number">Cantidad</th>
+                <td mat-cell *matCellDef="let mov" class="cell-number" [class.text-entry]="mov.tipo === '+'" [class.text-exit]="mov.tipo === '-'">
+                  <strong>{{ mov.tipo }}{{ mov.cantidad }}</strong>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="precio">
+                <th mat-header-cell *matHeaderCellDef class="cell-number">Precio Unit.</th>
+                <td mat-cell *matCellDef="let mov" class="cell-number">S/ {{ mov.precioUnitario.toFixed(2) }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="saldo">
+                <th mat-header-cell *matHeaderCellDef class="cell-number">Saldo</th>
+                <td mat-cell *matCellDef="let mov" class="cell-number"><strong>{{ mov.saldoStock }} und</strong></td>
+              </ng-container>
+
+              <ng-container matColumnDef="motivo">
+                <th mat-header-cell *matHeaderCellDef>Motivo / Referencia</th>
+                <td mat-cell *matCellDef="let mov">{{ mov.motivo }}</td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="posKardexColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: posKardexColumns;"></tr>
+            </table>
+          </div>
+        } @else {
+          <div class="pos-empty-table">No hay movimientos registrados en el kardex de almacén.</div>
+        }
+      </mat-card>
+
+    </div>
+  }
+
+  <!-- ================= SUB-TAB 3: HISTORIAL DE VENTAS EMITIDAS ================= -->
+  @if (posSubTab() === 'historial_ventas') {
+    <div class="pos-tab-wrapper">
+
+      <mat-card class="ventas-header-card" appearance="outlined">
+        <mat-card-content>
+          <div class="ventas-header-content">
+            <div>
+              <h3>Comprobantes de Venta Emitidos</h3>
+              <p>Registro histórico de boletas, facturas y notas de venta de mostrador.</p>
+            </div>
+            <span class="badge badge-brand">{{ posService.ventas().length }} ventas registradas</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Tabla de Ventas -->
+      <mat-card class="pos-table-card" appearance="outlined">
+        @if (posService.ventas().length > 0) {
+          <div class="table-scroll-container">
+            <table mat-table [dataSource]="posService.ventas()" class="pos-data-table">
+              <ng-container matColumnDef="numero">
+                <th mat-header-cell *matHeaderCellDef>N° Comprobante</th>
+                <td mat-cell *matCellDef="let v">
+                  <strong class="voucher-code">{{ v.numeroComprobante }}</strong>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="fecha">
+                <th mat-header-cell *matHeaderCellDef>Fecha / Hora</th>
+                <td mat-cell *matCellDef="let v">{{ v.fecha | date:'dd/MM/yyyy HH:mm' }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="cliente">
+                <th mat-header-cell *matHeaderCellDef>Cliente</th>
+                <td mat-cell *matCellDef="let v">
+                  <strong class="client-name">{{ v.clienteNombre }}</strong>
+                  <span class="client-doc">{{ v.clienteDocumento }}</span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="tipo">
+                <th mat-header-cell *matHeaderCellDef>Tipo</th>
+                <td mat-cell *matCellDef="let v">
+                  <span class="badge badge-neutral">{{ tipoComprobanteLabel(v.tipoComprobante) }}</span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="metodo">
+                <th mat-header-cell *matHeaderCellDef>Método</th>
+                <td mat-cell *matCellDef="let v">
+                  <span class="badge badge-neutral text-uppercase">{{ v.metodoPago }}</span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="subtotal">
+                <th mat-header-cell *matHeaderCellDef class="cell-number">Subtotal</th>
+                <td mat-cell *matCellDef="let v" class="cell-number">S/ {{ v.subtotal.toFixed(2) }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="igv">
+                <th mat-header-cell *matHeaderCellDef class="cell-number">IGV</th>
+                <td mat-cell *matCellDef="let v" class="cell-number">S/ {{ v.igv.toFixed(2) }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="total">
+                <th mat-header-cell *matHeaderCellDef class="cell-number">Total</th>
+                <td mat-cell *matCellDef="let v" class="cell-number"><strong>S/ {{ v.total.toFixed(2) }}</strong></td>
+              </ng-container>
+
+              <ng-container matColumnDef="nota">
+                <th mat-header-cell *matHeaderCellDef class="cell-action">Nota</th>
+                <td mat-cell *matCellDef="let v" class="cell-action">
+                  <button type="button" mat-stroked-button class="btn-sm" (click)="abrirModalTicketVenta(v)">
+                    <mat-icon aria-hidden="true">print</mat-icon>
+                    Ver
+                  </button>
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="posVentasColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: posVentasColumns;"></tr>
+            </table>
+          </div>
+        } @else {
+          <div class="pos-empty-table">Aún no se han emitido ventas en el mostrador.</div>
+        }
+      </mat-card>
+
+    </div>
+  }
+
+  <!-- ==========================================================================
+       MODAL: TICKET / COMPROBANTE DE VENTA POS
+       ========================================================================== -->
+  @if (modalTicketVentaOpen() && ventaEmitidaSeleccionada(); as v) {
+    <div class="caja-modal-backdrop" (click)="cerrarModalTicketVenta()">
+      <mat-card class="caja-modal-card pos-ticket-modal" (click)="$event.stopPropagation()">
+        <div class="ticket-modal-header">
+          <div class="ticket-title-row">
+            <mat-icon aria-hidden="true" class="ticket-brand-icon">receipt_long</mat-icon>
+            <h2>Comprobante de Venta</h2>
+          </div>
+          <button mat-icon-button (click)="cerrarModalTicketVenta()" aria-label="Cerrar comprobante">
+            <mat-icon aria-hidden="true">close</mat-icon>
+          </button>
+        </div>
+
+        <!-- Ticket Térmico 80mm Estilizado -->
+        <div class="pos-receipt-paper" id="posReceiptPrintable">
+          <div class="pos-receipt-header">
+            <h2 class="pos-receipt-brand">CANCHERO SPORT CLUB</h2>
+            <div class="pos-receipt-ruc">RUC: 20608912345</div>
+            <div class="pos-receipt-address">{{ venueName() }} - {{ venueAddress() }}</div>
+            <div class="pos-receipt-phone">Teléfono: {{ venuePhone() }}</div>
+          </div>
+
+          <div class="pos-receipt-divider">================================</div>
+
+          <div class="pos-receipt-voucher-info">
+            <div class="pos-receipt-voucher-type">
+              {{ tipoComprobanteLabel(v.tipoComprobante) | uppercase }}
+            </div>
+            <div class="pos-receipt-voucher-num">{{ v.numeroComprobante }}</div>
+          </div>
+
+          <div class="pos-receipt-meta-grid">
+            <div><span>Fecha:</span> {{ v.fecha | date:'dd/MM/yyyy HH:mm' }}</div>
+            <div><span>Cajero:</span> {{ v.cajeroNombre }}</div>
+            <div><span>Cliente:</span> {{ v.clienteNombre }}</div>
+            <div><span>Doc:</span> {{ v.clienteDocumento || 'DNI' }}</div>
+          </div>
+
+          <div class="pos-receipt-divider">--------------------------------</div>
+
+          <!-- Tabla de Productos del Ticket -->
+          <table class="pos-receipt-table">
+            <thead>
+              <tr>
+                <th style="text-align: left;">CANT</th>
+                <th style="text-align: left;">DESCRIPCIÓN</th>
+                <th style="text-align: right;">P.U.</th>
+                <th style="text-align: right;">TOTAL</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (it of v.items; track it.productoId) {
+                <tr>
+                  <td>{{ it.cantidad }}</td>
+                  <td>{{ it.nombre }}</td>
+                  <td style="text-align: right;">{{ it.precioUnitario.toFixed(2) }}</td>
+                  <td style="text-align: right;">{{ it.subtotal.toFixed(2) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+
+          <div class="pos-receipt-divider">--------------------------------</div>
+
+          <!-- Desglose de venta -->
+          <div class="pos-receipt-totals">
+            <div class="pos-r-row">
+              <span>OP. GRAVADA (SUBTOTAL):</span>
+              <strong>S/ {{ v.subtotal.toFixed(2) }}</strong>
+            </div>
+            <div class="pos-r-row">
+              <span>I.G.V. (18%):</span>
+              <strong>S/ {{ v.igv.toFixed(2) }}</strong>
+            </div>
+            <div class="pos-r-row pos-r-total-big">
+              <span>TOTAL A PAGAR:</span>
+              <span>S/ {{ v.total.toFixed(2) }}</span>
+            </div>
+          </div>
+
+          <div class="pos-receipt-divider">--------------------------------</div>
+
+          <!-- Método de Pago & Vuelto -->
+          <div class="pos-receipt-payment-info">
+            <div class="pos-r-row">
+              <span>FORMA DE PAGO:</span>
+              <strong class="text-uppercase">{{ v.metodoPago }}</strong>
+            </div>
+            @for (pago of v.pagos || []; track pago.metodoPago) {
+              <div class="pos-r-row">
+                <span class="text-uppercase">{{ pago.metodoPago }}:</span>
+                <strong>S/ {{ pago.monto.toFixed(2) }}</strong>
+              </div>
+            }
+            @if (v.metodoPago === 'efectivo' || (v.vuelto || 0) > 0) {
+              <div class="pos-r-row">
+                <span>IMPORTE RECIBIDO:</span>
+                <span>S/ {{ (v.montoPagado || v.total).toFixed(2) }}</span>
+              </div>
+              <div class="pos-r-row">
+                <span>VUELTO:</span>
+                <strong>S/ {{ (v.vuelto || 0).toFixed(2) }}</strong>
+              </div>
+            }
+          </div>
+
+          <div class="pos-receipt-divider">================================</div>
+
+          <!-- Mensaje de control interno -->
+          <div class="pos-receipt-disclaimer">
+            CONTROL INTERNO DEL COMPLEJO DEPORTIVO<br>
+            CONSERVE ESTE COMPROBANTE
+          </div>
+
+          <div class="pos-receipt-footer-thanks">
+            GRACIAS POR TU COMPRA. VUELVE PRONTO.
+          </div>
+        </div>
+
+        <!-- Botones de Acción -->
+        <div class="pos-receipt-actions">
+          <button mat-stroked-button (click)="imprimirTicketPOS()">
+            <mat-icon aria-hidden="true" class="icon-16">print</mat-icon>
+            <span>Imprimir Comprobante</span>
+          </button>
+          <button mat-stroked-button (click)="descargarComprobanteVentaPOS()">
+            <mat-icon aria-hidden="true" class="icon-16">download</mat-icon>
+            <span>Descargar</span>
+          </button>
+          <button mat-flat-button color="primary" (click)="cerrarModalTicketVenta()">
+            <span>Cerrar</span>
+          </button>
+        </div>
+      </mat-card>
+    </div>
+  }
+
+  <!-- ==========================================================================
+       MODAL: REGISTRO DE ENTRADA / REPOSICIÓN DE MERCADERÍA (KARDEX +)
+       ========================================================================== -->
+  @if (modalIngresoMercaderiaOpen()) {
+    <div class="caja-modal-backdrop" (click)="cerrarModalIngresoMercaderia()">
+      <div class="caja-modal-card pos-entry-modal" (click)="$event.stopPropagation()">
+
+        <div class="entry-modal-header">
+          <div class="entry-modal-title">
+            <mat-icon aria-hidden="true" class="entry-brand-icon">add_box</mat-icon>
+            <strong>Registrar Entrada de Mercadería (Kardex +)</strong>
+          </div>
+          <button type="button" mat-icon-button (click)="cerrarModalIngresoMercaderia()" aria-label="Cerrar modal">
+            <mat-icon aria-hidden="true">close</mat-icon>
+          </button>
+        </div>
+
+        <div class="entry-modal-body">
+          <div class="entry-field-group">
+            <label class="entry-label">
+              Seleccionar Producto en Almacén:
+            </label>
+            <select
+              class="input-admin"
+              [value]="ingresoProductoId()"
+              (change)="setIngresoProductoId($event)"
+            >
+              @for (p of posService.productos(); track p.id) {
+                <option [value]="p.id">
+                  {{ p.nombre }} (Stock actual: {{ p.stock }})
+                </option>
+              }
+            </select>
+          </div>
+
+          <div class="entry-grid-2col">
+            <div class="entry-field-group">
+              <label class="entry-label">
+                Cantidad a Ingresar:
+              </label>
+              <input
+                type="number"
+                min="1"
+                class="input-admin"
+                [value]="ingresoCantidad()"
+                (input)="setIngresoCantidad($event)"
+              />
+            </div>
+            <div class="entry-field-group">
+              <label class="entry-label">
+                Costo Compra Unitario (S/):
+              </label>
+              <input
+                type="number"
+                step="0.1"
+                class="input-admin"
+                [value]="ingresoPrecioCompra()"
+                (input)="setIngresoPrecioCompra($event)"
+              />
+            </div>
+          </div>
+
+          <div class="entry-field-group">
+            <label class="entry-label">
+              Motivo o Referencia (guía, nota o comprobante proveedor):
+            </label>
+            <input
+              type="text"
+              class="input-admin"
+              placeholder="Ej. Compra de proveedor F002-9988"
+              [value]="ingresoMotivo()"
+              (input)="setIngresoMotivo($event)"
+            />
+          </div>
+
+          <div class="entry-kardex-notice">
+            Al confirmar, el stock del producto aumentará inmediatamente y se insertará un registro auditor en el <strong>Kardex Continuo</strong> con operación <code>'+'</code>.
+          </div>
+
+          <div class="entry-modal-actions">
+            <button type="button" mat-stroked-button class="btn-sm" (click)="cerrarModalIngresoMercaderia()">
+              Cancelar
+            </button>
+            <button type="button" mat-flat-button color="primary" class="btn-sm" (click)="confirmarIngresoMercaderia()">
+              Confirmar Ingreso en Kardex
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  }
+  }
+</div>
