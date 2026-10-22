@@ -1,25 +1,22 @@
-# 1. Etapa de compilación con JDK 17 y Maven instalado nativamente
+# 1. Etapa de compilación utilizando Maven y JDK 17
 FROM eclipse-temurin:17-jdk-alpine AS build
 WORKDIR /app
 
-# Instalamos maven para compilar sin depender del archivo mvnw (evita errores de formato/CRLF)
+# Instalamos Maven directamente en el contenedor Alpine
 RUN apk add --no-cache maven
 
-# Copiamos todo el contenido del directorio de la API
+# Copiamos todo el repositorio completo
 COPY . .
 
-# Compilamos el proyecto usando maven global omitiendo las pruebas
-RUN mvn clean package -DskipTests
+# Compilamos específicamente el proyecto ubicado dentro del monorepo
+RUN mvn -f canchas-platform/apps/api/pom.xml clean package -DskipTests
 
 # 2. Etapa de ejecución ligera con JRE 17
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 
-# Copiamos el JAR generado
-COPY --from=build /app/target/*.jar app.jar
+# Copiamos el archivo JAR generado apuntando a su ruta exacta dentro del monorepo
+COPY --from=build /app/canchas-platform/apps/api/target/*.jar app.jar
 
-# Puerto de la app
 EXPOSE 8080
-
-# Comando de inicio
 ENTRYPOINT ["java", "-jar", "app.jar"]
