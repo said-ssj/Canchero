@@ -40,20 +40,42 @@ export class AdminPersonalizacion {
   private readonly sanitizer = inject(DomSanitizer);
 
   // Inputs del componente contenedor
-  readonly duenoIdInput = input<string | number | null | undefined>(undefined, { alias: 'duenoId' });
-  readonly duenoId = computed(() => this.duenoIdInput() !== undefined ? this.duenoIdInput()! : this.context.ownerId());
+  readonly duenoIdInput = input<string | number | null | undefined>(undefined, {
+    alias: 'duenoId',
+  });
+  readonly duenoId = computed(() =>
+    this.duenoIdInput() !== undefined ? this.duenoIdInput()! : this.context.ownerId(),
+  );
   readonly venueIdInput = input<number | null | undefined>(undefined, { alias: 'venueId' });
-  readonly venueId = computed(() => this.venueIdInput() !== undefined ? this.venueIdInput()! : this.context.venue()?.id ?? null);
+  readonly venueId = computed(() =>
+    this.venueIdInput() !== undefined ? this.venueIdInput()! : (this.context.venue()?.id ?? null),
+  );
   readonly venueNameInput = input<string | undefined>(undefined, { alias: 'venueName' });
-  readonly venueName = computed(() => this.venueNameInput() !== undefined ? this.venueNameInput()! : this.context.venue()?.nombre ?? 'Sin sede seleccionada');
+  readonly venueName = computed(() =>
+    this.venueNameInput() !== undefined
+      ? this.venueNameInput()!
+      : (this.context.venue()?.nombre ?? 'Sin sede seleccionada'),
+  );
   readonly venueAddressInput = input<string | undefined>(undefined, { alias: 'venueAddress' });
-  readonly venueAddress = computed(() => this.venueAddressInput() !== undefined ? this.venueAddressInput()! : this.context.venue()?.direccion ?? '');
+  readonly venueAddress = computed(() =>
+    this.venueAddressInput() !== undefined
+      ? this.venueAddressInput()!
+      : (this.context.venue()?.direccion ?? ''),
+  );
   readonly venuePhoneInput = input<string | undefined>(undefined, { alias: 'venuePhone' });
-  readonly venuePhone = computed(() => this.venuePhoneInput() !== undefined ? this.venuePhoneInput()! : this.context.venue()?.telefono ?? '');
+  readonly venuePhone = computed(() =>
+    this.venuePhoneInput() !== undefined
+      ? this.venuePhoneInput()!
+      : (this.context.venue()?.telefono ?? ''),
+  );
   readonly loadingInput = input<boolean | undefined>(undefined, { alias: 'loading' });
-  readonly loading = computed(() => this.loadingInput() !== undefined ? this.loadingInput()! : this.context.loading());
+  readonly loading = computed(() =>
+    this.loadingInput() !== undefined ? this.loadingInput()! : this.context.loading(),
+  );
   readonly errorInput = input<string | undefined>(undefined, { alias: 'error' });
-  readonly error = computed(() => this.errorInput() !== undefined ? this.errorInput()! : this.context.error());
+  readonly error = computed(() =>
+    this.errorInput() !== undefined ? this.errorInput()! : this.context.error(),
+  );
 
   // Outputs
   readonly notice = output<string>();
@@ -89,17 +111,15 @@ export class AdminPersonalizacion {
   protected readonly sede = computed<Venue | null>(() => {
     const vId = this.venueId();
     const sedes = this.db.getSedesPorDueno(this.currentDuenoId());
-    return sedes.find(s => Number(s.id) === Number(vId)) ?? null;
+    return sedes.find((s) => Number(s.id) === Number(vId)) ?? null;
   });
 
   // Imagen de portada para preview
   protected readonly coverImage = computed<string>(() => {
-    const s = this.db.getSedesPorDueno(this.currentDuenoId())
-      .find(venue => Number(venue.id) === Number(this.venueId()));
-    return (
-      s?.fotos?.[0] ||
-      s?.imagen_url || '/images/venue-placeholder.svg'
-    );
+    const s = this.db
+      .getSedesPorDueno(this.currentDuenoId())
+      .find((venue) => Number(venue.id) === Number(this.venueId()));
+    return s?.fotos?.[0] || s?.imagen_url || '/images/venue-placeholder.svg';
   });
 
   protected onCoverError(event: Event): void {
@@ -127,7 +147,7 @@ export class AdminPersonalizacion {
 
   protected readonly qrSvgSafe = computed<SafeHtml>(() => {
     return this.sanitizer.bypassSecurityTrustHtml(
-      exportarQRSvg(this.qrMatrix(), 120, this.colorAcento(), true)
+      exportarQRSvg(this.qrMatrix(), 120, this.colorAcento(), true),
     );
   });
 
@@ -174,13 +194,22 @@ export class AdminPersonalizacion {
     this.liveVenueStory.set(val);
   }
 
-  protected guardarTextosMarca(): void {
+  protected async guardarTextosMarca(): Promise<void> {
     const s = this.sede();
     if (s) {
-      this.db.saveOrUpdateSede(this.currentDuenoId(), {
-        ...s,
-        descripcion: this.liveVenueStory(),
-      });
+      try {
+        await this.db.saveOrUpdateSede(this.currentDuenoId(), {
+          ...s,
+          descripcion: this.liveVenueStory(),
+        });
+      } catch (error) {
+        this.notice.emit(
+          (error as any)?.error?.message ||
+            (error as any)?.message ||
+            'No se pudieron guardar los textos. Intenta nuevamente.',
+        );
+        return;
+      }
       this.notice.emit('Textos de marca guardados correctamente');
     }
   }
@@ -191,7 +220,7 @@ export class AdminPersonalizacion {
     this.notice.emit(
       metodo === 'yape'
         ? 'Billetera Yape Móvil seleccionada'
-        : 'Billetera Plin Transfer seleccionada'
+        : 'Billetera Plin Transfer seleccionada',
     );
   }
 
@@ -271,7 +300,7 @@ export class AdminPersonalizacion {
   }
 
   // ===== PUBLICACIÓN GENERAL =====
-  protected publicarCambiosSede(): void {
+  protected async publicarCambiosSede(): Promise<void> {
     const s = this.sede();
     if (s) {
       const updated: Venue = {
@@ -279,7 +308,16 @@ export class AdminPersonalizacion {
         descripcion: this.liveVenueStory(),
         telefono: this.totemPhone(),
       };
-      this.db.saveOrUpdateSede(this.currentDuenoId(), updated);
+      try {
+        await this.db.saveOrUpdateSede(this.currentDuenoId(), updated);
+      } catch (error) {
+        this.notice.emit(
+          (error as any)?.error?.message ||
+            (error as any)?.message ||
+            'No se pudieron publicar los cambios. Intenta nuevamente.',
+        );
+        return;
+      }
       this.venueUpdated.emit(updated);
       this.notice.emit('Cambios de marca y personalización publicados correctamente');
     } else {

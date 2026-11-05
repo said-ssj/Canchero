@@ -44,18 +44,18 @@
 }
 
 .sidebar-status-badge.is-warning {
-  background: #fef3c7;
+  background: var(--color-warning-100);
   color: #d97706;
 }
 
 .sidebar-status-badge.is-open {
-  background: #dcfce7;
+  background: var(--color-success-100);
   color: #16a34a;
 }
 
 .sidebar-status-badge.is-closed {
-  background: #f1f5f9;
-  color: #64748b;
+  background: var(--color-slate-100);
+  color: var(--color-slate-500);
 }
 
 /* Modal de perfil (Privacidad / Ayuda) */
@@ -106,7 +106,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  background: var(--color-ink-900, #111827);
+  background: var(--color-contrast-bg);
   color: #ffffff;
   padding: 0.75rem 1.25rem;
   border-radius: var(--radius-md, 8px);
@@ -117,7 +117,9 @@
   transform: translateY(16px);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
 }
 
 .toast-alert.is-shown {

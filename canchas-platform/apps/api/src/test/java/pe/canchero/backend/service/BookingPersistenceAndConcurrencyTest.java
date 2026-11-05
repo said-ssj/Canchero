@@ -658,4 +658,33 @@ class BookingPersistenceAndConcurrencyTest {
         assertTrue(cancelled.isPresent());
         assertEquals("Cancelada", cancelled.get().status());
     }
+
+    @Test
+    void ownerReschedulesBookingWithoutOverlappingOthersAndOtherOwnersAreRejected() {
+        UUID ownerId = UUID.fromString("33333333-3333-3333-3333-333333333333");
+        jdbc.update("update sede set id_dueno = ? where id_sede = 10", ownerId);
+        AuthUserDto owner = new AuthUserDto(ownerId.toString(), "Dueño", "d@canchero.pe", "", "dueno");
+        AuthUserDto otherOwner = new AuthUserDto(UUID.randomUUID().toString(), "Otro", "o@canchero.pe", "", "dueno");
+
+        int first = Integer.parseInt(service.createBooking(new BookingRequest(
+                "Cancha 1", "Complejo Norte", "10", "101", playerOneId.toString(),
+                "2026-10-23", "09:00 - 10:00", 90.0, "tarjeta", List.of(), List.of(9), "resched-1"),
+                playerOneAuth, "resched-1").id());
+        service.createBooking(new BookingRequest(
+                "Cancha 1", "Complejo Norte", "10", "101", playerTwoId.toString(),
+                "2026-10-23", "11:00 - 12:00", 90.0, "tarjeta", List.of(), List.of(11), "resched-2"),
+                playerTwoAuth, "resched-2");
+
+        // Se solapa solo consigo misma: permitido.
+        assertTrue(service.rescheduleBooking(first, "2026-10-23", "09:00 - 11:00", owner).isPresent());
+        assertEquals("11:00:00", jdbc.queryForObject(
+                "select cast(hora_fin as varchar) from reserva where id_reserva = ?", String.class, first));
+
+        assertEquals(HttpStatus.CONFLICT, assertThrows(ResponseStatusException.class,
+                () -> service.rescheduleBooking(first, "2026-10-23", "10:00 - 12:00", owner)).getStatusCode());
+        assertEquals(HttpStatus.FORBIDDEN, assertThrows(ResponseStatusException.class,
+                () -> service.rescheduleBooking(first, "2026-10-24", "09:00 - 10:00", otherOwner)).getStatusCode());
+        assertEquals(HttpStatus.FORBIDDEN, assertThrows(ResponseStatusException.class,
+                () -> service.rescheduleBooking(first, "2026-10-24", "09:00 - 10:00", playerOneAuth)).getStatusCode());
+    }
 }

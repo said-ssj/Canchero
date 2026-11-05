@@ -1,7 +1,7 @@
 :host {
   display: block;
   min-width: 0;
-  color: #1a1a1a;
+  color: var(--color-ink-900);
   font-family: 'Plus Jakarta Sans', sans-serif;
   letter-spacing: 0;
 }
@@ -15,7 +15,7 @@ h1 {
 header p,
 .venue-required p {
   margin: 0;
-  color: #666666;
+  color: var(--color-ink-500);
   font-size: 14px;
   line-height: 1.6;
 }
@@ -30,7 +30,7 @@ header p,
 }
 
 .venue-required > mat-icon {
-  color: #666666;
+  color: var(--color-ink-500);
   width: 32px;
   height: 32px;
   font-size: 32px;

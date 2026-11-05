@@ -3,13 +3,19 @@
    ========================================================================== */
 .mat-admin-shell {
   --admin-green: var(--color-brand-green);
-  --admin-green-dark: #229E04;
+  --admin-green-dark: #229e04;
   --admin-orange: var(--color-brand-orange);
   --admin-ink: #15181f;
   --admin-muted: #64748b;
   --admin-border: #dde3ea;
   --admin-soft: #f7f9fb;
-  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family:
+    'Plus Jakarta Sans',
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
 }
 
 .mat-admin-shell .admin-sidebar {
@@ -47,12 +53,12 @@
 }
 
 .mat-admin-shell .sidebar-nav-item:focus-visible {
-  outline: 2px solid var(--can-color-brand-green, #3CB043);
+  outline: 2px solid var(--can-color-brand-green, #3cb043);
   outline-offset: 2px;
 }
 
 .mat-admin-shell .sidebar-nav-item.active {
-  background: var(--can-color-primary, #27802D);
+  background: var(--can-color-primary, #27802d);
   color: #ffffff;
   box-shadow: none;
 }
@@ -125,7 +131,7 @@
 .mat-admin-shell .admin-top-header.mat-toolbar {
   min-height: 66px;
   padding: 0.45rem 1.25rem;
-  background: #ffffff;
+  background: var(--color-surface-card);
   color: var(--admin-ink);
   border-bottom: 1px solid var(--admin-border);
   box-shadow: 0 1px 5px rgba(15, 23, 42, 0.05);
@@ -138,7 +144,7 @@
 
 .mat-admin-shell .venue-picker-field .mat-mdc-text-field-wrapper {
   height: 48px;
-  background: #ffffff;
+  background: var(--color-surface-card);
   border-radius: 7px;
 }
 
@@ -154,7 +160,7 @@
 
 .mat-admin-shell .status-live-chip {
   font-size: 0.83rem;
-  color: #6b7280;
+  color: var(--color-ink-500);
   font-weight: 800;
 }
 
@@ -178,12 +184,12 @@
   width: 42px;
   height: 42px;
   border-radius: 8px;
-  background: #f1f5f9;
-  border: 1px solid #e5e7eb;
+  background: var(--color-slate-100);
+  border: 1px solid var(--color-border);
 }
 
 .mat-admin-shell .profile-avatar-btn.mat-mdc-icon-button {
-  background: #ffffff;
+  background: var(--color-surface-card);
 }
 
 .mat-admin-shell .admin-main-body {
@@ -209,7 +215,7 @@
 }
 
 .mat-admin-shell .view-subtitle {
-  color: #475569;
+  color: var(--color-ink-600);
   line-height: 1.45;
 }
 
@@ -224,7 +230,7 @@
 .mat-admin-shell .mat-mdc-card {
   border: 1px solid var(--admin-border);
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--color-surface-card);
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
 }
 
@@ -260,7 +266,7 @@
 .mat-admin-shell .pos-mat-tabs {
   border-radius: 8px;
   overflow: hidden;
-  background: #ffffff;
+  background: var(--color-surface-card);
   border: 1px solid var(--admin-border);
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
 }
@@ -314,7 +320,7 @@
 
 .mat-admin-shell .pos-search-input .mat-mdc-text-field-wrapper {
   border-radius: 7px;
-  background: #ffffff;
+  background: var(--color-surface-card);
 }
 
 .mat-admin-shell .pos-category-chips {
@@ -381,19 +387,19 @@
 .mat-admin-shell .pos-cash-panel {
   border-radius: 7px;
   border: 1px solid var(--admin-border);
-  background: #f8fafc;
+  background: var(--color-slate-50);
 }
 
 .mat-admin-shell .pos-cash-panel.is-insuficiente {
-  background: #fff1f2;
+  background: var(--color-danger-50);
   border-color: #fecdd3;
-  color: #b91c1c;
+  color: var(--color-danger-600);
 }
 
 .mat-admin-shell .pos-cash-panel.is-exacto {
   background: #ecfdf3;
   border-color: #bbf7d0;
-  color: #15803d;
+  color: var(--color-success-600);
 }
 
 .mat-admin-shell .pos-cash-panel.is-sobrante {
@@ -424,11 +430,11 @@
   border-radius: 8px;
   overflow: hidden;
   border: 1px solid var(--admin-border);
-  background: #ffffff;
+  background: var(--color-surface-card);
 }
 
 .mat-admin-shell .mat-mdc-header-row {
-  background: #f8fafc;
+  background: var(--color-slate-50);
 }
 
 .mat-admin-shell button:focus-visible,
@@ -487,4 +493,3 @@
     font-size: 1.9rem;
   }
 }
-

@@ -141,8 +141,13 @@
   overflow-wrap: anywhere;
 }
 
-.venue-body .row > .badge { max-width: 100%; white-space: normal; }
-.catalog-results { min-width: 0; }
+.venue-body .row > .badge {
+  max-width: 100%;
+  white-space: normal;
+}
+.catalog-results {
+  min-width: 0;
+}
 
 .venue-location {
   display: flex;
@@ -196,7 +201,7 @@
   position: fixed;
   bottom: 24px;
   right: 24px;
-  background: var(--ink);
+  background: var(--color-contrast-bg);
   color: #ffffff;
   padding: 10px 18px;
   border-radius: var(--radius);
@@ -241,8 +246,14 @@
   .public-venue .venue-photo {
     min-height: 100%;
   }
-  .photo-wrapper .fav-btn { right: 8px; top: 8px; }
-  .photo-wrapper .alert-btn { right: 8px; top: 48px; }
+  .photo-wrapper .fav-btn {
+    right: 8px;
+    top: 8px;
+  }
+  .photo-wrapper .alert-btn {
+    right: 8px;
+    top: 48px;
+  }
   .venue-body {
     padding: 12px;
   }

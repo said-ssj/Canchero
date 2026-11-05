@@ -854,6 +854,51 @@ public class SupabaseDataService {
         return updateBookingStatus(id, reservationStatusId("complet"));
     }
 
+    @Transactional
+    public Optional<BookingResponse> rescheduleBooking(int id, String rawFecha, String rawHorario, AuthUserDto authUser) {
+        if (authUser == null || authUser.id() == null || authUser.id().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Debes iniciar sesión para reprogramar una reserva.");
+        }
+        List<Map<String, Object>> rows = jdbc.queryForList("""
+                select r.id_cancha, s.id_dueno
+                from reserva r
+                join cancha c on c.id_cancha = r.id_cancha
+                join sede s on s.id_sede = c.id_sede
+                where r.id_reserva = ? and r.estado = 'A'
+                """, id);
+        if (rows.isEmpty()) {
+            return Optional.empty();
+        }
+        String rol = authUser.rol() == null ? "" : authUser.rol().trim().toLowerCase(Locale.ROOT);
+        boolean isAdmin = "admin".equals(rol) || "administrador".equals(rol);
+        boolean isOwner = "dueno".equals(rol) || "dueño".equals(rol) || "owner".equals(rol) || "propietario".equals(rol);
+        Object duenoId = rows.get(0).get("id_dueno");
+        if (!isAdmin && (!isOwner || duenoId == null || !authUser.id().trim().equals(duenoId.toString()))) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tienes permiso para modificar reservas de otra sede.");
+        }
+
+        int courtId = ((Number) rows.get(0).get("id_cancha")).intValue();
+        LocalDate fecha = parseDate(rawFecha);
+        NormalizedSlotRange slotRange = resolveAndValidateSlotRange(rawHorario, null);
+        ReentrantLock courtLock = courtLocks.computeIfAbsent(courtId, k -> new ReentrantLock());
+        courtLock.lock();
+        try {
+            LockedCourtInfo lockedCourt = lockAndValidateCourt(courtId);
+            validateNotPastInLima(fecha, slotRange.startHour());
+            validateWithinVenueOperatingHours(lockedCourt.sedeId(), fecha, slotRange);
+            validateNoOverlappingReservationsOrMaintenance(courtId, fecha, slotRange, id);
+            // shortcut: conserva monto y pagos originales aunque la tarifa del nuevo horario sea distinta; recalcular cuando haya ajustes de cobro.
+            jdbc.update("""
+                    update reserva
+                    set fecha_reserva = ?, hora_inicio = ?, hora_fin = ?, fecmod = now(), usmod = 'API', pcmod = 'SPRING'
+                    where id_reserva = ? and estado = 'A'
+                    """, fecha, slotRange.startTime(), slotRange.endTime(), id);
+            return getBookingById(id);
+        } finally {
+            courtLock.unlock();
+        }
+    }
+
     public Optional<PublicPassResponse> getBookingByPass(String codigo) {
         if (codigo == null || codigo.isBlank()) {
             return Optional.empty();
@@ -1592,6 +1637,11 @@ public class SupabaseDataService {
     }
 
     private void validateNoOverlappingReservationsOrMaintenance(int courtId, LocalDate fecha, NormalizedSlotRange slotRange) {
+        validateNoOverlappingReservationsOrMaintenance(courtId, fecha, slotRange, 0);
+    }
+
+    private void validateNoOverlappingReservationsOrMaintenance(int courtId, LocalDate fecha, NormalizedSlotRange slotRange,
+            int excludedReservaId) {
         List<int[]> activeReservations = jdbc.query("""
                         select r.hora_inicio, r.hora_fin
                         from reserva r
@@ -1599,6 +1649,7 @@ public class SupabaseDataService {
                         where r.id_cancha = ?
                           and r.fecha_reserva = ?
                           and r.estado = 'A'
+                          and r.id_reserva <> ?
                           and er.estado = 'A'
                           and (lower(er.nombre) like '%pend%' or lower(er.nombre) like '%confirm%' or lower(er.nombre) like '%aprob%')
                         """,
@@ -1610,7 +1661,8 @@ public class SupabaseDataService {
                     return new int[]{sH, eH};
                 },
                 courtId,
-                fecha);
+                fecha,
+                excludedReservaId);
 
         for (int[] occupied : activeReservations) {
             if (occupied[0] < slotRange.endHour() && occupied[1] > slotRange.startHour()) {

@@ -14,7 +14,7 @@
   padding: 16px 20px;
   border: 1px solid var(--line, #dde3ea);
   border-radius: var(--radius, 6px);
-  background: #ffffff;
+  background: var(--color-surface-card);
   color: var(--ink, #1f2937);
   font: inherit;
   text-align: left;
@@ -25,21 +25,21 @@
 }
 
 .add-action:hover {
-  background: #ffffff;
+  background: var(--color-surface-card);
   border-color: var(--line, #dde3ea);
   box-shadow: none;
   transform: none;
 }
 
 .add-action:focus-visible {
-  outline: 2px solid var(--primary, #3CB043);
+  outline: 2px solid var(--primary, #3cb043);
   outline-offset: 2px;
 }
 
 .add-action > .icon {
   flex: 0 0 24px;
   font-size: 24px;
-  color: var(--primary, #3CB043);
+  color: var(--primary, #3cb043);
 }
 
 .add-action-copy {

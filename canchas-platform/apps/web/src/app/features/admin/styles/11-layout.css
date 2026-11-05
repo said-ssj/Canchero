@@ -13,7 +13,11 @@
   min-width: var(--admin-sidebar-width) !important;
   max-width: var(--admin-sidebar-width) !important;
   overflow-x: hidden !important;
-  transition: width 180ms ease, min-width 180ms ease, max-width 180ms ease, transform 180ms ease;
+  transition:
+    width 180ms ease,
+    min-width 180ms ease,
+    max-width 180ms ease,
+    transform 180ms ease;
 }
 
 .mat-admin-shell .admin-content-wrapper,
@@ -23,7 +27,10 @@
   max-width: calc(100vw - var(--admin-sidebar-width)) !important;
   min-width: 0 !important;
   overflow-x: hidden !important;
-  transition: margin-left 180ms ease, width 180ms ease, max-width 180ms ease;
+  transition:
+    margin-left 180ms ease,
+    width 180ms ease,
+    max-width 180ms ease;
 }
 
 .mat-admin-shell.sidebar-collapsed .admin-sidebar {
@@ -114,7 +121,7 @@
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  color: #374151 !important;
+  color: var(--color-ink-700) !important;
   background: transparent !important;
 }
 
@@ -230,7 +237,6 @@
   .mat-admin-shell .venue-picker-field {
     width: min(58vw, 380px) !important;
   }
-
 }
 
 @media (max-width: 640px) {
@@ -255,4 +261,3 @@
     height: 38px !important;
   }
 }
-

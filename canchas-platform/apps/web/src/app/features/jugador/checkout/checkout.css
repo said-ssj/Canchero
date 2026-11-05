@@ -175,19 +175,19 @@
 .slot:disabled {
   background: #f1f3f5;
   color: var(--disabled-ink);
-  border-color: #e5e7eb;
+  border-color: var(--color-border);
   cursor: not-allowed;
 }
 
 .calendar-table .slot.chosen,
-.calendar-table .slot[aria-pressed="true"] {
+.calendar-table .slot[aria-pressed='true'] {
   background: var(--primary);
   border-color: var(--primary);
   color: white;
 }
 
 .calendar-table .slot.chosen small,
-.calendar-table .slot[aria-pressed="true"] small {
+.calendar-table .slot[aria-pressed='true'] small {
   color: white;
 }
 
@@ -215,11 +215,11 @@
 }
 
 .legend:before {
-  content: "";
+  content: '';
   width: 10px;
   height: 10px;
   border: 1px solid var(--line);
-  background: white;
+  background: var(--color-surface-card);
   border-radius: 2px;
 }
 
@@ -358,7 +358,7 @@
 }
 
 .result-heading.danger .result-symbol {
-  background: #fee2e2;
+  background: var(--color-danger-50);
   color: var(--danger);
 }
 

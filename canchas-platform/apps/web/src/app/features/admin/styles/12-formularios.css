@@ -21,7 +21,7 @@
 .mat-admin-shell .admin-view-panel textarea:focus,
 .mat-admin-shell #view-qr textarea:focus,
 .mat-admin-shell #view-configuracion textarea:focus {
-  border-color: #3CB043 !important;
+  border-color: #3cb043 !important;
   box-shadow: 0 0 0 2px rgba(60, 176, 67, 0.12) !important;
 }
 
@@ -46,5 +46,5 @@
 .cancha-empty-add-card:hover,
 .sede-barra-larga:hover,
 .cancha-barra-larga:hover {
-  border-color: #dfe3e8 !important;
+  border-color: var(--color-border) !important;
 }

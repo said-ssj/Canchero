@@ -98,8 +98,8 @@
 }
 .admin-finanzas button:disabled,
 .admin-finanzas input:disabled {
-  background: #e5e7eb;
-  color: #6b7280;
+  background: var(--can-color-disabled-bg);
+  color: var(--color-ink-500);
   border-color: #d1d5db;
   opacity: 1;
   cursor: default;
@@ -126,7 +126,7 @@
   width: 100%;
   min-height: 38px;
   padding: 8px 10px;
-  border: 1px solid #dfe3e8;
+  border: 1px solid var(--color-border);
   border-radius: 6px;
   font-size: 13px;
 }
@@ -156,7 +156,7 @@
 .op-metrics small,
 .op-metrics span {
   font-size: 12px;
-  color: #626a72;
+  color: var(--color-ink-500);
 }
 .tag-periodo,
 .badge {
@@ -166,7 +166,7 @@
 .op-table-wrap {
   overflow: auto;
   max-width: 100%;
-  border: 1px solid #dfe3e8;
+  border: 1px solid var(--color-border);
   border-radius: 6px;
 }
 .op-table {
@@ -174,13 +174,13 @@
   min-width: 600px;
   border-collapse: collapse;
   font-size: 13px;
-  background: #fff;
+  background: var(--color-surface-card);
 }
 .op-table th,
 .op-table td {
   padding: 12px;
   text-align: left;
-  border-bottom: 1px solid #dfe3e8;
+  border-bottom: 1px solid var(--color-border);
   vertical-align: middle;
 }
 .op-table th {
@@ -203,10 +203,10 @@
   gap: 8px;
   align-items: center;
   min-width: 0;
-  border: 1px solid #dfe3e8;
+  border: 1px solid var(--color-border);
   border-radius: 6px;
   padding: 0 10px;
-  background: #fff;
+  background: var(--color-surface-card);
 }
 .search input {
   width: 100%;
@@ -222,10 +222,10 @@
   gap: 4px;
 }
 .segmented button {
-  border: 1px solid #dfe3e8;
+  border: 1px solid var(--color-border);
   border-radius: 6px;
   padding: 8px 10px;
-  background: #fff;
+  background: var(--color-surface-card);
   color: #394249;
   font-size: 12px;
   line-height: 1.5;
@@ -254,10 +254,10 @@
   max-height: calc(100dvh - 32px);
   overflow: auto;
   padding: 0;
-  border: 1px solid #dfe3e8;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
-  background: #fff;
-  color: #191919;
+  background: var(--color-surface-card);
+  color: var(--color-ink-900);
 }
 .dialog-header,
 .dialog-footer {
@@ -268,13 +268,13 @@
   padding: 16px 20px;
 }
 .dialog-header {
-  border-bottom: 1px solid #dfe3e8;
+  border-bottom: 1px solid var(--color-border);
 }
 .dialog-body {
   padding: 20px;
 }
 .dialog-footer {
-  border-top: 1px solid #dfe3e8;
+  border-top: 1px solid var(--color-border);
   flex-wrap: wrap;
 }
 .list-line {

@@ -24,12 +24,7 @@ import {
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 
 export type SeccionConfiguracion =
-  | 'cuenta'
-  | 'seguridad'
-  | 'sesiones'
-  | 'notificaciones'
-  | 'reservas'
-  | 'comision';
+  'cuenta' | 'seguridad' | 'sesiones' | 'notificaciones' | 'reservas' | 'comision';
 
 @Component({
   standalone: true,
@@ -66,24 +61,42 @@ export class AdminConfiguracion {
   ];
 
   setSeccion(seccion: string): void {
-    if (['cuenta', 'seguridad', 'sesiones', 'notificaciones', 'reservas', 'comision'].includes(seccion)) {
+    if (
+      ['cuenta', 'seguridad', 'sesiones', 'notificaciones', 'reservas', 'comision'].includes(
+        seccion,
+      )
+    ) {
       this.seccionActiva.set(seccion as SeccionConfiguracion);
     }
   }
 
   // Inputs
-  readonly duenoIdInput = input<string | number | null | undefined>(undefined, { alias: 'duenoId' });
-  readonly duenoId = computed(() => this.duenoIdInput() !== undefined ? this.duenoIdInput()! : this.context.ownerId());
+  readonly duenoIdInput = input<string | number | null | undefined>(undefined, {
+    alias: 'duenoId',
+  });
+  readonly duenoId = computed(() =>
+    this.duenoIdInput() !== undefined ? this.duenoIdInput()! : this.context.ownerId(),
+  );
   readonly venueIdInput = input<number | null | undefined>(undefined, { alias: 'venueId' });
-  readonly venueId = computed(() => this.venueIdInput() !== undefined ? this.venueIdInput()! : this.context.venue()?.id ?? null);
+  readonly venueId = computed(() =>
+    this.venueIdInput() !== undefined ? this.venueIdInput()! : (this.context.venue()?.id ?? null),
+  );
   readonly venueInput = input<Venue | null | undefined>(undefined, { alias: 'venue' });
-  readonly venue = computed(() => this.venueInput() !== undefined ? this.venueInput()! : this.context.venue() ?? null);
+  readonly venue = computed(() =>
+    this.venueInput() !== undefined ? this.venueInput()! : (this.context.venue() ?? null),
+  );
   readonly venuesInput = input<Venue[] | undefined>(undefined, { alias: 'venues' });
-  readonly venues = computed(() => this.venuesInput() !== undefined ? this.venuesInput()! : this.context.venues());
+  readonly venues = computed(() =>
+    this.venuesInput() !== undefined ? this.venuesInput()! : this.context.venues(),
+  );
   readonly loadingInput = input<boolean | undefined>(undefined, { alias: 'loading' });
-  readonly loading = computed(() => this.loadingInput() !== undefined ? this.loadingInput()! : this.context.loading());
+  readonly loading = computed(() =>
+    this.loadingInput() !== undefined ? this.loadingInput()! : this.context.loading(),
+  );
   readonly errorInput = input<string | undefined>(undefined, { alias: 'error' });
-  readonly error = computed(() => this.errorInput() !== undefined ? this.errorInput()! : this.context.error());
+  readonly error = computed(() =>
+    this.errorInput() !== undefined ? this.errorInput()! : this.context.error(),
+  );
 
   // Outputs
   readonly notice = output<string>();
@@ -149,7 +162,9 @@ export class AdminConfiguracion {
   protected readonly cuentasBancarias = signal<CuentaBancariaItem[]>(CUENTAS_BANCARIAS_DEFECTO);
   protected readonly cuentaBancariaSeleccionada = signal<string>('bcp');
   protected readonly frecuenciaPago = signal<FrecuenciaLiquidacion>('Semanal (Lunes)');
-  protected readonly comprobantesHistorial = signal<ComprobanteLiquidacionItem[]>(COMPROBANTES_LIQUIDACION_HISTORIAL);
+  protected readonly comprobantesHistorial = signal<ComprobanteLiquidacionItem[]>(
+    COMPROBANTES_LIQUIDACION_HISTORIAL,
+  );
 
   // Modales de control
   protected readonly modalAyudaOpen = signal<boolean>(false);
@@ -245,7 +260,9 @@ export class AdminConfiguracion {
       const { data, error } = await supabase.auth.updateUser({ password: nuevo });
 
       if (error) {
-        this.pwdError.set('No se pudo actualizar la contraseña. Comprueba tu sesión y vuelve a intentar.');
+        this.pwdError.set(
+          'No se pudo actualizar la contraseña. Comprueba tu sesión y vuelve a intentar.',
+        );
       } else {
         this.pwdSuccess.set('Contraseña de la cuenta matriz actualizada con éxito.');
         this.notice.emit('Contraseña actualizada en el servidor de autenticación.');
@@ -384,7 +401,11 @@ export class AdminConfiguracion {
       'Canchero Perú - Plataforma de Gestión Deportiva.',
     ].join('\n');
 
-    this.descargarArchivo(contenido, `Liquidacion-${comprobante.codigo}.txt`, 'text/plain;charset=utf-8');
+    this.descargarArchivo(
+      contenido,
+      `Liquidacion-${comprobante.codigo}.txt`,
+      'text/plain;charset=utf-8',
+    );
     this.notice.emit(`Comprobante ${comprobante.codigo} descargado en formato de texto.`);
   }
 
@@ -401,7 +422,11 @@ export class AdminConfiguracion {
   <NetoTransferido>${comprobante.netoTransferido.toFixed(2)}</NetoTransferido>
 </ComprobanteLiquidacion>`;
 
-    this.descargarArchivo(xml, `Liquidacion-${comprobante.codigo}.xml`, 'application/xml;charset=utf-8');
+    this.descargarArchivo(
+      xml,
+      `Liquidacion-${comprobante.codigo}.xml`,
+      'application/xml;charset=utf-8',
+    );
     this.notice.emit(`Archivo XML de liquidación ${comprobante.codigo} descargado.`);
   }
 
@@ -452,7 +477,7 @@ export class AdminConfiguracion {
     this.modalEditarPerfilOpen.set(true);
   }
 
-  protected guardarEdicionPerfil(): void {
+  protected async guardarEdicionPerfil(): Promise<void> {
     const nombre = this.editNombre().trim();
     const telefono = this.editTelefono().trim();
     const ruc = this.editRuc().trim();
@@ -464,11 +489,20 @@ export class AdminConfiguracion {
 
     const v = this.venue();
     if (v && this.duenoId()) {
-      this.db.saveOrUpdateSede(this.duenoId()!, {
-        ...v,
-        telefono: telefono || v.telefono,
-        ruc_facturacion: ruc || v.ruc_facturacion,
-      });
+      try {
+        await this.db.saveOrUpdateSede(this.duenoId()!, {
+          ...v,
+          telefono: telefono || v.telefono,
+          ruc_facturacion: ruc || v.ruc_facturacion,
+        });
+      } catch (error) {
+        this.notice.emit(
+          (error as any)?.error?.message ||
+            (error as any)?.message ||
+            'No se pudieron guardar los datos. Intenta nuevamente.',
+        );
+        return;
+      }
     }
 
     this.modalEditarPerfilOpen.set(false);

@@ -95,6 +95,25 @@ public class BookingController {
                 .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse("Reserva no encontrada")));
     }
 
+    public record RescheduleRequest(String fecha, String horario) {}
+
+    @PatchMapping("/{id}")
+    public ResponseEntity<?> reschedule(
+            @PathVariable int id,
+            @RequestBody RescheduleRequest request,
+            HttpServletRequest httpRequest) {
+        Object rawUser = httpRequest.getAttribute("auth.user");
+        if (!(rawUser instanceof AuthUserDto authUser)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Debes iniciar sesión para reprogramar una reserva.");
+        }
+        if (request == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Indica la nueva fecha y horario.");
+        }
+        return data.rescheduleBooking(id, request.fecha(), request.horario(), authUser)
+                .<ResponseEntity<?>>map(ResponseEntity::ok)
+                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse("Reserva no encontrada")));
+    }
+
     @PatchMapping("/{id}/cancel")
     public ResponseEntity<?> cancel(
             @PathVariable int id,

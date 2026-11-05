@@ -11,12 +11,14 @@ describe('AdminPersonalizacion Component - Etapa 7 (Personalización y Marca de 
   let fixture: ComponentFixture<AdminPersonalizacion>;
   let component: AdminPersonalizacion;
 
-  const mockCurrentUser = signal<{ id: string; email: string; nombre: string; rol: string } | null>({
-    id: 'owner-uuid',
-    email: 'dueno@canchero.pe',
-    nombre: 'Dueño Oficial',
-    rol: 'dueno',
-  });
+  const mockCurrentUser = signal<{ id: string; email: string; nombre: string; rol: string } | null>(
+    {
+      id: 'owner-uuid',
+      email: 'dueno@canchero.pe',
+      nombre: 'Dueño Oficial',
+      rol: 'dueno',
+    },
+  );
 
   const mockSede: Venue = {
     id: '1',
@@ -107,18 +109,18 @@ describe('AdminPersonalizacion Component - Etapa 7 (Personalización y Marca de 
     expect(component['historiaContador']()).toBe('Nueva descripción de la sede'.length);
   });
 
-  it('guarda textos de marca en DatabaseService', () => {
+  it('guarda textos de marca en DatabaseService', async () => {
     const noticeSpy = vi.fn();
     component.notice.subscribe(noticeSpy);
 
     component['actualizarHistoria']('Historia guardada');
-    component['guardarTextosMarca']();
+    await component['guardarTextosMarca']();
 
     expect(mockDbService.saveOrUpdateSede).toHaveBeenCalledWith(
       'owner-uuid',
       expect.objectContaining({
         descripcion: 'Historia guardada',
-      })
+      }),
     );
     expect(noticeSpy).toHaveBeenCalledWith('Textos de marca guardados correctamente');
   });
@@ -188,7 +190,7 @@ describe('AdminPersonalizacion Component - Etapa 7 (Personalización y Marca de 
     createElementSpy.mockRestore();
   });
 
-  it('publica todos los cambios de marca, guardando en base de datos y emitiendo venueUpdated', () => {
+  it('publica todos los cambios de marca, guardando en base de datos y emitiendo venueUpdated', async () => {
     const venueUpdatedSpy = vi.fn();
     const noticeSpy = vi.fn();
     component.venueUpdated.subscribe(venueUpdatedSpy);
@@ -196,17 +198,19 @@ describe('AdminPersonalizacion Component - Etapa 7 (Personalización y Marca de 
 
     component['actualizarHistoria']('Descripción final');
     component['totemPhone'].set('999 888 777');
-    component['publicarCambiosSede']();
+    await component['publicarCambiosSede']();
 
     expect(mockDbService.saveOrUpdateSede).toHaveBeenCalledWith(
       'owner-uuid',
       expect.objectContaining({
         descripcion: 'Descripción final',
         telefono: '999 888 777',
-      })
+      }),
     );
     expect(venueUpdatedSpy).toHaveBeenCalled();
-    expect(noticeSpy).toHaveBeenCalledWith('Cambios de marca y personalización publicados correctamente');
+    expect(noticeSpy).toHaveBeenCalledWith(
+      'Cambios de marca y personalización publicados correctamente',
+    );
   });
 
   it('muestra estado de carga (skeleton) cuando loading es true', () => {

@@ -6,11 +6,11 @@
 
 .login-split-page {
   min-height: calc(100vh - 64px);
-  background-color: #080D13;
+  background-color: #080d13;
   display: flex;
   align-items: stretch;
   justify-content: center;
-  color: #FFFFFF;
+  color: #ffffff;
   font-family: 'Plus Jakarta Sans', var(--font-sans);
 }
 
@@ -27,9 +27,9 @@
 .login-brand-panel {
   position: relative;
   overflow: hidden;
-  background: radial-gradient(circle at 15% 25%, rgba(34, 158, 4, 0.14) 0%, transparent 55%),
-              radial-gradient(circle at 85% 85%, rgba(242, 169, 59, 0.08) 0%, transparent 45%),
-              #0C131D;
+  background:
+    radial-gradient(circle at 15% 25%, rgba(34, 158, 4, 0.14) 0%, transparent 55%),
+    radial-gradient(circle at 85% 85%, rgba(242, 169, 59, 0.08) 0%, transparent 45%), #0c131d;
   border-right: 1px solid rgba(255, 255, 255, 0.06);
   padding: 3.5rem 3.5rem 3rem 4rem;
   display: flex;
@@ -94,7 +94,7 @@
   background-color: var(--color-brand-green);
   width: 36px;
   height: 36px;
-  color: #FFFFFF;
+  color: #ffffff;
   border-radius: 8px;
   display: flex;
   align-items: center;
@@ -108,7 +108,7 @@
   font-family: var(--font-heading);
   font-weight: 800;
   font-size: 1.45rem;
-  color: #FFFFFF;
+  color: #ffffff;
   letter-spacing: -0.025em;
 }
 
@@ -140,7 +140,7 @@
   font-weight: 800;
   line-height: 1.15;
   letter-spacing: -0.03em;
-  color: #FFFFFF;
+  color: #ffffff;
   margin: 0 0 1.35rem 0;
 }
 
@@ -152,7 +152,7 @@
 .brand-description {
   font-size: 1.05rem;
   line-height: 1.65;
-  color: #94A3B8;
+  color: var(--color-slate-400);
   margin: 0 0 2rem 0;
   max-width: 480px;
 }
@@ -173,7 +173,7 @@
   padding: 0.45rem 1rem;
   font-size: 0.82rem;
   font-weight: 600;
-  color: #E2E8F0;
+  color: #e2e8f0;
   backdrop-filter: blur(4px);
 }
 
@@ -189,7 +189,7 @@
   align-items: center;
   gap: 0.5rem;
   font-size: 0.85rem;
-  color: #64748B;
+  color: var(--color-slate-500);
 }
 
 .brand-panel-footer .material-symbols-outlined {
@@ -200,7 +200,7 @@
    PANEL DERECHO: Formulario de Autenticación
    ========================================================================== */
 .login-form-panel {
-  background-color: #080D13;
+  background-color: #080d13;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -231,14 +231,14 @@
   font-size: 2.25rem;
   font-weight: 800;
   letter-spacing: -0.025em;
-  color: #FFFFFF;
+  color: #ffffff;
   margin: 0 0 0.45rem 0;
   line-height: 1.2;
 }
 
 .form-subtitle {
   font-size: 0.92rem;
-  color: #94A3B8;
+  color: var(--color-slate-400);
   margin: 0;
 }
 
@@ -251,7 +251,7 @@
   border-radius: 8px;
   background: rgba(239, 68, 68, 0.12);
   border: 1px solid rgba(239, 68, 68, 0.35);
-  color: #FCA5A5;
+  color: #fca5a5;
   font-size: 0.85rem;
   font-weight: 600;
   margin-bottom: 1.5rem;
@@ -271,7 +271,7 @@
   display: block;
   font-size: 0.82rem;
   font-weight: 700;
-  color: #CBD5E1;
+  color: #cbd5e1;
   margin-bottom: 0.45rem;
 }
 
@@ -284,7 +284,7 @@
 .input-icon {
   position: absolute;
   left: 14px;
-  color: #64748B;
+  color: var(--color-slate-500);
   pointer-events: none;
   display: flex;
   align-items: center;
@@ -297,24 +297,26 @@
   padding-left: 44px;
   padding-right: 14px;
   background: #111822;
-  border: 1px solid #1E293B;
+  border: 1px solid #1e293b;
   border-radius: 8px;
-  color: #FFFFFF;
+  color: #ffffff;
   font-family: inherit;
   font-size: 0.92rem;
   outline: none;
   box-shadow: none;
   box-sizing: border-box;
-  transition: border-color var(--transition-fast), background-color var(--transition-fast);
+  transition:
+    border-color var(--transition-fast),
+    background-color var(--transition-fast);
 }
 
 .form-input::placeholder {
-  color: #475569;
+  color: var(--color-ink-600);
 }
 
 .form-input:focus {
   border-color: var(--color-brand-green);
-  background: #141E2B;
+  background: #141e2b;
   outline: none;
   box-shadow: none;
 }
@@ -328,7 +330,7 @@
   right: 12px;
   background: none;
   border: none;
-  color: #64748B;
+  color: var(--color-slate-500);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -339,7 +341,7 @@
 }
 
 .pwd-toggle-btn:hover {
-  color: #CBD5E1;
+  color: #cbd5e1;
 }
 
 /* Fila de opciones: Recordar sesión y ¿Olvidaste tu contraseña? DEBAJO del input */
@@ -357,7 +359,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  color: #94A3B8;
+  color: var(--color-slate-400);
   font-size: 0.82rem;
   cursor: pointer;
   user-select: none;
@@ -394,7 +396,7 @@
   height: 48px;
   border-radius: 8px;
   background-color: var(--color-brand-green);
-  color: #FFFFFF;
+  color: #ffffff;
   font-size: 0.95rem;
   font-weight: 700;
   border: none;
@@ -405,7 +407,9 @@
   gap: 0.5rem;
   outline: none;
   box-shadow: none;
-  transition: background-color var(--transition-fast), transform 0.1s ease;
+  transition:
+    background-color var(--transition-fast),
+    transform 0.1s ease;
 }
 
 .btn-login-primary:hover:not(:disabled) {
@@ -426,7 +430,9 @@
 }
 
 @keyframes spin {
-  100% { transform: rotate(360deg); }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* Separador 'o' */
@@ -440,11 +446,11 @@
 .divider-line {
   flex: 1;
   height: 1px;
-  background-color: #1E293B;
+  background-color: #1e293b;
 }
 
 .divider-text {
-  color: #64748B;
+  color: var(--color-slate-500);
   font-size: 0.78rem;
   font-weight: 700;
   text-transform: lowercase;
@@ -456,8 +462,8 @@
   height: 48px;
   border-radius: 8px;
   background-color: transparent;
-  border: 1px solid #1E293B;
-  color: #FFFFFF;
+  border: 1px solid #1e293b;
+  color: #ffffff;
   font-size: 0.95rem;
   font-weight: 700;
   display: flex;
@@ -486,7 +492,7 @@
   border-radius: 8px;
   background-color: rgba(255, 255, 255, 0.02);
   border: 1.5px solid #334155;
-  color: #E2E8F0;
+  color: #e2e8f0;
   font-size: 0.92rem;
   font-weight: 600;
   display: flex;
@@ -502,8 +508,8 @@
 
 .btn-login-guest:hover {
   background-color: rgba(255, 255, 255, 0.06);
-  border-color: #64748B;
-  color: #FFFFFF;
+  border-color: #64748b;
+  color: #ffffff;
 }
 
 .btn-login-guest:active {
@@ -514,7 +520,7 @@
 .help-prompt {
   text-align: center;
   font-size: 0.82rem;
-  color: #64748B;
+  color: var(--color-slate-500);
   margin-top: 2rem;
   margin-bottom: 0.5rem;
 }

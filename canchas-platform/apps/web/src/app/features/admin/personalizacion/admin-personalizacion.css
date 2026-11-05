@@ -69,7 +69,7 @@
   display: grid;
   gap: 16px;
   padding-bottom: 24px;
-  border-bottom: 1px solid #dfe3e8;
+  border-bottom: 1px solid var(--color-border);
   min-width: 0;
 }
 .op-swatches {
@@ -84,12 +84,12 @@
   min-height: 46px;
   padding: 10px;
   text-align: left;
-  background: #fff;
-  border: 1px solid #dfe3e8;
+  background: var(--color-surface-card);
+  border: 1px solid var(--color-border);
   border-radius: 6px;
   font-size: 12px;
   line-height: 1.5;
-  color: #191919;
+  color: var(--color-ink-900);
   cursor: pointer;
 }
 .op-swatch span {
@@ -97,7 +97,7 @@
   height: 24px;
   flex-shrink: 0;
   border-radius: 50%;
-  border: 1px solid #dfe3e8;
+  border: 1px solid var(--color-border);
 }
 .op-swatch[aria-pressed='true'] {
   border-color: #191919;
@@ -118,10 +118,10 @@
   width: 100%;
   min-width: 0;
   padding: 10px 12px;
-  border: 1px solid #dfe3e8;
+  border: 1px solid var(--color-border);
   border-radius: 6px;
-  background: #fff;
-  color: #191919;
+  background: var(--color-surface-card);
+  color: var(--color-ink-900);
   font-size: 13px;
   line-height: 1.5;
 }
@@ -139,7 +139,7 @@
 .counter output {
   font-size: 12px;
   font-weight: 400;
-  color: #626a72;
+  color: var(--color-ink-500);
 }
 .op-qr {
   display: flex;
@@ -169,9 +169,9 @@
 }
 .admin-personalizacion button:disabled,
 .admin-personalizacion input:disabled {
-  background: #e5e7eb;
+  background: var(--can-color-disabled-bg);
   border-color: #d1d5db;
-  color: #6b7280;
+  color: var(--color-ink-500);
   cursor: default;
   opacity: 1;
 }
@@ -186,9 +186,9 @@
 .op-brand-preview .card {
   overflow: hidden;
   padding: 0;
-  border: 1px solid #dfe3e8;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
-  background: #fff;
+  background: var(--color-surface-card);
   box-shadow: none;
 }
 .op-brand-photo {

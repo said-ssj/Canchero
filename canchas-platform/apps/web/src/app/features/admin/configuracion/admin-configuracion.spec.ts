@@ -9,13 +9,17 @@ import type { Venue } from '@shared/models/venue.model';
 import { COMPROBANTES_LIQUIDACION_HISTORIAL } from './admin-configuracion.models';
 import { supabase } from '@core/supabase/client';
 
-
 describe('AdminConfiguracion Component - Etapa 7 (Configuración General & Cuenta)', () => {
   let fixture: ComponentFixture<AdminConfiguracion>;
   let component: AdminConfiguracion;
   let router: Router;
 
-  const mockCurrentUser = signal<{ email: string; nombre: string; rol: string; telefono?: string } | null>({
+  const mockCurrentUser = signal<{
+    email: string;
+    nombre: string;
+    rol: string;
+    telefono?: string;
+  } | null>({
     email: 'dueno@canchero.pe',
     nombre: 'Dueño Oficial',
     rol: 'dueno',
@@ -130,7 +134,10 @@ describe('AdminConfiguracion Component - Etapa 7 (Configuración General & Cuent
     component['pwdCurrent'].set('OldPassword123');
     component['pwdNew'].set('NewValidPassword2026!');
     component['pwdConfirm'].set('NewValidPassword2026!');
-    vi.spyOn(supabase.auth, 'updateUser').mockResolvedValueOnce({ data: { user: null }, error: null } as any);
+    vi.spyOn(supabase.auth, 'updateUser').mockResolvedValueOnce({
+      data: { user: null },
+      error: null,
+    } as any);
     await component.guardarNuevaPassword();
 
     expect(component['pwdError']()).toBe('');
@@ -144,7 +151,10 @@ describe('AdminConfiguracion Component - Etapa 7 (Configuración General & Cuent
     component['pwdCurrent'].set('OldPassword123');
     component['pwdNew'].set('NewValidPassword2026!');
     component['pwdConfirm'].set('NewValidPassword2026!');
-    vi.spyOn(supabase.auth, 'updateUser').mockResolvedValueOnce({ data: { user: null }, error: { message: 'Auth session missing' } } as any);
+    vi.spyOn(supabase.auth, 'updateUser').mockResolvedValueOnce({
+      data: { user: null },
+      error: { message: 'Auth session missing' },
+    } as any);
     await component.guardarNuevaPassword();
     expect(component['pwdSuccess']()).toBe('');
     expect(component['pwdError']()).not.toBe('');
@@ -255,7 +265,7 @@ describe('AdminConfiguracion Component - Etapa 7 (Configuración General & Cuent
     expect(navigateSpy).toHaveBeenCalledWith(['/login']);
   });
 
-  it('debe permitir editar datos del titular y persistirlos en la sede', () => {
+  it('debe permitir editar datos del titular y persistirlos en la sede', async () => {
     component['abrirEditarPerfil']();
     expect(component['modalEditarPerfilOpen']()).toBe(true);
 
@@ -263,7 +273,7 @@ describe('AdminConfiguracion Component - Etapa 7 (Configuración General & Cuent
     component['editTelefono'].set('+51 911 222 333');
     component['editRuc'].set('20111222333');
 
-    component['guardarEdicionPerfil']();
+    await component['guardarEdicionPerfil']();
     expect(mockDbService.saveOrUpdateSede).toHaveBeenCalled();
     expect(component['modalEditarPerfilOpen']()).toBe(false);
   });

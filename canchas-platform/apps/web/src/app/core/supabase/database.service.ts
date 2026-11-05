@@ -101,18 +101,18 @@ export class DatabaseService {
       ]);
 
       this.roles.set(roles ?? []);
-      if (!backendLoaded) this.usuarios.set((usuarios ?? []).map(u => this.enhanceUsuario(u)));
+      if (!backendLoaded) this.usuarios.set((usuarios ?? []).map((u) => this.enhanceUsuario(u)));
       if (!backendLoaded) this.clientes.set(clientes ?? []);
-      if (!backendLoaded) this.sedes.set((sedes ?? []).map(s => this.enhanceSede(s)));
+      if (!backendLoaded) this.sedes.set((sedes ?? []).map((s) => this.enhanceSede(s)));
       this.tipoCanchas.set(tipoCanchas ?? []);
       this.tarifasCancha.set(tarifasCancha ?? []);
       this.estadosReserva.set(estadosReserva ?? []);
       this.metodosPago.set(metodosPago ?? []);
-      if (!backendLoaded) this.canchas.set((canchas ?? []).map(c => this.enhanceCancha(c)));
-      if (!backendLoaded) this.reservas.set((reservas ?? []).map(r => this.enhanceReserva(r)));
-      if (!backendLoaded) this.pagos.set((pagosReserva ?? []).map(p => this.enhancePago(p)));
-      this.horarios.set((horarios ?? []).map(h => this.enhanceHorario(h)));
-      this.bloqueos.set((bloqueos ?? []).map(b => this.enhanceBloqueo(b)));
+      if (!backendLoaded) this.canchas.set((canchas ?? []).map((c) => this.enhanceCancha(c)));
+      if (!backendLoaded) this.reservas.set((reservas ?? []).map((r) => this.enhanceReserva(r)));
+      if (!backendLoaded) this.pagos.set((pagosReserva ?? []).map((p) => this.enhancePago(p)));
+      this.horarios.set((horarios ?? []).map((h) => this.enhanceHorario(h)));
+      this.bloqueos.set((bloqueos ?? []).map((b) => this.enhanceBloqueo(b)));
 
       if (this.canchas().length === 0 && !this.loadErrors().includes('cancha')) {
         console.warn('Base de datos vacía - sin datos de canchas');
@@ -120,7 +120,7 @@ export class DatabaseService {
       this.setupRealtimeSubscriptions();
     } catch (error) {
       console.error('Error cargando datos iniciales:', error);
-      this.loadErrors.update(errors => [...new Set([...errors, 'catalogo'])]);
+      this.loadErrors.update((errors) => [...new Set([...errors, 'catalogo'])]);
     }
   }
 
@@ -130,11 +130,21 @@ export class DatabaseService {
 
     supabase
       .channel('canchero-ui-refresh')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'sede' }, () => this.refreshCatalogo())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'cancha' }, () => this.refreshCatalogo())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tarifa_cancha' }, () => this.refreshCatalogo())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'reserva' }, () => this.refreshCatalogo())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'pago_reserva' }, () => this.refreshCatalogo())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sede' }, () =>
+        this.refreshCatalogo(),
+      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'cancha' }, () =>
+        this.refreshCatalogo(),
+      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tarifa_cancha' }, () =>
+        this.refreshCatalogo(),
+      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'reserva' }, () =>
+        this.refreshCatalogo(),
+      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pago_reserva' }, () =>
+        this.refreshCatalogo(),
+      )
       .subscribe();
   }
 
@@ -153,7 +163,7 @@ export class DatabaseService {
     const { data, error } = await supabase.from(table).select('*');
     if (error) {
       console.error(`No se pudo leer la tabla "${table}" de Supabase:`, error);
-      this.loadErrors.update(tables => [...tables, table]);
+      this.loadErrors.update((tables) => [...tables, table]);
       return [];
     }
     return (data ?? []) as T[];
@@ -212,7 +222,9 @@ export class DatabaseService {
       estado: 'A',
       dueno_id: ownerId,
       creado_por: ownerId,
-      porcentaje_adelanto_minimo: Number(v.porcentajeAdelantoMinimo || v.porcentaje_adelanto_minimo || 50),
+      porcentaje_adelanto_minimo: Number(
+        v.porcentajeAdelantoMinimo || v.porcentaje_adelanto_minimo || 50,
+      ),
     };
   }
 
@@ -235,11 +247,24 @@ export class DatabaseService {
       activa: c.disponible !== false,
       estado: c.disponible === false ? 'I' : 'A',
       foto_url: c.foto || c.foto_url || null,
-      fotos: Array.isArray(c.fotos) && c.fotos.length > 0 ? c.fotos : (c.foto || c.foto_url ? [c.foto || c.foto_url] : []),
+      fotos:
+        Array.isArray(c.fotos) && c.fotos.length > 0
+          ? c.fotos
+          : c.foto || c.foto_url
+            ? [c.foto || c.foto_url]
+            : [],
       equipamiento: Array.isArray(c.equipamiento) ? c.equipamiento : [],
       usar_horario_sede: c.usarHorarioSede ?? c.usar_horario_sede ?? true,
-      horarios_semana: Array.isArray(c.horariosSemana) ? c.horariosSemana : (Array.isArray(c.horarios_semana) ? c.horarios_semana : []),
-      descansos_recurrentes: Array.isArray(c.descansosRecurrentes) ? c.descansosRecurrentes : (Array.isArray(c.descansos_recurrentes) ? c.descansos_recurrentes : []),
+      horarios_semana: Array.isArray(c.horariosSemana)
+        ? c.horariosSemana
+        : Array.isArray(c.horarios_semana)
+          ? c.horarios_semana
+          : [],
+      descansos_recurrentes: Array.isArray(c.descansosRecurrentes)
+        ? c.descansosRecurrentes
+        : Array.isArray(c.descansos_recurrentes)
+          ? c.descansos_recurrentes
+          : [],
     };
   }
 
@@ -252,8 +277,7 @@ export class DatabaseService {
         ? canchas.find((c) => Number(c.id) === explicitCourtId)
         : canchas.find(
             (c) =>
-              (venueIdNum == null || Number(c.sede_id) === venueIdNum) &&
-              c.nombre === b.courtName,
+              (venueIdNum == null || Number(c.sede_id) === venueIdNum) && c.nombre === b.courtName,
           );
     const resolvedCanchaId = explicitCourtId ?? cancha?.id ?? 0;
     const [horaInicio = '', horaFin = ''] = String(b.horario || '').split(' - ');
@@ -276,7 +300,8 @@ export class DatabaseService {
       estado,
       estado_label: estado,
       codigo_pase: b.codigoPase,
-      payment_status: b.paymentStatus ?? (paidAmount > 0 && balanceAmount === 0 ? 'aprobado' : 'pendiente'),
+      payment_status:
+        b.paymentStatus ?? (paidAmount > 0 && balanceAmount === 0 ? 'aprobado' : 'pendiente'),
       retention_status: b.retentionStatus ?? 'sin_retencion',
       creado_en: new Date().toISOString(),
     };
@@ -285,7 +310,9 @@ export class DatabaseService {
   // ===== LEGACY COMPATIBILITY: Mapear schema real a propiedades legacy =====
   private enhanceUsuario(u: any) {
     const rol = this.roles().find((r: any) => r.id_rol === u.id_rol);
-    const rolNombre = String(rol?.nombre || '').trim().toLowerCase();
+    const rolNombre = String(rol?.nombre || '')
+      .trim()
+      .toLowerCase();
     const userEmail = u.correo ?? u.email ?? '';
     return {
       ...u,
@@ -294,7 +321,10 @@ export class DatabaseService {
       correo: userEmail,
       email: userEmail,
       password_hash: u.password_hash,
-      rol: rolNombre.includes('due') || rolNombre.includes('owner') || rolNombre.includes('admin') ? 'dueno' : 'cliente',
+      rol:
+        rolNombre.includes('due') || rolNombre.includes('owner') || rolNombre.includes('admin')
+          ? 'dueno'
+          : 'cliente',
       activo: u.estado === 'A',
       creado_en: u.feccre,
       actualizado_en: u.fecmod || u.feccre,
@@ -324,7 +354,9 @@ export class DatabaseService {
 
   private enhanceCancha(c: any) {
     const tipoCancha = this.tipoCanchas().find((t: any) => t.id_tipo_cancha === c.id_tipo_cancha);
-    const tarifas = this.tarifasCancha().filter((t: any) => t.id_cancha === c.id_cancha && t.estado === 'A');
+    const tarifas = this.tarifasCancha().filter(
+      (t: any) => t.id_cancha === c.id_cancha && t.estado === 'A',
+    );
     const tarifasDia = tarifas.filter((t: any) => normalizeTimeString(t.hora_inicio) < '18:00');
     const tarifasNoche = tarifas.filter(
       (t: any) =>
@@ -349,9 +381,17 @@ export class DatabaseService {
     let supNorm = c.superficie || 'Grass Sintético';
     const supLower = String(supNorm).toLowerCase();
     if (supLower.includes('natural')) supNorm = 'Césped Natural';
-    else if (supLower.includes('sintétic') || supLower.includes('sintetic')) supNorm = 'Grass Sintético';
-    else if (supLower.includes('loza') || supLower.includes('losa') || supLower.includes('concreto') || supLower.includes('cemento')) supNorm = 'Losa Deportiva';
-    else if (supLower.includes('parquet') || supLower.includes('madera')) supNorm = 'Piso de Madera';
+    else if (supLower.includes('sintétic') || supLower.includes('sintetic'))
+      supNorm = 'Grass Sintético';
+    else if (
+      supLower.includes('loza') ||
+      supLower.includes('losa') ||
+      supLower.includes('concreto') ||
+      supLower.includes('cemento')
+    )
+      supNorm = 'Losa Deportiva';
+    else if (supLower.includes('parquet') || supLower.includes('madera'))
+      supNorm = 'Piso de Madera';
     else if (supLower.includes('goma') || supLower.includes('caucho')) supNorm = 'Piso de Goma';
     else if (supLower.includes('arena') || supLower.includes('playa')) supNorm = 'Arena';
 
@@ -379,7 +419,9 @@ export class DatabaseService {
   }
 
   private enhanceReserva(r: any) {
-    const estadoReserva = this.estadosReserva().find((e: any) => e.id_estado_reserva === r.id_estado_reserva);
+    const estadoReserva = this.estadosReserva().find(
+      (e: any) => e.id_estado_reserva === r.id_estado_reserva,
+    );
     const esClienteSinCuenta = !!r.es_cliente_sin_cuenta;
     const fechaRes = r.fecha_reserva ?? r.fecha;
     return {
@@ -441,11 +483,14 @@ export class DatabaseService {
     const saved = await firstValueFrom(
       this.http.put<VenueDayHours[]>(`${this.apiUrl}/venues/${sedeId}/hours`, days),
     );
-    this.horarios.update(list => [
-      ...list.filter(h => Number(h.sede_id) !== sedeId),
-      ...saved.map(h => ({
-        sede_id: sedeId, dia_semana: h.diaSemana,
-        hora_apertura: h.apertura, hora_cierre: h.cierre, activo: h.activo,
+    this.horarios.update((list) => [
+      ...list.filter((h) => Number(h.sede_id) !== sedeId),
+      ...saved.map((h) => ({
+        sede_id: sedeId,
+        dia_semana: h.diaSemana,
+        hora_apertura: h.apertura,
+        hora_cierre: h.cierre,
+        activo: h.activo,
       })),
     ]);
   }
@@ -470,8 +515,13 @@ export class DatabaseService {
       ...b,
       id,
       id_bloqueo: id,
-      cancha_id: b.id_cancha != null ? Number(b.id_cancha) : (b.cancha_id != null ? Number(b.cancha_id) : null),
-      sede_id: b.id_sede != null ? Number(b.id_sede) : (b.sede_id != null ? Number(b.sede_id) : 0),
+      cancha_id:
+        b.id_cancha != null
+          ? Number(b.id_cancha)
+          : b.cancha_id != null
+            ? Number(b.cancha_id)
+            : null,
+      sede_id: b.id_sede != null ? Number(b.id_sede) : b.sede_id != null ? Number(b.sede_id) : 0,
       alcance: b.alcance || (b.id_cancha || b.cancha_id ? 'cancha' : 'sede'),
       tipo: b.tipo || (b.fecha_fin ? 'programado' : 'inmediato'),
       motivo: b.motivo || 'Mantenimiento preventivo',
@@ -488,18 +538,22 @@ export class DatabaseService {
     // Convertir UUID a número determinista para compatibilidad
     let hash = 0;
     for (let i = 0; i < uuid.length; i++) {
-      hash = ((hash << 5) - hash) + uuid.charCodeAt(i);
+      hash = (hash << 5) - hash + uuid.charCodeAt(i);
       hash |= 0;
     }
     return Math.abs(hash);
   }
 
   // ===== HELPERS =====
-  private nowIso(): string { return new Date().toISOString(); }
-  private round2(n: number): number { return Math.round(n * 100) / 100; }
+  private nowIso(): string {
+    return new Date().toISOString();
+  }
+  private round2(n: number): number {
+    return Math.round(n * 100) / 100;
+  }
 
   private nextId<T extends { id: number | string }>(items: T[]): number {
-    const nums = items.map(i => Number(i.id)).filter(n => !isNaN(n));
+    const nums = items.map((i) => Number(i.id)).filter((n) => !isNaN(n));
     return nums.reduce((acc, n) => Math.max(acc, n), 0) + 1;
   }
 
@@ -515,16 +569,28 @@ export class DatabaseService {
 
   private resolveEstadoReservaId(nombre: string): number {
     const normalized = nombre.trim().toLowerCase();
-    const estado = this.estadosReserva().find((e: any) => String(e.nombre || '').trim().toLowerCase() === normalized);
+    const estado = this.estadosReserva().find(
+      (e: any) =>
+        String(e.nombre || '')
+          .trim()
+          .toLowerCase() === normalized,
+    );
     return Number(estado?.id_estado_reserva || 1);
   }
 
   private resolveMetodoPagoId(input?: number | string): number {
     if (typeof input === 'number' && input > 0) return input;
-    const normalized = String(input || '').trim().toLowerCase();
+    const normalized = String(input || '')
+      .trim()
+      .toLowerCase();
     const metodo = this.metodosPago().find((m: any) => {
-      const name = String(m.nombre || '').trim().toLowerCase();
-      return normalized && (name === normalized || normalized.includes(name) || name.includes(normalized));
+      const name = String(m.nombre || '')
+        .trim()
+        .toLowerCase();
+      return (
+        normalized &&
+        (name === normalized || normalized.includes(name) || name.includes(normalized))
+      );
     });
     if (metodo?.id_metodo_pago) return Number(metodo.id_metodo_pago);
     const fallback = this.metodosPago().find((m: any) => m.estado === 'A');
@@ -542,19 +608,32 @@ export class DatabaseService {
     const byUsuarioUuid = cleanId ? clientes.find((c: any) => c.id_usuario === cleanId) : null;
     if (byUsuarioUuid?.id_cliente) return byUsuarioUuid.id_cliente;
 
-    const usuario = this.usuarios().find((u: any) => u.id === usuarioLegacyId || u.id_usuario === cleanId);
-    const byUsuario = usuario?.id_usuario ? clientes.find((c: any) => c.id_usuario === usuario.id_usuario) : null;
+    const usuario = this.usuarios().find(
+      (u: any) => u.id === usuarioLegacyId || u.id_usuario === cleanId,
+    );
+    const byUsuario = usuario?.id_usuario
+      ? clientes.find((c: any) => c.id_usuario === usuario.id_usuario)
+      : null;
     if (byUsuario?.id_cliente) return byUsuario.id_cliente;
 
     const usuarioEmail = usuario?.correo ?? usuario?.email;
-    const byCorreo = usuarioEmail ? clientes.find((c: any) => String(c.correo ?? c.email ?? '').toLowerCase() === String(usuarioEmail).toLowerCase()) : null;
+    const byCorreo = usuarioEmail
+      ? clientes.find(
+          (c: any) =>
+            String(c.correo ?? c.email ?? '').toLowerCase() === String(usuarioEmail).toLowerCase(),
+        )
+      : null;
     if (byCorreo?.id_cliente) return byCorreo.id_cliente;
 
     const active = clientes.find((c: any) => c.estado === 'A') || clientes[0];
     return active?.id_cliente || cleanId;
   }
 
-  private resolveUsuarioReservaUuid(clienteId: string, usuarioLegacyId: number | undefined, resolvedClienteId: string): string | null {
+  private resolveUsuarioReservaUuid(
+    clienteId: string,
+    usuarioLegacyId: number | undefined,
+    resolvedClienteId: string,
+  ): string | null {
     const cleanId = (clienteId || '').trim();
     const directUser = this.usuarios().find((u: any) => u.id_usuario === cleanId);
     if (directUser?.id_usuario) return directUser.id_usuario;
@@ -580,7 +659,8 @@ export class DatabaseService {
 
   getUsuarioOperativoUuid(): string {
     const owner = this.usuarios().find((u: any) => u.rol === 'dueno' && u.estado === 'A');
-    const active = owner || this.usuarios().find((u: any) => u.estado === 'A') || this.usuarios()[0];
+    const active =
+      owner || this.usuarios().find((u: any) => u.estado === 'A') || this.usuarios()[0];
     return active?.id_usuario || '';
   }
 
@@ -593,9 +673,15 @@ export class DatabaseService {
     this.sedeOperativaId.set(Number.isFinite(value as number) ? value : null);
   }
 
-  cancha(nombre: string) { return this.canchas().find((c) => c.nombre?.toLowerCase().includes(nombre.toLowerCase())); }
-  canchaById(id: number) { return this.canchas().find((c) => c.id === id); }
-  sedeById(id: number | string) { return this.sedes().find((s) => String(s.id) === String(id)); }
+  cancha(nombre: string) {
+    return this.canchas().find((c) => c.nombre?.toLowerCase().includes(nombre.toLowerCase()));
+  }
+  canchaById(id: number) {
+    return this.canchas().find((c) => c.id === id);
+  }
+  sedeById(id: number | string) {
+    return this.sedes().find((s) => String(s.id) === String(id));
+  }
 
   // ===== PERSISTENCIA LOCAL (RESILIENCIA OFFLINE Y SIN PÉRDIDA AL RECARGAR) =====
   private readonly STORAGE_KEY_SEDES = 'canchero_sedes_locales';
@@ -622,15 +708,6 @@ export class DatabaseService {
         sedes.push(sede);
       }
       localStorage.setItem(this.STORAGE_KEY_SEDES, JSON.stringify(sedes));
-    } catch {}
-  }
-
-  private updateLocalSedeId(oldId: number, newId: number): void {
-    if (typeof localStorage === 'undefined') return;
-    try {
-      const sedes = this.getLocalSedes();
-      const updated = sedes.map((s: any) => s.id === oldId ? { ...s, id: newId, id_sede: newId } : s);
-      localStorage.setItem(this.STORAGE_KEY_SEDES, JSON.stringify(updated));
     } catch {}
   }
 
@@ -696,23 +773,34 @@ export class DatabaseService {
     if (typeof localStorage === 'undefined') return;
     try {
       const canchas = this.getLocalCanchas();
-      const updated = canchas.map((c: any) => c.id === oldId ? { ...c, id: newId, id_cancha: newId } : c);
+      const updated = canchas.map((c: any) =>
+        c.id === oldId ? { ...c, id: newId, id_cancha: newId } : c,
+      );
       localStorage.setItem(this.STORAGE_KEY_CANCHAS, JSON.stringify(updated));
     } catch {}
   }
 
   private mapFormatoToTipoId(formato?: string): number {
     const f = (formato || '').toLowerCase();
-    const token = f.includes('11') ? '11'
-      : f.includes('9') ? '9'
-      : f.includes('8') ? '8'
-      : f.includes('7') ? '7'
-      : f.includes('6') ? '6'
-      : f.includes('5') ? '5'
-      : f.includes('playa') ? 'playa'
-      : f;
+    const token = f.includes('11')
+      ? '11'
+      : f.includes('9')
+        ? '9'
+        : f.includes('8')
+          ? '8'
+          : f.includes('7')
+            ? '7'
+            : f.includes('6')
+              ? '6'
+              : f.includes('5')
+                ? '5'
+                : f.includes('playa')
+                  ? 'playa'
+                  : f;
     const tipo = this.tipoCanchas().find((t: any) => {
-      const nombre = String(t.nombre || '').trim().toLowerCase();
+      const nombre = String(t.nombre || '')
+        .trim()
+        .toLowerCase();
       return token && (nombre === token || nombre.includes(token) || token.includes(nombre));
     });
     if (tipo?.id_tipo_cancha) return Number(tipo.id_tipo_cancha);
@@ -726,9 +814,16 @@ export class DatabaseService {
     if (duenoId === '' || duenoId == null) return [];
     // Existing catalog adapters expose numeric aliases for UUID owners.
     const legacyId = typeof duenoId === 'string' ? this.uuidToNumber(duenoId) : duenoId;
-    const belongsToOwner = (s: { dueno_id?: string | number; creado_por?: string | number; id_dueno?: string }) =>
-      s.id_dueno === duenoId || s.dueno_id === duenoId || s.creado_por === duenoId
-      || s.dueno_id === legacyId || s.creado_por === legacyId;
+    const belongsToOwner = (s: {
+      dueno_id?: string | number;
+      creado_por?: string | number;
+      id_dueno?: string;
+    }) =>
+      s.id_dueno === duenoId ||
+      s.dueno_id === duenoId ||
+      s.creado_por === duenoId ||
+      s.dueno_id === legacyId ||
+      s.creado_por === legacyId;
     const list = this.sedes().filter(belongsToOwner);
     if (list.length > 0) return list;
     const local = this.getLocalSedes();
@@ -739,8 +834,12 @@ export class DatabaseService {
     return this.getSedesPorDueno(duenoId)[0];
   }
 
-  saveOrUpdateSede(duenoId: string | number, data: any) {
-    const existing = data['id'] ? this.sedeById(data['id']) : (data['isNew'] ? null : this.getSedeDelDueno(duenoId));
+  async saveOrUpdateSede(duenoId: string | number, data: any): Promise<any> {
+    const existing = data['id']
+      ? this.sedeById(data['id'])
+      : data['isNew']
+        ? null
+        : this.getSedeDelDueno(duenoId);
     const now = this.nowIso();
 
     if (existing) {
@@ -749,13 +848,15 @@ export class DatabaseService {
         ...data,
         dueno_id: duenoId,
         creado_por: duenoId,
-        latitud: data['latitud'] !== undefined ? Number(data['latitud']) : (existing.latitud ?? -14.06778),
-        longitud: data['longitud'] !== undefined ? Number(data['longitud']) : (existing.longitud ?? -75.72861),
+        latitud:
+          data['latitud'] !== undefined ? Number(data['latitud']) : (existing.latitud ?? -14.06778),
+        longitud:
+          data['longitud'] !== undefined
+            ? Number(data['longitud'])
+            : (existing.longitud ?? -75.72861),
         actualizado_en: now,
       };
       delete updated.isNew;
-      this.sedes.update((list) => list.map((s) => (s.id === existing.id ? { ...s, ...updated } : s)));
-      this.persistLocalSede(updated);
 
       const apiPayload = {
         nombre: updated.nombre,
@@ -763,25 +864,31 @@ export class DatabaseService {
         telefono: updated.telefono,
         descripcion: updated.descripcion,
         portadaUrl: updated.imagen_url,
-        fotos: Array.isArray(updated.fotos) ? updated.fotos : (updated.imagen_url ? [updated.imagen_url] : []),
+        fotos: Array.isArray(updated.fotos)
+          ? updated.fotos
+          : updated.imagen_url
+            ? [updated.imagen_url]
+            : [],
         latitud: updated.latitud,
         longitud: updated.longitud,
         ownerId: String(duenoId),
       };
-      firstValueFrom(this.http.put<any>(`${this.apiUrl}/venues/${existing.id_sede || existing.id}`, apiPayload))
-        .then((saved) => {
-          const synced = this.mapBackendVenueToSede(saved);
-          const merged = {
-            ...updated,
-            ...synced,
-            imagen_url: synced.imagen_url || updated.imagen_url,
-            fotos: synced.fotos?.length ? synced.fotos : (updated.fotos ?? []),
-          };
-          this.sedes.update((list) => list.map((s) => (s.id === existing.id ? { ...s, ...merged } : s)));
-          this.persistLocalSede(merged);
-        })
-        .catch((error) => console.warn('Advertencia actualizando sede por Spring Boot:', error));
-      return { ...existing, ...updated };
+      // Solo se refleja en pantalla lo que el servidor confirmó; si falla, el error llega al llamador.
+      const saved = await firstValueFrom(
+        this.http.put<any>(`${this.apiUrl}/venues/${existing.id_sede || existing.id}`, apiPayload),
+      );
+      const synced = this.mapBackendVenueToSede(saved);
+      const merged = {
+        ...updated,
+        ...synced,
+        imagen_url: synced.imagen_url || updated.imagen_url,
+        fotos: synced.fotos?.length ? synced.fotos : (updated.fotos ?? []),
+      };
+      this.sedes.update((list) =>
+        list.map((s) => (s.id === existing.id ? { ...s, ...merged } : s)),
+      );
+      this.persistLocalSede(merged);
+      return { ...existing, ...merged };
     } else {
       const nextNum = this.nextId(this.sedes());
       const nueva = {
@@ -794,8 +901,14 @@ export class DatabaseService {
         ciudad: data['ciudad']?.trim() || 'Ica',
         telefono: data['telefono']?.trim() || '+51 987 654 321',
         descripcion: data['descripcion']?.trim() || '',
-        imagen_url: data['imagen_url'] || 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=1200&q=80',
-        fotos: Array.isArray(data['fotos']) ? data['fotos'] : (data['imagen_url'] ? [data['imagen_url']] : []),
+        imagen_url:
+          data['imagen_url'] ||
+          'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=1200&q=80',
+        fotos: Array.isArray(data['fotos'])
+          ? data['fotos']
+          : data['imagen_url']
+            ? [data['imagen_url']]
+            : [],
         latitud: data['latitud'] !== undefined ? Number(data['latitud']) : -14.06778,
         longitud: data['longitud'] !== undefined ? Number(data['longitud']) : -75.72861,
         rating: 4.5,
@@ -806,8 +919,6 @@ export class DatabaseService {
         ...data,
       };
       delete nueva.isNew;
-      this.sedes.update((list) => [...list, nueva]);
-      this.persistLocalSede(nueva);
 
       const apiInsert = {
         ownerId: String(duenoId),
@@ -816,24 +927,25 @@ export class DatabaseService {
         telefono: nueva.telefono,
         descripcion: nueva.descripcion,
         portadaUrl: nueva.imagen_url,
-        fotos: Array.isArray(nueva.fotos) ? nueva.fotos : (nueva.imagen_url ? [nueva.imagen_url] : []),
+        fotos: Array.isArray(nueva.fotos)
+          ? nueva.fotos
+          : nueva.imagen_url
+            ? [nueva.imagen_url]
+            : [],
         latitud: nueva.latitud,
         longitud: nueva.longitud,
       };
-      firstValueFrom(this.http.post<any>(`${this.apiUrl}/venues`, apiInsert))
-        .then((saved) => {
-          const synced = this.mapBackendVenueToSede(saved);
-          const merged = {
-            ...nueva,
-            ...synced,
-            imagen_url: synced.imagen_url || nueva.imagen_url,
-            fotos: synced.fotos?.length ? synced.fotos : (nueva.fotos ?? []),
-          };
-          this.sedes.update((list) => list.map((s) => (s.id === nextNum ? merged : s)));
-          this.updateLocalSedeId(nextNum, synced.id);
-        })
-        .catch((error) => console.warn('Advertencia creando sede por Spring Boot (respaldada localmente):', error));
-      return nueva;
+      const saved = await firstValueFrom(this.http.post<any>(`${this.apiUrl}/venues`, apiInsert));
+      const synced = this.mapBackendVenueToSede(saved);
+      const merged = {
+        ...nueva,
+        ...synced,
+        imagen_url: synced.imagen_url || nueva.imagen_url,
+        fotos: synced.fotos?.length ? synced.fotos : (nueva.fotos ?? []),
+      };
+      this.sedes.update((list) => [...list, merged]);
+      this.persistLocalSede(merged);
+      return merged;
     }
   }
 
@@ -855,20 +967,22 @@ export class DatabaseService {
   }
 
   getBorradoresCanchasPorSede(sedeId: number) {
-    const savedIds = new Set(this.getCanchasPorSede(sedeId).map(c => Number(c.id)));
-    return this.getLocalCanchas().filter((c: any) =>
-      Number(c.sede_id ?? c.id_sede) === Number(sedeId) && !savedIds.has(Number(c.id)),
+    const savedIds = new Set(this.getCanchasPorSede(sedeId).map((c) => Number(c.id)));
+    return this.getLocalCanchas().filter(
+      (c: any) => Number(c.sede_id ?? c.id_sede) === Number(sedeId) && !savedIds.has(Number(c.id)),
     );
   }
 
   async recuperarCancha(data: any) {
-    const saved = await firstValueFrom(this.http.post<any>(`${this.apiUrl}/courts/recover`, this.toCourtApiPayload(data)));
+    const saved = await firstValueFrom(
+      this.http.post<any>(`${this.apiUrl}/courts/recover`, this.toCourtApiPayload(data)),
+    );
     if (!saved?.id || Number(saved.venueId) !== Number(data.sede_id ?? data.id_sede)) {
       throw new Error('El servidor no confirmo el registro de la cancha en esta sede.');
     }
     const synced = this.mapBackendCourtToCancha(saved, Number(saved.venueId));
     this.updateLocalCanchaId(data.id, synced.id);
-    this.canchas.update(list => [...list.filter(c => Number(c.id) !== synced.id), synced]);
+    this.canchas.update((list) => [...list.filter((c) => Number(c.id) !== synced.id), synced]);
     return synced;
   }
 
@@ -877,14 +991,16 @@ export class DatabaseService {
     const id = Number(canchaId);
     const cancha = this.canchas().find((c) => Number(c.id) === id);
     if (!cancha) throw new Error('La cancha no esta en el catalogo actual. Actualiza la pagina.');
-    const saved = await firstValueFrom(this.http.put<{ id: number; disponible: boolean }>(
-      `${this.apiUrl}/courts/${id}/operation`, { disponible: !cancha.activa },
-    ));
+    const saved = await firstValueFrom(
+      this.http.put<{ id: number; disponible: boolean }>(`${this.apiUrl}/courts/${id}/operation`, {
+        disponible: !cancha.activa,
+      }),
+    );
     if (Number(saved.id) !== id || typeof saved.disponible !== 'boolean') {
       throw new Error('El servidor no confirmo el estado de la cancha.');
     }
     const updated = { ...cancha, activa: saved.disponible, estado: saved.disponible ? 'A' : 'I' };
-    this.canchas.update(list => list.map(c => Number(c.id) === id ? updated : c));
+    this.canchas.update((list) => list.map((c) => (Number(c.id) === id ? updated : c)));
     return updated;
   }
 
@@ -901,15 +1017,22 @@ export class DatabaseService {
       nombre: data.nombre,
       tipo: data.tipo || data.formato || 'Fútbol 7',
       superficie: data.superficie || 'Grass Sintético',
-      techada: data.techada ?? (data.cobertura !== 'Al Aire Libre'),
+      techada: data.techada ?? data.cobertura !== 'Al Aire Libre',
       precio_hora: Number(data.precio_hora) || 100,
       precio_hora_noche: Number(data.precio_hora_noche) || Number(data.precio_hora) || 120,
       hora_inicio_noche: data.hora_inicio_noche || '18:00',
       foto_url: data.foto_url || data.foto || null,
-      fotos: Array.isArray(data.fotos) && data.fotos.length > 0 ? data.fotos : (data.foto_url ? [data.foto_url] : []),
+      fotos:
+        Array.isArray(data.fotos) && data.fotos.length > 0
+          ? data.fotos
+          : data.foto_url
+            ? [data.foto_url]
+            : [],
       usar_horario_sede: data.usar_horario_sede !== false,
       horarios_semana: Array.isArray(data.horarios_semana) ? data.horarios_semana : [],
-      descansos_recurrentes: Array.isArray(data.descansos_recurrentes) ? data.descansos_recurrentes : [],
+      descansos_recurrentes: Array.isArray(data.descansos_recurrentes)
+        ? data.descansos_recurrentes
+        : [],
       activa: data.activa !== undefined ? data.activa : true,
       creado_en: now,
       actualizado_en: now,
@@ -927,7 +1050,12 @@ export class DatabaseService {
         this.canchas.update((list) => list.map((c) => (c.id === nextNum ? synced : c)));
         this.updateLocalCanchaId(nextNum, synced.id);
       })
-      .catch((error) => console.warn('Advertencia guardando cancha por Spring Boot (respaldada localmente):', error));
+      .catch((error) =>
+        console.warn(
+          'Advertencia guardando cancha por Spring Boot (respaldada localmente):',
+          error,
+        ),
+      );
 
     return cancha;
   }
@@ -942,12 +1070,27 @@ export class DatabaseService {
               ...data,
               id,
               precio_hora: Number(data.precio_hora) || c.precio_hora,
-              precio_hora_noche: Number(data.precio_hora_noche) || c.precio_hora_noche || Number(data.precio_hora) || 120,
+              precio_hora_noche:
+                Number(data.precio_hora_noche) ||
+                c.precio_hora_noche ||
+                Number(data.precio_hora) ||
+                120,
               hora_inicio_noche: data.hora_inicio_noche || c.hora_inicio_noche || '18:00',
-              fotos: Array.isArray(data.fotos) ? data.fotos : (c.fotos ?? (data.foto_url ? [data.foto_url] : [])),
-              usar_horario_sede: data.usar_horario_sede !== undefined ? data.usar_horario_sede : (c.usar_horario_sede !== false),
-              horarios_semana: data.horarios_semana !== undefined ? data.horarios_semana : (c.horarios_semana ?? []),
-              descansos_recurrentes: data.descansos_recurrentes !== undefined ? data.descansos_recurrentes : (c.descansos_recurrentes ?? []),
+              fotos: Array.isArray(data.fotos)
+                ? data.fotos
+                : (c.fotos ?? (data.foto_url ? [data.foto_url] : [])),
+              usar_horario_sede:
+                data.usar_horario_sede !== undefined
+                  ? data.usar_horario_sede
+                  : c.usar_horario_sede !== false,
+              horarios_semana:
+                data.horarios_semana !== undefined
+                  ? data.horarios_semana
+                  : (c.horarios_semana ?? []),
+              descansos_recurrentes:
+                data.descansos_recurrentes !== undefined
+                  ? data.descansos_recurrentes
+                  : (c.descansos_recurrentes ?? []),
               actualizado_en: now,
             }
           : c,
@@ -956,7 +1099,9 @@ export class DatabaseService {
     const updated = this.canchas().find((c) => c.id === id);
     if (updated) {
       this.persistLocalCancha(updated);
-      firstValueFrom(this.http.put<any>(`${this.apiUrl}/courts/${id}`, this.toCourtApiPayload(updated)))
+      firstValueFrom(
+        this.http.put<any>(`${this.apiUrl}/courts/${id}`, this.toCourtApiPayload(updated)),
+      )
         .then((saved) => {
           const synced = this.mapBackendCourtToCancha(saved, Number(updated.sede_id));
           this.canchas.update((list) => list.map((c) => (c.id === id ? synced : c)));
@@ -974,7 +1119,7 @@ export class DatabaseService {
       tipo: cancha.formato || cancha.tipo || 'Fútbol 7',
       superficie: cancha.superficie || 'Grass Sintético',
       foto: cancha.foto_url || cancha.foto || null,
-      fotos: Array.isArray(cancha.fotos) ? cancha.fotos : (cancha.foto_url ? [cancha.foto_url] : []),
+      fotos: Array.isArray(cancha.fotos) ? cancha.fotos : cancha.foto_url ? [cancha.foto_url] : [],
       equipamiento: Array.isArray(cancha.equipamiento) ? cancha.equipamiento : [],
       techada: !!cancha.techada,
       disponible: cancha.activa !== false,
@@ -988,7 +1133,7 @@ export class DatabaseService {
   }
 
   // ===== BLOQUEOS & CIERRES (REGLA 5) =====
-  createBloqueo(data: {
+  async createBloqueo(data: {
     cancha_id?: number | null;
     sede_id: number;
     alcance: 'cancha' | 'sede';
@@ -997,11 +1142,30 @@ export class DatabaseService {
     fecha_inicio: string;
     fecha_fin?: string | null;
   }) {
-    const nextNum = this.nextId(this.bloqueos());
     const now = this.nowIso();
+    const canchaIds = data.cancha_id
+      ? [Number(data.cancha_id)]
+      : this.canchas()
+          .filter((c) => Number(c.sede_id) === Number(data.sede_id))
+          .map((c) => Number(c.id));
+    if (!canchaIds.length) throw new Error('La sede no tiene canchas para cerrar.');
+    // El servidor valida que la cancha sea del dueño; solo se refleja en pantalla lo que se guardó.
+    const saved = await Promise.all(
+      canchaIds.map((id) =>
+        firstValueFrom(
+          this.http.post<{ id: number; canchaId: number }>(`${this.apiUrl}/courts/${id}/bloqueos`, {
+            motivo: data.motivo.trim() || 'Mantenimiento preventivo',
+            fechaInicio: data.fecha_inicio || null,
+            fechaFin: data.fecha_fin || null,
+          }),
+        ),
+      ),
+    );
+    const serverIds = saved.map((b) => b.id);
     const bloqueo = {
-      id: nextNum,
-      id_bloqueo: nextNum,
+      id: serverIds[0],
+      id_bloqueo: serverIds[0],
+      server_ids: serverIds,
       cancha_id: data.cancha_id ?? null,
       sede_id: data.sede_id,
       alcance: data.alcance,
@@ -1020,38 +1184,43 @@ export class DatabaseService {
     // Si es cierre inmediato, pausar operatividad de las canchas afectadas
     if (data.cancha_id && (data.tipo === 'inmediato' || !data.fecha_fin)) {
       this.canchas.update((list) =>
-        list.map((c) => (c.id === data.cancha_id ? { ...c, activa: false, actualizado_en: now } : c)),
+        list.map((c) =>
+          c.id === data.cancha_id ? { ...c, activa: false, actualizado_en: now } : c,
+        ),
       );
       const updated = this.canchaById(data.cancha_id);
       if (updated) this.persistLocalCancha(updated);
     } else if (data.alcance === 'sede' && data.tipo === 'inmediato') {
       this.canchas.update((list) =>
-        list.map((c) => (Number(c.sede_id) === Number(data.sede_id) ? { ...c, activa: false, actualizado_en: now } : c)),
+        list.map((c) =>
+          Number(c.sede_id) === Number(data.sede_id)
+            ? { ...c, activa: false, actualizado_en: now }
+            : c,
+        ),
       );
-    }
-
-    if (data.cancha_id) {
-      supabase
-        .from('bloqueo_mantenimiento')
-        .insert({
-          id_cancha: data.cancha_id,
-          motivo: bloqueo.motivo,
-          fecha_inicio: bloqueo.fecha_inicio,
-          fecha_fin: bloqueo.fecha_fin || new Date(Date.now() + 86400000).toISOString(),
-          estado: 'A',
-        })
-        .then(({ error }) => {
-          if (error) console.warn('Advertencia guardando bloqueo en Supabase:', error);
-        });
     }
 
     return bloqueo;
   }
 
-  reabrirBloqueo(bloqueoId: number | string) {
+  async reabrirBloqueo(bloqueoId: number | string) {
+    const existing = this.bloqueos().find((b) => String(b.id) === String(bloqueoId));
+    if (!existing) return;
+    const serverIds: Array<number | string> = existing.server_ids?.length
+      ? existing.server_ids
+      : [existing.id_bloqueo || existing.id];
+    await Promise.all(
+      serverIds.map((id) =>
+        firstValueFrom(this.http.patch(`${this.apiUrl}/courts/bloqueos/${id}/reabrir`, {})),
+      ),
+    );
     const now = this.nowIso();
     this.bloqueos.update((list) =>
-      list.map((b) => (String(b.id) === String(bloqueoId) ? { ...b, activo: false, estado: 'I', actualizado_en: now } : b)),
+      list.map((b) =>
+        String(b.id) === String(bloqueoId)
+          ? { ...b, activo: false, estado: 'I', actualizado_en: now }
+          : b,
+      ),
     );
     const target = this.bloqueos().find((b) => String(b.id) === String(bloqueoId));
     if (target) {
@@ -1062,48 +1231,38 @@ export class DatabaseService {
         );
         if (!otherActive) {
           this.canchas.update((list) =>
-            list.map((c) => (c.id === target.cancha_id ? { ...c, activa: true, actualizado_en: now } : c)),
+            list.map((c) =>
+              c.id === target.cancha_id ? { ...c, activa: true, actualizado_en: now } : c,
+            ),
           );
           const c = this.canchaById(target.cancha_id);
           if (c) this.persistLocalCancha(c);
         }
       } else if (target.alcance === 'sede') {
         this.canchas.update((list) =>
-          list.map((c) => (Number(c.sede_id) === Number(target.sede_id) ? { ...c, activa: true, actualizado_en: now } : c)),
+          list.map((c) =>
+            Number(c.sede_id) === Number(target.sede_id)
+              ? { ...c, activa: true, actualizado_en: now }
+              : c,
+          ),
         );
       }
-
-      supabase
-        .from('bloqueo_mantenimiento')
-        .update({ estado: 'I', fecmod: now })
-        .eq('id_bloqueo', target.id_bloqueo || target.id)
-        .then();
     }
   }
 
-  reprogramarReserva(reservaId: number, nuevaFecha: string, nuevoHorario: string) {
-    const [horaInicio = '', horaFin = ''] = nuevoHorario.split(' - ');
-    const now = this.nowIso();
-    this.reservas.update((list) =>
-      list.map((r) =>
-        r.id === reservaId
-          ? {
-              ...r,
-              fecha: nuevaFecha,
-              fecha_reserva: nuevaFecha,
-              hora_inicio: horaInicio.trim(),
-              hora_fin: horaFin.trim(),
-              actualizado_en: now,
-            }
-          : r,
-      ),
-    );
-    firstValueFrom(
+  async reprogramarReserva(
+    reservaId: number,
+    nuevaFecha: string,
+    nuevoHorario: string,
+  ): Promise<void> {
+    const saved = await firstValueFrom(
       this.http.patch<any>(`${this.apiUrl}/bookings/${reservaId}`, {
         fecha: nuevaFecha,
         horario: nuevoHorario,
       }),
-    ).catch((err) => console.warn('Advertencia reprogramando reserva en backend:', err));
+    );
+    const synced = this.mapBackendBookingToReserva(saved, this.canchas());
+    this.reservas.update((list) => list.map((r) => (r.id === reservaId ? { ...r, ...synced } : r)));
   }
 
   // ===== RESERVAS & PAGOS =====
@@ -1174,8 +1333,14 @@ export class DatabaseService {
       monto_neto_dueno: this.round2(montoConfirmado * (1 - COMISION_PORCENTAJE)),
       metodo_pago: metodoPagoNombre,
       estado: pagoEstado,
-      codigo_operacion: saved?.paymentOperationNumber || payload.numeroOperacion || (payload.idempotencyKey ? `IDEMP:${payload.idempotencyKey}` : `API-${syncedReserva.id}`),
-      numero_operacion: saved?.paymentOperationNumber || payload.numeroOperacion || (payload.idempotencyKey ? `IDEMP:${payload.idempotencyKey}` : `API-${syncedReserva.id}`),
+      codigo_operacion:
+        saved?.paymentOperationNumber ||
+        payload.numeroOperacion ||
+        (payload.idempotencyKey ? `IDEMP:${payload.idempotencyKey}` : `API-${syncedReserva.id}`),
+      numero_operacion:
+        saved?.paymentOperationNumber ||
+        payload.numeroOperacion ||
+        (payload.idempotencyKey ? `IDEMP:${payload.idempotencyKey}` : `API-${syncedReserva.id}`),
       es_adelanto: false,
       comprobante_url: payload.comprobanteUrl || null,
       estado_liquidacion: pagoEstado,
@@ -1191,9 +1356,13 @@ export class DatabaseService {
         : [...list, syncedReserva];
     });
     this.pagos.update((list) => {
-      const exists = list.some((p) => Number(p.reserva_id ?? p.id_reserva) === Number(syncedReserva.id));
+      const exists = list.some(
+        (p) => Number(p.reserva_id ?? p.id_reserva) === Number(syncedReserva.id),
+      );
       return exists
-        ? list.map((p) => (Number(p.reserva_id ?? p.id_reserva) === Number(syncedReserva.id) ? pago : p))
+        ? list.map((p) =>
+            Number(p.reserva_id ?? p.id_reserva) === Number(syncedReserva.id) ? pago : p,
+          )
         : [...list, pago];
     });
 
@@ -1210,9 +1379,15 @@ export class DatabaseService {
     const tempPagoId = this.nextId(this.pagos());
     const codigoPase = `#CAN-${Math.floor(1000 + Math.random() * 9000)}`;
     const metodoPagoId = this.resolveMetodoPagoId(pagoData.metodo_pago_id ?? pagoData.metodo_pago);
-    const metodoPagoNombre = this.metodosPago().find((m: any) => m.id_metodo_pago === metodoPagoId)?.nombre || this.normalizarMetodoPago(pagoData.metodo_pago || String(metodoPagoId));
+    const metodoPagoNombre =
+      this.metodosPago().find((m: any) => m.id_metodo_pago === metodoPagoId)?.nombre ||
+      this.normalizarMetodoPago(pagoData.metodo_pago || String(metodoPagoId));
     const clienteId = this.resolveClienteId(reservaData.cliente_id, reservaData.usuario_id);
-    const usuarioReservaId = this.resolveUsuarioReservaUuid(reservaData.cliente_id, reservaData.usuario_id, clienteId);
+    const usuarioReservaId = this.resolveUsuarioReservaUuid(
+      reservaData.cliente_id,
+      reservaData.usuario_id,
+      clienteId,
+    );
     const estadoPendienteId = this.resolveEstadoReservaId('pendiente');
 
     const reserva = {
@@ -1275,7 +1450,10 @@ export class DatabaseService {
     firstValueFrom(this.http.post<any>(`${this.apiUrl}/bookings`, apiPayload))
       .then((saved) => {
         const syncedReserva = this.mapBackendBookingToReserva(saved, this.canchas());
-        this.reservas.update((list) => [...list.filter((r) => r.id !== tempReservaId), syncedReserva]);
+        this.reservas.update((list) => [
+          ...list.filter((r) => r.id !== tempReservaId),
+          syncedReserva,
+        ]);
         this.pagos.update((list) => [
           ...list.filter((p) => p.id !== tempPagoId),
           { ...pago, reserva_id: syncedReserva.id, id_reserva: syncedReserva.id },
@@ -1291,15 +1469,23 @@ export class DatabaseService {
   }
 
   async aprobarReserva(reservaId: number): Promise<void> {
-    const saved = await firstValueFrom(this.http.patch<any>(`${this.apiUrl}/bookings/${reservaId}/confirm`, {}));
+    const saved = await firstValueFrom(
+      this.http.patch<any>(`${this.apiUrl}/bookings/${reservaId}/confirm`, {}),
+    );
     const synced = this.mapBackendBookingToReserva(saved, this.canchas());
-    this.reservas.update(list => list.map(row => row.id === reservaId ? { ...row, ...synced, estado: 'confirmada' } : row));
+    this.reservas.update((list) =>
+      list.map((row) => (row.id === reservaId ? { ...row, ...synced, estado: 'confirmada' } : row)),
+    );
   }
 
   async descartarReserva(reservaId: number): Promise<void> {
-    const saved = await firstValueFrom(this.http.patch<any>(`${this.apiUrl}/bookings/${reservaId}/cancel`, {}));
+    const saved = await firstValueFrom(
+      this.http.patch<any>(`${this.apiUrl}/bookings/${reservaId}/cancel`, {}),
+    );
     const synced = this.mapBackendBookingToReserva(saved, this.canchas());
-    this.reservas.update(list => list.map(row => row.id === reservaId ? { ...row, ...synced, estado: 'cancelada' } : row));
+    this.reservas.update((list) =>
+      list.map((row) => (row.id === reservaId ? { ...row, ...synced, estado: 'cancelada' } : row)),
+    );
   }
 
   async fetchMyBookings(): Promise<any[]> {
@@ -1307,30 +1493,55 @@ export class DatabaseService {
   }
 
   async cancelPlayerBooking(reservaId: number | string): Promise<any> {
-    const saved = await firstValueFrom(this.http.patch<any>(`${this.apiUrl}/bookings/${reservaId}/cancel`, {}));
+    const saved = await firstValueFrom(
+      this.http.patch<any>(`${this.apiUrl}/bookings/${reservaId}/cancel`, {}),
+    );
     const synced = this.mapBackendBookingToReserva(saved, this.canchas());
-    this.reservas.update(list => list.map(row => String(row.id) === String(reservaId) ? { ...row, ...synced, estado: 'cancelada' } : row));
+    this.reservas.update((list) =>
+      list.map((row) =>
+        String(row.id) === String(reservaId) ? { ...row, ...synced, estado: 'cancelada' } : row,
+      ),
+    );
     return saved;
   }
 
   crearReservaPresencial(_input: NuevaReservaPresencialInput): never {
-    throw new Error('Esta operacion requiere un contrato de servidor que todavia no esta implementado.');
+    throw new Error(
+      'Esta operacion requiere un contrato de servidor que todavia no esta implementado.',
+    );
   }
 
-  cobrarSaldoReserva(_reservaId: number, _montoSaldo: number, _metodoPago: string, _numeroOperacion?: string): never {
-    throw new Error('Esta operacion requiere un contrato de servidor que todavia no esta implementado.');
+  cobrarSaldoReserva(
+    _reservaId: number,
+    _montoSaldo: number,
+    _metodoPago: string,
+    _numeroOperacion?: string,
+  ): never {
+    throw new Error(
+      'Esta operacion requiere un contrato de servidor que todavia no esta implementado.',
+    );
   }
 
   registrarCheckIn(_reservaId: number): never {
-    throw new Error('Esta operacion requiere un contrato de servidor que todavia no esta implementado.');
+    throw new Error(
+      'Esta operacion requiere un contrato de servidor que todavia no esta implementado.',
+    );
   }
 
-  cancelarReservaConDevolucion(_reservaId: number, _motivo: string, _montoDevolucion: number): never {
-    throw new Error('Esta operacion requiere un contrato de servidor que todavia no esta implementado.');
+  cancelarReservaConDevolucion(
+    _reservaId: number,
+    _motivo: string,
+    _montoDevolucion: number,
+  ): never {
+    throw new Error(
+      'Esta operacion requiere un contrato de servidor que todavia no esta implementado.',
+    );
   }
 
   updateSedeAdelantoMinimo(_sedeId: number, _porcentaje: number): never {
-    throw new Error('Esta operacion requiere un contrato de servidor que todavia no esta implementado.');
+    throw new Error(
+      'Esta operacion requiere un contrato de servidor que todavia no esta implementado.',
+    );
   }
 
   getReservasPorDueno(duenoId: string | number) {
@@ -1343,9 +1554,14 @@ export class DatabaseService {
   }
 
   getReservasPorJugador(usuarioId: string) {
-    const usuario = this.usuarios().find(u => u.id_usuario === usuarioId || String(u.id) === String(usuarioId));
+    const usuario = this.usuarios().find(
+      (u) => u.id_usuario === usuarioId || String(u.id) === String(usuarioId),
+    );
     if (!usuario) return [];
-    return this.reservas().filter((r) => r.usuario_id === usuario.id || (usuario.id_usuario && r.id_usuario === usuario.id_usuario));
+    return this.reservas().filter(
+      (r) =>
+        r.usuario_id === usuario.id || (usuario.id_usuario && r.id_usuario === usuario.id_usuario),
+    );
   }
 
   getPagosPorDueno(duenoId: string | number) {
@@ -1363,19 +1579,25 @@ export class DatabaseService {
     const ingresoBruto = this.round2(pagos.reduce((acc, p) => acc + p.monto, 0));
     const comisionApp = this.round2(pagos.reduce((acc, p) => acc + p.comision_plataforma, 0));
     const ingresoNeto = this.round2(pagos.reduce((acc, p) => acc + p.monto_neto_dueno, 0));
-    const liquidacionesPendientes = pagos.filter((p) => p.estado_liquidacion === 'pendiente').length;
+    const liquidacionesPendientes = pagos.filter(
+      (p) => p.estado_liquidacion === 'pendiente',
+    ).length;
     const totalLiquidado = this.round2(
-      pagos.filter((p) => p.estado_liquidacion === 'transferido').reduce((acc, p) => acc + p.monto_neto_dueno, 0),
+      pagos
+        .filter((p) => p.estado_liquidacion === 'transferido')
+        .reduce((acc, p) => acc + p.monto_neto_dueno, 0),
     );
     return { ingresoBruto, comisionApp, ingresoNeto, liquidacionesPendientes, totalLiquidado };
   }
 
   // ===== CATÁLOGO PÚBLICO =====
-  getCanchasPublicasActivas() { return this.canchas().filter((c) => c.activa); }
+  getCanchasPublicasActivas() {
+    return this.canchas().filter((c) => c.activa);
+  }
 
   getVenuesPublicos(): Venue[] {
     const result: Venue[] = [];
-    for (const sede of this.sedes().filter(s => s.activo)) {
+    for (const sede of this.sedes().filter((s) => s.activo)) {
       const venue = this.mapSede(sede, true);
       if (venue) result.push(venue);
     }
@@ -1400,7 +1622,9 @@ export class DatabaseService {
   }
 
   private mapSede(sede: any, onlyActive: boolean): Venue | undefined {
-    const canchas = this.canchas().filter((c) => c.sede_id === sede.id && (!onlyActive || c.activa));
+    const canchas = this.canchas().filter(
+      (c) => c.sede_id === sede.id && (!onlyActive || c.activa),
+    );
     if (onlyActive && canchas.length === 0) return undefined;
 
     const courts: Court[] = canchas.map((c) => {
@@ -1427,7 +1651,9 @@ export class DatabaseService {
         foto: c.foto_url,
         usar_horario_sede: c.usar_horario_sede ?? true,
         horarios_semana: Array.isArray(c.horarios_semana) ? c.horarios_semana : [],
-        descansos_recurrentes: Array.isArray(c.descansos_recurrentes) ? c.descansos_recurrentes : [],
+        descansos_recurrentes: Array.isArray(c.descansos_recurrentes)
+          ? c.descansos_recurrentes
+          : [],
       };
     });
 
@@ -1442,11 +1668,17 @@ export class DatabaseService {
       }
     }
 
-    const precioBase = courts.reduce((min, court) => Math.min(min, court.precioHora), Number.MAX_SAFE_INTEGER);
-    const fallbackFoto = 'https://images.unsplash.com/photo-1529900241929-58a47400d705?q=80&w=800&auto=format&fit=crop';
+    const precioBase = courts.reduce(
+      (min, court) => Math.min(min, court.precioHora),
+      Number.MAX_SAFE_INTEGER,
+    );
+    const fallbackFoto =
+      'https://images.unsplash.com/photo-1529900241929-58a47400d705?q=80&w=800&auto=format&fit=crop';
     const fotosGuardadas = Array.isArray(sede.fotos) ? sede.fotos.filter(Boolean) : [];
     const fotosCanchas = courts.map((court) => court.foto).filter(Boolean);
-    const fotos = Array.from(new Set([sede.imagen_url, ...fotosGuardadas, ...fotosCanchas].filter(Boolean)));
+    const fotos = Array.from(
+      new Set([sede.imagen_url, ...fotosGuardadas, ...fotosCanchas].filter(Boolean)),
+    );
     return {
       id: String(sede.id),
       nombre: sede.nombre,
@@ -1465,7 +1697,12 @@ export class DatabaseService {
     };
   }
 
-  getCourtSlotAvailability(court: Court, dateStr: string, hour: number, nowDate?: Date): CourtSlotAvailability {
+  getCourtSlotAvailability(
+    court: Court,
+    dateStr: string,
+    hour: number,
+    nowDate?: Date,
+  ): CourtSlotAvailability {
     return resolveSlotAvailability(
       court,
       dateStr,
@@ -1499,7 +1736,9 @@ export class DatabaseService {
       }
     } catch (error: any) {
       if (error?.status === 404 || error?.status === 400) {
-        throw new Error(error?.error?.message || 'No se pudo consultar la disponibilidad de la cancha');
+        throw new Error(
+          error?.error?.message || 'No se pudo consultar la disponibilidad de la cancha',
+        );
       }
     }
 

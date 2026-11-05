@@ -1,4 +1,15 @@
-import { Component, ElementRef, computed, effect, inject, input, output, signal, untracked, viewChild } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  computed,
+  effect,
+  inject,
+  input,
+  output,
+  signal,
+  untracked,
+  viewChild,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -98,10 +109,14 @@ export class AdminCanchas {
     const custom = this.sedesDelDuenoInput();
     if (custom !== undefined) return custom;
     const dueno = this.duenoId();
-    return dueno && this.db.getSedesPorDueno ? (this.db.getSedesPorDueno(dueno) as AdminVenueOption[]) : [];
+    return dueno && this.db.getSedesPorDueno
+      ? (this.db.getSedesPorDueno(dueno) as AdminVenueOption[])
+      : [];
   });
 
-  readonly sedeDelDuenoInput = input<AdminVenueOption | undefined>(undefined, { alias: 'sedeDelDueno' });
+  readonly sedeDelDuenoInput = input<AdminVenueOption | undefined>(undefined, {
+    alias: 'sedeDelDueno',
+  });
   readonly sedeDelDueno = computed<AdminVenueOption | undefined>(() => {
     const custom = this.sedeDelDuenoInput();
     if (custom !== undefined) return custom;
@@ -150,11 +165,18 @@ export class AdminCanchas {
     });
     effect(() => {
       const sedeId = Number(this.sedeDelDueno()?.id);
-      if (this.db.catalogLoading() || !sedeId || !this.sedesDelDueno().some(s => Number(s.id) === sedeId)) return;
+      if (
+        this.db.catalogLoading() ||
+        !sedeId ||
+        !this.sedesDelDueno().some((s) => Number(s.id) === sedeId)
+      )
+        return;
       const drafts = this.db.getBorradoresCanchasPorSede?.(sedeId) ?? [];
       if (drafts.length === 0 || this.recuperacionesIntentadas.has(sedeId)) return;
       this.recuperacionesIntentadas.add(sedeId);
-      untracked(() => { void this.recuperarCanchas(drafts); });
+      untracked(() => {
+        void this.recuperarCanchas(drafts);
+      });
     });
   }
 
@@ -164,7 +186,9 @@ export class AdminCanchas {
       for (const draft of drafts) await this.db.recuperarCancha(draft);
     } catch (error: any) {
       const status = error?.status ? ` (HTTP ${error.status})` : '';
-      this.errorOperatividad.set(`No se pudo registrar la cancha en el servidor${status}. Los datos se conservan; recarga para reintentar.`);
+      this.errorOperatividad.set(
+        `No se pudo registrar la cancha en el servidor${status}. Los datos se conservan; recarga para reintentar.`,
+      );
     } finally {
       this.recuperando.set(false);
     }
@@ -181,7 +205,9 @@ export class AdminCanchas {
 
   protected abrirDrawerHorarios(_nombre?: string): void {
     this.hoursRequested.emit();
-    void this.router?.navigate(['/admin/sedes'], { queryParams: { openHours: 'true' } })?.catch(() => {});
+    void this.router
+      ?.navigate(['/admin/sedes'], { queryParams: { openHours: 'true' } })
+      ?.catch(() => {});
   }
 
   /* ================= ESTADOS DEL FORMULARIO DE CANCHA ================= */
@@ -194,7 +220,10 @@ export class AdminCanchas {
   protected readonly nuevaCanchaFormato = signal<string>('Fútbol 7 (14 jugadores)');
   protected readonly nuevaCanchaSuperficie = signal<string>('Grass Sintético');
   protected readonly nuevaCanchaCobertura = signal<string>('Techada');
-  protected readonly nuevaCanchaEquipamiento = signal<string[]>(['Con Iluminación', 'Medidas Oficiales']);
+  protected readonly nuevaCanchaEquipamiento = signal<string[]>([
+    'Con Iluminación',
+    'Medidas Oficiales',
+  ]);
   protected readonly nuevaCanchaTarifa = signal<number>(100);
   protected readonly nuevaCanchaTarifaNoc = signal<number>(120);
   protected readonly nuevaCanchaHoraInicioNoche = signal<string>('18:00');
@@ -210,7 +239,8 @@ export class AdminCanchas {
   protected readonly equipamientosCancha = EQUIPAMIENTOS_CANCHA;
   protected readonly diasSemanaLabels = DIAS_SEMANA_LABELS;
 
-  protected readonly fallbackCourtImg = 'https://images.unsplash.com/photo-1529900241929-58a47400d705?q=80&w=800&auto=format&fit=crop';
+  protected readonly fallbackCourtImg =
+    'https://images.unsplash.com/photo-1529900241929-58a47400d705?q=80&w=800&auto=format&fit=crop';
 
   protected onCourtImgError(event: Event): void {
     const el = event.target as HTMLImageElement;
@@ -261,9 +291,15 @@ export class AdminCanchas {
 
   /* ================= COMPUTADOS DE MÉTRICAS KPI ================= */
   protected readonly totalLosas = computed(() => this.canchasDelDueno().length);
-  protected readonly activasCount = computed(() => this.canchasDelDueno().filter((c) => c.activa).length);
-  protected readonly mantenimientoCount = computed(() => this.canchasDelDueno().filter((c) => !c.activa).length);
-  protected readonly primeraNoActiva = computed(() => this.canchasDelDueno().find((c) => !c.activa)?.nombre ?? '');
+  protected readonly activasCount = computed(
+    () => this.canchasDelDueno().filter((c) => c.activa).length,
+  );
+  protected readonly mantenimientoCount = computed(
+    () => this.canchasDelDueno().filter((c) => !c.activa).length,
+  );
+  protected readonly primeraNoActiva = computed(
+    () => this.canchasDelDueno().find((c) => !c.activa)?.nombre ?? '',
+  );
 
   protected readonly tarifaPromedio = computed(() => {
     const list = this.canchasDelDueno();
@@ -297,7 +333,10 @@ export class AdminCanchas {
     const nocturnas = res.filter((r) => {
       const hora = parseInt(r.reserva.hora_inicio?.split(':')[0] || '0', 10);
       const cancha = this.canchasDelDueno().find((c) => c.id === r.reserva.cancha_id);
-      const horaNocConfigurada = parseInt((cancha?.hora_inicio_noche || '18:00').split(':')[0] || '18', 10);
+      const horaNocConfigurada = parseInt(
+        (cancha?.hora_inicio_noche || '18:00').split(':')[0] || '18',
+        10,
+      );
       return hora >= horaNocConfigurada;
     }).length;
     const pct = Math.round((nocturnas / res.length) * 100);
@@ -355,7 +394,9 @@ export class AdminCanchas {
       const rFecha = r.fecha || r.fecha_reserva || '';
       const rHoraInicio = r.hora_inicio || '00:00';
       const rHoraFin = r.hora_fin || '23:59';
-      const rStart = new Date(`${rFecha}T${rHoraInicio.length === 5 ? rHoraInicio + ':00' : rHoraInicio}`);
+      const rStart = new Date(
+        `${rFecha}T${rHoraInicio.length === 5 ? rHoraInicio + ':00' : rHoraInicio}`,
+      );
       const rEnd = new Date(`${rFecha}T${rHoraFin.length === 5 ? rHoraFin + ':00' : rHoraFin}`);
 
       const coincideCierre = cierresActivos.some((cierre) => {
@@ -374,7 +415,9 @@ export class AdminCanchas {
       });
 
       if (coincideCierre) {
-        const jugador = usuarios.find((u) => u.id === r.usuario_id || u.id_usuario === r.usuario_id);
+        const jugador = usuarios.find(
+          (u) => u.id === r.usuario_id || u.id_usuario === r.usuario_id,
+        );
         result.push({
           reservaId: r.id,
           codigoPase: r.codigo_pase || `#CAN-${1000 + r.id}`,
@@ -396,7 +439,12 @@ export class AdminCanchas {
   protected tieneCierreActivo(canchaId: number): boolean {
     return this.db
       .bloqueos()
-      .some((b) => (b.cancha_id === canchaId || (!b.cancha_id && Number(b.sede_id) === Number(this.selectedVenueId()))) && b.activo !== false);
+      .some(
+        (b) =>
+          (b.cancha_id === canchaId ||
+            (!b.cancha_id && Number(b.sede_id) === Number(this.selectedVenueId()))) &&
+          b.activo !== false,
+      );
   }
 
   /* ================= ACCIONES DE OPERATIVIDAD Y FORMULARIO ================= */
@@ -404,14 +452,22 @@ export class AdminCanchas {
   protected readonly errorOperatividad = signal('');
 
   protected async toggleOperativaCancha(canchaId: number): Promise<void> {
-    if (this.cambiandoOperatividad() || !this.canchasDelDueno().some(cancha => Number(cancha.id) === Number(canchaId))) return;
+    if (
+      this.cambiandoOperatividad() ||
+      !this.canchasDelDueno().some((cancha) => Number(cancha.id) === Number(canchaId))
+    )
+      return;
     this.cambiandoOperatividad.set(true);
     this.errorOperatividad.set('');
     try {
       const cancha = await this.db.toggleCanchaActiva(canchaId);
-      this.mostrarToast(`Operatividad de "${cancha.nombre}" actualizada (${cancha.activa ? 'Activa' : 'Pausada'})`);
+      this.mostrarToast(
+        `Operatividad de "${cancha.nombre}" actualizada (${cancha.activa ? 'Activa' : 'Pausada'})`,
+      );
     } catch {
-      this.errorOperatividad.set('No se pudo confirmar el cambio. La cancha conserva su estado anterior. Intenta nuevamente.');
+      this.errorOperatividad.set(
+        'No se pudo confirmar el cambio. La cancha conserva su estado anterior. Intenta nuevamente.',
+      );
     } finally {
       this.cambiandoOperatividad.set(false);
     }
@@ -428,7 +484,9 @@ export class AdminCanchas {
 
   protected abrirFormularioNuevaCancha(): void {
     if (this.sedesDelDueno().length === 0) {
-      this.mostrarToast('No puedes añadir una cancha sin una sede. Registra primero tu complejo deportivo.');
+      this.mostrarToast(
+        'No puedes añadir una cancha sin una sede. Registra primero tu complejo deportivo.',
+      );
       this.irARegistrarSede();
       return;
     }
@@ -458,18 +516,26 @@ export class AdminCanchas {
   protected editarCancha(cancha: AdminCourt): void {
     if (!this.canchasDelDueno().some((item) => item.id === cancha.id)) return;
     this.canchaEnEdicion.set(cancha);
-    this.nuevaCanchaSedeId.set(cancha.sede_id ?? (this.sedesDelDueno()[0]?.id ?? null));
+    this.nuevaCanchaSedeId.set(cancha.sede_id ?? this.sedesDelDueno()[0]?.id ?? null);
     this.nuevaCanchaNombre.set(cancha.nombre || '');
     const formato = cancha.formato || cancha.tipo || '';
     const jugadores = formato.match(/\d+/)?.[0];
-    this.nuevaCanchaFormato.set(FORMATOS_CANCHA.find(option => option === formato)
-      ?? FORMATOS_CANCHA.find(option => option.match(/\d+/)?.[0] === jugadores)
-      ?? 'Fútbol 7 (14 jugadores)');
+    this.nuevaCanchaFormato.set(
+      FORMATOS_CANCHA.find((option) => option === formato) ??
+        FORMATOS_CANCHA.find((option) => option.match(/\d+/)?.[0] === jugadores) ??
+        'Fútbol 7 (14 jugadores)',
+    );
     this.nuevaCanchaSuperficie.set(cancha.superficie || 'Grass Sintético');
-    this.nuevaCanchaCobertura.set(cancha.cobertura || (cancha.techada ? 'Techada' : 'Al Aire Libre'));
-    this.nuevaCanchaEquipamiento.set(Array.isArray(cancha.equipamiento) ? [...cancha.equipamiento] : []);
+    this.nuevaCanchaCobertura.set(
+      cancha.cobertura || (cancha.techada ? 'Techada' : 'Al Aire Libre'),
+    );
+    this.nuevaCanchaEquipamiento.set(
+      Array.isArray(cancha.equipamiento) ? [...cancha.equipamiento] : [],
+    );
     this.nuevaCanchaTarifa.set(cancha.precio_hora != null ? Number(cancha.precio_hora) : 100);
-    this.nuevaCanchaTarifaNoc.set(cancha.precio_hora_noche != null ? Number(cancha.precio_hora_noche) : 120);
+    this.nuevaCanchaTarifaNoc.set(
+      cancha.precio_hora_noche != null ? Number(cancha.precio_hora_noche) : 120,
+    );
     this.nuevaCanchaHoraInicioNoche.set(cancha.hora_inicio_noche || '18:00');
     this.nuevaCanchaFoto.set(cancha.foto_url || '');
     this.nuevaCanchaFotos.set(
@@ -565,7 +631,9 @@ export class AdminCanchas {
       }
       this.nuevaCanchaFotos.update((prev) => [...prev, ...uploadedUrls]);
       this.mostrarToast(
-        uploadedUrls.length === 1 ? 'Fotografía subida con éxito' : `${uploadedUrls.length} fotografías subidas con éxito`,
+        uploadedUrls.length === 1
+          ? 'Fotografía subida con éxito'
+          : `${uploadedUrls.length} fotografías subidas con éxito`,
       );
     }
   }
@@ -612,14 +680,18 @@ export class AdminCanchas {
       return;
     }
 
-    const targetSedeId = this.nuevaCanchaSedeId() ?? this.sedeDelDueno()?.id ?? this.sedesDelDueno()[0]?.id;
+    const targetSedeId =
+      this.nuevaCanchaSedeId() ?? this.sedeDelDueno()?.id ?? this.sedesDelDueno()[0]?.id;
     if (!targetSedeId || !this.sedesDelDueno().some((sede) => sede.id === targetSedeId)) {
       this.mostrarToast('Selecciona una sede deportiva válida');
       return;
     }
 
     const fotosList = this.nuevaCanchaFotos();
-    const fotoPrincipal = this.nuevaCanchaFoto() || fotosList[0] || 'https://images.unsplash.com/photo-1529900241929-58a47400d705?q=80&w=800&auto=format&fit=crop';
+    const fotoPrincipal =
+      this.nuevaCanchaFoto() ||
+      fotosList[0] ||
+      'https://images.unsplash.com/photo-1529900241929-58a47400d705?q=80&w=800&auto=format&fit=crop';
 
     const payload = {
       sede_id: targetSedeId,
@@ -660,7 +732,10 @@ export class AdminCanchas {
   }
 
   /* ================= ACCIONES DE HORARIOS, DESCANSOS Y CIERRES ================= */
-  protected abrirGestionCancha(cancha: AdminCourt, tab: 'horarios' | 'descansos' | 'cierres' = 'horarios'): void {
+  protected abrirGestionCancha(
+    cancha: AdminCourt,
+    tab: 'horarios' | 'descansos' | 'cierres' = 'horarios',
+  ): void {
     this.canchaGestion.set(cancha);
     this.tabGestion.set(tab);
     this.horarioModo.set(cancha.usar_horario_sede !== false ? 'comun' : 'individual');
@@ -679,7 +754,9 @@ export class AdminCanchas {
       ]);
     }
 
-    this.descansosCancha.set(Array.isArray(cancha.descansos_recurrentes) ? [...cancha.descansos_recurrentes] : []);
+    this.descansosCancha.set(
+      Array.isArray(cancha.descansos_recurrentes) ? [...cancha.descansos_recurrentes] : [],
+    );
     this.mostrarFormularioNuevoCierre.set(false);
     this.panelGestionAbierto.set(true);
   }
@@ -694,7 +771,11 @@ export class AdminCanchas {
     this.horarioModo.set(modo);
   }
 
-  protected actualizarHorarioIndividual(dia: number, campo: 'apertura' | 'cierre' | 'activo', valor: string | boolean): void {
+  protected actualizarHorarioIndividual(
+    dia: number,
+    campo: 'apertura' | 'cierre' | 'activo',
+    valor: string | boolean,
+  ): void {
     this.horariosIndividualesSemana.update((days) =>
       days.map((day) => (day.diaSemana === dia ? { ...day, [campo]: valor } : day)),
     );
@@ -728,7 +809,9 @@ export class AdminCanchas {
   protected agregarDescansoRecurrente(): void {
     const nombre = this.nuevoDescansoNombre().trim();
     if (!nombre) {
-      this.errorDescanso.set('Escribe el motivo del descanso recurrente (ej. Mantenimiento matutino)');
+      this.errorDescanso.set(
+        'Escribe el motivo del descanso recurrente (ej. Mantenimiento matutino)',
+      );
       return;
     }
     if (this.nuevoDescansoDias().length === 0) {
@@ -776,7 +859,15 @@ export class AdminCanchas {
   }
 
   protected getDiasNombres(dias: number[]): string {
-    const map: Record<number, string> = { 1: 'Lun', 2: 'Mar', 3: 'Mié', 4: 'Jue', 5: 'Vie', 6: 'Sáb', 0: 'Dom' };
+    const map: Record<number, string> = {
+      1: 'Lun',
+      2: 'Mar',
+      3: 'Mié',
+      4: 'Jue',
+      5: 'Vie',
+      6: 'Sáb',
+      0: 'Dom',
+    };
     return dias.map((d) => map[d] || String(d)).join(', ');
   }
 
@@ -795,10 +886,12 @@ export class AdminCanchas {
     this.errorCierre.set('');
   }
 
-  protected aplicarCierre(): void {
+  protected async aplicarCierre(): Promise<void> {
     const motivo = this.nuevoCierreMotivo().trim();
     if (!motivo) {
-      this.errorCierre.set('Debes indicar el motivo del cierre (ej. Lluvia torrencial o mantenimiento de luminarias)');
+      this.errorCierre.set(
+        'Debes indicar el motivo del cierre (ej. Lluvia torrencial o mantenimiento de luminarias)',
+      );
       return;
     }
 
@@ -813,19 +906,30 @@ export class AdminCanchas {
     const fFin = tipo === 'programado' ? this.nuevoCierreFechaFin() : null;
 
     if (tipo === 'programado' && (!fFin || fFin <= fInicio)) {
-      this.errorCierre.set('En un cierre programado debes definir una fecha y hora fin posterior al inicio');
+      this.errorCierre.set(
+        'En un cierre programado debes definir una fecha y hora fin posterior al inicio',
+      );
       return;
     }
 
-    this.db.createBloqueo({
-      cancha_id: alcance === 'cancha' && cancha ? cancha.id : null,
-      sede_id: Number(sedeId),
-      alcance,
-      tipo,
-      motivo,
-      fecha_inicio: fInicio,
-      fecha_fin: fFin,
-    });
+    try {
+      await this.db.createBloqueo({
+        cancha_id: alcance === 'cancha' && cancha ? cancha.id : null,
+        sede_id: Number(sedeId),
+        alcance,
+        tipo,
+        motivo,
+        fecha_inicio: fInicio,
+        fecha_fin: fFin,
+      });
+    } catch (error) {
+      this.errorCierre.set(
+        (error as any)?.error?.message ||
+          (error as any)?.message ||
+          'No se pudo registrar el cierre. Intenta nuevamente.',
+      );
+      return;
+    }
 
     this.mostrarFormularioNuevoCierre.set(false);
     this.mostrarToast(
@@ -835,8 +939,17 @@ export class AdminCanchas {
     );
   }
 
-  protected reabrirCierre(cierreId: number | string): void {
-    this.db.reabrirBloqueo(cierreId);
+  protected async reabrirCierre(cierreId: number | string): Promise<void> {
+    try {
+      await this.db.reabrirBloqueo(cierreId);
+    } catch (error) {
+      this.mostrarToast(
+        (error as any)?.error?.message ||
+          (error as any)?.message ||
+          'No se pudo levantar el cierre.',
+      );
+      return;
+    }
     this.mostrarToast('Cierre levantado: la losa vuelve a estar disponible.');
   }
 
@@ -866,7 +979,7 @@ export class AdminCanchas {
     this.reservaEnReprogramacion.set(null);
   }
 
-  protected confirmarReprogramacion(): void {
+  protected async confirmarReprogramacion(): Promise<void> {
     const target = this.reservaEnReprogramacion();
     if (!target) return;
 
@@ -878,16 +991,40 @@ export class AdminCanchas {
       return;
     }
 
-    this.db.reprogramarReserva(target.reservaId, fecha, horario);
-    this.mostrarToast(`Reserva ${target.codigoPase} reprogramada con éxito al ${fecha} (${horario}) sin alterar pagos.`);
+    try {
+      await this.db.reprogramarReserva(target.reservaId, fecha, horario);
+    } catch (error) {
+      this.mostrarToast(
+        (error as any)?.error?.message ||
+          (error as any)?.message ||
+          'No se pudo reprogramar la reserva.',
+      );
+      return;
+    }
+    this.mostrarToast(
+      `Reserva ${target.codigoPase} reprogramada con éxito al ${fecha} (${horario}) sin alterar pagos.`,
+    );
     this.reservaEnReprogramacion.set(null);
   }
 
-  protected cancelarReservaManual(reserva: ReservaAfectada): void {
-    if (!confirm(`¿Deseas cancelar la reserva ${reserva.codigoPase} de ${reserva.jugadorNombre}? El saldo y estado se gestionarán en caja.`)) {
+  protected async cancelarReservaManual(reserva: ReservaAfectada): Promise<void> {
+    if (
+      !confirm(
+        `¿Deseas cancelar la reserva ${reserva.codigoPase} de ${reserva.jugadorNombre}? El saldo y estado se gestionarán en caja.`,
+      )
+    ) {
       return;
     }
-    this.db.descartarReserva(reserva.reservaId);
+    try {
+      await this.db.descartarReserva(reserva.reservaId);
+    } catch (error) {
+      this.mostrarToast(
+        (error as any)?.error?.message ||
+          (error as any)?.message ||
+          'No se pudo cancelar la reserva.',
+      );
+      return;
+    }
     this.mostrarToast(`Reserva ${reserva.codigoPase} cancelada manualmente.`);
   }
 

@@ -21,6 +21,11 @@ class CourtOperationServiceTest {
         jdbc.execute("create table cancha (id_cancha int, id_sede int, estado char(1), fecmod timestamp, usmod varchar(30), pcmod varchar(30))");
         jdbc.update("insert into sede values (1, 'owner-a', 'A'), (2, 'owner-b', 'A')");
         jdbc.update("insert into cancha (id_cancha, id_sede, estado) values (11, 1, 'A'), (22, 2, 'A')");
+        jdbc.execute("""
+                create table bloqueo_mantenimiento (id_bloqueo int auto_increment primary key, id_cancha int,
+                    motivo varchar(200), fecha_inicio timestamp, fecha_fin timestamp, estado char(1),
+                    usucre varchar(40), pccre varchar(40))
+                """);
         service = new CourtOperationService(jdbc);
     }
 
@@ -61,5 +66,26 @@ class CourtOperationServiceTest {
                 () -> service.save(11, owner, new CourtOperationService.Operation(null))).getStatusCode().value());
         assertEquals(404, assertThrows(ResponseStatusException.class,
                 () -> service.save(99, owner, new CourtOperationService.Operation(false))).getStatusCode().value());
+    }
+
+    @Test
+    void createsBlockInLimaTimeAndReopensOnlyForTheOwner() {
+        var saved = service.createBlock(11, owner,
+                new CourtOperationService.BlockRequest("Luminarias", "2026-11-05T15:00:00Z", "2026-11-05T12:00"));
+        // 15:00 UTC = 10:00 Lima; la fecha fin sin zona ya está en hora de Lima.
+        assertEquals(java.time.LocalDateTime.of(2026, 11, 5, 10, 0), jdbc.queryForObject(
+                "select fecha_inicio from bloqueo_mantenimiento where id_bloqueo = ?", java.time.LocalDateTime.class, saved.id()));
+
+        assertEquals(403, assertThrows(ResponseStatusException.class,
+                () -> service.createBlock(22, owner, new CourtOperationService.BlockRequest("x", null, null))).getStatusCode().value());
+        assertEquals(400, assertThrows(ResponseStatusException.class,
+                () -> service.createBlock(11, owner, new CourtOperationService.BlockRequest("x", "2026-11-05T12:00", "2026-11-05T11:00"))).getStatusCode().value());
+
+        AuthUserDto otherOwner = new AuthUserDto("owner-b", "", "", "", "dueno");
+        assertEquals(403, assertThrows(ResponseStatusException.class,
+                () -> service.reopenBlock(saved.id(), otherOwner)).getStatusCode().value());
+        service.reopenBlock(saved.id(), owner);
+        assertEquals("I", jdbc.queryForObject(
+                "select estado from bloqueo_mantenimiento where id_bloqueo = ?", String.class, saved.id()));
     }
 }

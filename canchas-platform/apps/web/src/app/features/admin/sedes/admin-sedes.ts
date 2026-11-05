@@ -168,7 +168,9 @@ export class AdminSedes implements OnInit, OnDestroy {
     this.iniciarRotacionConsejos();
     if (this.route?.snapshot.queryParams['openHours'] === 'true') {
       setTimeout(() => {
-        const activeSede = this.sedesDelDueno().find((s) => Number(s.id) === Number(this.db.sedeOperativaId())) || this.sedesDelDueno()[0];
+        const activeSede =
+          this.sedesDelDueno().find((s) => Number(s.id) === Number(this.db.sedeOperativaId())) ||
+          this.sedesDelDueno()[0];
         if (activeSede) {
           this.abrirDrawerHorarios(activeSede);
         }
@@ -277,7 +279,7 @@ export class AdminSedes implements OnInit, OnDestroy {
     this.sedeEnEdicion.set(null);
   }
 
-  guardarCambiosSede(): void {
+  async guardarCambiosSede(): Promise<void> {
     const duenoId = this.duenoId();
     if (!duenoId || this.uploadingPhotos()) return;
     const nombre = this.liveVenueName().trim() || 'Mi Sede Deportiva';
@@ -286,7 +288,9 @@ export class AdminSedes implements OnInit, OnDestroy {
     const telefono = this.liveVenueTelefono().trim() || '+51 987 654 321';
     const descripcion = this.liveVenueStory().trim();
     const logo = this.liveVenueLogo();
-    const fotosGaleria = this.galeriaFotos().map((f) => f.url).filter(Boolean);
+    const fotosGaleria = this.galeriaFotos()
+      .map((f) => f.url)
+      .filter(Boolean);
     const portada = fotosGaleria[0] || logo;
 
     const payload: any = {
@@ -310,12 +314,16 @@ export class AdminSedes implements OnInit, OnDestroy {
     }
 
     try {
-      this.db.saveOrUpdateSede(duenoId, payload);
-    } catch {
-      this.mostrarToast('No se pudo registrar la sede. Revisa los datos y vuelve a intentar.');
+      await this.db.saveOrUpdateSede(duenoId, payload);
+    } catch (error) {
+      this.mostrarToast(
+        (error as any)?.error?.message ||
+          (error as any)?.message ||
+          'No se pudo guardar la sede. Revisa tu conexión y vuelve a intentar.',
+      );
       return;
     }
-    this.mostrarToast('Cambios registrados localmente; sincronización remota sin confirmar.');
+    this.mostrarToast('Sede guardada correctamente.');
     this.cerrarFormularioSede();
   }
 
@@ -330,7 +338,12 @@ export class AdminSedes implements OnInit, OnDestroy {
       this.mapInitTimeout = setTimeout(() => {
         this.mapInitTimeout = null;
         const mapContainer = this.mapContainer()?.nativeElement;
-        if (request !== this.mapRequest || !this.formularioSedeAbierto() || !mapContainer?.isConnected) return;
+        if (
+          request !== this.mapRequest ||
+          !this.formularioSedeAbierto() ||
+          !mapContainer?.isConnected
+        )
+          return;
 
         const initialLat = this.liveVenueLat() || -12.1192;
         const initialLng = this.liveVenueLng() || -77.029;
@@ -407,7 +420,11 @@ export class AdminSedes implements OnInit, OnDestroy {
     }
   }
 
-  protected async actualizarCoordenadasYDireccion(lat: number, lng: number, reverseGeocode = true): Promise<void> {
+  protected async actualizarCoordenadasYDireccion(
+    lat: number,
+    lng: number,
+    reverseGeocode = true,
+  ): Promise<void> {
     const fixedLat = Number(lat.toFixed(6));
     const fixedLng = Number(lng.toFixed(6));
     this.liveVenueLat.set(fixedLat);
@@ -538,7 +555,8 @@ export class AdminSedes implements OnInit, OnDestroy {
       const url = await this.db.uploadPublicImage(file, 'sedes/logos');
       if (request === this.photoRequest) this.liveVenueLogo.set(url);
     } catch {
-      if (request === this.photoRequest) this.mostrarToast('No se pudo subir el logo. Se conserva la imagen anterior.');
+      if (request === this.photoRequest)
+        this.mostrarToast('No se pudo subir el logo. Se conserva la imagen anterior.');
     } finally {
       if (request === this.photoRequest) this.uploadingPhotos.set(false);
     }
@@ -558,8 +576,10 @@ export class AdminSedes implements OnInit, OnDestroy {
     const files = Array.from(input.files ?? []);
     if (!files.length || this.uploadingPhotos()) return;
     input.value = '';
-    if (files.length + this.galeriaFotos().length > 12
-      || files.some(file => !file.type.startsWith('image/') || file.size > 10 * 1024 * 1024)) {
+    if (
+      files.length + this.galeriaFotos().length > 12 ||
+      files.some((file) => !file.type.startsWith('image/') || file.size > 10 * 1024 * 1024)
+    ) {
       this.mostrarToast('La galería admite hasta 12 imágenes de hasta 10 MB cada una.');
       return;
     }
@@ -569,13 +589,19 @@ export class AdminSedes implements OnInit, OnDestroy {
       for (const [index, file] of files.entries()) {
         const url = await this.db.uploadPublicImage(file, 'sedes/galeria');
         if (request !== this.photoRequest) return;
-        this.galeriaFotos.update(prev => [...prev, {
-          id: `foto-${request}-${index}`, url, alt: file.name,
-          label: prev.length ? `Foto ${prev.length + 1}` : 'Portada Principal',
-        }]);
+        this.galeriaFotos.update((prev) => [
+          ...prev,
+          {
+            id: `foto-${request}-${index}`,
+            url,
+            alt: file.name,
+            label: prev.length ? `Foto ${prev.length + 1}` : 'Portada Principal',
+          },
+        ]);
       }
     } catch {
-      if (request === this.photoRequest) this.mostrarToast('No se completó la subida. Se conservan las fotos ya cargadas.');
+      if (request === this.photoRequest)
+        this.mostrarToast('No se completó la subida. Se conservan las fotos ya cargadas.');
     } finally {
       if (request === this.photoRequest) this.uploadingPhotos.set(false);
     }
@@ -626,7 +652,9 @@ export class AdminSedes implements OnInit, OnDestroy {
       );
     } catch {
       if (request === this.horariosRequest) {
-        this.horariosError.set('No se pudieron cargar los horarios. Comprueba la conexión con el servidor.');
+        this.horariosError.set(
+          'No se pudieron cargar los horarios. Comprueba la conexión con el servidor.',
+        );
       }
     } finally {
       if (request === this.horariosRequest) {
@@ -641,7 +669,11 @@ export class AdminSedes implements OnInit, OnDestroy {
     this.drawerHorariosOpen.set(false);
   }
 
-  cambiarHorario(dia: number, campo: 'apertura' | 'cierre' | 'activo', valor: string | boolean): void {
+  cambiarHorario(
+    dia: number,
+    campo: 'apertura' | 'cierre' | 'activo',
+    valor: string | boolean,
+  ): void {
     this.horariosSemana.update((days) =>
       days.map((day) => (day.diaSemana === dia ? { ...day, [campo]: valor } : day)),
     );

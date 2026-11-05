@@ -8,7 +8,10 @@ import type { AdminCourt } from './admin-canchas.models';
 describe('AdminCanchas', () => {
   let fixture: ComponentFixture<AdminCanchas>;
   let component: AdminCanchas;
-  const venues = [{ id: 10, nombre: 'Sede A' }, { id: 20, nombre: 'Sede B' }];
+  const venues = [
+    { id: 10, nombre: 'Sede A' },
+    { id: 20, nombre: 'Sede B' },
+  ];
   const courts = signal<AdminCourt[]>([]);
   const catalogLoading = signal(false);
   const loadErrors = signal<string[]>([]);
@@ -112,7 +115,12 @@ describe('AdminCanchas', () => {
 
   it('waits for maintenance confirmation, prevents double clicks and updates the card metrics', async () => {
     let finish!: (court: AdminCourt) => void;
-    toggleCanchaActiva.mockImplementation(() => new Promise(resolve => { finish = resolve; }));
+    toggleCanchaActiva.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+    );
     const notice = vi.fn();
     component.notice.subscribe(notice);
     const pending = component['toggleOperativaCancha'](1);
@@ -139,7 +147,9 @@ describe('AdminCanchas', () => {
     fixture.detectChanges();
     expect(component['activasCount']()).toBe(1);
     expect(component['cambiandoOperatividad']()).toBe(false);
-    expect(fixture.nativeElement.querySelector('[role="alert"]').textContent).toContain('estado anterior');
+    expect(fixture.nativeElement.querySelector('[role="alert"]').textContent).toContain(
+      'estado anterior',
+    );
     expect(notice).not.toHaveBeenCalled();
   });
 
@@ -209,7 +219,9 @@ describe('AdminCanchas', () => {
     component['editarCancha'](court);
     expect(component['nuevaCanchaFormato']()).toBe('Fútbol 7 (14 jugadores)');
     fixture.detectChanges();
-    const selects = fixture.nativeElement.querySelectorAll('.management-editor select') as NodeListOf<HTMLSelectElement>;
+    const selects = fixture.nativeElement.querySelectorAll(
+      '.management-editor select',
+    ) as NodeListOf<HTMLSelectElement>;
     expect(selects[1].value).toBe('Fútbol 7 (14 jugadores)');
     expect(selects[3].value).toBe(component['nuevaCanchaCobertura']());
   });
@@ -217,8 +229,9 @@ describe('AdminCanchas', () => {
   it('disables unsupported individual schedule saves instead of simulating persistence', () => {
     component['abrirGestionCancha'](courts()[0]);
     fixture.detectChanges();
-    const save = Array.from(fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>)
-      .find(button => button.textContent?.includes('Guardar horarios'));
+    const save = Array.from(
+      fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>,
+    ).find((button) => button.textContent?.includes('Guardar horarios'));
     expect(save?.disabled).toBe(true);
     save?.click();
     expect(updateCancha).not.toHaveBeenCalled();
@@ -325,14 +338,14 @@ describe('AdminCanchas', () => {
     expect(component['descansosCancha']().length).toBe(0);
   });
 
-  it('registers immediate and scheduled closures and notifies parent', () => {
+  it('registers immediate and scheduled closures and notifies parent', async () => {
     component['abrirGestionCancha'](courts()[0], 'cierres');
     component['abrirFormularioCierre']();
     component['nuevoCierreAlcance'].set('cancha');
     component['nuevoCierreTipo'].set('inmediato');
     component['nuevoCierreMotivo'].set('Lluvia intensa y anegamiento');
 
-    component['aplicarCierre']();
+    await component['aplicarCierre']();
     expect(createBloqueo).toHaveBeenCalledWith(
       expect.objectContaining({
         cancha_id: 1,
@@ -383,7 +396,7 @@ describe('AdminCanchas', () => {
     expect(descartarReserva).not.toHaveBeenCalled();
   });
 
-  it('allows rescheduling an affected reservation without altering payments', () => {
+  it('allows rescheduling an affected reservation without altering payments', async () => {
     const affectedRes = {
       reservaId: 501,
       codigoPase: '#CAN-501',
@@ -403,7 +416,7 @@ describe('AdminCanchas', () => {
     component['reprogramarFecha'].set('2026-10-16');
     component['reprogramarHoraInicio'].set('20:00');
     component['reprogramarHoraFin'].set('21:00');
-    component['confirmarReprogramacion']();
+    await component['confirmarReprogramacion']();
 
     expect(reprogramarReserva).toHaveBeenCalledWith(501, '2026-10-16', '20:00 - 21:00');
     expect(component['reservaEnReprogramacion']()).toBeNull();

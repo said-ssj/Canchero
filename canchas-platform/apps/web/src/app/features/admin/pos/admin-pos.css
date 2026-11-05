@@ -51,7 +51,11 @@ button:disabled {
   width: 100%;
   gap: 1.25rem;
   padding-bottom: 2rem;
-  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  font-family:
+    'Plus Jakarta Sans',
+    system-ui,
+    -apple-system,
+    sans-serif;
 }
 
 /* Header */
@@ -129,7 +133,7 @@ button:disabled {
 
 /* Banner de Alerta de Stock Mínimo Crítico */
 .kardex-alert-banner {
-  background: #fffbeb;
+  background: var(--color-warning-50);
   border: 1px solid #fde68a;
   border-left: 4px solid #b45309;
   border-radius: 6px;
@@ -148,20 +152,20 @@ button:disabled {
 }
 
 .alert-icon {
-  color: #b45309;
+  color: var(--color-warning-700);
   font-size: 1.5rem;
   width: 1.5rem;
   height: 1.5rem;
 }
 
 .alert-title {
-  color: #92400e;
+  color: var(--color-warning-700);
   font-size: 0.88rem;
   display: block;
 }
 
 .alert-description {
-  color: #b45309;
+  color: var(--color-warning-700);
   font-size: 0.78rem;
 }
 
@@ -218,7 +222,7 @@ button:disabled {
 
 /* Tarjeta de Búsqueda y Categorías */
 .pos-search-card {
-  background: #ffffff;
+  background: var(--color-surface-card);
   border: 1px solid var(--color-border, #e2e8f0);
   border-radius: 8px;
   padding: 0.85rem;
@@ -292,7 +296,7 @@ button:disabled {
   min-width: 0;
   transform: none;
   box-shadow: none;
-  background: #ffffff;
+  background: var(--color-surface-card);
   border: 1px solid var(--pos-product-border, var(--color-border, #e2e8f0));
   border-radius: 8px;
   padding: 0.85rem;
@@ -316,7 +320,7 @@ button:disabled {
 
 .pos-product-card.is-out-of-stock {
   --pos-product-border: #fca5a5;
-  background: #fef2f2;
+  background: var(--color-danger-50);
   opacity: 0.65;
   cursor: default;
 }
@@ -343,7 +347,7 @@ button:disabled {
   white-space: nowrap;
   font-size: 0.68rem;
   font-family: monospace;
-  color: #94a3b8;
+  color: var(--color-slate-400);
 }
 
 .pos-product-favorite-btn {
@@ -396,7 +400,7 @@ button:disabled {
   font-size: 0.7rem;
   text-transform: uppercase;
   font-weight: 700;
-  color: #94a3b8;
+  color: var(--color-slate-400);
 }
 
 .pos-product-name {
@@ -450,7 +454,7 @@ button:disabled {
   grid-column: 1 / -1;
   text-align: center;
   padding: 3rem 1rem;
-  background: #ffffff;
+  background: var(--color-surface-card);
   border: 1px dashed var(--color-border, #e2e8f0);
   border-radius: 8px;
 }
@@ -459,7 +463,7 @@ button:disabled {
   font-size: 2.75rem;
   width: 2.75rem;
   height: 2.75rem;
-  color: #94a3b8;
+  color: var(--color-slate-400);
 }
 
 .empty-title {
@@ -479,7 +483,7 @@ button:disabled {
 }
 
 .pos-cart-card {
-  background: #ffffff;
+  background: var(--color-surface-card);
   border: 1px solid var(--color-border, #e2e8f0);
   border-radius: 8px;
   padding: 1rem;
@@ -539,7 +543,7 @@ button:disabled {
   justify-content: space-between;
   gap: 8px;
   padding: 0.5rem 0;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--color-slate-100);
 }
 
 .pos-cart-item-info {
@@ -611,7 +615,7 @@ button:disabled {
   width: 24px;
   height: 24px;
   line-height: 24px;
-  color: #94a3b8;
+  color: var(--color-slate-400);
 }
 
 .pos-cart-remove-btn mat-icon {
@@ -646,7 +650,7 @@ button:disabled {
 
 /* Desglose Tributario Perú */
 .pos-tax-summary-box {
-  background: #f8fafc;
+  background: var(--color-slate-50);
   border: 1px solid var(--color-border, #e2e8f0);
   border-radius: 6px;
   padding: 0.75rem;
@@ -698,8 +702,8 @@ button:disabled {
 .pos-internal-badge {
   font-size: 0.68rem;
   font-weight: 700;
-  color: #b45309;
-  background: #fef3c7;
+  color: var(--color-warning-700);
+  background: var(--color-warning-100);
   padding: 2px 6px;
   border-radius: 4px;
 }
@@ -717,13 +721,13 @@ button:disabled {
   padding: 6px 4px;
   border: 1px solid var(--color-border, #e2e8f0);
   border-radius: 6px;
-  background: #ffffff;
+  background: var(--color-surface-card);
   cursor: pointer;
 }
 
 .pos-voucher-type-btn.active {
   border-color: var(--color-brand-green, #15803d);
-  background: #f0fdf4;
+  background: var(--color-success-50);
 }
 
 .pos-v-name {
@@ -776,7 +780,7 @@ button:disabled {
 
 /* Tarjeta de Cálculo de Vuelto */
 .pos-cash-calc-card {
-  background: #ffffff;
+  background: var(--color-surface-card);
   border: 1px solid var(--color-border, #e2e8f0);
   border-radius: 6px;
 }
@@ -808,7 +812,7 @@ button:disabled {
   align-items: center;
   margin-top: 8px;
   padding: 6px 8px;
-  background: #f8fafc;
+  background: var(--color-slate-50);
   border-radius: 4px;
   font-size: 0.8rem;
 }
@@ -817,25 +821,31 @@ button:disabled {
   font-size: 0.95rem;
 }
 
-.result-short { color: #dc2626; }
-.result-exact { color: #15803d; }
-.result-over { color: #0284c7; }
+.result-short {
+  color: #dc2626;
+}
+.result-exact {
+  color: var(--color-success-600);
+}
+.result-over {
+  color: #0284c7;
+}
 
 .pos-cash-integration {
   display: flex;
   align-items: center;
   gap: 6px;
   font-size: 0.72rem;
-  color: #15803d;
+  color: var(--color-success-600);
   margin-top: 6px;
 }
 
 .cash-active-icon {
-  color: #15803d;
+  color: var(--color-success-600);
 }
 
 .cash-warning {
-  color: #b45309;
+  color: var(--color-warning-700);
 }
 
 .pos-btn-checkout {
@@ -853,11 +863,13 @@ button:disabled {
   margin-top: 0.5rem;
 }
 
-.kardex-header-card, .ventas-header-card {
+.kardex-header-card,
+.ventas-header-card {
   border-radius: 8px;
 }
 
-.kardex-header-content, .ventas-header-content {
+.kardex-header-content,
+.ventas-header-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -865,14 +877,16 @@ button:disabled {
   gap: 0.75rem;
 }
 
-.kardex-header-content h3, .ventas-header-content h3 {
+.kardex-header-content h3,
+.ventas-header-content h3 {
   margin: 0;
   font-size: 1rem;
   font-weight: 800;
   color: var(--color-ink-900, #0f172a);
 }
 
-.kardex-header-content p, .ventas-header-content p {
+.kardex-header-content p,
+.ventas-header-content p {
   margin: 2px 0 0;
   font-size: 0.8rem;
   color: var(--color-ink-500, #64748b);
@@ -900,11 +914,11 @@ button:disabled {
 }
 
 .text-entry {
-  color: #15803d;
+  color: var(--color-success-600);
 }
 
 .text-exit {
-  color: #b91c1c;
+  color: var(--color-danger-600);
 }
 
 .voucher-code {
@@ -945,11 +959,26 @@ button:disabled {
   letter-spacing: 0.02em;
 }
 
-.badge-brand { background: #e0f2fe; color: #0369a1; }
-.badge-success { background: #dcfce7; color: #15803d; }
-.badge-warning { background: #fef3c7; color: #92400e; }
-.badge-error { background: #fee2e2; color: #b91c1c; }
-.badge-neutral { background: #f1f5f9; color: #475569; }
+.badge-brand {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+.badge-success {
+  background: var(--color-success-100);
+  color: var(--color-success-600);
+}
+.badge-warning {
+  background: var(--color-warning-100);
+  color: var(--color-warning-700);
+}
+.badge-error {
+  background: var(--color-danger-50);
+  color: var(--color-danger-600);
+}
+.badge-neutral {
+  background: var(--color-slate-100);
+  color: var(--color-ink-600);
+}
 
 /* Modales */
 .caja-modal-backdrop {
@@ -964,13 +993,15 @@ button:disabled {
 }
 
 .caja-modal-card {
-  background: #ffffff;
+  background: var(--color-surface-card);
   border-radius: 8px;
   max-width: 500px;
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  box-shadow:
+    0 10px 25px -5px rgba(0, 0, 0, 0.1),
+    0 8px 10px -6px rgba(0, 0, 0, 0.1);
   padding: 1.25rem;
 }
 
@@ -1014,7 +1045,10 @@ button:disabled {
   color: #000000;
 }
 
-.pos-receipt-header, .pos-receipt-voucher-info, .pos-receipt-disclaimer, .pos-receipt-footer-thanks {
+.pos-receipt-header,
+.pos-receipt-voucher-info,
+.pos-receipt-disclaimer,
+.pos-receipt-footer-thanks {
   text-align: center;
 }
 
@@ -1024,7 +1058,9 @@ button:disabled {
   font-weight: 800;
 }
 
-.pos-receipt-ruc, .pos-receipt-address, .pos-receipt-phone {
+.pos-receipt-ruc,
+.pos-receipt-address,
+.pos-receipt-phone {
   font-size: 10px;
 }
 
@@ -1175,12 +1211,12 @@ button:disabled {
 }
 
 .entry-kardex-notice {
-  background: #f0fdf4;
+  background: var(--color-success-50);
   border: 1px solid #bbf7d0;
   padding: 0.65rem 0.75rem;
   border-radius: 6px;
   font-size: 0.75rem;
-  color: #166534;
+  color: var(--color-success-700);
 }
 
 .entry-modal-actions {
