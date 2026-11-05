@@ -151,9 +151,11 @@ permisos de negocio, pagos ni funcionamiento completo de la aplicacion.
 
 ## 4. Conectar Angular en Vercel
 
-Conservar el frontend como servicio separado y su vercel.json para rutas SPA.
-El proyecto usa workspaces npm y package-lock en canchas-platform:
-la instalacion debe respetar ese lock y tener disponible el monorepo.
+Seguir [la guia de Vercel](GUIA_VERCEL.md). Usar Root Directory
+`canchas-platform`, Framework Preset `Other` y Node.js `24.x`.
+El `vercel.json` de esa raiz define `npm ci`, `npm run build:web`,
+salida `apps/web/dist/canchero/browser` y fallback para rutas SPA.
+Asi se respeta el lockfile unico del workspace. No elegir `apps/web` como raiz.
 
 Configurar variables publicas de build:
 

@@ -113,6 +113,8 @@ El archivo [`.github/workflows/ci.yml`](.github/workflows/ci.yml) ejecuta autom√
 ##  Estado de Entrega y Consideraciones de Producci√≥n
 
 Preparacion de Render: ver la [guia paso a paso](canchas-platform/docs/GUIA_DESPLIEGUE_VERCEL_RENDER.md).
+
+Preparacion de Vercel (Angular): ver [raiz, comandos y variables publicas](canchas-platform/docs/GUIA_VERCEL.md).
 La configuracion principal usa Root Directory `canchas-platform/apps/api`, Dockerfile `./Dockerfile`
 y Health Check Path `/health`. Las modificaciones locales no llegan a Render hasta su publicacion
 autorizada en la rama conectada. El 2026-11-05 se construyeron ambas imagenes y se probo el contenedor
