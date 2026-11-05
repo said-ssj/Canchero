@@ -203,7 +203,7 @@ body {
 
 .auth-input.input-error {
   border-color: var(--color-danger-500);
-  background-color: #fffbfa;
+  background-color: var(--color-surface-card);
 }
 
 .toggle-pwd-btn {

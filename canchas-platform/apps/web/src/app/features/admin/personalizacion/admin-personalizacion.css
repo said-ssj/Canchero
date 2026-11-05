@@ -163,14 +163,14 @@
 .segmented button {
   min-height: 36px;
   padding: 8px 12px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-border);
   border-radius: 6px;
   font-size: 13px;
 }
 .admin-personalizacion button:disabled,
 .admin-personalizacion input:disabled {
   background: var(--can-color-disabled-bg);
-  border-color: #d1d5db;
+  border-color: var(--color-border);
   color: var(--color-ink-500);
   cursor: default;
   opacity: 1;

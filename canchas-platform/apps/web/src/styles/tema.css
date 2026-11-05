@@ -90,6 +90,11 @@
   --color-contrast-bg: #1a1a1a;
   --color-on-contrast: #ffffff;
 
+  /* Pestañas / filtros (mat-button-toggle) */
+  --color-toggle-selected-bg: #e4eee6;
+  --color-toggle-selected-ink: #23482e;
+  --mat-button-toggle-text-color: var(--color-ink-700);
+
   /* Tipografías Oficiales Canchero (Figma: Plus Jakarta Sans única) */
   --font-heading:
     'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;

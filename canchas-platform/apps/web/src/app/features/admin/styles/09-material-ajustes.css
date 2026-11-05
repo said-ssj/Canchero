@@ -5,10 +5,10 @@
   --admin-green: var(--color-brand-green);
   --admin-green-dark: #229e04;
   --admin-orange: var(--color-brand-orange);
-  --admin-ink: #15181f;
-  --admin-muted: #64748b;
-  --admin-border: #dde3ea;
-  --admin-soft: #f7f9fb;
+  --admin-ink: var(--color-ink-900);
+  --admin-muted: var(--color-slate-500);
+  --admin-border: var(--color-border);
+  --admin-soft: var(--color-slate-50);
   font-family:
     'Plus Jakarta Sans',
     system-ui,
@@ -26,7 +26,7 @@
 
 .mat-admin-shell .admin-content-wrapper {
   margin-left: 286px;
-  background: #f6f8fa;
+  background: var(--color-slate-50);
 }
 
 .mat-admin-shell .sidebar-header {
@@ -174,8 +174,8 @@
 }
 
 .mat-admin-shell .admin-public-link.mat-mdc-unelevated-button:disabled {
-  background: #e5e7eb;
-  color: #747e87;
+  background: var(--color-slate-100);
+  color: var(--color-slate-400);
   cursor: default;
 }
 
@@ -392,13 +392,13 @@
 
 .mat-admin-shell .pos-cash-panel.is-insuficiente {
   background: var(--color-danger-50);
-  border-color: #fecdd3;
+  border-color: var(--color-danger-200);
   color: var(--color-danger-600);
 }
 
 .mat-admin-shell .pos-cash-panel.is-exacto {
-  background: #ecfdf3;
-  border-color: #bbf7d0;
+  background: var(--color-success-50);
+  border-color: var(--color-success-200);
   color: var(--color-success-600);
 }
 

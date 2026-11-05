@@ -136,7 +136,7 @@
   align-items: start;
   gap: 1rem;
   padding: 0.95rem 0;
-  border-top: 1px solid #eef2f6;
+  border-top: 1px solid var(--color-border);
 }
 
 .mat-admin-shell .chips-cat-block:first-of-type {
@@ -168,7 +168,7 @@
 }
 
 .mat-admin-shell .chip-select-btn.is-active {
-  background: #f2f8f3;
+  background: var(--color-slate-50);
   color: #1f7a32;
   border-color: rgba(60, 176, 67, 0.45);
   box-shadow: none;
@@ -180,8 +180,8 @@
   align-items: center;
   gap: 1rem;
   padding: 0.85rem 1rem;
-  border: 1px solid #f2d3a5;
-  background: #fffaf0;
+  border: 1px solid var(--color-warning-200);
+  background: var(--color-surface-card);
   border-radius: 8px;
   box-shadow: none;
 }
@@ -197,7 +197,7 @@
 .mat-admin-shell .kardex-alert-banner .badge {
   background: var(--color-surface-card) !important;
   color: #9a4d00 !important;
-  border: 1px solid #f2d3a5 !important;
+  border: 1px solid var(--color-warning-200) !important;
   font-size: 0.7rem !important;
 }
 
@@ -304,7 +304,7 @@
 
 .mat-admin-shell #view-configuracion .bg-secondary-fixed\/30 {
   background: var(--color-warning-50) !important;
-  border: 1px solid #fed7aa !important;
+  border: 1px solid var(--color-warning-200) !important;
 }
 
 .mat-admin-shell #view-configuracion .shadow-sm,

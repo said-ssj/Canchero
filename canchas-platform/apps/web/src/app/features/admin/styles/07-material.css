@@ -224,7 +224,7 @@
 .mat-pos-table td.mat-mdc-cell {
   color: var(--color-ink-700);
   font-size: 0.82rem;
-  border-bottom-color: #eef2f7;
+  border-bottom-color: var(--color-border);
 }
 
 .mat-pos-table .mat-number-cell {

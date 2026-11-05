@@ -493,7 +493,7 @@
   color: #d97706 !important;
 }
 .border-pitch-orange {
-  border-color: #f2a93b !important;
+  border-color: var(--color-warning-200) !important;
 }
 .border-pitch-orange\/40 {
   border-color: rgba(242, 169, 59, 0.4) !important;

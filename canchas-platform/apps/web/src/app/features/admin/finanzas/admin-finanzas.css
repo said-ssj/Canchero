@@ -100,7 +100,7 @@
 .admin-finanzas input:disabled {
   background: var(--can-color-disabled-bg);
   color: var(--color-ink-500);
-  border-color: #d1d5db;
+  border-color: var(--color-border);
   opacity: 1;
   cursor: default;
 }
@@ -113,7 +113,7 @@
 }
 .admin-finanzas .btn.current-page {
   border-color: #25832a;
-  background: #effbf2;
+  background: var(--color-slate-50);
   color: #216d26;
 }
 .op-period .field {
@@ -184,7 +184,7 @@
   vertical-align: middle;
 }
 .op-table th {
-  background: #f0f3f5;
+  background: var(--color-slate-50);
   font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
@@ -226,14 +226,14 @@
   border-radius: 6px;
   padding: 8px 10px;
   background: var(--color-surface-card);
-  color: #394249;
+  color: var(--color-ink-600);
   font-size: 12px;
   line-height: 1.5;
   cursor: pointer;
 }
 .segmented button.active {
   border-color: #25832a;
-  background: #effbf2;
+  background: var(--color-slate-50);
   color: #216d26;
   font-weight: 600;
 }

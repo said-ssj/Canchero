@@ -777,13 +777,13 @@ button[disabled]:not(.footer-pending) {
 }
 
 .legend.busy:before {
-  background: #e5e7eb;
-  border-color: #d1d5db;
+  background: var(--color-slate-100);
+  border-color: var(--color-border);
 }
 
 .legend.closed:before {
-  background: #fef3eb;
-  border-color: #f9d8c3;
+  background: var(--color-warning-50);
+  border-color: var(--color-warning-200);
 }
 
 .btn-full {
@@ -1005,8 +1005,8 @@ button[disabled]:not(.footer-pending) {
   border-radius: 4px;
   font-size: 11px;
   line-height: 1.6;
-  background: #edf0f3;
-  color: #505c67;
+  background: var(--color-slate-100);
+  color: var(--color-ink-500);
   font-weight: 600;
   border: 1px solid transparent;
 }
@@ -1498,6 +1498,8 @@ body.dark-theme {
 
   /* Paneles siempre oscuros: un tono más profundo que la superficie */
   --color-contrast-bg: #0e0e0e;
+  --color-toggle-selected-bg: #1f3a26;
+  --color-toggle-selected-ink: #a7f3d0;
 
   /* Tintes de marca y estados semánticos sobre fondo oscuro */
   --color-brand-green-light: #16301a;
@@ -2552,7 +2554,7 @@ body.dark-theme .itinerario-subbar {
   border-bottom: 1px solid var(--line, #dfe3e8);
 }
 .op-table th {
-  background: #f0f3f5;
+  background: var(--color-slate-50);
   font-weight: 600;
   color: var(--muted, #626a72);
   font-size: 12px;
@@ -2606,14 +2608,14 @@ body.dark-theme .itinerario-subbar {
   height: 90px;
   display: grid;
   place-items: center;
-  background: #f0f3f5;
+  background: var(--color-slate-50);
   border-radius: 4px;
 }
 .op-product-visual .icon {
   font-size: 40px;
   width: 40px;
   height: 40px;
-  color: #556771;
+  color: var(--color-ink-500);
 }
 .op-cart {
   border-left: 1px solid var(--line, #dfe3e8);

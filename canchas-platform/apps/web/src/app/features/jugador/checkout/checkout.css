@@ -173,7 +173,7 @@
 }
 
 .slot:disabled {
-  background: #f1f3f5;
+  background: var(--color-slate-50);
   color: var(--disabled-ink);
   border-color: var(--color-border);
   cursor: not-allowed;
@@ -193,9 +193,9 @@
 
 .slot:disabled.closed,
 .slot.closed:disabled {
-  background: #fef3eb;
+  background: var(--color-warning-50);
   color: var(--warning);
-  border-color: #f9d8c3;
+  border-color: var(--color-warning-200);
 }
 
 /* Leyenda del Calendario */
@@ -229,13 +229,13 @@
 }
 
 .legend.busy:before {
-  background: #e5e7eb;
-  border-color: #d1d5db;
+  background: var(--color-slate-100);
+  border-color: var(--color-border);
 }
 
 .legend.closed:before {
-  background: #fef3eb;
-  border-color: #f9d8c3;
+  background: var(--color-warning-50);
+  border-color: var(--color-warning-200);
 }
 
 /* Línea de Selección */
@@ -363,7 +363,7 @@
 }
 
 .result-heading.warning .result-symbol {
-  background: #ffedd5;
+  background: var(--color-warning-50);
   color: var(--warning);
 }
 

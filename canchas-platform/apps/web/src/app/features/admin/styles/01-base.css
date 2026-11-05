@@ -142,7 +142,7 @@
   font-weight: 700;
   background: var(--color-danger-50);
   color: #dc2626;
-  border: 1px solid #fecaca;
+  border: 1px solid var(--color-danger-200);
   text-align: center;
 }
 
@@ -487,7 +487,7 @@
   justify-content: space-between;
   padding: 0.75rem 1rem;
   border-radius: var(--radius-md);
-  color: var(--color-slate-300);
+  color: #cbd5e1;
   text-decoration: none;
   font-size: 0.88rem;
   font-weight: 600;
@@ -593,7 +593,7 @@
   padding: 0.5rem;
   border-radius: var(--radius-full);
   background: rgba(255, 255, 255, 0.08);
-  color: var(--color-slate-300);
+  color: #cbd5e1;
   font-size: 0.78rem;
   font-weight: 700;
   border: none;
