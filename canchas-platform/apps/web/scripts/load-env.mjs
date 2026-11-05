@@ -4,7 +4,12 @@ import { fileURLToPath } from 'node:url';
 
 const webRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const monorepoRoot = resolve(webRoot, '../..');
-const envPath = resolve(monorepoRoot, '.env.local');
+const candidateEnvPaths = [
+  resolve(monorepoRoot, '.env.local'),
+  resolve(webRoot, '../../.env.local'),
+  resolve(webRoot, '.env.local'),
+];
+const envPath = candidateEnvPaths.find((p) => existsSync(p)) || candidateEnvPaths[0];
 const outputPath = resolve(webRoot, 'src/environments/environment.local.ts');
 
 function parseEnv(contents) {
@@ -50,6 +55,13 @@ const googleMapsApiKey = value(
   fileValues.GOOGLE_MAPS_API_KEY,
   fileValues.VITE_GOOGLE_MAPS_API_KEY,
 );
+const apiUrl = value(
+  process.env.API_URL,
+  process.env.VITE_API_URL,
+  fileValues.API_URL,
+  fileValues.VITE_API_URL,
+);
+const cloudBuild = process.env.VERCEL === '1' || process.env.RENDER === 'true';
 
 if (!supabaseUrl || !anonKey) {
   if (existsSync(outputPath)) unlinkSync(outputPath);
@@ -84,10 +96,40 @@ try {
   process.exit(1);
 }
 
+if (cloudBuild && !apiUrl) {
+  if (existsSync(outputPath)) unlinkSync(outputPath);
+  console.error('API_URL es obligatoria en Vercel/Render y debe terminar en /api.');
+  process.exit(1);
+}
+
+if (apiUrl) {
+  try {
+    const parsedApiUrl = new URL(apiUrl);
+    const localHosts = new Set(['localhost', '127.0.0.1', '[::1]']);
+    const isLocalHttp = parsedApiUrl.protocol === 'http:' && localHosts.has(parsedApiUrl.hostname);
+    if (parsedApiUrl.protocol !== 'https:' && !isLocalHttp) {
+      throw new Error('La API_URL debe usar HTTPS en producción, o HTTP en localhost.');
+    }
+    if (parsedApiUrl.username || parsedApiUrl.password || parsedApiUrl.search || parsedApiUrl.hash
+        || !parsedApiUrl.pathname.replace(/\/+$/, '').endsWith('/api')) {
+      throw new Error('API_URL debe terminar en /api, sin credenciales, consulta ni fragmento.');
+    }
+    if (cloudBuild && (parsedApiUrl.protocol !== 'https:' || localHosts.has(parsedApiUrl.hostname)
+        || parsedApiUrl.hostname.endsWith('.localhost'))) {
+      throw new Error('API_URL en la nube debe ser publica y HTTPS, no localhost.');
+    }
+  } catch (error) {
+    if (existsSync(outputPath)) unlinkSync(outputPath);
+    console.error(`API_URL no es válida: ${error.message}`);
+    process.exit(1);
+  }
+}
+
 const generated = {
   url: supabaseUrl.replace(/\/+$/, ''),
   anonKey,
   googleMapsApiKey: googleMapsApiKey || undefined,
+  apiUrl: apiUrl ? apiUrl.replace(/\/+$/, '') : undefined,
 };
 
 writeFileSync(

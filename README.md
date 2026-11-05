@@ -99,7 +99,8 @@ El proyecto cuenta con cobertura de pruebas unitarias y de aislamiento en ambas 
 | **Frontend** | `npm run test:web` | **266 pruebas** (26 suites) en Vitest validando checkout, cotización, auth y vistas admin. |
 | **Frontend Lint** | `npm run lint:web` | Chequeo estático de tipos TypeScript (`tsc --noEmit`). |
 | **Frontend Build** | `npm run build:web` | Compilación optimizada para producción con presupuestos de rendimiento. |
-| **Backend** | `npm run test:api` (o `cd apps/api && ./mvnw test`) | **110 pruebas** (16 suites) en JUnit 5 con base de datos H2 en memoria para aislamiento multi-tenant, roles y seguridad de caja. |
+| **Backend** | `npm run test:api` (o `cd apps/api && ./mvnw test`) | **117 pruebas** (18 suites con pruebas ejecutadas) en JUnit 5: aislamiento, roles, caja, salud y CORS. |
+| **Configuracion Web** | `npm run test:env --workspace=apps/web` | **6 pruebas** del generador: exige API publica en cloud y conserva desarrollo local. |
 
 ### Integración Continua (CI)
 El archivo [`.github/workflows/ci.yml`](.github/workflows/ci.yml) ejecuta automáticamente en cada `push` y `pull_request` a `main` y `master`:
@@ -110,6 +111,13 @@ El archivo [`.github/workflows/ci.yml`](.github/workflows/ci.yml) ejecuta autom�
 ---
 
 ##  Estado de Entrega y Consideraciones de Producción
+
+Preparacion de Render: ver la [guia paso a paso](canchas-platform/docs/GUIA_DESPLIEGUE_VERCEL_RENDER.md).
+La configuracion principal usa Root Directory `canchas-platform/apps/api`, Dockerfile `./Dockerfile`
+y Health Check Path `/health`. Las modificaciones locales no llegan a Render hasta su publicacion
+autorizada en la rama conectada. El 2026-11-05 se construyeron ambas imagenes y se probo el contenedor
+con PostgreSQL temporal: puerto dinamico, usuario no root, CORS y salud UP/DOWN correctos.
+Esa prueba aislada no valida conectividad desde Render ni operaciones reales en Supabase.
 
 1. **Estado del Software**: Proyecto en fase de consolidación funcional.
 2. **Flujos de Pago**: Los pagos con tarjeta online operan en modo simulado para pruebas de experiencia de usuario y validación de turnos. No existe integración en vivo con pasarelas de pago externas ni emisión fiscal SUNAT.

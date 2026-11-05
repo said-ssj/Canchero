@@ -34,6 +34,9 @@ jobs:
       - name: Lint (Static TypeScript Check)
         run: npm run lint:web
 
+      - name: Validate deployment environment loader
+        run: npm run test:env --workspace=apps/web
+
       - name: Run Web Unit Tests (Vitest)
         run: npm run test:web
 

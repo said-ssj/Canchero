@@ -13,7 +13,8 @@
     "prewatch": "node scripts/load-env.mjs",
     "watch": "ng build --watch --configuration development",
     "pretest": "node scripts/load-env.mjs",
-    "test": "ng test"
+    "test": "ng test",
+    "test:env": "node --test scripts/load-env.test.mjs"
   },
   "private": true,
   "packageManager": "npm@11.17.0",

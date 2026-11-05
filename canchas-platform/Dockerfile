@@ -1,22 +1,16 @@
-# 1. Etapa de compilación utilizando Maven y JDK 21
-FROM eclipse-temurin:21-jdk-alpine AS build
+# Compatibility only: Render root directory canchas-platform.
+# Prefer apps/api/Dockerfile with root directory canchas-platform/apps/api.
+FROM eclipse-temurin:21-jdk-jammy AS build
 WORKDIR /app
+COPY apps/api/.mvn/ .mvn
+COPY apps/api/mvnw apps/api/pom.xml ./
+RUN sed -i 's/\r$//' mvnw && chmod +x mvnw
+COPY apps/api/src ./src
+RUN --mount=type=cache,target=/root/.m2 ./mvnw clean package -B -DskipTests
 
-# Instalamos Maven directamente en el contenedor Alpine
-RUN apk add --no-cache maven
-
-# Copiamos todo el contenido del repositorio
-COPY . .
-
-# Compilamos apuntando al pom.xml de la API
-RUN mvn -f apps/api/pom.xml clean package -DskipTests
-
-# 2. Etapa de ejecución ligera con JRE 21
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:21-jre-jammy
 WORKDIR /app
-
-# Copiamos el archivo JAR generado
-COPY --from=build /app/apps/api/target/*.jar app.jar
-
+COPY --from=build /app/target/*.jar app.jar
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar"]
+USER 10001:10001
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]

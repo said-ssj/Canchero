@@ -1,0 +1,12 @@
+**
+!pom.xml
+!mvnw
+!.mvn/
+!.mvn/**
+!src/
+!src/**
+**/.env*
+**/*.key
+**/*.pem
+**/*.p12
+**/*.pfx

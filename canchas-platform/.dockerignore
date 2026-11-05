@@ -1,0 +1,14 @@
+**
+!apps/
+!apps/api/
+!apps/api/pom.xml
+!apps/api/mvnw
+!apps/api/.mvn/
+!apps/api/.mvn/**
+!apps/api/src/
+!apps/api/src/**
+**/.env*
+**/*.key
+**/*.pem
+**/*.p12
+**/*.pfx
