@@ -19,6 +19,15 @@ export class Itinerario {
 
   protected readonly isLoggedIn = computed(() => this.auth.isLoggedIn());
   protected readonly currentUser = computed(() => this.auth.currentUser());
+  protected readonly profile = this.auth.playerProfile;
+  protected readonly profileName = computed(() => {
+    const profile = this.profile();
+    return (
+      [profile?.nombre, profile?.apellido].filter(Boolean).join(' ') ||
+      this.currentUser()?.nombre ||
+      'Jugador'
+    );
+  });
 
   protected readonly tabActiva = signal<'proximas' | 'historial' | 'todas'>('proximas');
   protected readonly isLoading = signal(false);
@@ -76,9 +85,10 @@ export class Itinerario {
         balanceAmount: Number(b.balanceAmount ?? b.saldo ?? 0),
         paymentMethod: b.paymentMethod || b.metodo_pago_nombre || 'Tarjeta',
         paymentOperationNumber: b.paymentOperationNumber || b.pago_num_op || '',
-        jugadores: Array.isArray(b.jugadores) && b.jugadores.length > 0
-          ? b.jugadores
-          : [this.currentUser()?.nombre || 'Titular'],
+        jugadores:
+          Array.isArray(b.jugadores) && b.jugadores.length > 0
+            ? b.jugadores
+            : [this.currentUser()?.nombre || 'Titular'],
       }));
 
       this.serverBookings.set(mapped);
@@ -110,7 +120,9 @@ export class Itinerario {
         message: `${booking.venueName} · ${booking.courtName} · ${booking.fecha} · ${booking.horario}. La cancelación está sujeta a las condiciones de la reserva; no confirma una devolución automática.`,
         confirmLabel: 'Sí, cancelar reserva',
       });
-    } finally { this.confirmingCancellation = false; }
+    } finally {
+      this.confirmingCancellation = false;
+    }
     if (!confirmed || this.currentUser()?.id !== userId || this.requestSeq !== request) return;
     this.isCancelling.set(booking.id);
     this.cancelError.set(null);
@@ -172,18 +184,13 @@ export class Itinerario {
   protected readonly proximasReservas = computed(() =>
     this.todasLasReservas().filter(
       (b) =>
-        b.status !== 'FINALIZADO' &&
-        b.status !== 'CANCELADO' &&
-        b.fecha >= this.todayDateStr(),
+        b.status !== 'FINALIZADO' && b.status !== 'CANCELADO' && b.fecha >= this.todayDateStr(),
     ),
   );
 
   protected readonly historialReservas = computed(() =>
     this.todasLasReservas().filter(
-      (b) =>
-        b.status === 'FINALIZADO' ||
-        b.status === 'CANCELADO' ||
-        b.fecha < this.todayDateStr(),
+      (b) => b.status === 'FINALIZADO' || b.status === 'CANCELADO' || b.fecha < this.todayDateStr(),
     ),
   );
 
@@ -313,7 +320,20 @@ export class Itinerario {
     const d = new Date(`${fecha}T00:00:00`);
     if (isNaN(d.getTime())) return fecha;
     const dias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-    const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    const meses = [
+      'Ene',
+      'Feb',
+      'Mar',
+      'Abr',
+      'May',
+      'Jun',
+      'Jul',
+      'Ago',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dic',
+    ];
     return `${dias[d.getDay()]} ${d.getDate()} ${meses[d.getMonth()]} ${d.getFullYear()}`;
   }
 
@@ -321,7 +341,20 @@ export class Itinerario {
     if (!fecha) return 'MES';
     const d = new Date(`${fecha}T00:00:00`);
     if (isNaN(d.getTime())) return '';
-    const meses = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
+    const meses = [
+      'ENE',
+      'FEB',
+      'MAR',
+      'ABR',
+      'MAY',
+      'JUN',
+      'JUL',
+      'AGO',
+      'SEP',
+      'OCT',
+      'NOV',
+      'DIC',
+    ];
     return meses[d.getMonth()] ?? 'MES';
   }
 

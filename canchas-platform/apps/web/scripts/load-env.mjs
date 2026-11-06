@@ -126,6 +126,7 @@ if (apiUrl) {
 }
 
 const generated = {
+  googleAuthEnabled: value(process.env.GOOGLE_AUTH_ENABLED, fileValues.GOOGLE_AUTH_ENABLED) === 'true',
   url: supabaseUrl.replace(/\/+$/, ''),
   anonKey,
   googleMapsApiKey: googleMapsApiKey || undefined,

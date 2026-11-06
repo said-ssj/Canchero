@@ -1,6 +1,6 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, timeout } from 'rxjs';
 import { supabase } from './client';
 import type { VenueDayHours } from '../../shared/models/venue-hours.model';
 import type { Venue } from '@shared/models/venue.model';
@@ -57,6 +57,9 @@ export class DatabaseService {
   readonly metodosPago = signal<any[]>([]);
   readonly loadErrors = signal<string[]>([]);
   readonly catalogLoading = signal(true);
+  readonly catalogError = computed(() =>
+    this.loadErrors().some((table) => ['catalogo', 'sede', 'cancha'].includes(table)),
+  );
   private catalogRequest: Promise<void> | null = null;
   readonly sedeOperativaId = signal<number | null>(null);
   private realtimeReady = false;
@@ -68,13 +71,23 @@ export class DatabaseService {
   private async cargarDatosIniciales() {
     try {
       const backendLoaded = await this.cargarCatalogoDesdeBackend();
-      // The authoritative venue/court catalog is ready; auxiliary catalogs must not block it.
-      if (backendLoaded) this.catalogLoading.set(false);
+      if (!backendLoaded) {
+        const [sedes, canchas, tipos, tarifas] = await Promise.all([
+          this.fetchAll<any>('sede'),
+          this.fetchAll<any>('cancha'),
+          this.fetchAll<any>('tipo_cancha'),
+          this.fetchAll<any>('tarifa_cancha'),
+        ]);
+        if (this.catalogError()) return;
+        this.tipoCanchas.set(tipos);
+        this.tarifasCancha.set(tarifas);
+        this.sedes.set(sedes.map((s) => this.enhanceSede(s)));
+        this.canchas.set(canchas.map((c) => this.enhanceCancha(c)));
+      }
+      this.catalogLoading.set(false);
       const [
         usuarios,
         clientes,
-        sedes,
-        canchas,
         tipoCanchas,
         reservas,
         pagosReserva,
@@ -87,12 +100,12 @@ export class DatabaseService {
       ] = await Promise.all([
         backendLoaded ? Promise.resolve([]) : this.fetchAll<any>('usuario'),
         backendLoaded ? Promise.resolve([]) : this.fetchAll<any>('cliente'),
-        backendLoaded ? Promise.resolve([]) : this.fetchAll<any>('sede'),
-        backendLoaded ? Promise.resolve([]) : this.fetchAll<any>('cancha'),
-        this.fetchCatalog<any>('/catalog/court-types', 'tipo_cancha'),
+        backendLoaded
+          ? this.fetchCatalog<any>('/catalog/court-types', 'tipo_cancha')
+          : Promise.resolve(this.tipoCanchas()),
         backendLoaded ? Promise.resolve([]) : this.fetchAll<any>('reserva'),
         backendLoaded ? Promise.resolve([]) : this.fetchAll<any>('pago_reserva'),
-        this.fetchAll<any>('tarifa_cancha'),
+        backendLoaded ? this.fetchAll<any>('tarifa_cancha') : Promise.resolve(this.tarifasCancha()),
         this.fetchAll<any>('tipo_horario'),
         this.fetchAll<any>('bloqueo_mantenimiento'),
         this.fetchCatalog<any>('/catalog/reservation-statuses', 'estado_reserva'),
@@ -103,12 +116,10 @@ export class DatabaseService {
       this.roles.set(roles ?? []);
       if (!backendLoaded) this.usuarios.set((usuarios ?? []).map((u) => this.enhanceUsuario(u)));
       if (!backendLoaded) this.clientes.set(clientes ?? []);
-      if (!backendLoaded) this.sedes.set((sedes ?? []).map((s) => this.enhanceSede(s)));
       this.tipoCanchas.set(tipoCanchas ?? []);
       this.tarifasCancha.set(tarifasCancha ?? []);
       this.estadosReserva.set(estadosReserva ?? []);
       this.metodosPago.set(metodosPago ?? []);
-      if (!backendLoaded) this.canchas.set((canchas ?? []).map((c) => this.enhanceCancha(c)));
       if (!backendLoaded) this.reservas.set((reservas ?? []).map((r) => this.enhanceReserva(r)));
       if (!backendLoaded) this.pagos.set((pagosReserva ?? []).map((p) => this.enhancePago(p)));
       this.horarios.set((horarios ?? []).map((h) => this.enhanceHorario(h)));
@@ -120,7 +131,8 @@ export class DatabaseService {
       this.setupRealtimeSubscriptions();
     } catch (error) {
       console.error('Error cargando datos iniciales:', error);
-      this.loadErrors.update((errors) => [...new Set([...errors, 'catalogo'])]);
+      if (this.catalogLoading())
+        this.loadErrors.update((errors) => [...new Set([...errors, 'catalogo'])]);
     }
   }
 
@@ -160,7 +172,10 @@ export class DatabaseService {
   }
 
   private async fetchAll<T>(table: string): Promise<T[]> {
-    const { data, error } = await supabase.from(table).select('*');
+    const { data, error } = await supabase
+      .from(table)
+      .select('*')
+      .abortSignal(AbortSignal.timeout(12000));
     if (error) {
       console.error(`No se pudo leer la tabla "${table}" de Supabase:`, error);
       this.loadErrors.update((tables) => [...tables, table]);
@@ -171,7 +186,7 @@ export class DatabaseService {
 
   private async fetchCatalog<T>(path: string, fallbackTable: string): Promise<T[]> {
     try {
-      return await firstValueFrom(this.http.get<T[]>(`${this.apiUrl}${path}`));
+      return await firstValueFrom(this.http.get<T[]>(`${this.apiUrl}${path}`).pipe(timeout(12000)));
     } catch (error: any) {
       if (error?.code !== -205 && !error?.message?.includes?.('NG0205')) {
         console.warn(`Backend catalog ${path} no disponible, usando Supabase directo:`, error);
@@ -182,17 +197,25 @@ export class DatabaseService {
 
   private async cargarCatalogoDesdeBackend(): Promise<boolean> {
     try {
-      const venues = await firstValueFrom(this.http.get<any[]>(`${this.apiUrl}/venues`));
-      const bookings = await firstValueFrom(this.http.get<any[]>(`${this.apiUrl}/bookings`));
-      const courts = await firstValueFrom(this.http.get<any[]>(`${this.apiUrl}/courts`));
+      const [venues, courts] = await Promise.all([
+        firstValueFrom(this.http.get<any[]>(`${this.apiUrl}/venues`).pipe(timeout(12000))),
+        firstValueFrom(this.http.get<any[]>(`${this.apiUrl}/courts`).pipe(timeout(12000))),
+      ]);
 
       const sedes = venues.map((v) => this.mapBackendVenueToSede(v));
       const canchas = courts.map((c) => this.mapBackendCourtToCancha(c, Number(c.venueId)));
-      const reservas = bookings.map((b) => this.mapBackendBookingToReserva(b, canchas));
-
       this.sedes.set(sedes);
       this.canchas.set(canchas);
-      this.reservas.set(reservas);
+      this.catalogLoading.set(false);
+      try {
+        const bookings = await firstValueFrom(
+          this.http.get<any[]>(`${this.apiUrl}/bookings`).pipe(timeout(12000)),
+        );
+        this.reservas.set(bookings.map((b) => this.mapBackendBookingToReserva(b, canchas)));
+      } catch {
+        // Public catalog remains available when there is no booking session.
+        this.reservas.set([]);
+      }
       return true;
     } catch (error) {
       console.warn('Backend no disponible, usando Supabase directo como fallback temporal:', error);
@@ -236,10 +259,12 @@ export class DatabaseService {
       id_sede: sedeId,
       nombre: c.nombre,
       nombre_numero: c.nombre,
-      tipo: c.tipo || c.formato || 'Fútbol 7',
-      formato: c.formato || c.tipo || 'Fútbol 7',
-      superficie: c.superficie || 'Grass Sintético',
-      cobertura: c.cobertura || (c.techada ? 'Techada' : 'Al Aire Libre'),
+      tipo: c.tipo || c.formato || '',
+      formato: c.formato || c.tipo || '',
+      superficie: c.superficie || '',
+      cobertura:
+        c.cobertura ??
+        (c.techada === true ? 'Techada' : c.techada === false ? 'Al Aire Libre' : ''),
       techada: !!c.techada,
       precio_hora: Number(c.precioHora || 80),
       precio_hora_noche: Number(c.precioHoraNoche || c.precio_hora_noche || c.precioHora || 100),
@@ -378,7 +403,7 @@ export class DatabaseService {
       (reglaInicioNoche ? normalizeTimeString(reglaInicioNoche.hora_inicio) : '18:00');
 
     // Normalizar etiquetas de superficie
-    let supNorm = c.superficie || 'Grass Sintético';
+    let supNorm = c.superficie || '';
     const supLower = String(supNorm).toLowerCase();
     if (supLower.includes('natural')) supNorm = 'Césped Natural';
     else if (supLower.includes('sintétic') || supLower.includes('sintetic'))
@@ -404,7 +429,7 @@ export class DatabaseService {
       id_sede: c.id_sede,
       nombre: canchaNombre,
       nombre_numero: canchaNombre,
-      tipo: tipoCancha?.nombre || 'Fútbol 7',
+      tipo: tipoCancha?.nombre || '',
       superficie: supNorm,
       techada: !!c.techada,
       precio_hora: precioDia,
@@ -1628,7 +1653,9 @@ export class DatabaseService {
     if (onlyActive && canchas.length === 0) return undefined;
 
     const courts: Court[] = canchas.map((c) => {
-      let cobertura = c.cobertura || (c.techada ? 'Techada' : 'Al Aire Libre');
+      let cobertura =
+        c.cobertura ??
+        (c.techada === true ? 'Techada' : c.techada === false ? 'Al Aire Libre' : '');
       if (typeof c.superficie === 'string' && c.superficie.toLowerCase().includes('lona')) {
         cobertura = 'Techada con Lona';
       }
@@ -1638,11 +1665,11 @@ export class DatabaseService {
         id_cancha: Number(c.id_cancha ?? c.id),
         id_sede: Number(c.id_sede ?? c.sede_id),
         nombre: c.nombre,
-        tipo: (c.tipo as CourtType) || 'Fútbol 7',
-        formato: c.formato || c.tipo || 'Fútbol 7',
-        superficie: c.superficie || 'Grass Sintético',
+        tipo: (c.tipo as CourtType) || '',
+        formato: c.formato || c.tipo || '',
+        superficie: c.superficie || '',
         cobertura,
-        techada: c.cobertura ? c.cobertura !== 'Al Aire Libre' : !!c.techada,
+        techada: cobertura ? cobertura !== 'Al Aire Libre' : undefined,
         equipamiento: Array.isArray(c.equipamiento) ? c.equipamiento : [],
         precioHora: c.precio_hora,
         precioHoraNoche: c.precio_hora_noche ?? c.precio_hora,

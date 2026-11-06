@@ -41,15 +41,17 @@
 /* Indicador de Pasos Canchero */
 .steps {
   display: flex;
-  gap: 24px;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  list-style: none;
   font-size: 13px;
   color: var(--muted);
   margin: 16px 0 24px 0;
-  padding-bottom: 8px;
+  padding: 0 0 8px;
   border-bottom: 1px solid var(--line);
 }
 
-.steps strong {
+.steps .current {
   color: var(--primary);
   font-weight: 700;
 }
@@ -442,4 +444,9 @@
 
 .dialog-body {
   padding: 20px;
+}
+
+.checkout-step-actions {
+  gap: 12px;
+  flex-wrap: wrap;
 }

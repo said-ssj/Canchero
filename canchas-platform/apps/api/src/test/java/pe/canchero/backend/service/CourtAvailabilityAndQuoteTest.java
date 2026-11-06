@@ -93,6 +93,7 @@ class CourtAvailabilityAndQuoteTest {
         // Ambas sedes tienen una cancha llamada 'Cancha 1'
         jdbc.update("insert into cancha values (101, 10, 1, 'Cancha 1', true, null, 'Grass Sintético', 'A')");
         jdbc.update("insert into cancha values (202, 20, 1, 'Cancha 1', false, null, 'Grass Sintético', 'A')");
+        jdbc.execute("alter table cancha add column equipamiento varchar array");
 
         // Horario jueves (dia_semana = 4) para Sede Norte: 08:00 a 23:00
         jdbc.update("insert into tipo_horario (id_sede, dia_semana, apertura, cierre, estado) values (10, 4, '08:00:00', '23:00:00', 'A')");

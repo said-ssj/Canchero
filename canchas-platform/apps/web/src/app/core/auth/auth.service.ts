@@ -2,7 +2,7 @@ import { HttpBackend, HttpClient, HttpErrorResponse } from '@angular/common/http
 import { DestroyRef, Injectable, NgZone, inject, signal, computed } from '@angular/core';
 import { Observable, firstValueFrom, of } from 'rxjs';
 import { catchError, map, timeout } from 'rxjs/operators';
-import { supabase } from '../supabase/client';
+import { googleOAuthClient, supabase } from '../supabase/client';
 import type { User } from '@shared/models/user.model';
 import { environment } from '../../../environments/environment';
 
@@ -14,6 +14,16 @@ interface BackendAuthResponse {
 interface StoredSession extends BackendAuthResponse {
   rememberMe?: boolean;
   lastActivityAt?: number;
+}
+
+export interface PlayerProfile {
+  nombre: string | null;
+  apellido: string | null;
+  telefono: string | null;
+  direccion: string | null;
+  foto: string | null;
+  completo: boolean;
+  idDistrito: number | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -50,8 +60,8 @@ export class AuthService {
         this.zone.run(() => {
           if (!this.authToken()) this.clearSession();
           else {
-            const previous = event.oldValue ? JSON.parse(event.oldValue) as StoredSession : null;
-            const current = event.newValue ? JSON.parse(event.newValue) as StoredSession : null;
+            const previous = event.oldValue ? (JSON.parse(event.oldValue) as StoredSession) : null;
+            const current = event.newValue ? (JSON.parse(event.newValue) as StoredSession) : null;
             if (previous?.token === current?.token) this.scheduleExpiry();
             else {
               if (current?.user?.id !== this._user()?.id) this._user.set(null);
@@ -61,20 +71,24 @@ export class AuthService {
         });
       };
       this.zone.runOutsideAngular(() => {
-        for (const event of ['pointerdown', 'keydown', 'wheel', 'focus']) window.addEventListener(event, activity, { passive: true });
+        for (const event of ['pointerdown', 'keydown', 'wheel', 'focus'])
+          window.addEventListener(event, activity, { passive: true });
         document.addEventListener('visibilitychange', activity);
         window.addEventListener('storage', changed);
       });
       this.destroyRef.onDestroy(() => {
         clearTimeout(this.idleTimer);
-        for (const event of ['pointerdown', 'keydown', 'wheel', 'focus']) window.removeEventListener(event, activity);
+        for (const event of ['pointerdown', 'keydown', 'wheel', 'focus'])
+          window.removeEventListener(event, activity);
         document.removeEventListener('visibilitychange', activity);
         window.removeEventListener('storage', changed);
       });
     }
   }
 
-  currentUser(): User | null { return this._user(); }
+  currentUser(): User | null {
+    return this._user();
+  }
 
   authToken(): string | null {
     if (typeof localStorage === 'undefined') return null;
@@ -82,8 +96,11 @@ export class AuthService {
       const saved = localStorage.getItem(this.AUTH_CACHE_KEY);
       if (!saved) return null;
       const session: StoredSession = JSON.parse(saved);
-      if (session.rememberMe === false && (!Number.isFinite(session.lastActivityAt)
-        || Date.now() - session.lastActivityAt! >= this.idleMs)) {
+      if (
+        session.rememberMe === false &&
+        (!Number.isFinite(session.lastActivityAt) ||
+          Date.now() - session.lastActivityAt! >= this.idleMs)
+      ) {
         this.clearSession();
         return null;
       }
@@ -113,10 +130,14 @@ export class AuthService {
       return Promise.resolve(false);
     }
     this.restoring.set(true);
-    this.validation = firstValueFrom(this.sessionHttp.get<BackendAuthResponse['user']>(`${this.apiUrl}/auth/me`, {
-      headers: { Authorization: `Bearer ${token}` },
-    }).pipe(timeout(10000)))
-      .then(user => {
+    this.validation = firstValueFrom(
+      this.sessionHttp
+        .get<BackendAuthResponse['user']>(`${this.apiUrl}/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        .pipe(timeout(10000)),
+    )
+      .then((user) => {
         if (this.authToken() !== token) return false;
         this._user.set(this.mapBackendUser(user));
         this.scheduleExpiry();
@@ -126,53 +147,129 @@ export class AuthService {
       .catch((error: unknown) => {
         if (this.authToken() === token) {
           this._user.set(null);
-          if (error instanceof HttpErrorResponse && (error.status === 401 || error.status === 403)) this.clearSession();
-          else this.loginError.set('No se pudo comprobar tu sesión. Comprueba la conexión e inténtalo de nuevo.');
+          if (error instanceof HttpErrorResponse && (error.status === 401 || error.status === 403))
+            this.clearSession();
+          else
+            this.loginError.set(
+              'No se pudo comprobar tu sesión. Comprueba la conexión e inténtalo de nuevo.',
+            );
         }
         return false;
       })
-      .finally(() => { this.validation = undefined; this.restoring.set(false); });
+      .finally(() => {
+        this.validation = undefined;
+        this.restoring.set(false);
+      });
     return this.validation;
   }
 
   login(email: string, password: string, rememberMe = true): Observable<User | null> {
     this.loginError.set(null);
     this.clearSession();
-    return this.http.post<BackendAuthResponse>(`${this.apiUrl}/auth/login`, {
-      email: email.trim().toLowerCase(), password, rememberMe,
-    }).pipe(
-      timeout(10000),
-      map(response => this.persistBackendAuth(response, rememberMe)),
-      catchError((error: unknown) => {
-        this.clearSession();
-        this.loginError.set(error instanceof HttpErrorResponse && (error.status === 400 || error.status === 401)
-          ? 'Correo o contraseña incorrectos. Verifica tus credenciales.'
-          : 'No se pudo validar la cuenta con el servidor. Comprueba la conexión e inténtalo de nuevo.');
-        return of(null);
-      }),
-    );
+    return this.http
+      .post<BackendAuthResponse>(`${this.apiUrl}/auth/login`, {
+        email: email.trim().toLowerCase(),
+        password,
+        rememberMe,
+      })
+      .pipe(
+        timeout(10000),
+        map((response) => this.persistBackendAuth(response, rememberMe)),
+        catchError((error: unknown) => {
+          this.clearSession();
+          this.loginError.set(
+            error instanceof HttpErrorResponse && (error.status === 400 || error.status === 401)
+              ? 'Correo o contraseña incorrectos. Verifica tus credenciales.'
+              : 'No se pudo validar la cuenta con el servidor. Comprueba la conexión e inténtalo de nuevo.',
+          );
+          return of(null);
+        }),
+      );
   }
 
-  register(payload: { nombre: string; email: string; telefono: string; rol: UserRole; password: string; sedeSolicitada?: string }): Observable<User | null> {
+  register(payload: {
+    nombre: string;
+    email: string;
+    telefono: string;
+    rol: UserRole;
+    password: string;
+    sedeSolicitada?: string;
+  }): Observable<User | null> {
     this.loginError.set(null);
-    return this.http.post<BackendAuthResponse>(`${this.apiUrl}/auth/register`, {
-      nombre: payload.nombre.trim(), email: payload.email.trim().toLowerCase(),
-      telefono: payload.telefono.trim(), password: payload.password,
-      rol: payload.rol === 'OWNER' || payload.rol === 'dueno' ? 'dueno' : 'cliente',
-    }).pipe(
-      timeout(10000),
-      map(response => this.persistBackendAuth(response)),
-      catchError(() => {
-        this.loginError.set('No se pudo crear la cuenta. Verifica los datos y la conexión con el servidor.');
-        return of(null);
-      }),
-    );
+    return this.http
+      .post<BackendAuthResponse>(`${this.apiUrl}/auth/register`, {
+        nombre: payload.nombre.trim(),
+        email: payload.email.trim().toLowerCase(),
+        telefono: payload.telefono.trim(),
+        password: payload.password,
+        rol: payload.rol === 'OWNER' || payload.rol === 'dueno' ? 'dueno' : 'cliente',
+      })
+      .pipe(
+        timeout(10000),
+        map((response) => this.persistBackendAuth(response)),
+        catchError(() => {
+          this.loginError.set(
+            'No se pudo crear la cuenta. Verifica los datos y la conexión con el servidor.',
+          );
+          return of(null);
+        }),
+      );
   }
 
   async logout(): Promise<void> {
     this.clearSession();
+    if (environment.googleAuthEnabled) {
+      sessionStorage.removeItem('canchero-google-pending');
+      try {
+        await googleOAuthClient().auth.signOut({ scope: 'local' });
+      } catch {
+        /* No persistent Google session. */
+      }
+    }
     // Cerrar tambien sesiones Supabase antiguas, sin usarlas como acceso alternativo.
-    try { await supabase.auth.signOut(); } catch { /* La sesion local ya esta cerrada. */ }
+    try {
+      await supabase.auth.signOut();
+    } catch {
+      /* La sesion local ya esta cerrada. */
+    }
+  }
+
+  exchangeGoogle(accessToken: string, rememberMe: boolean, password?: string): Observable<User> {
+    return this.sessionHttp
+      .post<BackendAuthResponse>(`${this.apiUrl}/auth/google`, {
+        accessToken,
+        rememberMe,
+        password,
+      })
+      .pipe(
+        timeout(12000),
+        map((response) => this.persistBackendAuth(response, rememberMe)),
+      );
+  }
+
+  private readonly profileState = signal<{ id: string; data: PlayerProfile } | null>(null);
+  readonly playerProfile = computed(() => {
+    const profile = this.profileState();
+    return profile?.id === this.user()?.id ? (profile?.data ?? null) : null;
+  });
+
+  loadPlayerProfile(): Observable<PlayerProfile> {
+    return this.trackProfile(this.http.get<PlayerProfile>(`${this.apiUrl}/auth/profile`));
+  }
+
+  savePlayerProfile(profile: PlayerProfile): Observable<PlayerProfile> {
+    return this.trackProfile(this.http.put<PlayerProfile>(`${this.apiUrl}/auth/profile`, profile));
+  }
+
+  private trackProfile(request: Observable<PlayerProfile>): Observable<PlayerProfile> {
+    const id = this.user()?.id;
+    return request.pipe(
+      timeout(12000),
+      map((data) => {
+        if (id && this.user()?.id === id) this.profileState.set({ id, data });
+        return data;
+      }),
+    );
   }
 
   isOwner(): boolean {
@@ -182,23 +279,47 @@ export class AuthService {
 
   private mapRoleName(name: string): UserRole {
     switch (name.trim().toLowerCase()) {
-      case 'dueno': case 'dueño': case 'owner': case 'propietario': return 'dueno';
-      case 'admin': case 'administrador': return 'admin';
-      case 'operador': return 'operador';
-      case 'caja': return 'caja';
-      default: return 'cliente';
+      case 'dueno':
+      case 'dueño':
+      case 'owner':
+      case 'propietario':
+        return 'dueno';
+      case 'admin':
+      case 'administrador':
+        return 'admin';
+      case 'operador':
+        return 'operador';
+      case 'caja':
+        return 'caja';
+      default:
+        return 'cliente';
     }
   }
 
   private mapBackendUser(user: BackendAuthResponse['user']): User {
-    if (!user?.id || user.id === 'owner-1' || !user.rol) throw new Error('Perfil autenticado invalido');
-    return { id: user.id, nombre: user.nombre, email: user.email, telefono: user.telefono ?? '', rol: this.mapRoleName(user.rol) };
+    if (!user?.id || user.id === 'owner-1' || !user.rol)
+      throw new Error('Perfil autenticado invalido');
+    return {
+      id: user.id,
+      nombre: user.nombre,
+      email: user.email,
+      telefono: user.telefono ?? '',
+      rol: this.mapRoleName(user.rol),
+    };
   }
 
-  private persistBackendAuth(response: BackendAuthResponse, rememberMe = true, lastActivityAt = Date.now()): User {
+  private persistBackendAuth(
+    response: BackendAuthResponse,
+    rememberMe = true,
+    lastActivityAt = Date.now(),
+  ): User {
     if (!response.token) throw new Error('Falta token autenticado');
     const user = this.mapBackendUser(response.user);
-    if (typeof localStorage !== 'undefined') localStorage.setItem(this.AUTH_CACHE_KEY, JSON.stringify({ ...response, rememberMe, lastActivityAt }));
+    if (typeof localStorage !== 'undefined')
+      localStorage.setItem(
+        this.AUTH_CACHE_KEY,
+        JSON.stringify({ ...response, rememberMe, lastActivityAt }),
+      );
     this._user.set(user);
     this.loginError.set(null);
     this.lastRenewalAt = Date.now();
@@ -215,10 +336,14 @@ export class AuthService {
     if (session.rememberMe !== false) return;
     const delay = Math.max(0, this.idleMs - (Date.now() - (session.lastActivityAt ?? 0)));
     this.zone.runOutsideAngular(() => {
-      this.idleTimer = setTimeout(() => this.zone.run(() => {
-        if (!this.authToken()) this.clearSession();
-        else this.scheduleExpiry();
-      }), delay);
+      this.idleTimer = setTimeout(
+        () =>
+          this.zone.run(() => {
+            if (!this.authToken()) this.clearSession();
+            else this.scheduleExpiry();
+          }),
+        delay,
+      );
     });
   }
 
@@ -229,19 +354,40 @@ export class AuthService {
     if (session.rememberMe !== false) return;
     const now = Date.now();
     if (now - (session.lastActivityAt ?? 0) >= 1000) {
-      localStorage.setItem(this.AUTH_CACHE_KEY, JSON.stringify({ ...session, lastActivityAt: now }));
+      localStorage.setItem(
+        this.AUTH_CACHE_KEY,
+        JSON.stringify({ ...session, lastActivityAt: now }),
+      );
       this.scheduleExpiry();
     }
     if (this.renewal || now - this.lastRenewalAt < 60_000) return;
     this.lastRenewalAt = now;
-    this.renewal = firstValueFrom(this.sessionHttp.post<BackendAuthResponse>(`${this.apiUrl}/auth/refresh`, {}, {
-      headers: { Authorization: `Bearer ${token}` },
-    }).pipe(timeout(10000))).then(response => {
-      if (this.authToken() !== token || !this._user()) return;
-      const current: StoredSession = JSON.parse(localStorage.getItem(this.AUTH_CACHE_KEY)!);
-      this.persistBackendAuth(response, false, current.lastActivityAt);
-    }).catch((error: unknown) => {
-      if (this.authToken() === token && error instanceof HttpErrorResponse && (error.status === 401 || error.status === 403)) this.clearSession();
-    }).finally(() => { this.renewal = undefined; });
+    this.renewal = firstValueFrom(
+      this.sessionHttp
+        .post<BackendAuthResponse>(
+          `${this.apiUrl}/auth/refresh`,
+          {},
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        )
+        .pipe(timeout(10000)),
+    )
+      .then((response) => {
+        if (this.authToken() !== token || !this._user()) return;
+        const current: StoredSession = JSON.parse(localStorage.getItem(this.AUTH_CACHE_KEY)!);
+        this.persistBackendAuth(response, false, current.lastActivityAt);
+      })
+      .catch((error: unknown) => {
+        if (
+          this.authToken() === token &&
+          error instanceof HttpErrorResponse &&
+          (error.status === 401 || error.status === 403)
+        )
+          this.clearSession();
+      })
+      .finally(() => {
+        this.renewal = undefined;
+      });
   }
 }

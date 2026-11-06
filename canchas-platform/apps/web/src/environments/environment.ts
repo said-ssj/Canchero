@@ -4,6 +4,7 @@ export const environment = {
   production: false,
   supabaseUrl: supabaseConfiguration.url,
   supabaseAnonKey: supabaseConfiguration.anonKey,
+  googleAuthEnabled: supabaseConfiguration.googleAuthEnabled,
   googleMapsApiKey: (supabaseConfiguration as any).googleMapsApiKey || '',
   apiUrl: (supabaseConfiguration as any).apiUrl || 'http://localhost:8080/api',
   contact: {

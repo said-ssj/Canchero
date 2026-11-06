@@ -113,6 +113,7 @@ describe('Checkout Component - Fase 1: Identidad y Cancha Concreta', () => {
   const mockAuthService = {
     isLoggedIn: isLoggedInSignal,
     currentUser: currentUserSignal,
+    playerProfile: signal(null),
   };
 
   const mockActivatedRoute = {
@@ -409,22 +410,25 @@ describe('Checkout Component - Fase 2: Disponibilidad Real y Tarifas', () => {
         nowDate,
       ),
     ),
-    fetchCourtAvailability: vi.fn(async (_courtId: string | number, _from: string, _to: string) => ({
-      courtId: '101',
-      sedeId: 10,
-      from: _from,
-      to: _to,
-      horarios: [],
-      tarifas: [],
-      bloqueos: [],
-      ocupaciones: [],
-    })),
+    fetchCourtAvailability: vi.fn(
+      async (_courtId: string | number, _from: string, _to: string) => ({
+        courtId: '101',
+        sedeId: 10,
+        from: _from,
+        to: _to,
+        horarios: [],
+        tarifas: [],
+        bloqueos: [],
+        ocupaciones: [],
+      }),
+    ),
     refreshCatalogo: vi.fn(async () => {}),
   };
 
   const mockAuthService = {
     isLoggedIn: isLoggedInSignal,
     currentUser: currentUserSignal,
+    playerProfile: signal(null),
   };
 
   const mockActivatedRoute = {
@@ -684,7 +688,9 @@ describe('Checkout Component - Fase 2: Disponibilidad Real y Tarifas', () => {
 
     expect(component['slotStatus'](futureDay, 10)).toBe('available');
 
-    mockLoadErrorsSignal.set({ availability: 'Fallo de red al consultar GET /api/courts/101/availability' });
+    mockLoadErrorsSignal.set({
+      availability: 'Fallo de red al consultar GET /api/courts/101/availability',
+    });
     fixture.detectChanges();
 
     expect(component['effectiveAvailabilityError']()).toContain('Fallo de red');
@@ -695,7 +701,10 @@ describe('Checkout Component - Fase 2: Disponibilidad Real y Tarifas', () => {
   it('F2-11: Respuesta tardía de una semana previa es ignorada cuando el usuario cambia rápidamente de semana', async () => {
     let resolveSlowWeek1!: (val: any) => void;
     mockDatabaseService.fetchCourtAvailability.mockImplementationOnce(
-      () => new Promise((res) => { resolveSlowWeek1 = res; }),
+      () =>
+        new Promise((res) => {
+          resolveSlowWeek1 = res;
+        }),
     );
 
     createComponent();
@@ -728,7 +737,13 @@ describe('Checkout Component - Fase 2: Disponibilidad Real y Tarifas', () => {
         { dia_semana: 2, abierto: true, hora_apertura: '09:00', hora_cierre: '22:00' },
       ],
       descansos_recurrentes: [
-        { id: 'd1', titulo: 'Almuerzo personal', dias: [2], hora_inicio: '13:00', hora_fin: '15:00' },
+        {
+          id: 'd1',
+          titulo: 'Almuerzo personal',
+          dias: [2],
+          hora_inicio: '13:00',
+          hora_fin: '15:00',
+        },
       ],
     };
 
@@ -744,10 +759,42 @@ describe('Checkout Component - Fase 2: Disponibilidad Real y Tarifas', () => {
       },
     ]);
 
-    const s8 = resolveSlotAvailability(customCourt, futureDay.dateStr, 8, [], mockBloqueosSignal(), [], []);
-    const s10 = resolveSlotAvailability(customCourt, futureDay.dateStr, 10, [], mockBloqueosSignal(), [], []);
-    const s13 = resolveSlotAvailability(customCourt, futureDay.dateStr, 13, [], mockBloqueosSignal(), [], []);
-    const s16 = resolveSlotAvailability(customCourt, futureDay.dateStr, 16, [], mockBloqueosSignal(), [], []);
+    const s8 = resolveSlotAvailability(
+      customCourt,
+      futureDay.dateStr,
+      8,
+      [],
+      mockBloqueosSignal(),
+      [],
+      [],
+    );
+    const s10 = resolveSlotAvailability(
+      customCourt,
+      futureDay.dateStr,
+      10,
+      [],
+      mockBloqueosSignal(),
+      [],
+      [],
+    );
+    const s13 = resolveSlotAvailability(
+      customCourt,
+      futureDay.dateStr,
+      13,
+      [],
+      mockBloqueosSignal(),
+      [],
+      [],
+    );
+    const s16 = resolveSlotAvailability(
+      customCourt,
+      futureDay.dateStr,
+      16,
+      [],
+      mockBloqueosSignal(),
+      [],
+      [],
+    );
 
     expect(s8.state).toBe('closed');
     expect(s10.state).toBe('available');
@@ -837,6 +884,7 @@ describe('Checkout Component - Fase 3: Selección, Agrupación y Cotización', (
   const mockAuthService = {
     isLoggedIn: isLoggedInSignal,
     currentUser: currentUserSignal,
+    playerProfile: signal(null),
   };
 
   const mockActivatedRoute = {
@@ -871,6 +919,10 @@ describe('Checkout Component - Fase 3: Selección, Agrupación y Cotización', (
   function createComponent(): void {
     fixture = TestBed.createComponent(Checkout);
     component = fixture.componentInstance;
+    component['cardNumber'].set('4532 0000 0000 4242');
+    component['cardExpiry'].set('12/28');
+    component['cardCvv'].set('123');
+    component['cardHolder'].set('Jugador de prueba');
     fixture.detectChanges();
   }
 
@@ -940,7 +992,9 @@ describe('Checkout Component - Fase 3: Selección, Agrupación y Cotización', (
 
     const block = component['bookingBlock']();
     expect(block.isValid).toBe(false);
-    expect(block.errorMessage).toContain('Existe un hueco no seleccionado entre las 19:00 y las 20:00');
+    expect(block.errorMessage).toContain(
+      'Existe un hueco no seleccionado entre las 19:00 y las 20:00',
+    );
     expect(component['canProceedToPaso2']()).toBe(false);
     expect(component['selectionValidationMessage']()).toContain('Existe un hueco no seleccionado');
 
@@ -964,7 +1018,9 @@ describe('Checkout Component - Fase 3: Selección, Agrupación y Cotización', (
     expect(block.isValid).toBe(false);
     expect(block.errorMessage).toContain('pertenecer a la misma fecha');
     expect(component['canProceedToPaso2']()).toBe(false);
-    expect(fixture.nativeElement.querySelectorAll('.slot.chosen[aria-pressed="true"]')).toHaveLength(2);
+    expect(
+      fixture.nativeElement.querySelectorAll('.slot.chosen[aria-pressed="true"]'),
+    ).toHaveLength(2);
     const summaryBlock = fixture.nativeElement.querySelector('[data-summary-block]');
     expect(summaryBlock.textContent).toContain(day1.displayShort);
     expect(summaryBlock.textContent).toContain(day2.displayShort);
@@ -1103,20 +1159,38 @@ describe('Checkout Component - Fase 3: Selección, Agrupación y Cotización', (
   });
 
   it('F3-12: Cotización en servidor (POST /api/courts/{id}/quote) prevalece sobre el cálculo local al sincronizarse', async () => {
-    (mockDatabaseService as any).quoteCourtBooking = vi.fn(async (courtId: string, dateStr: string, hours: number[]) => ({
-      courtId: String(courtId),
-      dateStr,
-      timeStart: '18:00',
-      timeEnd: '20:00',
-      durationHours: hours.length,
-      isValid: true,
-      errorMessage: null,
-      tranches: [
-        { hour: 18, timeStart: '18:00', timeEnd: '19:00', displayTime: '18:00 - 19:00', price: 135, isNight: true, rateType: 'Noche' as const },
-        { hour: 19, timeStart: '19:00', timeEnd: '20:00', displayTime: '19:00 - 20:00', price: 135, isNight: true, rateType: 'Noche' as const },
-      ],
-      subtotal: 270,
-    }));
+    (mockDatabaseService as any).quoteCourtBooking = vi.fn(
+      async (courtId: string, dateStr: string, hours: number[]) => ({
+        courtId: String(courtId),
+        dateStr,
+        timeStart: '18:00',
+        timeEnd: '20:00',
+        durationHours: hours.length,
+        isValid: true,
+        errorMessage: null,
+        tranches: [
+          {
+            hour: 18,
+            timeStart: '18:00',
+            timeEnd: '19:00',
+            displayTime: '18:00 - 19:00',
+            price: 135,
+            isNight: true,
+            rateType: 'Noche' as const,
+          },
+          {
+            hour: 19,
+            timeStart: '19:00',
+            timeEnd: '20:00',
+            displayTime: '19:00 - 20:00',
+            price: 135,
+            isNight: true,
+            rateType: 'Noche' as const,
+          },
+        ],
+        subtotal: 270,
+      }),
+    );
 
     createComponent();
     component['nextWeek']();
@@ -1128,7 +1202,11 @@ describe('Checkout Component - Fase 3: Selección, Agrupación y Cotización', (
     await fixture.whenStable();
     fixture.detectChanges();
 
-    expect((mockDatabaseService as any).quoteCourtBooking).toHaveBeenCalledWith('court-101', futureDay.dateStr, [18, 19]);
+    expect((mockDatabaseService as any).quoteCourtBooking).toHaveBeenCalledWith(
+      'court-101',
+      futureDay.dateStr,
+      [18, 19],
+    );
     expect(component['subtotal']()).toBe(270);
     expect(component['bookingBlock']().tranches[0].price).toBe(135);
   });
@@ -1191,7 +1269,12 @@ describe('Checkout Component - Fase 3: Selección, Agrupación y Cotización', (
       return {
         reserva: { id: 702, codigo_pase: '#CAN-7020' },
         pago: { id: 702, monto: payload.total },
-        response: { id: '702', codigoPase: '#CAN-7020', horario: payload.horario, total: payload.total },
+        response: {
+          id: '702',
+          codigoPase: '#CAN-7020',
+          horario: payload.horario,
+          total: payload.total,
+        },
       };
     });
 
@@ -1339,11 +1422,15 @@ describe('Checkout Component - Fase 3: Selección, Agrupación y Cotización', (
       // Intentar cambiar a Yape o Plin online debe ser rechazado
       component['selectPayment']('yape');
       expect(component['paymentMethod']()).toBe('card');
-      expect(component['confirmError']()).toContain('solo está habilitado el pago al 100% con tarjeta');
+      expect(component['confirmError']()).toContain(
+        'solo está habilitado el pago al 100% con tarjeta',
+      );
 
       component['selectPayment']('plin');
       expect(component['paymentMethod']()).toBe('card');
-      expect(component['confirmError']()).toContain('solo está habilitado el pago al 100% con tarjeta');
+      expect(component['confirmError']()).toContain(
+        'solo está habilitado el pago al 100% con tarjeta',
+      );
     });
 
     it('F5-2: Valida los campos de la tarjeta impidiendo el envío si son inválidos', () => {
@@ -1445,7 +1532,10 @@ describe('Checkout Component - Fase 3: Selección, Agrupación y Cotización', (
       (mockDatabaseService as any).createOnlineBooking = vi.fn(async () => {
         throw {
           status: 402,
-          error: { message: 'El pago simulado con tarjeta fue rechazado por la entidad emisora. La reserva no fue confirmada.' },
+          error: {
+            message:
+              'El pago simulado con tarjeta fue rechazado por la entidad emisora. La reserva no fue confirmada.',
+          },
         };
       });
 
@@ -1470,7 +1560,10 @@ describe('Checkout Component - Fase 3: Selección, Agrupación y Cotización', (
       (mockDatabaseService as any).createOnlineBooking = vi.fn(async () => {
         throw {
           status: 504,
-          error: { message: 'Tiempo de espera agotado al conectar con el procesador de pagos. No se realizó ningún cargo.' },
+          error: {
+            message:
+              'Tiempo de espera agotado al conectar con el procesador de pagos. No se realizó ningún cargo.',
+          },
         };
       });
 

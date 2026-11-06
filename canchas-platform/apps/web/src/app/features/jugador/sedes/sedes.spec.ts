@@ -13,6 +13,7 @@ describe('Sedes Component - Fase 7: Diseño y Verificación Integral', () => {
   let component: Sedes;
 
   const catalogLoadingSignal = signal(false);
+  const catalogErrorSignal = signal(false);
 
   const mockVenues: Venue[] = [
     {
@@ -71,16 +72,21 @@ describe('Sedes Component - Fase 7: Diseño y Verificación Integral', () => {
 
   const mockDatabaseService = {
     catalogLoading: catalogLoadingSignal,
+    catalogError: catalogErrorSignal,
+    refreshCatalogo: vi.fn(),
     getVenuesPublicos: vi.fn(() => mockVenues),
   };
 
   const mockMapsService = {
-    getGoogleMapsDirectionsUrl: vi.fn((lat: number, lng: number) => `https://maps.google.com/?daddr=${lat},${lng}`),
+    getGoogleMapsDirectionsUrl: vi.fn(
+      (lat: number, lng: number) => `https://maps.google.com/?daddr=${lat},${lng}`,
+    ),
   };
 
   beforeEach(async () => {
     vi.clearAllMocks();
     catalogLoadingSignal.set(false);
+    catalogErrorSignal.set(false);
     mockDatabaseService.getVenuesPublicos.mockReturnValue(mockVenues);
 
     await TestBed.configureTestingModule({
@@ -102,12 +108,73 @@ describe('Sedes Component - Fase 7: Diseño y Verificación Integral', () => {
 
   it('Caso 1: Carga asíncrona del catálogo muestra skeletons estáticos y no emite falso vacío', () => {
     catalogLoadingSignal.set(true);
+    mockDatabaseService.getVenuesPublicos.mockReturnValue([]);
     createComponent();
 
     expect(component['isLoading']()).toBe(true);
     const element = fixture.nativeElement as HTMLElement;
     expect(element.querySelector('[aria-busy="true"]')).toBeTruthy();
+    expect(element.querySelectorAll('.public-venue.venue-skeleton')).toHaveLength(3);
     expect(element.textContent).not.toContain('No encontramos sedes');
+  });
+
+  it('muestra opciones reales de Ica y exige que los filtros coincidan en una sola cancha', () => {
+    const first = {
+      ...mockVenues[0].canchas[0],
+      nombre: 'Cancha 5',
+      formato: 'Fútbol 6',
+      cobertura: 'Al Aire Libre',
+      equipamiento: ['Con Iluminación'],
+    };
+    const second = {
+      ...first,
+      id: 'court-102',
+      formato: 'Fútbol 11',
+      cobertura: 'Techada',
+      superficie: 'Losa Deportiva',
+      equipamiento: ['Con Malla'],
+    };
+    mockDatabaseService.getVenuesPublicos.mockReturnValue([
+      { ...mockVenues[0], distrito: 'Ica', ciudad: 'Ica', canchas: [first, second] },
+      mockVenues[1],
+    ]);
+    createComponent();
+    const select = (id: string, value: string) => {
+      const field = fixture.nativeElement.querySelector('#' + id) as HTMLSelectElement;
+      field.value = value;
+      field.dispatchEvent(new Event('change'));
+      fixture.detectChanges();
+    };
+    const options = (id: string) =>
+      Array.from(
+        (fixture.nativeElement.querySelector('#' + id) as HTMLSelectElement).options,
+        (option) => option.value,
+      );
+    select('formatoSelect', 'f7');
+    select('districtSelect', 'Ica');
+    expect(options('formatoSelect')).toEqual(['all', 'f6', 'f11']);
+    expect(component['courtFilters'].formato()).toBe('all');
+    expect(options('superficieSelect')).toEqual(['all', 'sintetico', 'losa']);
+    expect(options('coberturaSelect')).toEqual(['all', 'aire-libre', 'techada']);
+    expect(options('equipamientoSelect')).toEqual(['all', 'iluminacion', 'malla']);
+    select('formatoSelect', 'f6');
+    expect(options('formatoSelect')).toEqual(['all', 'f6', 'f11']);
+    expect(options('coberturaSelect')).toEqual(['all', 'aire-libre']);
+    expect(options('equipamientoSelect')).toEqual(['all', 'iluminacion']);
+    expect(component['filteredVenues']()).toHaveLength(1);
+  });
+
+  it('conserva las tarjetas al actualizar y permite reintentar si falla el catálogo', () => {
+    catalogLoadingSignal.set(true);
+    createComponent();
+    expect(fixture.nativeElement.querySelectorAll('.public-venue')).toHaveLength(2);
+    expect(fixture.nativeElement.querySelector('.venue-skeleton')).toBeNull();
+    catalogLoadingSignal.set(false);
+    catalogErrorSignal.set(true);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('No pudimos actualizar las sedes');
+    fixture.nativeElement.querySelector('.catalog-error button').click();
+    expect(mockDatabaseService.refreshCatalogo).toHaveBeenCalledOnce();
   });
 
   it('Caso 2: Una vez cargado el catálogo, renderiza las tarjetas de sede con sus atributos reales', () => {
@@ -195,9 +262,11 @@ describe('Sedes Component - Fase 7: Diseño y Verificación Integral', () => {
 
   it('mantiene favoritos pendientes deshabilitados sin simular guardado', () => {
     createComponent();
-    const buttons = fixture.nativeElement.querySelectorAll('.fav-btn') as NodeListOf<HTMLButtonElement>;
+    const buttons = fixture.nativeElement.querySelectorAll(
+      '.fav-btn',
+    ) as NodeListOf<HTMLButtonElement>;
     expect(buttons.length).toBe(2);
-    buttons.forEach(button => {
+    buttons.forEach((button) => {
       expect(button.disabled).toBe(true);
       button.click();
     });
@@ -207,9 +276,15 @@ describe('Sedes Component - Fase 7: Diseño y Verificación Integral', () => {
   it('no inventa una ruta para sedes sin coordenadas validas', () => {
     createComponent();
     expect(component['hasVenueCoordinates'](mockVenues[0])).toBe(false);
-    expect(component['hasVenueCoordinates']({ ...mockVenues[0], latitud: -14, longitud: -75 })).toBe(true);
-    expect(component['hasVenueCoordinates']({ ...mockVenues[0], latitud: 100, longitud: -75 })).toBe(false);
-    const route = fixture.nativeElement.querySelector('.venue-body button[title="La sede no tiene una ubicación registrada"]') as HTMLButtonElement;
+    expect(
+      component['hasVenueCoordinates']({ ...mockVenues[0], latitud: -14, longitud: -75 }),
+    ).toBe(true);
+    expect(
+      component['hasVenueCoordinates']({ ...mockVenues[0], latitud: 100, longitud: -75 }),
+    ).toBe(false);
+    const route = fixture.nativeElement.querySelector(
+      '.venue-body button[title="La sede no tiene una ubicación registrada"]',
+    ) as HTMLButtonElement;
     expect(route.disabled).toBe(true);
   });
 

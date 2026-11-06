@@ -1,0 +1,135 @@
+.profile-page {
+  padding-block: clamp(24px, 5vw, 64px);
+}
+.profile-card {
+  width: 100%;
+  max-width: 600px;
+  margin-inline: auto;
+  padding: clamp(18px, 4vw, 32px);
+}
+h1 {
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  margin: 0 0 12px;
+}
+fieldset {
+  display: grid;
+  gap: 16px;
+  border: 0;
+  padding: 0;
+  margin: 20px 0;
+  min-width: 0;
+}
+label,
+.photo > div {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+label {
+  font-weight: 600;
+}
+small {
+  font-weight: 400;
+}
+input,
+select {
+  width: 100%;
+  min-width: 0;
+  font: inherit;
+}
+input:not([type='file']),
+select {
+  padding: 10px 12px;
+  border: 1px solid #d6dce3;
+  border-radius: 6px;
+  font-weight: 400;
+}
+.names {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.photo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.photo button {
+  justify-self: start;
+}
+.actions {
+  display: flex;
+  justify-content: flex-end;
+}
+.error {
+  color: #a72020;
+}
+@media (max-width: 480px) {
+  .names {
+    grid-template-columns: 1fr;
+  }
+}
+
+.location {
+  margin: 0;
+}
+.location legend {
+  padding: 0;
+  margin-bottom: 12px;
+  font-weight: 700;
+}
+.location select:disabled,
+.location input:disabled {
+  background: #edf0f3;
+  color: #586575;
+}
+
+.photo-pin {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 88px;
+  height: 88px;
+  flex: 0 0 88px;
+  padding: 0;
+  border: 1px solid #cbdccc;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #edf5ed;
+  color: #237b26;
+  cursor: pointer;
+}
+
+.photo-pin:disabled {
+  cursor: default;
+}
+.photo-pin img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.photo-pin > .material-symbols-outlined {
+  font-size: 34px;
+}
+
+.photo-pin-label {
+  position: absolute;
+  inset: auto 0 0;
+  padding: 5px 0 7px;
+  background: #17431de6;
+  color: white;
+  font-size: 0.72rem;
+  font-weight: 600;
+  opacity: 0;
+}
+
+.photo-pin:hover .photo-pin-label,
+.photo-pin:focus-visible .photo-pin-label {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .photo-pin-label {
+    opacity: 1;
+  }
+}

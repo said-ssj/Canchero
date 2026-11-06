@@ -1,6 +1,5 @@
 <main class="login-split-page">
   <div class="login-split-wrapper">
-
     <!-- LADO IZQUIERDO: Branding y Propuesta de Valor (Estilo Hero del Index) -->
     <section class="login-brand-panel">
       <!-- Decoración de fondo geométrica estilo campo deportivo -->
@@ -12,6 +11,10 @@
 
       <!-- Header: Logo Canchero (Texto Plano - No Redirige) -->
       <div class="brand-panel-header">
+        <a [routerLink]="backUrl" class="login-back">
+          <span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
+          Regresar
+        </a>
         <div class="login-brand-logo">
           <div class="brand-icon">C</div>
           <span class="brand-name">Canchero<span class="brand-badge">.MVP</span></span>
@@ -22,11 +25,12 @@
       <div class="brand-panel-body">
         <span class="brand-eyebrow">TU PRÓXIMO PARTIDO EMPIEZA AQUÍ</span>
         <h1 class="brand-headline">
-          Reserva tu cancha <br>
+          Reserva tu cancha <br />
           <span class="brand-headline-highlight">fácil y rápido.</span>
         </h1>
         <p class="brand-description">
-          Encuentra los mejores complejos deportivos cerca de ti. Compara horarios, tarifas y asegura tu pichanga en minutos sin llamadas ni esperas.
+          Encuentra los mejores complejos deportivos cerca de ti. Compara horarios, tarifas y
+          asegura tu pichanga en minutos sin llamadas ni esperas.
         </p>
 
         <div class="brand-feature-tags">
@@ -55,22 +59,23 @@
     <!-- LADO DERECHO: Formulario de Inicio de Sesión -->
     <section class="login-form-panel">
       <div class="login-form-card">
-
         <div class="form-header">
+          <app-theme-toggle class="theme-toggle" />
           <span class="form-eyebrow">BIENVENIDO/A</span>
           <h2 class="form-title">Inicia sesión</h2>
-          <p class="form-subtitle">Ingresa tus datos para continuar.</p>
+          <p class="form-subtitle">Accede a tus reservas y organiza tu próximo partido.</p>
         </div>
 
         @if (showError()) {
           <div class="auth-error-alert" role="alert">
             <span class="material-symbols-outlined icon-18" aria-hidden="true">error</span>
-            <span>{{ errorMessage() || 'Correo o contraseña incorrectos. Verifica tus credenciales.' }}</span>
+            <span>{{
+              errorMessage() || 'Correo o contraseña incorrectos. Verifica tus credenciales.'
+            }}</span>
           </div>
         }
 
         <form novalidate (ngSubmit)="onSubmit()" class="auth-form">
-
           <!-- Campo Correo -->
           <div class="form-group">
             <label class="form-label" for="email">Correo electrónico</label>
@@ -79,7 +84,7 @@
                 <span class="material-symbols-outlined icon-20" aria-hidden="true">mail</span>
               </span>
               <input
-                type="text"
+                type="email"
                 id="email"
                 name="email"
                 class="form-input"
@@ -132,7 +137,12 @@
               />
               <span>Mantener mi sesión iniciada</span>
             </label>
-            <button type="button" class="forgot-link" disabled title="Recuperación de contraseña aún no disponible">
+            <button
+              type="button"
+              class="forgot-link"
+              disabled
+              title="Recuperación de contraseña aún no disponible"
+            >
               ¿Olvidaste tu contraseña?
             </button>
           </div>
@@ -140,13 +150,14 @@
           <!-- Botón Iniciar Sesión (Principal) -->
           <button type="submit" class="btn-login-primary" [disabled]="submitting()">
             @if (submitting()) {
-              <span class="material-symbols-outlined icon-20 spin-icon" aria-hidden="true">sync</span>
+              <span class="material-symbols-outlined icon-20 spin-icon" aria-hidden="true"
+                >sync</span
+              >
               <span>Iniciando sesión...</span>
             } @else {
               <span>Iniciar sesión</span>
             }
           </button>
-
         </form>
 
         <!-- Separador -->
@@ -156,24 +167,32 @@
           <span class="divider-line"></span>
         </div>
 
-        <!-- Botón Registrarse (Secundario) -->
-        <a routerLink="/registro" class="btn-login-secondary">
-          Registrarse
-        </a>
+        <div class="google-login">
+          <button
+            type="button"
+            class="btn-login-secondary"
+            [disabled]="!googleEnabled || googlePending() || submitting()"
+            [attr.aria-describedby]="googleEnabled ? null : 'google-login-status'"
+            (click)="startGoogle()"
+          >
+            <img src="images/google-icon-logo.svg" width="18" height="18" alt="" />
+            <span>{{ googlePending() ? 'Conectando con Google…' : 'Continuar con Google' }}</span>
+          </button>
+          @if (!googleEnabled) {
+            <p id="google-login-status">El acceso con Google está pendiente de activación.</p>
+          }
+        </div>
+        <a routerLink="/registro" class="btn-login-secondary"> Registrarse </a>
 
         <!-- Botón Continuar como Invitado (Terciario) con bordes más resaltados -->
-        <a routerLink="/sedes" class="btn-login-guest">
-          Continuar como invitado
-        </a>
+        <a routerLink="/sedes" class="btn-login-guest"> Continuar como invitado </a>
 
         <!-- Ayuda y Soporte -->
         <p class="help-prompt">
           ¿Necesitas ayuda?
           <a href="mailto:soporte@canchero.pe" class="help-link">Contacta a nuestro equipo.</a>
         </p>
-
       </div>
     </section>
-
   </div>
 </main>

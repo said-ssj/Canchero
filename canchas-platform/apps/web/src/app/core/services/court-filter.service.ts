@@ -7,6 +7,8 @@ export interface FilterOption {
   label: string;
 }
 
+export type CourtFacet = 'formato' | 'superficie' | 'cobertura' | 'equipamiento';
+
 @Injectable({
   providedIn: 'root',
 })
@@ -24,6 +26,7 @@ export class CourtFilterService {
     { value: 'f8', label: 'Fútbol 8' },
     { value: 'f9', label: 'Fútbol 9' },
     { value: 'f11', label: 'Fútbol 11' },
+    { value: 'playa', label: 'Fútbol Playa' },
   ];
 
   readonly superficieOptions: FilterOption[] = [
@@ -86,16 +89,53 @@ export class CourtFilterService {
     this.equipamiento.set('all');
   }
 
-  matchesCourt(cancha: Court): boolean {
+  optionsFor(facet: CourtFacet, courts: Court[]): FilterOption[] {
+    const candidates = courts.filter((court) => this.matchesCourt(court, facet));
+    return this[`${facet}Options`].filter(
+      (option) =>
+        option.value === 'all' ||
+        candidates.some((court) => this.matchesOption(court, facet, option.value)),
+    );
+  }
+
+  clearUnavailable(courts: Court[]): void {
+    const facets: CourtFacet[] = ['formato', 'superficie', 'cobertura', 'equipamiento'];
+    // Keep earlier selections when the remaining options no longer coexist.
+    let candidates = courts;
+    for (const facet of facets) {
+      if (this[facet]() === 'all') continue;
+      const matching = candidates.filter((court) =>
+        this.matchesOption(court, facet, this[facet]()),
+      );
+      if (matching.length) candidates = matching;
+      else this[facet].set('all');
+    }
+  }
+
+  private matchesOption(court: Court, facet: CourtFacet, value: string): boolean {
+    switch (facet) {
+      case 'formato':
+        return this.checkFormato(court, value);
+      case 'superficie':
+        return this.checkSuperficie(court, value);
+      case 'cobertura':
+        return this.checkCobertura(court, value);
+      case 'equipamiento':
+        return this.checkEquipamiento(court, value);
+    }
+  }
+
+  matchesCourt(cancha: Court, except?: CourtFacet): boolean {
     const f = this.formato();
     const s = this.superficie();
     const c = this.cobertura();
     const e = this.equipamiento();
 
-    if (f !== 'all' && !this.checkFormato(cancha, f)) return false;
-    if (s !== 'all' && !this.checkSuperficie(cancha, s)) return false;
-    if (c !== 'all' && !this.checkCobertura(cancha, c)) return false;
-    if (e !== 'all' && !this.checkEquipamiento(cancha, e)) return false;
+    if (except !== 'formato' && f !== 'all' && !this.checkFormato(cancha, f)) return false;
+    if (except !== 'superficie' && s !== 'all' && !this.checkSuperficie(cancha, s)) return false;
+    if (except !== 'cobertura' && c !== 'all' && !this.checkCobertura(cancha, c)) return false;
+    if (except !== 'equipamiento' && e !== 'all' && !this.checkEquipamiento(cancha, e))
+      return false;
 
     return true;
   }
@@ -106,33 +146,12 @@ export class CourtFilterService {
   }
 
   private checkFormato(cancha: Court, f: string): boolean {
-    const tipo = (cancha.tipo || '').toLowerCase();
-    const formato = ((cancha as any).formato || '').toLowerCase();
-    const nombre = (cancha.nombre || '').toLowerCase();
-    const text = `${tipo} ${formato} ${nombre}`;
-
-    switch (f) {
-      case 'f5':
-        return text.includes('5');
-      case 'f6':
-        return text.includes('6');
-      case 'f7':
-        return text.includes('7');
-      case 'f8':
-        return text.includes('8');
-      case 'f9':
-        return text.includes('9');
-      case 'f11':
-        return text.includes('11');
-      default:
-        return true;
-    }
+    const text = (cancha.formato || cancha.tipo || '').trim().toLowerCase();
+    return f === 'playa' ? /\bplaya\b/.test(text) : text.match(/\b\d+\b/)?.[0] === f.slice(1);
   }
 
   private checkSuperficie(cancha: Court, s: string): boolean {
-    const sup = ((cancha as any).superficie || '').toLowerCase();
-    const tipo = (cancha.tipo || '').toLowerCase();
-    const text = `${sup} ${(cancha.nombre || '').toLowerCase()}`;
+    const text = (cancha.superficie || '').toLowerCase();
 
     switch (s) {
       case 'sintetico':
@@ -140,28 +159,31 @@ export class CourtFilterService {
       case 'natural':
         return text.includes('natural');
       case 'losa':
-        return text.includes('losa') || text.includes('loza') || text.includes('concreto') || text.includes('cemento');
+        return (
+          text.includes('losa') ||
+          text.includes('loza') ||
+          text.includes('concreto') ||
+          text.includes('cemento')
+        );
       case 'madera':
         return text.includes('madera') || text.includes('parquet');
       case 'goma':
         return text.includes('goma') || text.includes('caucho');
       case 'arena':
-        return text.includes('arena') || tipo.includes('playa');
+        return text.includes('arena');
       default:
         return true;
     }
   }
 
   private checkCobertura(cancha: Court, c: string): boolean {
-    const cob = ((cancha as any).cobertura || '').toLowerCase();
-    const techada = !!(cancha as any).techada;
-    const isTechada = techada || cob.includes('techada');
+    const cob = (cancha.cobertura || '').toLowerCase();
 
     switch (c) {
       case 'aire-libre':
-        return cob.includes('aire libre') || !isTechada;
+        return cob.includes('aire libre') || (!cob && cancha.techada === false);
       case 'techada':
-        return isTechada;
+        return cob === 'techada' || (!cob && cancha.techada === true);
       case 'lona':
         return cob.includes('lona');
       case 'cerrada':
@@ -172,10 +194,7 @@ export class CourtFilterService {
   }
 
   private checkEquipamiento(cancha: Court, e: string): boolean {
-    const equip = Array.isArray((cancha as any).equipamiento)
-      ? (cancha as any).equipamiento.map((x: string) => x.toLowerCase()).join(' ')
-      : '';
-    const text = `${equip} ${(cancha.nombre || '').toLowerCase()}`;
+    const text = (cancha.equipamiento ?? []).join(' ').toLowerCase();
 
     switch (e) {
       case 'iluminacion':
@@ -183,7 +202,11 @@ export class CourtFilterService {
       case 'muros':
         return text.includes('muro') || text.includes('pared');
       case 'oficial':
-        return text.includes('oficial') || text.includes('reglamentar') || text.includes('arcos reglamentarios');
+        return (
+          text.includes('oficial') ||
+          text.includes('reglamentar') ||
+          text.includes('arcos reglamentarios')
+        );
       case 'rejas':
         return text.includes('reja');
       case 'malla':

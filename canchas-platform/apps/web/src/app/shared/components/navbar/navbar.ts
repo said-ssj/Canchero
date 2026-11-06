@@ -1,9 +1,11 @@
-import { Component, HostListener, computed, inject, signal } from '@angular/core';
+import { ThemeService } from '@core/theme/theme.service';
+import { ThemeToggle } from '../theme-toggle/theme-toggle';
+import { Component, HostListener, computed, effect, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '@core/auth/auth.service';
 
 @Component({
-  imports: [RouterLink],
+  imports: [RouterLink, ThemeToggle],
   selector: 'app-navbar',
   styleUrl: './navbar.css',
   templateUrl: './navbar.html',
@@ -14,14 +16,21 @@ export class Navbar {
 
   protected readonly menuOpen = signal(false);
   protected readonly profileMenuOpen = signal(false);
-  protected readonly isDarkMode = signal(false);
 
   // Modales de Perfil
   protected readonly modalConfigOpen = signal(false);
   protected readonly modalPrivacidadOpen = signal(false);
   protected readonly modalAyudaOpen = signal(false);
 
+  protected readonly themeMode = inject(ThemeService).mode;
   protected readonly user = this.auth.user;
+  protected readonly profile = this.auth.playerProfile;
+  protected readonly profileName = computed(() => {
+    const profile = this.profile();
+    return (
+      [profile?.nombre, profile?.apellido].filter(Boolean).join(' ') || this.user()?.nombre || ''
+    );
+  });
   protected readonly isOwner = computed(() => {
     const u = this.user();
     if (!u) return false;
@@ -36,18 +45,11 @@ export class Navbar {
   });
 
   constructor() {
-    if (typeof window !== 'undefined') {
-      const savedTheme = localStorage.getItem('canchero_theme');
-      if (savedTheme === 'dark') {
-        this.isDarkMode.set(true);
-        document.documentElement.classList.add('dark-theme');
-        document.body.classList.add('dark-theme');
-      } else {
-        this.isDarkMode.set(false);
-        document.documentElement.classList.remove('dark-theme');
-        document.body.classList.remove('dark-theme');
-      }
-    }
+    effect((onCleanup) => {
+      if (this.user()?.rol !== 'cliente') return;
+      const request = this.auth.loadPlayerProfile().subscribe({ error: () => undefined });
+      onCleanup(() => request.unsubscribe());
+    });
   }
 
   @HostListener('document:click')
@@ -59,22 +61,6 @@ export class Navbar {
 
   protected toggleProfileMenu(): void {
     this.profileMenuOpen.update((open) => !open);
-  }
-
-  protected toggleDarkMode(): void {
-    const next = !this.isDarkMode();
-    this.isDarkMode.set(next);
-    if (typeof window !== 'undefined') {
-      if (next) {
-        document.documentElement.classList.add('dark-theme');
-        document.body.classList.add('dark-theme');
-        localStorage.setItem('canchero_theme', 'dark');
-      } else {
-        document.documentElement.classList.remove('dark-theme');
-        document.body.classList.remove('dark-theme');
-        localStorage.setItem('canchero_theme', 'light');
-      }
-    }
   }
 
   protected abrirConfiguracion(): void {

@@ -50,11 +50,15 @@ class VenueCatalogQueriesTest {
             jdbc.update("insert into cancha values (?, ?, 1, 'Cancha', false, null, 'Grass', 'A')", id, id);
         }
         jdbc.update("insert into cancha values (99, 1, 1, 'Mantenimiento', false, null, 'Grass', 'I')");
+        jdbc.execute("alter table cancha add column equipamiento varchar array");
+        jdbc.update("update cancha set equipamiento = array['Con Malla'] where id_cancha = 1");
         var service = new SupabaseDataService(jdbc, null);
         statements.set(0);
         var venues = service.listVenues(null, null, null);
         assertEquals(20, venues.size());
         assertEquals(2, statements.get(), "No per-venue SQL is allowed in the list mapper");
+        assertEquals(java.util.List.of("Con Malla"), venues.stream()
+                .filter(v -> v.id().equals("1")).findFirst().orElseThrow().canchas().get(0).equipamiento());
         assertTrue(venues.stream().allMatch(v -> v.canchas().size() == 1 && v.canchas().get(0).disponible()));
         assertTrue(venues.stream().allMatch(v -> v.ciudad().equals("Ica") && v.distrito().equals("Distrito")));
         assertEquals(2, service.getVenue("1").orElseThrow().canchas().size());

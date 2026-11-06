@@ -1,0 +1,77 @@
+<main class="container callback-page">
+  <section class="card callback-card" aria-labelledby="google-title">
+    <h1 id="google-title">Continuar con Google</h1>
+    @if (busy()) {
+      <p role="status">Comprobando tu cuenta…</p>
+    }
+    @if (error()) {
+      <p class="form-error" role="alert">{{ error() }}</p>
+    }
+    @if (needsPassword()) {
+      <p>
+        Ya tienes una cuenta en Canchero. Confirma tu contraseña actual para vincularla con Google.
+      </p>
+      <form (submit)="confirm($event, password, confirmation)" (input)="mismatch.set(false)">
+        <div class="field">
+          <label for="google-link-password">Contraseña de Canchero</label>
+          <div class="password-control">
+            <input
+              #password
+              id="google-link-password"
+              [type]="showPassword() ? 'text' : 'password'"
+              autocomplete="current-password"
+              required
+            />
+            <button
+              type="button"
+              class="visibility-button"
+              aria-controls="google-link-password"
+              [attr.aria-label]="showPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+              (click)="showPassword.set(!showPassword())"
+            >
+              <span class="material-symbols-outlined" aria-hidden="true">{{
+                showPassword() ? 'visibility_off' : 'visibility'
+              }}</span>
+            </button>
+          </div>
+        </div>
+        <div class="field">
+          <label for="google-link-confirmation">Confirmar contraseña</label>
+          <div class="password-control">
+            <input
+              #confirmation
+              id="google-link-confirmation"
+              [type]="showConfirmation() ? 'text' : 'password'"
+              autocomplete="current-password"
+              required
+              [attr.aria-invalid]="mismatch() ? 'true' : null"
+              [attr.aria-describedby]="mismatch() ? 'google-password-mismatch' : null"
+            />
+            <button
+              type="button"
+              class="visibility-button"
+              aria-controls="google-link-confirmation"
+              [attr.aria-label]="
+                showConfirmation() ? 'Ocultar confirmación' : 'Mostrar confirmación'
+              "
+              (click)="showConfirmation.set(!showConfirmation())"
+            >
+              <span class="material-symbols-outlined" aria-hidden="true">{{
+                showConfirmation() ? 'visibility_off' : 'visibility'
+              }}</span>
+            </button>
+          </div>
+          @if (mismatch()) {
+            <p id="google-password-mismatch" class="form-error" role="alert">
+              Las contraseñas no coinciden.
+            </p>
+          }
+        </div>
+        <div class="actions">
+          <button class="btn primary" type="submit" [disabled]="busy()">Vincular cuenta</button>
+        </div>
+      </form>
+    }
+    <a class="back-link" routerLink="/login">Volver al inicio de sesión</a>
+  </section>
+</main>

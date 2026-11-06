@@ -6,7 +6,7 @@ $envFile = Join-Path $root '.env.local'
 if (-not (Test-Path -LiteralPath $envFile)) { throw 'Falta .env.local para conectar la API.' }
 
 Get-Content -LiteralPath $envFile | ForEach-Object {
-    if ($_ -match '^\s*(SPRING_DATASOURCE_URL|SPRING_DATASOURCE_USERNAME|SPRING_DATASOURCE_PASSWORD|SUPABASE_JWT_SECRET)\s*=(.*)$') {
+    if ($_ -match '^\s*(SPRING_DATASOURCE_URL|SPRING_DATASOURCE_USERNAME|SPRING_DATASOURCE_PASSWORD|SUPABASE_JWT_SECRET|GOOGLE_AUTH_ENABLED|SUPABASE_URL|SUPABASE_ANON_KEY)\s*=(.*)$') {
         [Environment]::SetEnvironmentVariable($matches[1], $matches[2].Trim().Trim('"').Trim("'"), 'Process')
     }
 }

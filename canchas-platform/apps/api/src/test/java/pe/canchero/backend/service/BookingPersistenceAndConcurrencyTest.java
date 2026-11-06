@@ -210,6 +210,7 @@ class BookingPersistenceAndConcurrencyTest {
         jdbc.update("insert into sede (id_sede, id_dueno, nombre, estado) values (10, null, 'Complejo Norte', 'A')");
         jdbc.update("insert into tipo_cancha values (1, 'Fútbol 7', 'A')");
         jdbc.update("insert into cancha values (101, 10, 1, 'Cancha 1', true, null, 'Grass Sintético', 'A')");
+        jdbc.execute("alter table cancha add column equipamiento varchar array");
 
         // Jueves (4) y Viernes (5): horario 08:00 a 00:00 (medianoche = 24:00)
         jdbc.update("insert into tipo_horario (id_sede, dia_semana, apertura, cierre, estado) values (10, 4, '08:00:00', '00:00:00', 'A')");

@@ -1,3 +1,4 @@
+import { ThemeService } from '@core/theme/theme.service';
 import { Component, computed, effect, inject, signal, OnInit, OnDestroy } from '@angular/core';
 import { AdminContext } from '../admin-context.service';
 import { CommonModule } from '@angular/common';
@@ -64,7 +65,8 @@ export class AdminLayout implements OnInit, OnDestroy {
 
   readonly sidebarCollapsed = signal(false);
   readonly mobileSidebarOpen = signal(false);
-  readonly isDarkMode = signal(false);
+  private readonly theme = inject(ThemeService);
+  readonly isDarkMode = this.theme.isDark;
   readonly adminModalPrivacidadOpen = signal(false);
   readonly adminModalAyudaOpen = signal(false);
 
@@ -133,19 +135,6 @@ export class AdminLayout implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    if (typeof window !== 'undefined') {
-      const savedTheme = localStorage.getItem('canchero_theme');
-      if (savedTheme === 'dark') {
-        this.isDarkMode.set(true);
-        document.documentElement.classList.add('dark-theme');
-        document.body.classList.add('dark-theme');
-      } else {
-        this.isDarkMode.set(false);
-        document.documentElement.classList.remove('dark-theme');
-        document.body.classList.remove('dark-theme');
-      }
-    }
-
     // Set default venue if none active yet
     if (!this.db.sedeOperativaId() && this.sedesDelDueno().length > 0) {
       this.db.setSedeOperativaId(this.sedesDelDueno()[0].id);
@@ -179,19 +168,7 @@ export class AdminLayout implements OnInit, OnDestroy {
   }
 
   toggleDarkMode(): void {
-    const next = !this.isDarkMode();
-    this.isDarkMode.set(next);
-    if (typeof window !== 'undefined') {
-      if (next) {
-        document.documentElement.classList.add('dark-theme');
-        document.body.classList.add('dark-theme');
-        localStorage.setItem('canchero_theme', 'dark');
-      } else {
-        document.documentElement.classList.remove('dark-theme');
-        document.body.classList.remove('dark-theme');
-        localStorage.setItem('canchero_theme', 'light');
-      }
-    }
+    this.theme.set(this.isDarkMode() ? 'light' : 'dark');
   }
 
   abrirPrivacidadAdmin(): void {

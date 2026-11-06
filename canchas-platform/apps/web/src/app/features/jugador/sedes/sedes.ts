@@ -1,7 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { DatabaseService } from '@core/supabase/database.service';
-import { CourtFilterService } from '@core/services/court-filter.service';
+import { CourtFilterService, type CourtFacet } from '@core/services/court-filter.service';
 import { MapsService } from '@core/services/maps.service';
 import type { Venue } from '@shared/models/venue.model';
 
@@ -18,12 +18,21 @@ export class Sedes {
   private readonly mapsService = inject(MapsService);
 
   protected readonly isLoading = computed(() => this.db.catalogLoading());
-  protected readonly fallbackVenueImg =
-    '/images/venue-placeholder.svg';
+  protected readonly catalogError = computed(() => this.db.catalogError());
+  protected readonly showSkeleton = computed(() => this.isLoading() && !this.venues().length);
+  protected readonly fallbackVenueImg = '/images/venue-placeholder.svg';
 
   protected readonly venues = computed(() => this.db.getVenuesPublicos());
 
-  protected readonly cities = computed(() => [...new Set(this.venues().map((v) => v.ciudad).filter(Boolean))].sort());
+  protected readonly cities = computed(() =>
+    [
+      ...new Set(
+        this.venues()
+          .map((v) => v.ciudad)
+          .filter(Boolean),
+      ),
+    ].sort(),
+  );
 
   protected onImgError(event: Event): void {
     const img = event.target as HTMLImageElement;
@@ -37,7 +46,14 @@ export class Sedes {
   protected readonly busqueda = signal('');
   protected readonly view = signal<'all' | 'fav'>('all');
 
-  protected readonly favorites = signal(new Set(this.db.getVenuesPublicos().filter((v) => v.favorita).map((v) => v.id)));
+  protected readonly favorites = signal(
+    new Set(
+      this.db
+        .getVenuesPublicos()
+        .filter((v) => v.favorita)
+        .map((v) => v.id),
+    ),
+  );
   protected readonly alerts = signal(new Set<string>());
 
   protected readonly toastText = signal('');
@@ -46,7 +62,10 @@ export class Sedes {
 
   private toastTimer: ReturnType<typeof setTimeout> | undefined;
 
-  protected readonly distritoOptions = computed<{ topLabel: string; groups: { label: string; districts: string[] }[] }>(() => {
+  protected readonly distritoOptions = computed<{
+    topLabel: string;
+    groups: { label: string; districts: string[] }[];
+  }>(() => {
     const ciudad = this.ciudad();
     if (ciudad === 'all') {
       return {
@@ -63,11 +82,15 @@ export class Sedes {
     };
   });
 
-  protected readonly filteredVenues = computed<Venue[]>(() => {
+  private readonly scopedVenues = computed<Venue[]>(() => {
     let venues = this.venues().filter((venue) => {
-      if (this.ciudad() !== 'all' && venue.ciudad.toLowerCase() !== this.ciudad().toLowerCase()) return false;
-      if (this.distrito() !== 'all' && venue.distrito.toLowerCase() !== this.distrito().toLowerCase()) return false;
-      if (this.courtFilters.hasActiveCourtFilters() && !this.courtFilters.matchesVenue(venue)) return false;
+      if (this.ciudad() !== 'all' && venue.ciudad.toLowerCase() !== this.ciudad().toLowerCase())
+        return false;
+      if (
+        this.distrito() !== 'all' &&
+        venue.distrito.toLowerCase() !== this.distrito().toLowerCase()
+      )
+        return false;
       return true;
     });
     if (this.view() === 'fav') {
@@ -76,13 +99,37 @@ export class Sedes {
     const query = this.busqueda().trim().toLowerCase();
     if (query) {
       venues = venues.filter((venue) =>
-        `${venue.nombre} ${venue.distrito} ${venue.ciudad} ${venue.direccion} ${venue.canchas.map(c => c.nombre).join(' ')} ${venue.amenidades.join(' ')}`
+        `${venue.nombre} ${venue.distrito} ${venue.ciudad} ${venue.direccion} ${venue.canchas.map((c) => c.nombre).join(' ')} ${venue.amenidades.join(' ')}`
           .toLowerCase()
           .includes(query),
       );
     }
     return venues;
   });
+
+  private readonly scopedCourts = computed(() =>
+    this.scopedVenues().flatMap((venue) => venue.canchas),
+  );
+  protected readonly filteredVenues = computed(() =>
+    this.scopedVenues().filter(
+      (venue) =>
+        !this.courtFilters.hasActiveCourtFilters() || this.courtFilters.matchesVenue(venue),
+    ),
+  );
+  protected readonly courtOptions = computed(() => ({
+    formato: this.courtFilters.optionsFor('formato', this.scopedCourts()),
+    superficie: this.courtFilters.optionsFor('superficie', this.scopedCourts()),
+    cobertura: this.courtFilters.optionsFor('cobertura', this.scopedCourts()),
+    equipamiento: this.courtFilters.optionsFor('equipamiento', this.scopedCourts()),
+  }));
+
+  protected changeCourtFilter(facet: CourtFacet, event: Event): void {
+    this.courtFilters[facet].set((event.target as HTMLSelectElement).value);
+  }
+
+  protected retryCatalog(): void {
+    void this.db.refreshCatalogo();
+  }
 
   protected readonly countFav = computed(() => this.favorites().size);
 
@@ -101,7 +148,14 @@ export class Sedes {
   }));
 
   private getDistritosPorCiudad(ciudad: string): string[] {
-    return [...new Set(this.venues().filter((v) => v.ciudad.toLowerCase() === ciudad.toLowerCase()).map((v) => v.distrito).filter(Boolean))].sort();
+    return [
+      ...new Set(
+        this.venues()
+          .filter((v) => v.ciudad.toLowerCase() === ciudad.toLowerCase())
+          .map((v) => v.distrito)
+          .filter(Boolean),
+      ),
+    ].sort();
   }
 
   protected capitalize(value: string): string {
@@ -118,10 +172,14 @@ export class Sedes {
   protected onCityChange(event: Event): void {
     this.ciudad.set((event.target as HTMLSelectElement).value);
     this.distrito.set('all');
+    if (!this.isLoading() || this.venues().length)
+      this.courtFilters.clearUnavailable(this.scopedCourts());
   }
 
   protected onDistritoChange(event: Event): void {
     this.distrito.set((event.target as HTMLSelectElement).value);
+    if (!this.isLoading() || this.venues().length)
+      this.courtFilters.clearUnavailable(this.scopedCourts());
   }
 
   protected onSearch(event: Event): void {
@@ -151,9 +209,14 @@ export class Sedes {
   }
 
   protected hasVenueCoordinates(venue: Venue): boolean {
-    return venue.latitud != null && venue.longitud != null
-      && Number.isFinite(Number(venue.latitud)) && Number.isFinite(Number(venue.longitud))
-      && Math.abs(Number(venue.latitud)) <= 90 && Math.abs(Number(venue.longitud)) <= 180;
+    return (
+      venue.latitud != null &&
+      venue.longitud != null &&
+      Number.isFinite(Number(venue.latitud)) &&
+      Number.isFinite(Number(venue.longitud)) &&
+      Math.abs(Number(venue.latitud)) <= 90 &&
+      Math.abs(Number(venue.longitud)) <= 180
+    );
   }
 
   protected stop(event: Event): void {

@@ -1836,25 +1836,36 @@ public class SupabaseDataService {
             String tipo = rs.getString("tipo");
             String superficie = rs.getString("superficie");
             boolean techada = rs.getBoolean("techada");
+            String cobertura = rs.wasNull() ? "" : techada ? "Techada" : "Al Aire Libre";
             BigDecimal price = rs.getBigDecimal("precio_hora");
             BigDecimal nightPrice = rs.getBigDecimal("precio_hora_noche");
             Time nightStart = rs.getTime("hora_inicio_noche");
             double dayRate = price == null ? 80 : price.doubleValue();
             double nightRate = nightPrice == null ? dayRate : nightPrice.doubleValue();
             String nightHourStr = nightStart == null ? "18:00" : formatTime(nightStart);
+            Array equipment = rs.getArray("equipamiento");
+            List<String> features = List.of();
+            if (equipment != null) {
+                try {
+                    features = java.util.Arrays.stream((Object[]) equipment.getArray())
+                            .filter(java.util.Objects::nonNull).map(Object::toString).toList();
+                } finally {
+                    equipment.free();
+                }
+            }
             return new CourtDto(
                     String.valueOf(rs.getInt("id_cancha")),
                     rs.getString("nombre_numero"),
-                    tipo == null ? "Fútbol 7" : tipo,
-                    tipo == null ? "Fútbol 7" : tipo,
-                    superficie == null ? "Grass Sintético" : superficie,
-                    techada ? "Techada" : "Al Aire Libre",
+                    tipo == null ? "" : tipo,
+                    tipo == null ? "" : tipo,
+                    superficie == null ? "" : superficie,
+                    cobertura,
                     techada,
                     "A".equals(rs.getString("estado")),
                     dayRate,
                     nightRate,
                     nightHourStr,
-                    rs.getString("foto_url"), rs.getInt("id_sede"));
+                    rs.getString("foto_url"), rs.getInt("id_sede"), features);
         };
     }
 
@@ -2173,7 +2184,7 @@ public class SupabaseDataService {
     private String courtsSql(String whereClause) {
         return """
                 select c.id_cancha, c.id_sede, c.nombre_numero, c.techada, c.foto_url, c.superficie, c.estado,
-                       tc.nombre as tipo,
+                       tc.nombre as tipo, c.equipamiento,
                        coalesce(min(case when t.hora_inicio < time '18:00:00' then t.precio end), min(t.precio), 80) as precio_hora,
                        coalesce(max(case when t.hora_inicio >= time '18:00:00' or t.hora_fin > time '18:00:00' then t.precio end), max(t.precio), 80) as precio_hora_noche,
                        min(case when t.hora_inicio >= time '17:00:00' and t.hora_inicio < time '23:00:00' then t.hora_inicio end) as hora_inicio_noche
@@ -2181,7 +2192,7 @@ public class SupabaseDataService {
                 left join tipo_cancha tc on tc.id_tipo_cancha = c.id_tipo_cancha
                 left join tarifa_cancha t on t.id_cancha = c.id_cancha and t.estado = 'A'
                 """ + whereClause + """
-                group by c.id_cancha, c.id_sede, c.nombre_numero, c.techada, c.foto_url, c.superficie, c.estado, tc.nombre
+                group by c.id_cancha, c.id_sede, c.nombre_numero, c.techada, c.foto_url, c.superficie, c.estado, tc.nombre, c.equipamiento
                 """;
     }
 
@@ -2634,6 +2645,74 @@ public class SupabaseDataService {
                 request.telefono() == null ? "" : request.telefono().trim(),
                 PasswordUtil.hash(request.password()));
         return login(new LoginRequest(email, request.password()));
+    }
+
+    @org.springframework.transaction.annotation.Transactional
+    public AuthResponse loginGoogle(UUID authId, String rawEmail, String name, String password, boolean rememberMe) {
+        String email = normalize(rawEmail);
+        if (!EMAIL_PATTERN.matcher(email).matches()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Correo de Google inválido");
+        }
+        // Serializa los callbacks de una misma identidad durante el alta o la vinculación.
+        jdbc.query("select pg_advisory_xact_lock(?)", (rs, rowNum) -> true,
+                authId.getMostSignificantBits() ^ authId.getLeastSignificantBits());
+        List<UUID> linked = jdbc.queryForList("select id_usuario from public.usuario_auth_google where id_auth = ?",
+                UUID.class, authId);
+        UUID userId;
+        if (!linked.isEmpty()) {
+            userId = linked.get(0);
+        } else {
+            List<UUID> existing = jdbc.queryForList(
+                    "select id_usuario from usuario where lower(correo) = ? for update", UUID.class, email);
+            if (!existing.isEmpty()) {
+                userId = existing.get(0);
+                // El trigger de Supabase crea este perfil con el mismo UUID antes del callback.
+                boolean provisionedBySupabase = userId.equals(authId) && Boolean.TRUE.equals(
+                        jdbc.queryForObject("""
+                                select exists (
+                                    select 1 from public.usuario u
+                                    join public.rol r on r.id_rol = u.id_rol
+                                    where u.id_usuario = ? and u.usucre = 'AUTH_SIGNUP'
+                                      and u.pccre = 'WEBAPP' and u.estado = 'A'
+                                      and r.nombre = 'user' and r.estado = 'A'
+                                      and coalesce(u.password_hash, '') = ''
+                                )
+                                """, Boolean.class, userId));
+                if (!provisionedBySupabase) {
+                    if (password == null || password.isEmpty()) {
+                        throw new ResponseStatusException(HttpStatus.PRECONDITION_REQUIRED, "Confirma tu contraseña de Canchero");
+                    }
+                    String hash = jdbc.queryForObject("select password_hash from usuario where id_usuario = ?",
+                            String.class, userId);
+                    if (!PasswordUtil.matches(password, hash) || currentUser(userId).isEmpty()) {
+                        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "No se pudo confirmar la cuenta de Canchero");
+                    }
+                }
+            } else {
+                userId = UUID.randomUUID();
+                String displayName = name.isBlank() ? "Jugador" : name.strip();
+                displayName = displayName.substring(0, displayName.offsetByCodePoints(0,
+                        Math.min(80, displayName.codePointCount(0, displayName.length()))));
+                int created = jdbc.update("""
+                        insert into usuario (id_usuario, id_rol, nombre, correo, telefono, password_hash,
+                                             estado, usucre, pccre)
+                        values (?, ?, ?, ?, '', 'oauth:google', 'A', 'API', 'SPRING')
+                        on conflict do nothing
+                        """, userId, roleId("cliente"), displayName, email);
+                if (created != 1) {
+                    throw new ResponseStatusException(HttpStatus.CONFLICT, "La cuenta cambió. Vuelve a iniciar sesión con Google");
+                }
+            }
+            int mapped = jdbc.update("""
+                    insert into public.usuario_auth_google (id_auth, id_usuario)
+                    values (?, ?) on conflict do nothing
+                    """, authId, userId);
+            if (mapped != 1) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "La cuenta ya está vinculada");
+            }
+        }
+        return new AuthResponse(authTokenService.issue(userId, rememberMe), currentUser(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "La cuenta no está activa")));
     }
 
     public Optional<AuthUserDto> currentUser(UUID userId) {

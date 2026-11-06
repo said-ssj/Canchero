@@ -13,7 +13,15 @@ public record CourtDto(
         Double precioHoraNoche,
         String horaInicioNoche,
         String foto,
-        Integer venueId) {
+        Integer venueId,
+        java.util.List<String> equipamiento) {
+
+    public CourtDto(String id, String nombre, String tipo, String formato, String superficie,
+            String cobertura, boolean techada, boolean disponible, double precioHora,
+            Double precioHoraNoche, String horaInicioNoche, String foto, Integer venueId) {
+        this(id, nombre, tipo, formato, superficie, cobertura, techada, disponible,
+                precioHora, precioHoraNoche, horaInicioNoche, foto, venueId, java.util.List.of());
+    }
 
     public CourtDto(String id, String nombre, String tipo, String formato, String superficie,
             String cobertura, boolean techada, boolean disponible, double precioHora,
