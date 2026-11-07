@@ -15,7 +15,7 @@ class PosIsolationTest {
     private JdbcTemplate jdbc;
     private SupabaseDataService data;
     private VenueAccessService access;
-    private final AuthUserDto owner = new AuthUserDto("owner-a", "Owner A", "", "", "admin");
+    private final AuthUserDto owner = new AuthUserDto("owner-a", "Owner A", "", "", "dueno");
 
     @BeforeEach
     void setup() {
@@ -51,7 +51,8 @@ class PosIsolationTest {
     }
 
     @Test
-    void rejectsForeignVenueEvenForAdminAndDoesNotAcceptAnImplicitVenue() {
+    void rejectsForeignVenueForOwnersButAllowsPlatformAdmin() {
+        assertEquals(3, access.requireOwnedVenue(3, new AuthUserDto("admin-x", "Admin", "", "", "administrador")));
         assertEquals(1, access.requireOwnedVenue(1, owner));
         assertEquals(2, access.requireOwnedVenue(2, owner));
         assertEquals(403, assertThrows(ResponseStatusException.class, () -> access.requireOwnedVenue(3, owner)).getStatusCode().value());

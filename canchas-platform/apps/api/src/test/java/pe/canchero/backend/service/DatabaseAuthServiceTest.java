@@ -29,7 +29,7 @@ class DatabaseAuthServiceTest {
     void setup() {
         jdbc = new JdbcTemplate(new DriverManagerDataSource("jdbc:h2:mem:" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL", "sa", ""));
         jdbc.execute("create table rol (id_rol int primary key, nombre varchar, estado varchar)");
-        jdbc.execute("create table usuario (id_usuario uuid primary key, id_rol int, nombre varchar, correo varchar unique, telefono varchar, password_hash varchar, estado varchar, usucre varchar, pccre varchar)");
+        jdbc.execute("create table usuario (id_usuario uuid primary key, id_rol int, nombre varchar, correo varchar unique, telefono varchar, password_hash varchar, estado varchar, usucre varchar, pccre varchar, intentos_fallidos int not null default 0, bloqueo_hasta timestamp with time zone)");
         jdbc.update("insert into rol values (1, 'admin', 'A'), (2, 'cliente', 'A')");
         jdbc.update("insert into usuario (id_usuario,id_rol,nombre,correo,password_hash,estado) values (?,1,'Dueno','dueno@canchero.pe',?,'A')", owner, PasswordUtil.hash("unit-test-only-password"));
         service = new SupabaseDataService(jdbc, new AuthTokenService("unit-test-only-secret"));
@@ -46,7 +46,7 @@ class DatabaseAuthServiceTest {
 
     @Test
     void rejectsIncorrectPasswordInactiveUserAndInactiveRole() {
-        assertTrue(service.login(new LoginRequest("dueno@canchero.pe", "wrong")).isEmpty());
+        assertEquals(401, statusOf(new LoginRequest("dueno@canchero.pe", "wrong")));
         jdbc.update("update usuario set estado='I'");
         assertTrue(service.login(new LoginRequest("dueno@canchero.pe", "unit-test-only-password")).isEmpty());
         assertTrue(service.currentUser(owner).isEmpty());
@@ -54,6 +54,35 @@ class DatabaseAuthServiceTest {
         jdbc.update("update rol set estado='I' where id_rol=1");
         assertTrue(service.login(new LoginRequest("dueno@canchero.pe", "unit-test-only-password")).isEmpty());
         assertTrue(service.currentUser(owner).isEmpty());
+    }
+
+    @Test
+    void cincoFallosDanEsperaYDiezBloqueanHastaCambiarClave() {
+        var mala = new LoginRequest("dueno@canchero.pe", "wrong");
+        var buena = new LoginRequest("dueno@canchero.pe", "unit-test-only-password");
+        for (int i = 1; i <= 4; i++) assertEquals(401, statusOf(mala));
+        assertEquals(429, statusOf(mala));                 // 5.º fallo: espera de 30 s
+        assertEquals(429, statusOf(buena));                // ni la clave correcta pasa durante la espera
+        jdbc.update("update usuario set bloqueo_hasta = now() - interval '1' second");
+        for (int i = 6; i <= 9; i++) assertEquals(401, statusOf(mala));
+        assertEquals(423, statusOf(mala));                 // 10.º fallo: bloqueada
+        jdbc.update("update usuario set bloqueo_hasta = null");
+        assertEquals(423, statusOf(buena));                // sigue bloqueada sin importar el tiempo
+        jdbc.update("update usuario set intentos_fallidos = 0, bloqueo_hasta = null"); // desbloqueo de soporte
+        assertTrue(service.login(buena).isPresent());
+    }
+
+    @Test
+    void unAciertoReiniciaElContador() {
+        var mala = new LoginRequest("dueno@canchero.pe", "wrong");
+        for (int i = 1; i <= 4; i++) assertEquals(401, statusOf(mala));
+        assertTrue(service.login(new LoginRequest("dueno@canchero.pe", "unit-test-only-password")).isPresent());
+        assertEquals(0, jdbc.queryForObject("select intentos_fallidos from usuario", Integer.class));
+    }
+
+    private int statusOf(LoginRequest request) {
+        return assertThrows(org.springframework.web.server.ResponseStatusException.class, () -> service.login(request))
+                .getStatusCode().value();
     }
 
     @Test

@@ -19,7 +19,9 @@ CREATE TABLE usuario (
     telefono varchar(30),
     password_hash varchar(255),
     estado char(1) NOT NULL DEFAULT 'A',
-    feccre timestamp without time zone NOT NULL DEFAULT now()
+    feccre timestamp without time zone NOT NULL DEFAULT now(),
+    intentos_fallidos integer NOT NULL DEFAULT 0,
+    bloqueo_hasta timestamptz
 );
 
 CREATE TABLE departamento (

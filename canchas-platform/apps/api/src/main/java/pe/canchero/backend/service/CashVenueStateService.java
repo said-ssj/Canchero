@@ -32,7 +32,7 @@ public class CashVenueStateService {
         if (user == null) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         var owners = jdbc.queryForList("select id_dueno from sede where id_sede = ?", String.class, sedeId);
         if (owners.isEmpty()) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Sede no encontrada");
-        if (!user.id().equals(owners.get(0))) {
+        if (!VenueAccessService.canManage(user, owners.get(0))) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "La sede no pertenece a tu cuenta");
         }
         var cajas = data.listCashBoxes(sedeId);

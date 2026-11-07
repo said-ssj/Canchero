@@ -10,6 +10,7 @@ import { resolveSlotAvailability, normalizeTimeString } from '../utils/availabil
 import type { NuevaReservaPresencialInput } from './legacy.types';
 import { UBIGEO_LOOKUP } from './ubigeo-data';
 import { environment } from '../../../environments/environment';
+import { AuthService } from '../auth/auth.service';
 
 const COMISION_PORCENTAJE = 0.05;
 
@@ -39,6 +40,7 @@ export interface NuevoPagoReservaInput {
 @Injectable({ providedIn: 'root' })
 export class DatabaseService {
   private readonly http = inject(HttpClient);
+  private readonly auth = inject(AuthService);
   private readonly apiUrl = environment.apiUrl;
 
   // ===== SIGNALS REACTIVOS (API principal) =====
@@ -837,6 +839,9 @@ export class DatabaseService {
   // ===== SEPARACIÓN POR DUEÑO =====
   getSedesPorDueno(duenoId: string | number) {
     if (duenoId === '' || duenoId == null) return [];
+    // El administrador de la plataforma gestiona todas las sedes (la API también se lo permite).
+    const user = this.auth.currentUser();
+    if (user?.rol === 'admin' && String(duenoId) === String(user.id)) return this.sedes();
     // Existing catalog adapters expose numeric aliases for UUID owners.
     const legacyId = typeof duenoId === 'string' ? this.uuidToNumber(duenoId) : duenoId;
     const belongsToOwner = (s: {

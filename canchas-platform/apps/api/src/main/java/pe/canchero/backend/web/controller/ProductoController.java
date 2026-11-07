@@ -4,9 +4,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -14,9 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import pe.canchero.backend.service.SupabaseDataService;
 import pe.canchero.backend.service.VenueAccessService;
 import pe.canchero.backend.web.dto.AuthUserDto;
-import org.springframework.web.server.ResponseStatusException;
 import pe.canchero.backend.web.dto.ErrorResponse;
-import pe.canchero.backend.web.dto.ProductoRequest;
 import pe.canchero.backend.web.dto.ProductoResponse;
 
 import java.util.List;
@@ -47,13 +42,4 @@ public class ProductoController {
                 .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse("Producto no encontrado")));
     }
 
-    @PostMapping
-    public ResponseEntity<ProductoResponse> create(@RequestBody ProductoRequest request) {
-        throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "Alta de productos pendiente de contrato por sede");
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<?> update(@PathVariable int id, @RequestBody ProductoRequest request) {
-        throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "Edicion de productos globales no permitida sin contrato por sede");
-    }
 }

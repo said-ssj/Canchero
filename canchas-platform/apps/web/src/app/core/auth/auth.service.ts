@@ -177,9 +177,13 @@ export class AuthService {
         map((response) => this.persistBackendAuth(response, rememberMe)),
         catchError((error: unknown) => {
           this.clearSession();
+          const credenciales =
+            error instanceof HttpErrorResponse && [400, 401, 423, 429].includes(error.status);
+          // 401/423/429 traen la advertencia de intentos restantes, espera o bloqueo.
           this.loginError.set(
-            error instanceof HttpErrorResponse && (error.status === 400 || error.status === 401)
-              ? 'Correo o contraseña incorrectos. Verifica tus credenciales.'
+            credenciales
+              ? (error.error?.message ??
+                  'Correo o contraseña incorrectos. Verifica tus credenciales.')
               : 'No se pudo validar la cuenta con el servidor. Comprueba la conexión e inténtalo de nuevo.',
           );
           return of(null);

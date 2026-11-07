@@ -13,7 +13,6 @@ public record VenueRequest(
         Double latitud,
         Double longitud,
         double tarifaBase,
-        String ownerId,
         List<String> fotos,
         List<String> amenidades,
         List<CourtRequest> canchas) {

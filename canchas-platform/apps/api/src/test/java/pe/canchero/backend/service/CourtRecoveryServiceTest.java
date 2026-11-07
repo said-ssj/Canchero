@@ -49,8 +49,6 @@ class CourtRecoveryServiceTest {
         assertEquals(403, assertThrows(ResponseStatusException.class, () -> service.recover(other, request)).getStatusCode().value());
         var player = new AuthUserDto("owner-a", "", "", "", "jugador");
         assertEquals(403, assertThrows(ResponseStatusException.class, () -> service.recover(player, request)).getStatusCode().value());
-        var admin = new AuthUserDto("owner-b", "", "", "", "admin");
-        assertEquals(403, assertThrows(ResponseStatusException.class, () -> service.recover(admin, request)).getStatusCode().value());
         verifyNoInteractions(data);
     }
 

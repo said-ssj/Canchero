@@ -32,7 +32,6 @@ import pe.canchero.backend.web.dto.OpenCashSessionRequest;
 import pe.canchero.backend.web.dto.PagoReservaResponse;
 import pe.canchero.backend.web.dto.ProcessSaleRequest;
 import pe.canchero.backend.web.dto.ProductDto;
-import pe.canchero.backend.web.dto.ProductoRequest;
 import pe.canchero.backend.web.dto.ProductoResponse;
 import pe.canchero.backend.web.dto.PublicPassResponse;
 import pe.canchero.backend.web.dto.QuoteRequest;
@@ -204,8 +203,7 @@ public class SupabaseDataService {
                 """);
     }
 
-    public VenueResponse createVenue(VenueRequest request) {
-        UUID ownerId = resolveOwnerId(request.ownerId());
+    public VenueResponse createVenue(VenueRequest request, UUID ownerId) {
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jdbc.update(connection -> {
             PreparedStatement ps = connection.prepareStatement("""
@@ -548,22 +546,6 @@ public class SupabaseDataService {
                 update cancha set estado = 'I', fecmod = now(), usmod = 'API', pcmod = 'SPRING'
                 where id_cancha = ?
                 """, Integer.parseInt(id)) > 0;
-    }
-
-    @Transactional
-    public BookingResponse createBooking(BookingRequest request) {
-        if (request == null || request.playerId() == null || request.playerId().isBlank()) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Debes iniciar sesión para registrar una reserva.");
-        }
-        UUID userId;
-        try {
-            userId = UUID.fromString(request.playerId().trim());
-        } catch (IllegalArgumentException ex) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Identificador de usuario autenticado inválido.");
-        }
-        AuthUserDto authUser = currentUser(userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuario autenticado no encontrado o inactivo."));
-        return createBooking(request, authUser, request.idempotencyKey());
     }
 
     @Transactional
@@ -1246,10 +1228,6 @@ public class SupabaseDataService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "No se pudo recuperar el arqueo guardado"));
     }
 
-    public List<ProductDto> listProducts() {
-        return listProducts(null);
-    }
-
     public boolean salePaymentsReady() { return salePayments.available(); }
 
     public pe.canchero.backend.web.dto.CashBalanceDto cashBalance(int sessionId) {
@@ -1356,8 +1334,10 @@ public class SupabaseDataService {
         Integer ownerMatches = jdbc.queryForObject("""
                 select count(*) from sesion_caja sc join caja c on c.id_caja=sc.id_caja
                 join sede s on s.id_sede=c.id_sede where sc.id_sesion_caja=? and c.id_sede=?
-                and s.id_dueno=? and c.estado='A' and s.estado='A'
-                """, Integer.class, request.sesionCajaId(), sedeId, author);
+                and c.estado='A' and s.estado='A'
+                and (s.id_dueno=? or exists (select 1 from usuario u join rol r on r.id_rol=u.id_rol
+                     where u.id_usuario=? and lower(trim(r.nombre)) in ('admin','administrador')))
+                """, Integer.class, request.sesionCajaId(), sedeId, author, author);
         if (ownerMatches == null || ownerMatches != 1) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "El turno no pertenece a tu sede");
         previous = salePayments.replay(request, operationKey, operationHash);
         if (previous != null) return getSale(previous, sedeId).orElseThrow();
@@ -2164,10 +2144,6 @@ public class SupabaseDataService {
         throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Sesión inválida o expirada");
     }
 
-    private int resolveOperationalVenueId() {
-        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Selecciona una sede");
-    }
-
     private String nextSaleNumber(String type) {
         String prefix = switch (type) {
             case "factura" -> "F001";
@@ -2233,29 +2209,6 @@ public class SupabaseDataService {
                     values (?, ?, ?, '23:00:00', ?, 'A', 'API', 'SPRING')
                     """, canchaId, day, Time.valueOf(inicioNoche), BigDecimal.valueOf(nocturno));
         }
-    }
-
-    private UUID resolveOwnerId(String ownerId) {
-        if (ownerId != null && !ownerId.isBlank()) {
-            try {
-                return UUID.fromString(ownerId);
-            } catch (IllegalArgumentException ignored) {
-                // El admin antiguo aún maneja ids numéricos en memoria; se resuelve con fallback.
-            }
-        }
-        List<UUID> ownerIds = jdbc.queryForList("""
-                select u.id_usuario
-                from usuario u
-                join rol r on r.id_rol = u.id_rol
-                where u.estado = 'A'
-                  and lower(r.nombre) in ('dueno', 'dueño', 'owner', 'administrador', 'admin')
-                order by u.feccre nulls last
-                limit 1
-                """, UUID.class);
-        if (!ownerIds.isEmpty()) {
-            return ownerIds.get(0);
-        }
-        return jdbc.queryForObject("select id_usuario from usuario where estado = 'A' limit 1", UUID.class);
     }
 
     private UUID resolveOrCreateAuthenticatedClienteId(AuthUserDto authUser, UUID usuarioUuid) {
@@ -2583,29 +2536,68 @@ public class SupabaseDataService {
         }
     }
 
+    static final int INTENTOS_ANTES_DE_ESPERA = 5;
+    static final int INTENTOS_ANTES_DE_BLOQUEO = 10;
+    private static final String CUENTA_BLOQUEADA = "Tu cuenta fue bloqueada por demasiados intentos fallidos. "
+            + "Cambia tu contraseña o comunícate con soporte para desbloquearla.";
+
+    /**
+     * 5 fallos -> espera de 30 s; 5 fallos más -> bloqueo hasta cambio de contraseña o soporte.
+     * Cada intento se "reserva" con un UPDATE atómico antes del bcrypt, así las peticiones en paralelo
+     * no pueden saltarse el límite.
+     */
     public Optional<AuthResponse> login(LoginRequest request) {
         String email = request.email().trim().toLowerCase();
-        return jdbc.query("""
+        record Cuenta(UUID id, String nombre, String email, String telefono, String hash, String rol) {}
+        var cuentas = jdbc.query("""
                         select u.id_usuario, u.nombre, u.correo as email, u.telefono, u.password_hash, r.nombre as rol
                         from usuario u
                         join rol r on r.id_rol = u.id_rol
                         where lower(u.correo) = ? and u.estado = 'A' and r.estado = 'A'
                         """,
-                (rs, rowNum) -> {
-                    if (!PasswordUtil.matches(request.password(), rs.getString("password_hash"))) {
-                        return null;
-                    }
-                    UUID userId = rs.getObject("id_usuario", UUID.class);
-                    return new AuthResponse(
-                            authTokenService.issue(userId, request.rememberMe()),
-                            new AuthUserDto(
-                                    userId.toString(),
-                                    rs.getString("nombre"),
-                                    rs.getString("email"),
-                                    rs.getString("telefono"),
-                                    rs.getString("rol")));
-                },
-                email).stream().filter(r -> r != null).findFirst();
+                (rs, rowNum) -> new Cuenta(rs.getObject("id_usuario", UUID.class), rs.getString("nombre"),
+                        rs.getString("email"), rs.getString("telefono"), rs.getString("password_hash"), rs.getString("rol")),
+                email);
+        if (cuentas.isEmpty()) return Optional.empty();
+        Cuenta cuenta = cuentas.get(0);
+
+        int reservado = jdbc.update("""
+                update usuario
+                set intentos_fallidos = intentos_fallidos + 1,
+                    bloqueo_hasta = case when intentos_fallidos + 1 = ? then now() + interval '30' second else bloqueo_hasta end
+                where id_usuario = ? and intentos_fallidos < ? and (bloqueo_hasta is null or bloqueo_hasta <= now())
+                """, INTENTOS_ANTES_DE_ESPERA, cuenta.id(), INTENTOS_ANTES_DE_BLOQUEO);
+        if (reservado == 0) throw intentoRechazado(cuenta.id());
+
+        if (!PasswordUtil.matches(request.password(), cuenta.hash())) {
+            Integer fallos = jdbc.queryForObject("select intentos_fallidos from usuario where id_usuario = ?", Integer.class, cuenta.id());
+            int n = fallos == null ? 0 : fallos;
+            if (n >= INTENTOS_ANTES_DE_BLOQUEO) throw new ResponseStatusException(HttpStatus.LOCKED, CUENTA_BLOQUEADA);
+            if (n == INTENTOS_ANTES_DE_ESPERA) {
+                throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
+                        "Fallaste " + n + " intentos. Espera 30 segundos para volver a intentarlo. "
+                                + "Si fallas " + (INTENTOS_ANTES_DE_BLOQUEO - n) + " veces más, tu cuenta se bloqueará.");
+            }
+            int quedan = (n < INTENTOS_ANTES_DE_ESPERA ? INTENTOS_ANTES_DE_ESPERA : INTENTOS_ANTES_DE_BLOQUEO) - n;
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Correo o contraseña incorrectos. Te quedan " + quedan
+                    + (n < INTENTOS_ANTES_DE_ESPERA ? " intentos antes de una espera de 30 segundos." : " intentos antes de que tu cuenta se bloquee."));
+        }
+
+        jdbc.update("update usuario set intentos_fallidos = 0, bloqueo_hasta = null where id_usuario = ?", cuenta.id());
+        return Optional.of(new AuthResponse(
+                authTokenService.issue(cuenta.id(), request.rememberMe()),
+                new AuthUserDto(cuenta.id().toString(), cuenta.nombre(), cuenta.email(), cuenta.telefono(), cuenta.rol())));
+    }
+
+    private ResponseStatusException intentoRechazado(UUID userId) {
+        record Estado(int fallos, java.time.OffsetDateTime hasta) {}
+        Estado estado = jdbc.queryForObject("select intentos_fallidos, bloqueo_hasta from usuario where id_usuario = ?",
+                (rs, rowNum) -> new Estado(rs.getInt(1), rs.getObject(2, java.time.OffsetDateTime.class)), userId);
+        if (estado.fallos() >= INTENTOS_ANTES_DE_BLOQUEO) return new ResponseStatusException(HttpStatus.LOCKED, CUENTA_BLOQUEADA);
+        long segundos = estado.hasta() == null ? 30
+                : Math.max(1, (java.time.Duration.between(java.time.OffsetDateTime.now(), estado.hasta()).toMillis() + 999) / 1000);
+        return new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
+                "Demasiados intentos fallidos. Espera " + segundos + " segundos para volver a intentarlo.");
     }
 
     public Optional<AuthResponse> register(RegisterRequest request) {
@@ -3089,13 +3081,6 @@ public class SupabaseDataService {
                 null);
     }
 
-    public List<VentaResponse> listVentas(String sesionCajaId) {
-        if (sesionCajaId != null && !sesionCajaId.isBlank()) {
-            return listVentasBySession(Integer.parseInt(sesionCajaId));
-        }
-        return listSales().stream().map(this::toVentaResponse).toList();
-    }
-
     public List<VentaResponse> listVentasBySession(int sesionId) {
         List<Integer> venueIds = jdbc.queryForList("""
                 select c.id_sede
@@ -3232,48 +3217,6 @@ public class SupabaseDataService {
                 .findFirst();
     }
 
-    public ProductoResponse createProducto(ProductoRequest request) {
-        KeyHolder keyHolder = new GeneratedKeyHolder();
-        jdbc.update(connection -> {
-            PreparedStatement ps = connection.prepareStatement("""
-                    insert into producto (id_categoria, codigo_barras, nombre, precio_compra,
-                                          precio_venta, stock_minimo, estado, usucre, pccre)
-                    values (?, ?, ?, ?, ?, ?, 'A', 'API', 'SPRING')
-                    """, Statement.RETURN_GENERATED_KEYS);
-            ps.setInt(1, categoryId(request.categoria()));
-            ps.setString(2, null);
-            ps.setString(3, request.nombre());
-            ps.setBigDecimal(4, request.precioCompra() == null ? BigDecimal.ZERO : request.precioCompra());
-            ps.setBigDecimal(5, request.precioVenta() == null ? BigDecimal.ZERO : request.precioVenta());
-            ps.setInt(6, request.stockMinimo());
-            return ps;
-        }, keyHolder);
-        Number id = (Number) keyHolder.getKeys().get("id_producto");
-        if (request.stockActual() > 0) {
-            insertKardex(
-                    id.intValue(),
-                    resolveOperationalVenueId(),
-                    1,
-                    request.stockActual(),
-                    request.precioCompra() == null ? 0 : request.precioCompra().doubleValue(),
-                    request.stockActual(),
-                    "Stock inicial");
-        }
-        return getProducto(id.intValue()).orElseThrow();
-    }
-
-    public Optional<ProductoResponse> updateProducto(int id, ProductoRequest request) {
-        int updated = jdbc.update("""
-                update producto
-                set id_categoria = ?, nombre = ?, precio_venta = ?, precio_compra = ?,
-                    stock_minimo = ?, fecmod = now(), usmod = 'API', pcmod = 'SPRING'
-                where id_producto = ?
-                """,
-                categoryId(request.categoria()), request.nombre(), request.precioVenta(),
-                request.precioCompra(), request.stockMinimo(), id);
-        return updated == 0 ? Optional.empty() : getProducto(id);
-    }
-
     private VentaResponse toVentaResponse(SaleDto sale) {
         int ventaId = Integer.parseInt(sale.id().replace("VNT-", ""));
         List<VentaDetalleResponse> detalles = sale.items().stream()
@@ -3299,18 +3242,4 @@ public class SupabaseDataService {
                 detalles);
     }
 
-    private int categoryId(String name) {
-        String normalized = normalize(name);
-        if (!normalized.isBlank()) {
-            List<Integer> ids = jdbc.queryForList(
-                    "select id_categoria from categoria_producto where lower(nombre) = ? and estado = 'A' limit 1",
-                    Integer.class,
-                    normalized);
-            if (!ids.isEmpty()) return ids.get(0);
-        }
-        List<Integer> fallback = jdbc.queryForList(
-                "select id_categoria from categoria_producto where estado = 'A' order by id_categoria limit 1",
-                Integer.class);
-        return fallback.isEmpty() ? 1 : fallback.get(0);
-    }
 }

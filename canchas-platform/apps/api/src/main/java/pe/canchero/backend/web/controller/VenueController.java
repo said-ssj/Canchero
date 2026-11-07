@@ -7,25 +7,31 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import pe.canchero.backend.service.SupabaseDataService;
+import pe.canchero.backend.service.VenueAccessService;
+import pe.canchero.backend.web.dto.AuthUserDto;
 import pe.canchero.backend.web.dto.ErrorResponse;
 import pe.canchero.backend.web.dto.VenueRequest;
 import pe.canchero.backend.web.dto.VenueResponse;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/venues")
 public class VenueController {
 
     private final SupabaseDataService data;
+    private final VenueAccessService access;
 
-    public VenueController(SupabaseDataService data) {
+    public VenueController(SupabaseDataService data, VenueAccessService access) {
         this.data = data;
+        this.access = access;
     }
 
     @GetMapping
@@ -44,20 +50,24 @@ public class VenueController {
     }
 
     @PostMapping
-    public ResponseEntity<VenueResponse> create(@RequestBody VenueRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(data.createVenue(request));
+    public ResponseEntity<VenueResponse> create(@RequestAttribute("auth.user") AuthUserDto user,
+            @RequestBody VenueRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(data.createVenue(request, UUID.fromString(user.id())));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> update(@PathVariable String id, @RequestBody VenueRequest request) {
-        return data.updateVenue(id, request)
+    public ResponseEntity<?> update(@PathVariable int id, @RequestAttribute("auth.user") AuthUserDto user,
+            @RequestBody VenueRequest request) {
+        access.requireOwnedVenue(id, user);
+        return data.updateVenue(String.valueOf(id), request)
                 .<ResponseEntity<?>>map(ResponseEntity::ok)
                 .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse("Sede no encontrada")));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> delete(@PathVariable String id) {
-        if (!data.deleteVenue(id)) {
+    public ResponseEntity<?> delete(@PathVariable int id, @RequestAttribute("auth.user") AuthUserDto user) {
+        access.requireOwnedVenue(id, user);
+        if (!data.deleteVenue(String.valueOf(id))) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse("Sede no encontrada"));
         }
         return ResponseEntity.noContent().build();

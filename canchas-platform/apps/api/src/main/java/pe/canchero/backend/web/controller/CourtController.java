@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import pe.canchero.backend.service.SupabaseDataService;
 import pe.canchero.backend.service.CourtOperationService;
 import pe.canchero.backend.service.CourtRecoveryService;
+import pe.canchero.backend.service.VenueAccessService;
 import pe.canchero.backend.web.dto.AuthUserDto;
 import pe.canchero.backend.web.dto.CourtAvailabilityResponse;
 import pe.canchero.backend.web.dto.CourtDto;
@@ -33,11 +34,14 @@ public class CourtController {
     private final SupabaseDataService data;
     private final CourtOperationService operation;
     private final CourtRecoveryService recovery;
+    private final VenueAccessService access;
 
-    public CourtController(SupabaseDataService data, CourtOperationService operation, CourtRecoveryService recovery) {
+    public CourtController(SupabaseDataService data, CourtOperationService operation, CourtRecoveryService recovery,
+            VenueAccessService access) {
         this.data = data;
         this.operation = operation;
         this.recovery = recovery;
+        this.access = access;
     }
 
     @PostMapping("/recover")
@@ -94,22 +98,35 @@ public class CourtController {
     }
 
     @PostMapping
-    public ResponseEntity<CourtDto> create(@RequestBody CourtRequest request) {
+    public ResponseEntity<CourtDto> create(@RequestAttribute("auth.user") AuthUserDto user,
+            @RequestBody CourtRequest request) {
+        access.requireOwnedVenue(parseId(request.venueId()), user);
         return ResponseEntity.status(HttpStatus.CREATED).body(data.createCourt(request));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> update(@PathVariable String id, @RequestBody CourtRequest request) {
-        return data.updateCourt(id, request)
+    public ResponseEntity<?> update(@PathVariable int id, @RequestAttribute("auth.user") AuthUserDto user,
+            @RequestBody CourtRequest request) {
+        access.requireOwnedCourt(id, user);
+        return data.updateCourt(String.valueOf(id), request)
                 .<ResponseEntity<?>>map(ResponseEntity::ok)
                 .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse("Cancha no encontrada")));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> delete(@PathVariable String id) {
-        if (!data.deleteCourt(id)) {
+    public ResponseEntity<?> delete(@PathVariable int id, @RequestAttribute("auth.user") AuthUserDto user) {
+        access.requireOwnedCourt(id, user);
+        if (!data.deleteCourt(String.valueOf(id))) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse("Cancha no encontrada"));
         }
         return ResponseEntity.noContent().build();
+    }
+
+    private static Integer parseId(String raw) {
+        try {
+            return raw == null ? null : Integer.valueOf(raw.trim());
+        } catch (NumberFormatException ex) {
+            return null; // requireOwnedVenue responde 400 "Selecciona una sede"
+        }
     }
 }

@@ -96,7 +96,7 @@ public class CourtOperationService {
                 where c.id_cancha = ? and s.estado = 'A' for update
                 """, String.class, courtId);
         if (owners.isEmpty()) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Cancha no encontrada");
-        if (!isVenueManagerRole(user.rol()) || !user.id().equals(owners.get(0))) {
+        if (!isVenueManagerRole(user.rol()) || !VenueAccessService.canManage(user, owners.get(0))) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "La cancha no pertenece a tu cuenta");
         }
     }

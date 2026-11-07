@@ -14,13 +14,30 @@ public class VenueAccessService {
     private final JdbcTemplate jdbc;
     public VenueAccessService(JdbcTemplate jdbc) { this.jdbc = jdbc; }
 
+    /** El administrador de la plataforma gestiona cualquier sede; el dueño solo las suyas. */
+    public static boolean canManage(AuthUserDto user, String ownerId) {
+        return isAdmin(user) || (ownerId != null && user.id().equals(ownerId));
+    }
+
+    public static boolean isAdmin(AuthUserDto user) {
+        String rol = user.rol() == null ? "" : user.rol().trim();
+        return "admin".equalsIgnoreCase(rol) || "administrador".equalsIgnoreCase(rol);
+    }
+
     public int requireOwnedVenue(Integer sedeId, AuthUserDto user) {
         if (user == null) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Sesión inválida o expirada");
         if (sedeId == null || sedeId <= 0) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Selecciona una sede");
         var owners = jdbc.queryForList("select id_dueno from sede where id_sede = ? and estado = 'A'", String.class, sedeId);
         if (owners.isEmpty()) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Sede no encontrada");
-        if (!user.id().equals(owners.get(0))) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "La sede no pertenece a tu cuenta");
+        if (!canManage(user, owners.get(0))) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "La sede no pertenece a tu cuenta");
         return sedeId;
+    }
+
+    public void requireOwnedCourt(Integer canchaId, AuthUserDto user) {
+        if (canchaId == null || canchaId <= 0) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cancha inválida");
+        var sedes = jdbc.queryForList("select id_sede from cancha where id_cancha = ?", Integer.class, canchaId);
+        if (sedes.isEmpty()) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Cancha no encontrada");
+        requireOwnedVenue(sedes.get(0), user);
     }
 
     public void requireOpenSession(Integer sessionId, int sedeId) {
@@ -44,7 +61,7 @@ public class VenueAccessService {
                 """, (rs, rowNum) -> new BoxVenueInfo(rs.getInt("id_caja"), rs.getInt("id_sede"), rs.getString("id_dueno")), cajaId);
         if (list.isEmpty()) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Caja no encontrada");
         BoxVenueInfo info = list.get(0);
-        if (!user.id().equals(info.ownerId())) {
+        if (!canManage(user, info.ownerId())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "La caja no pertenece a tu cuenta");
         }
         return info;
@@ -68,7 +85,7 @@ public class VenueAccessService {
                         rs.getBoolean("is_open")), sessionId);
         if (list.isEmpty()) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Turno de caja no encontrado");
         SessionVenueInfo info = list.get(0);
-        if (!user.id().equals(info.ownerId())) {
+        if (!canManage(user, info.ownerId())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "El turno no pertenece a tu cuenta");
         }
         return info;
@@ -99,7 +116,7 @@ public class VenueAccessService {
                 }, reservaId);
         if (list.isEmpty()) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Reserva no encontrada");
         String[] row = list.get(0);
-        boolean isAdmin = "admin".equalsIgnoreCase(user.rol()) || "administrador".equalsIgnoreCase(user.rol());
+        boolean isAdmin = isAdmin(user);
         boolean isOwner = user.id().equals(row[2]);
         boolean isTitular = user.id().equals(row[0]) || user.id().equals(row[1]);
         if (!isAdmin && !isOwner && !isTitular) {
@@ -120,7 +137,7 @@ public class VenueAccessService {
                 """, (rs, rowNum) -> rs.getString("id_dueno"), saleId);
         if (list.isEmpty()) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Venta no encontrada");
         String ownerId = list.get(0);
-        boolean isAdmin = "admin".equalsIgnoreCase(user.rol()) || "administrador".equalsIgnoreCase(user.rol());
+        boolean isAdmin = isAdmin(user);
         if (!isAdmin && (ownerId == null || !user.id().equals(ownerId))) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "La venta no pertenece a tu cuenta");
         }
