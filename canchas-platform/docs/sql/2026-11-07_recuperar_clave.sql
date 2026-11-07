@@ -1,4 +1,4 @@
--- PENDIENTE de aplicar. Aplicar ANTES de desplegar la API que la usa (si no, "Olvidé mi contraseña" falla).
+-- APLICADA el 2026-11-07 en Supabase. No volver a ejecutar alli.
 -- Aditiva: dos columnas opcionales; no modifica datos existentes.
 -- Se guarda solo el hash SHA-256 del enlace (nunca el enlace en claro); vence a los 30 minutos y es de un solo uso.
 -- Al cambiar password_hash, el trigger de 2026-11-07_bloqueo_login.sql desbloquea la cuenta.
