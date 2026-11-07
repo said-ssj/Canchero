@@ -26,7 +26,7 @@ public class AuthService extends JdbcSupport {
     private static final java.security.SecureRandom RANDOM = new java.security.SecureRandom();
     private final AuthTokenService authTokenService;
     static final int INTENTOS_ANTES_DE_ESPERA = 5;
-    static final int INTENTOS_ANTES_DE_BLOQUEO = 10;
+    public static final int INTENTOS_ANTES_DE_BLOQUEO = 10;
 
     public AuthService(JdbcTemplate jdbc, AuthTokenService authTokenService) {
         super(jdbc);
@@ -66,7 +66,16 @@ public class AuthService extends JdbcSupport {
     }
 
     private static final String CUENTA_BLOQUEADA = "Tu cuenta fue bloqueada por demasiados intentos fallidos. "
-            + "Cambia tu contraseña o comunícate con soporte para desbloquearla.";
+            + "Cambia tu contraseña con \"¿Olvidaste tu contraseña?\" o comunícate con soporte para desbloquearla.";
+
+    /** El bloqueo ocurrió en este intento: el controlador avisa al dueño de la cuenta por correo. */
+    public static class CuentaRecienBloqueada extends ResponseStatusException {
+        public final String email;
+        CuentaRecienBloqueada(String email) {
+            super(HttpStatus.LOCKED, CUENTA_BLOQUEADA);
+            this.email = email;
+        }
+    }
 
     /**
      * 5 fallos -> espera de 30 s; 5 fallos más -> bloqueo hasta cambio de contraseña o soporte.
@@ -99,7 +108,7 @@ public class AuthService extends JdbcSupport {
         if (!PasswordUtil.matches(request.password(), cuenta.hash())) {
             Integer fallos = jdbc.queryForObject("select intentos_fallidos from usuario where id_usuario = ?", Integer.class, cuenta.id());
             int n = fallos == null ? 0 : fallos;
-            if (n >= INTENTOS_ANTES_DE_BLOQUEO) throw new ResponseStatusException(HttpStatus.LOCKED, CUENTA_BLOQUEADA);
+            if (n >= INTENTOS_ANTES_DE_BLOQUEO) throw new CuentaRecienBloqueada(cuenta.email());
             if (n == INTENTOS_ANTES_DE_ESPERA) {
                 throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
                         "Fallaste " + n + " intentos. Espera 30 segundos para volver a intentarlo. "

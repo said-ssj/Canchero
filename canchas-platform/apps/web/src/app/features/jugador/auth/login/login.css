@@ -368,6 +368,7 @@
 }
 .auth-error-alert {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   color: var(--login-error);
   margin-bottom: 16px;
@@ -471,4 +472,10 @@
   .login-brand-panel {
     transition: none;
   }
+}
+
+.auth-error-link {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline;
 }

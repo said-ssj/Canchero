@@ -34,7 +34,7 @@ class AuthControllerTest {
     @BeforeEach
     void setup() {
         data = new UnavailableData();
-        mvc = MockMvcBuilders.standaloneSetup(new AuthController(data, new AuthTokenService("unit-test-only-secret"))).build();
+        mvc = MockMvcBuilders.standaloneSetup(new AuthController(data, new AuthTokenService("unit-test-only-secret"), new LoginIpLimiter(), new MailService("", "test@canchero.pe", "http://localhost"))).build();
     }
 
     @Test

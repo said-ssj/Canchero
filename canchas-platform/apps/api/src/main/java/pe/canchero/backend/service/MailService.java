@@ -16,12 +16,25 @@ public class MailService {
 
     private final String apiKey;
     private final String from;
+    private final String appUrl;
     private final RestClient client = RestClient.create("https://api.sendgrid.com");
 
     public MailService(@Value("${SENDGRID_API_KEY:}") String apiKey,
-                       @Value("${SENDGRID_FROM_EMAIL:noreply@canchero.pe}") String from) {
+                       @Value("${SENDGRID_FROM_EMAIL:noreply@canchero.pe}") String from,
+                       @Value("${APP_PUBLIC_URL:http://localhost:4200}") String appUrl) {
         this.apiKey = apiKey;
         this.from = from;
+        this.appUrl = appUrl.replaceAll("/+$", "");
+    }
+
+    /** Correo con enlace de un solo uso a /recuperar; los fallos se registran y no cortan la petición. */
+    public void sendResetLink(String to, String subject, String intro, String token) {
+        try {
+            send(to.trim(), subject, intro + "\n\nAbre este enlace (vence en 30 minutos):\n" + appUrl + "/recuperar?token=" + token
+                    + "\n\nSi no fuiste tú, ignora este correo; tu contraseña no cambia.");
+        } catch (RuntimeException ex) {
+            log.error("No se pudo enviar el correo de recuperación: {}", ex.getMessage());
+        }
     }
 
     public void send(String to, String subject, String text) {

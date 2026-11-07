@@ -72,6 +72,9 @@
             <span>{{
               errorMessage() || 'Correo o contraseña incorrectos. Verifica tus credenciales.'
             }}</span>
+            @if (errorMessage()?.includes('Olvidaste tu contraseña')) {
+              <a routerLink="/recuperar" class="auth-error-link">Cambiar mi contraseña</a>
+            }
           </div>
         }
 

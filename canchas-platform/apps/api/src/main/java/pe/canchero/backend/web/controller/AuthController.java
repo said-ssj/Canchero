@@ -12,11 +12,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import pe.canchero.backend.service.AuthTokenService;
 import pe.canchero.backend.service.AuthService;
+import pe.canchero.backend.service.LoginIpLimiter;
+import pe.canchero.backend.service.MailService;
 import pe.canchero.backend.web.dto.ErrorResponse;
 import pe.canchero.backend.web.dto.AuthResponse;
 import pe.canchero.backend.web.dto.LoginRequest;
 import pe.canchero.backend.web.dto.RegisterRequest;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.UUID;
 
 @RestController
@@ -25,21 +28,40 @@ public class AuthController {
 
     private final AuthService data;
     private final AuthTokenService authTokenService;
+    private final LoginIpLimiter ipLimiter;
+    private final MailService mail;
 
-    public AuthController(AuthService data, AuthTokenService authTokenService) {
+    public AuthController(AuthService data, AuthTokenService authTokenService, LoginIpLimiter ipLimiter, MailService mail) {
         this.data = data;
         this.authTokenService = authTokenService;
+        this.ipLimiter = ipLimiter;
+        this.mail = mail;
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<?> login(@RequestBody LoginRequest request, HttpServletRequest http) {
+        String ip = LoginIpLimiter.clientIp(http);
+        if (ipLimiter.bloqueada(ip)) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(new ErrorResponse(
+                    "Demasiados intentos fallidos desde tu conexión. Espera 15 minutos o usa \"¿Olvidaste tu contraseña?\"."));
+        }
         try {
-            return data.login(request)
-                    .<ResponseEntity<?>>map(ResponseEntity::ok)
-                    .orElse(ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ErrorResponse("Credenciales inválidas")));
+            var result = data.login(request);
+            if (result.isPresent()) return ResponseEntity.ok(result.get());
+            ipLimiter.registrarFallo(ip);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ErrorResponse("Credenciales inválidas"));
         } catch (org.springframework.web.server.ResponseStatusException ex) {
+            ipLimiter.registrarFallo(ip);
+            if (ex instanceof AuthService.CuentaRecienBloqueada bloqueo) avisarBloqueo(bloqueo.email);
             return ResponseEntity.status(ex.getStatusCode()).body(new ErrorResponse(ex.getReason()));
         }
+    }
+
+    /** El dueño real se entera del bloqueo y puede desbloquear la cuenta con un solo clic. */
+    private void avisarBloqueo(String email) {
+        data.requestPasswordReset(email).ifPresent(token -> mail.sendResetLink(email, "Tu cuenta de Canchero fue bloqueada",
+                "Tu cuenta se bloqueó tras " + AuthService.INTENTOS_ANTES_DE_BLOQUEO + " intentos fallidos de inicio de sesión. "
+                        + "Si no fuiste tú, alguien intentó entrar con tu correo. Para desbloquearla, cambia tu contraseña.", token));
     }
 
     @PostMapping("/register")

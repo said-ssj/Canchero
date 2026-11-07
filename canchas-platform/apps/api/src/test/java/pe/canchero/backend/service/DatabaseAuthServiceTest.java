@@ -112,7 +112,7 @@ class DatabaseAuthServiceTest {
     }
 
     private MockMvc refreshMvc(AuthTokenService tokens) {
-        return MockMvcBuilders.standaloneSetup(new AuthController(service, tokens))
+        return MockMvcBuilders.standaloneSetup(new AuthController(service, tokens, new LoginIpLimiter(), new MailService("", "test@canchero.pe", "http://localhost")))
                 .addInterceptors(new ApiAuthorizationInterceptor(tokens, service)).build();
     }
 
