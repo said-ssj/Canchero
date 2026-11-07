@@ -84,6 +84,9 @@ export class AdminSedes implements OnInit, OnDestroy {
   protected readonly liveVenueAddress = signal('');
   protected readonly liveVenueCiudad = signal('');
   protected readonly liveVenueTelefono = signal('');
+  protected readonly esAdmin = computed(() => this.auth.currentUser()?.rol === 'admin');
+  protected readonly correoNuevoDueno = signal('');
+  protected readonly transfiriendo = signal(false);
   protected readonly liveVenueStory = signal('');
   protected readonly liveVenueLogo = signal('');
   protected readonly liveVenueLat = signal(-12.1192);
@@ -277,6 +280,28 @@ export class AdminSedes implements OnInit, OnDestroy {
     this.destruirMapa();
     this.formularioSedeAbierto.set(false);
     this.sedeEnEdicion.set(null);
+  }
+
+  async transferirSede(): Promise<void> {
+    const sede = this.sedeEnEdicion();
+    const correo = this.correoNuevoDueno().trim();
+    if (!sede || !correo || this.transfiriendo()) return;
+    if (
+      !confirm(
+        `¿Transferir "${sede.nombre}" a ${correo}? Dejará de aparecer en el panel del dueño actual.`,
+      )
+    )
+      return;
+    this.transfiriendo.set(true);
+    try {
+      await this.db.asignarDuenoSede(Number(sede.id_sede ?? sede.id), correo);
+      this.mostrarToast(`Sede transferida a ${correo}.`);
+      this.correoNuevoDueno.set('');
+    } catch (error) {
+      this.mostrarToast((error as any)?.error?.message || 'No se pudo transferir la sede.');
+    } finally {
+      this.transfiriendo.set(false);
+    }
   }
 
   async guardarCambiosSede(): Promise<void> {

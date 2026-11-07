@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import pe.canchero.backend.service.VenueService;
+import pe.canchero.backend.service.Roles;
 import pe.canchero.backend.service.VenueAccessService;
 import pe.canchero.backend.web.dto.AuthUserDto;
 import pe.canchero.backend.web.dto.ErrorResponse;
@@ -60,6 +61,19 @@ public class VenueController {
             @RequestBody VenueRequest request) {
         access.requireOwnedVenue(id, user);
         return data.updateVenue(String.valueOf(id), request)
+                .<ResponseEntity<?>>map(ResponseEntity::ok)
+                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse("Sede no encontrada")));
+    }
+
+    public record OwnerRequest(String email) {}
+
+    @PutMapping("/{id}/owner")
+    public ResponseEntity<?> assignOwner(@PathVariable int id, @RequestAttribute("auth.user") AuthUserDto user,
+            @RequestBody OwnerRequest request) {
+        if (!Roles.isAdmin(user.rol())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ErrorResponse("Solo el administrador puede cambiar el dueño de una sede"));
+        }
+        return data.assignOwner(id, request == null ? null : request.email())
                 .<ResponseEntity<?>>map(ResponseEntity::ok)
                 .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse("Sede no encontrada")));
     }

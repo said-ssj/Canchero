@@ -179,6 +179,25 @@ public class VenueService extends JdbcSupport {
         return updated == 0 ? Optional.empty() : getVenue(id);
     }
 
+    /** Solo para el admin: pasa la sede a la cuenta de dueño con ese correo. */
+    public Optional<VenueResponse> assignOwner(int venueId, String email) {
+        String correo = email == null ? "" : email.trim().toLowerCase(Locale.ROOT);
+        if (correo.isEmpty()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Indica el correo del nuevo dueño");
+        var cuentas = jdbc.query("""
+                select u.id_usuario, r.nombre as rol from usuario u join rol r on r.id_rol = u.id_rol
+                where lower(u.correo) = ? and u.estado = 'A' and r.estado = 'A'
+                """, (rs, rowNum) -> Map.entry(rs.getObject("id_usuario", UUID.class), rs.getString("rol")), correo);
+        if (cuentas.isEmpty()) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No hay una cuenta activa con ese correo");
+        if (!Roles.isOwner(cuentas.get(0).getValue())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Esa cuenta no tiene rol de dueño");
+        }
+        int updated = jdbc.update("""
+                update sede set id_dueno = ?, fecmod = now(), usmod = 'API', pcmod = 'SPRING'
+                where id_sede = ? and estado = 'A'
+                """, cuentas.get(0).getKey(), venueId);
+        return updated == 0 ? Optional.empty() : getVenue(String.valueOf(venueId));
+    }
+
     public boolean deleteVenue(String id) {
         return jdbc.update("""
                 update sede set estado = 'I', fecmod = now(), usmod = 'API', pcmod = 'SPRING'

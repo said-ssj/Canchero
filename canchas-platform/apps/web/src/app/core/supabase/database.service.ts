@@ -502,6 +502,17 @@ export class DatabaseService {
     };
   }
 
+  /** Solo admin: la API valida el rol y que el correo sea de una cuenta de dueño. */
+  async asignarDuenoSede(sedeId: number, email: string): Promise<void> {
+    const saved = await firstValueFrom(
+      this.http.put<any>(`${this.apiUrl}/venues/${sedeId}/owner`, { email }),
+    );
+    const synced = this.mapBackendVenueToSede(saved);
+    this.sedes.update((list) =>
+      list.map((s) => (Number(s.id_sede ?? s.id) === sedeId ? { ...s, ...synced } : s)),
+    );
+  }
+
   async cargarHorariosSede(sedeId: number): Promise<VenueDayHours[]> {
     return firstValueFrom(this.http.get<VenueDayHours[]>(`${this.apiUrl}/venues/${sedeId}/hours`));
   }

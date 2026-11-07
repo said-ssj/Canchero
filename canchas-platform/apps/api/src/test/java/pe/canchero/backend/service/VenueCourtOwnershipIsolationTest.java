@@ -16,6 +16,7 @@ import pe.canchero.backend.web.controller.VenueController;
 import pe.canchero.backend.web.dto.AuthUserDto;
 import pe.canchero.backend.web.dto.VenueRequest;
 
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -97,6 +98,33 @@ class VenueCourtOwnershipIsolationTest {
         mvc.perform(delete("/api/courts/10").header("Authorization", adm)).andExpect(status().isNoContent());
         mvc.perform(post("/api/courts").header("Authorization", adm).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"venueId\":\"1\",\"nombre\":\"Nueva\"}")).andExpect(status().isCreated());
+    }
+
+    @Test
+    void soloElAdminReasignaElDueñoDeUnaSede() throws Exception {
+        String body = "{\"email\":\"nuevo@test\"}";
+        mvc.perform(put("/api/venues/1/owner").header("Authorization", bearer(ownerA))
+                .contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isForbidden());
+        verify(data, never()).assignOwner(anyInt(), any());
+        when(data.assignOwner(1, "nuevo@test")).thenReturn(Optional.empty());
+        mvc.perform(put("/api/venues/1/owner").header("Authorization", bearer(admin))
+                .contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isNotFound());
+        verify(data).assignOwner(1, "nuevo@test");
+    }
+
+    @Test
+    void reasignarRechazaCorreosSinCuentaODeJugador() {
+        var jdbc = new JdbcTemplate(new SingleConnectionDataSource(
+                "jdbc:h2:mem:" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL", "sa", "", true));
+        jdbc.execute("create table rol (id_rol int primary key, nombre varchar(40), estado char(1))");
+        jdbc.execute("create table usuario (id_usuario uuid primary key, id_rol int, correo varchar(120), estado char(1))");
+        jdbc.update("insert into rol values (1, 'cliente', 'A')");
+        jdbc.update("insert into usuario values (?, 1, 'jugador@test', 'A')", UUID.randomUUID());
+        var venues = new VenueService(jdbc);
+        assertEquals(404, assertThrows(org.springframework.web.server.ResponseStatusException.class,
+                () -> venues.assignOwner(1, "nadie@test")).getStatusCode().value());
+        assertEquals(400, assertThrows(org.springframework.web.server.ResponseStatusException.class,
+                () -> venues.assignOwner(1, " Jugador@Test ")).getStatusCode().value());
     }
 
     @Test
