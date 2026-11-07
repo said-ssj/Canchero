@@ -76,6 +76,7 @@ describe('Itinerario Component - Fase 6: Mi Itinerario Privado', () => {
   const mockAuthService = {
     isLoggedIn: isLoggedInSignal,
     currentUser: currentUserSignal,
+    playerProfile: signal(null),
   };
 
   beforeEach(async () => {
@@ -158,7 +159,10 @@ describe('Itinerario Component - Fase 6: Mi Itinerario Privado', () => {
   it('Caso 3: Cambio de usuario o logout limpia inmediatamente las reservas e ignora respuestas desfasadas', async () => {
     let slowResolve!: (value: any) => void;
     mockDatabaseService.fetchMyBookings.mockImplementationOnce(
-      () => new Promise((resolve) => { slowResolve = resolve; }),
+      () =>
+        new Promise((resolve) => {
+          slowResolve = resolve;
+        }),
     );
 
     isLoggedInSignal.set(true);
@@ -268,7 +272,11 @@ describe('Itinerario Component - Fase 6: Mi Itinerario Privado', () => {
     createComponent();
     await fixture.whenStable();
     let resolve!: (value: boolean) => void;
-    confirm.mockReturnValue(new Promise<boolean>(done => { resolve = done; }));
+    confirm.mockReturnValue(
+      new Promise<boolean>((done) => {
+        resolve = done;
+      }),
+    );
     const pending = component['cancelarReserva'](component['serverBookings']()[0]);
     currentUserSignal.set({ id: 'usr-2', nombre: 'Jugador 2' } as User);
     resolve(true);
@@ -313,15 +321,21 @@ describe('Itinerario Component - Fase 6: Mi Itinerario Privado', () => {
     await component['cancelarReserva'](booking);
     fixture.detectChanges();
 
-    expect(component['cancelError']()).toBe('No puedes cancelar con menos de 2 horas de anticipación');
+    expect(component['cancelError']()).toBe(
+      'No puedes cancelar con menos de 2 horas de anticipación',
+    );
     expect(component['serverBookings']()[0].status).toBe('CONFIRMADO');
-    expect(fixture.nativeElement.textContent).toContain('No puedes cancelar con menos de 2 horas de anticipación');
+    expect(fixture.nativeElement.textContent).toContain(
+      'No puedes cancelar con menos de 2 horas de anticipación',
+    );
   });
 
   it('Caso 7: Error de carga de reservas permite reintentar con botón retry', async () => {
     isLoggedInSignal.set(true);
     currentUserSignal.set({ id: 'usr-1', nombre: 'Jugador 1' } as User);
-    mockDatabaseService.fetchMyBookings.mockRejectedValueOnce(new Error('Fallo de conexión al servidor'));
+    mockDatabaseService.fetchMyBookings.mockRejectedValueOnce(
+      new Error('Fallo de conexión al servidor'),
+    );
 
     createComponent();
     await fixture.whenStable();
@@ -369,9 +383,6 @@ describe('Itinerario Component - Fase 6: Mi Itinerario Privado', () => {
     // Compartir en WhatsApp abre ventana con datos reales
     const windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
     component['compartirWhatsApp'](testBooking);
-    expect(windowOpenSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Arena%20Gol'),
-      '_blank',
-    );
+    expect(windowOpenSpy).toHaveBeenCalledWith(expect.stringContaining('Arena%20Gol'), '_blank');
   });
 });
