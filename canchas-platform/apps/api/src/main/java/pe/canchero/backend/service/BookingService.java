@@ -265,8 +265,8 @@ public class BookingService extends JdbcSupport {
         }
 
         String rol = authUser.rol() == null ? "" : authUser.rol().trim().toLowerCase(Locale.ROOT);
-        boolean isAdmin = "admin".equals(rol) || "administrador".equals(rol);
-        boolean isOwner = "dueno".equals(rol) || "dueño".equals(rol) || "owner".equals(rol) || "propietario".equals(rol);
+        boolean isAdmin = Roles.isAdmin(rol);
+        boolean isOwner = Roles.isOwner(rol);
 
         if (!isAdmin && !isOwner) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tienes permisos para realizar esta operación");
@@ -309,8 +309,8 @@ public class BookingService extends JdbcSupport {
         UUID duenoId = (UUID) row.get("id_dueno");
 
         String rol = authUser.rol() == null ? "" : authUser.rol().trim().toLowerCase(Locale.ROOT);
-        boolean isAdmin = "admin".equals(rol) || "administrador".equals(rol);
-        boolean isVenueOwner = ("dueno".equals(rol) || "dueño".equals(rol) || "owner".equals(rol) || "propietario".equals(rol))
+        boolean isAdmin = Roles.isAdmin(rol);
+        boolean isVenueOwner = Roles.isOwner(rol)
                 && authUuid.equals(duenoId);
         boolean isOwnerPlayer = authUuid.equals(reservaUsuarioId)
                 || authUuid.equals(reservaClienteId)
@@ -373,8 +373,8 @@ public class BookingService extends JdbcSupport {
         }
 
         String rol = authUser.rol() == null ? "" : authUser.rol().trim().toLowerCase(Locale.ROOT);
-        boolean isAdmin = "admin".equals(rol) || "administrador".equals(rol);
-        boolean isOwner = "dueno".equals(rol) || "dueño".equals(rol) || "owner".equals(rol) || "propietario".equals(rol);
+        boolean isAdmin = Roles.isAdmin(rol);
+        boolean isOwner = Roles.isOwner(rol);
 
         if (!isAdmin && !isOwner) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tienes permisos para realizar esta operación");
@@ -404,8 +404,8 @@ public class BookingService extends JdbcSupport {
             return Optional.empty();
         }
         String rol = authUser.rol() == null ? "" : authUser.rol().trim().toLowerCase(Locale.ROOT);
-        boolean isAdmin = "admin".equals(rol) || "administrador".equals(rol);
-        boolean isOwner = "dueno".equals(rol) || "dueño".equals(rol) || "owner".equals(rol) || "propietario".equals(rol);
+        boolean isAdmin = Roles.isAdmin(rol);
+        boolean isOwner = Roles.isOwner(rol);
         Object duenoId = rows.get(0).get("id_dueno");
         if (!isAdmin && (!isOwner || duenoId == null || !authUser.id().trim().equals(duenoId.toString()))) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tienes permiso para modificar reservas de otra sede.");
@@ -473,8 +473,8 @@ public class BookingService extends JdbcSupport {
         }
 
         String rol = authUser.rol() == null ? "" : authUser.rol().trim().toLowerCase(Locale.ROOT);
-        boolean isAdmin = "admin".equals(rol) || "administrador".equals(rol);
-        boolean isOwner = "dueno".equals(rol) || "dueño".equals(rol) || "owner".equals(rol) || "propietario".equals(rol);
+        boolean isAdmin = Roles.isAdmin(rol);
+        boolean isOwner = Roles.isOwner(rol);
 
         if (!isAdmin && !isOwner) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tienes permiso para consultar el listado operativo de reservas.");
@@ -527,7 +527,7 @@ public class BookingService extends JdbcSupport {
         }
 
         String rol = authUser.rol() == null ? "" : authUser.rol().trim().toLowerCase(Locale.ROOT);
-        boolean isAdmin = "admin".equals(rol) || "administrador".equals(rol);
+        boolean isAdmin = Roles.isAdmin(rol);
         boolean isSelf = authUuid.equals(targetPlayerUuid);
 
         if (!isSelf && !isAdmin) {

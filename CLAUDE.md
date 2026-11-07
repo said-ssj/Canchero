@@ -39,10 +39,10 @@ Secrets go in `canchas-platform/.env.local` (gitignored; template `.env.example`
 ## Architecture
 
 **Backend** (`apps/api/src/main/java/pe/canchero/backend`):
-- `web/controller` → `service` → plain JDBC. Data access is mostly `JdbcTemplate` in `SupabaseDataService`; JPA is on the classpath but there are no JPA repositories — don't introduce them as if they existed.
+- `web/controller` → `service` → plain JDBC. Data access is `JdbcTemplate` in per-area services (`AuthService`, `VenueService`, `BookingService`, `PosService`, `CashService`) that extend `JdbcSupport` (shared jdbc + date/format/catalog helpers); role checks live in `Roles`; JPA is on the classpath but there are no JPA repositories — don't introduce them as if they existed.
 - `ddl-auto: none`: the schema is owned by Supabase/Postgres and is not created by the app. Incremental migrations are documented in `docs/` and must not be re-run against the dev DB they were already applied to.
 - Auth is custom, not Spring Security: `ApiAuthorizationInterceptor` (registered in `WebConfig` on `/api/**`) validates the bearer token via `AuthTokenService`, sets request attribute `auth.user`, whitelists public endpoints (`/api/auth/login|register`, `/api/catalog`, GET on venues/courts/reviews/`bookings/pase/`), and enforces owner/admin roles. Passwords: `PasswordUtil` (bcrypt cost 12; legacy prefixed SHA-256 verify-only).
-- Multi-tenant rule: every mutation on venues/courts/bookings/cash must check the venue owner (`s.id_dueno = authUser.id`) → 403 otherwise (`VenueAccessService`). Operator identity comes from the verified session, never from the request body. Cash expected balances are computed server-side, never accepted from the client.
+- Multi-tenant rule: every mutation on venues/courts/bookings/cash must check the venue owner (`s.id_dueno = authUser.id`) or a platform admin (`VenueAccessService.canManage`) → 403 otherwise. Operator identity comes from the verified session, never from the request body. Cash expected balances are computed server-side, never accepted from the client.
 - Tests: `src/test/resources` uses H2 in PostgreSQL mode. Tests under `it/` (`Postgres*Test`) spin up a real local Postgres via `PostgresTestServer` (binary from `TEST_POSTGRES_BIN` or PATH) and are skipped via JUnit assumptions when it's unavailable.
 
 **Frontend** (`apps/web/src/app`):

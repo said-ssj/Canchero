@@ -32,9 +32,9 @@ public class CourtRecoveryService {
         // Serializes recovery across tabs and retries without a new schema or client-controlled owner.
         var owners = jdbc.queryForList("select id_dueno from sede where id_sede = ? and estado = 'A' for update", String.class, venueId);
         if (owners.isEmpty()) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Sede no encontrada");
-        if (!CourtOperationService.isVenueManagerRole(user.rol()) || !VenueAccessService.canManage(user, owners.get(0))) {
+        if (!Roles.isOwnerOrAdmin(user.rol()) || !VenueAccessService.canManage(user, owners.get(0))) {
             log.warn("Court recovery rejected: ownerRole={}, venueOwnership={}",
-                    CourtOperationService.isVenueManagerRole(user.rol()), user.id().equals(owners.get(0)));
+                    Roles.isOwnerOrAdmin(user.rol()), user.id().equals(owners.get(0)));
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "La sede no pertenece a tu cuenta");
         }
         var existing = jdbc.queryForList("""

@@ -27,13 +27,6 @@ public class CourtOperationService {
 
     public CourtOperationService(JdbcTemplate jdbc) { this.jdbc = jdbc; }
 
-    static boolean isVenueManagerRole(String role) {
-        String normalized = Normalizer.normalize(role == null ? "" : role, Normalizer.Form.NFD)
-                .replaceAll("\\p{M}", "").toLowerCase(Locale.ROOT).trim();
-        return normalized.contains("dueno") || normalized.equals("owner")
-                || normalized.contains("propietario") || normalized.contains("admin");
-    }
-
     @Transactional
     public SavedOperation save(int id, AuthUserDto user, Operation request) {
         if (user == null) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
@@ -96,7 +89,7 @@ public class CourtOperationService {
                 where c.id_cancha = ? and s.estado = 'A' for update
                 """, String.class, courtId);
         if (owners.isEmpty()) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Cancha no encontrada");
-        if (!isVenueManagerRole(user.rol()) || !VenueAccessService.canManage(user, owners.get(0))) {
+        if (!Roles.isOwnerOrAdmin(user.rol()) || !VenueAccessService.canManage(user, owners.get(0))) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "La cancha no pertenece a tu cuenta");
         }
     }

@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 import pe.canchero.backend.service.AuthTokenService;
+import pe.canchero.backend.service.Roles;
 import pe.canchero.backend.service.AuthService;
 import pe.canchero.backend.web.dto.AuthUserDto;
 
@@ -37,7 +38,7 @@ public class ApiAuthorizationInterceptor implements HandlerInterceptor {
         }
 
         AuthUserDto user = currentUser(request);
-        if (requiresOwnerOrAdmin(path, method) && !isOwnerOrAdmin(user.rol())) {
+        if (requiresOwnerOrAdmin(path, method) && !Roles.isOwnerOrAdmin(user.rol())) {
             writeError(response, HttpStatus.FORBIDDEN, "No tienes permisos para realizar esta operación");
             return false;
         }
@@ -55,11 +56,6 @@ public class ApiAuthorizationInterceptor implements HandlerInterceptor {
         if ("GET".equalsIgnoreCase(method) && path.startsWith("/api/reviews")) return true;
         return false;
     }
-
-    private static final java.util.Set<String> OWNER_OR_ADMIN_ROLES = java.util.Set.of(
-            "admin", "administrador",
-            "dueno", "dueño", "owner", "propietario"
-    );
 
     private boolean requiresOwnerOrAdmin(String path, String method) {
         if (path.startsWith("/api/cash")) return true;
@@ -89,11 +85,6 @@ public class ApiAuthorizationInterceptor implements HandlerInterceptor {
 
         UUID userId = authTokenService.verify(authorization.substring("Bearer ".length()).trim());
         return data.currentUser(userId).orElseThrow(() -> unauthorizedException());
-    }
-
-    private boolean isOwnerOrAdmin(String role) {
-        String normalized = role == null ? "" : role.trim().toLowerCase(Locale.ROOT);
-        return OWNER_OR_ADMIN_ROLES.contains(normalized);
     }
 
     private void throwUnauthorized() {

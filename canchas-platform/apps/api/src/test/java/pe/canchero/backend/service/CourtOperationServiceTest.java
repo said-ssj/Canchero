@@ -31,11 +31,12 @@ class CourtOperationServiceTest {
 
     @Test
     void acceptsDatabaseManagementRolesWithoutAllowingPlayers() {
-        assertTrue(CourtOperationService.isVenueManagerRole("Due\u00f1o"));
-        assertTrue(CourtOperationService.isVenueManagerRole("DUENO SEDE"));
-        assertTrue(CourtOperationService.isVenueManagerRole("Administrador"));
-        assertFalse(CourtOperationService.isVenueManagerRole("jugador"));
-        assertFalse(CourtOperationService.isVenueManagerRole(null));
+        assertTrue(Roles.isOwnerOrAdmin("Due\u00f1o"));
+        assertTrue(Roles.isOwnerOrAdmin(" OWNER "));
+        assertTrue(Roles.isOwnerOrAdmin("Administrador"));
+        assertFalse(Roles.isOwnerOrAdmin("jugador"));
+        assertFalse(Roles.isOwnerOrAdmin("superadmin"));
+        assertFalse(Roles.isOwnerOrAdmin(null));
     }
 
     @Test

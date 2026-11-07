@@ -20,8 +20,7 @@ public class VenueAccessService {
     }
 
     public static boolean isAdmin(AuthUserDto user) {
-        String rol = user.rol() == null ? "" : user.rol().trim();
-        return "admin".equalsIgnoreCase(rol) || "administrador".equalsIgnoreCase(rol);
+        return Roles.isAdmin(user.rol());
     }
 
     public int requireOwnedVenue(Integer sedeId, AuthUserDto user) {

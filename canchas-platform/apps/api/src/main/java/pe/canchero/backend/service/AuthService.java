@@ -22,7 +22,6 @@ import java.util.regex.Pattern;
 @Service
 public class AuthService extends JdbcSupport {
     private static final Set<String> PUBLIC_PLAYER_ROLES = Set.of("cliente", "jugador", "player");
-    private static final Set<String> PUBLIC_OWNER_ROLES = Set.of("dueno", "dueño", "owner", "propietario");
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
     private final AuthTokenService authTokenService;
     static final int INTENTOS_ANTES_DE_ESPERA = 5;
@@ -42,7 +41,7 @@ public class AuthService extends JdbcSupport {
         List<String> candidates;
         if (PUBLIC_PLAYER_ROLES.contains(normalized)) {
             candidates = List.of("cliente", "jugador", "player");
-        } else if (PUBLIC_OWNER_ROLES.contains(normalized)) {
+        } else if (Roles.isOwner(normalized)) {
             candidates = List.of("dueño", "dueno", "owner", "propietario");
         } else {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Rol de registro no permitido");
