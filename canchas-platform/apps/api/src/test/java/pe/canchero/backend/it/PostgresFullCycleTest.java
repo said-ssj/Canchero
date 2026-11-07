@@ -82,7 +82,7 @@ class PostgresFullCycleTest {
                       and estado = 'A' and id_estado_reserva in (1,2)
                     """, Integer.class, PostgresTestSupport.COURT_A, PostgresTestSupport.BOOKING_DATE));
 
-            SaleDto sale = app.data().processSale(PostgresTestSupport.sale(
+            SaleDto sale = app.pos().processSale(PostgresTestSupport.sale(
                     PostgresTestSupport.VENUE_A, sessionId, PostgresTestSupport.OWNER_A,
                     "full-cycle-sale-1", PostgresTestSupport.PRODUCT_A, 4, "efectivo", 20.0, null));
 
@@ -93,7 +93,7 @@ class PostgresFullCycleTest {
             assertEquals(1, sale.items().size());
             assertEquals(4, sale.items().get(0).cantidad());
 
-            int stock = app.data().listProducts(PostgresTestSupport.VENUE_A).stream()
+            int stock = app.pos().listProducts(PostgresTestSupport.VENUE_A).stream()
                     .filter(p -> p.id() == PostgresTestSupport.PRODUCT_A)
                     .findFirst().orElseThrow().stock();
             assertEquals(36, stock);
@@ -130,9 +130,9 @@ class PostgresFullCycleTest {
             assertEquals(1, audits.size());
             assertEquals(audit.id(), audits.get(0).id());
 
-            assertEquals(1, app.data().listVentasBySession(sessionId).size());
-            assertTrue(app.data().getVenta(Integer.parseInt(sale.id().replace("VNT-", ""))).isPresent());
-            assertFalse(app.data().getVenta(999999).isPresent());
+            assertEquals(1, app.pos().listVentasBySession(sessionId).size());
+            assertTrue(app.pos().getVenta(Integer.parseInt(sale.id().replace("VNT-", ""))).isPresent());
+            assertFalse(app.pos().getVenta(999999).isPresent());
         }
     }
 }

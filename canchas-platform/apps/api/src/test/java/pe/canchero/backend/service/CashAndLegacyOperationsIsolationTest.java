@@ -27,6 +27,7 @@ class CashAndLegacyOperationsIsolationTest {
     private JdbcTemplate jdbc;
     private SupabaseDataService dataService;
     private CashService cashService;
+    private PosService posService;
     private CashVenueStateService venueStateService;
     private VenueAccessService accessService;
     private AuthTokenService tokenService;
@@ -313,6 +314,7 @@ class CashAndLegacyOperationsIsolationTest {
         tokenService = new AuthTokenService("test-phase3-secret-key-canchero-token-xyz");
         dataService = new SupabaseDataService(jdbc);
         cashService = new CashService(jdbc);
+        posService = new PosService(jdbc);
         accessService = new VenueAccessService(jdbc);
         venueStateService = new CashVenueStateService(jdbc, cashService);
 
@@ -328,8 +330,8 @@ class CashAndLegacyOperationsIsolationTest {
                         new SesionCajaController(cashService, accessService),
                         new MovimientoCajaController(cashService, accessService),
                         new PagoReservaController(dataService, accessService),
-                        new VentaController(dataService, accessService),
-                        new pe.canchero.backend.web.controller.PosController(dataService, accessService))
+                        new VentaController(posService, accessService),
+                        new pe.canchero.backend.web.controller.PosController(posService, accessService))
                 .addInterceptors(new ApiAuthorizationInterceptor(tokenService, new AuthService(jdbc, tokenService)))
                 .build();
     }
@@ -364,7 +366,7 @@ class CashAndLegacyOperationsIsolationTest {
         String url = jdbc.getDataSource().getConnection().getMetaData().getURL();
         var datasource = new org.springframework.jdbc.datasource.DriverManagerDataSource(url, "sa", "");
         var concurrentJdbc = new JdbcTemplate(datasource);
-        var service = new SupabaseDataService(concurrentJdbc);
+        var service = new PosService(concurrentJdbc);
         var transaction = new org.springframework.transaction.support.TransactionTemplate(
                 new org.springframework.jdbc.datasource.DataSourceTransactionManager(datasource));
         var request = paymentRequest("concurrent-sale-key", java.util.List.of(
@@ -398,11 +400,11 @@ class CashAndLegacyOperationsIsolationTest {
         for (String method : java.util.List.of("efectivo", "tarjeta", "yape", "plin")) {
             setup();
             var part = new pe.canchero.backend.web.dto.SalePaymentDto(method, new BigDecimal("10.00"), new BigDecimal(method.equals("efectivo") ? "20.00" : "10.00"));
-            var sale = dataService.processSale(paymentRequest("method-test-key", java.util.List.of(part)));
+            var sale = posService.processSale(paymentRequest("method-test-key", java.util.List.of(part)));
             assertEquals(10, sale.total());
             assertEquals(method, sale.metodoPago());
             assertEquals(method.equals("efectivo") ? 10 : 0, sale.vuelto());
-            assertEquals(new BigDecimal("10.00"), dataService.listSales(10).get(0).pagos().get(0).monto());
+            assertEquals(new BigDecimal("10.00"), posService.listSales(10).get(0).pagos().get(0).monto());
             var audit = cashService.closeCashSession(10, new pe.canchero.backend.web.dto.CloseCashSessionRequest(method.equals("efectivo") ? 110 : 100,999,999,999,"Test",null),
                     new pe.canchero.backend.web.dto.AuthUserDto(ownerAId.toString(),"Owner","","","dueno"));
             assertEquals(0, audit.diferencia());
@@ -413,7 +415,7 @@ class CashAndLegacyOperationsIsolationTest {
 
     @Test
     void combinesSaleAndReservationPaymentsBySessionWithoutMixingDigitalCash() {
-        var sale = dataService.processSale(paymentRequest("mixed-test-key", java.util.List.of(
+        var sale = posService.processSale(paymentRequest("mixed-test-key", java.util.List.of(
                 new pe.canchero.backend.web.dto.SalePaymentDto("efectivo",new BigDecimal("4.00"),new BigDecimal("10.00")),
                 new pe.canchero.backend.web.dto.SalePaymentDto("tarjeta",new BigDecimal("6.00"),null))));
         assertEquals("mixto", sale.metodoPago());
@@ -432,19 +434,19 @@ class CashAndLegacyOperationsIsolationTest {
     @Test
     void idempotentRetryDoesNotDuplicateSalePaymentOrStockAndRejectsChangedRequest() {
         var request = paymentRequest("retry-sale-key",java.util.List.of(new pe.canchero.backend.web.dto.SalePaymentDto("tarjeta",new BigDecimal("10.00"),null)));
-        var sale = dataService.processSale(request);
-        assertEquals(sale.id(), dataService.processSale(request).id());
+        var sale = posService.processSale(request);
+        assertEquals(sale.id(), posService.processSale(request).id());
         assertEquals(1,jdbc.queryForObject("select count(*) from venta",Integer.class));
         assertEquals(1,jdbc.queryForObject("select count(*) from venta_pago",Integer.class));
         assertEquals(16,jdbc.queryForObject("select saldo_stock from kardex order by id_kardex desc limit 1",Integer.class));
         var changed = paymentRequest("retry-sale-key",java.util.List.of(new pe.canchero.backend.web.dto.SalePaymentDto("efectivo",new BigDecimal("10.00"),null)));
-        assertEquals(409,assertThrows(org.springframework.web.server.ResponseStatusException.class,()->dataService.processSale(changed)).getStatusCode().value());
+        assertEquals(409,assertThrows(org.springframework.web.server.ResponseStatusException.class,()->posService.processSale(changed)).getStatusCode().value());
     }
 
     @Test
     void invalidSplitIsRejectedBeforeAnySaleOrStockWrite() {
         var request = paymentRequest("invalid-sale-key",java.util.List.of(new pe.canchero.backend.web.dto.SalePaymentDto("yape",new BigDecimal("9.00"),null)));
-        assertEquals(400,assertThrows(org.springframework.web.server.ResponseStatusException.class,()->dataService.processSale(request)).getStatusCode().value());
+        assertEquals(400,assertThrows(org.springframework.web.server.ResponseStatusException.class,()->posService.processSale(request)).getStatusCode().value());
         assertEquals(0,jdbc.queryForObject("select count(*) from venta",Integer.class));
         assertEquals(1,jdbc.queryForObject("select count(*) from kardex",Integer.class));
     }
@@ -453,7 +455,7 @@ class CashAndLegacyOperationsIsolationTest {
     void historicalSaleWithoutPaymentNeverBecomesCashOrAnAutomaticallyRepairedSale() {
         jdbc.update("insert into venta (id_usuario,id_sesion_caja,total,estado) values (?,10,10,'A')",ownerAId);
         assertEquals(409,assertThrows(org.springframework.web.server.ResponseStatusException.class,()->cashService.cashBalance(10)).getStatusCode().value());
-        assertEquals("sin_desglose",dataService.listSales(10).get(0).metodoPago());
+        assertEquals("sin_desglose",posService.listSales(10).get(0).metodoPago());
         assertEquals(0,jdbc.queryForObject("select count(*) from venta_pago",Integer.class));
     }
 
@@ -461,7 +463,7 @@ class CashAndLegacyOperationsIsolationTest {
     void missingMigrationReturns503WithoutCreatingAnUnpaidSale() {
         jdbc.execute("drop table venta_operacion");
         var request = paymentRequest("schema-sale-key",java.util.List.of(new pe.canchero.backend.web.dto.SalePaymentDto("tarjeta",new BigDecimal("10.00"),null)));
-        assertEquals(503,assertThrows(org.springframework.web.server.ResponseStatusException.class,()->dataService.processSale(request)).getStatusCode().value());
+        assertEquals(503,assertThrows(org.springframework.web.server.ResponseStatusException.class,()->posService.processSale(request)).getStatusCode().value());
         assertEquals(0,jdbc.queryForObject("select count(*) from venta",Integer.class));
     }
 
@@ -471,7 +473,7 @@ class CashAndLegacyOperationsIsolationTest {
         var transaction = new org.springframework.transaction.support.TransactionTemplate(
                 new org.springframework.jdbc.datasource.DataSourceTransactionManager(jdbc.getDataSource()));
         var request = paymentRequest("rollback-sale-key",java.util.List.of(new pe.canchero.backend.web.dto.SalePaymentDto("tarjeta",new BigDecimal("10.00"),null)));
-        assertThrows(org.springframework.dao.DataAccessException.class,()->transaction.execute(status->dataService.processSale(request)));
+        assertThrows(org.springframework.dao.DataAccessException.class,()->transaction.execute(status->posService.processSale(request)));
         assertEquals(0,jdbc.queryForObject("select count(*) from venta",Integer.class));
         assertEquals(0,jdbc.queryForObject("select count(*) from venta_detalle",Integer.class));
         assertEquals(1,jdbc.queryForObject("select count(*) from kardex",Integer.class));

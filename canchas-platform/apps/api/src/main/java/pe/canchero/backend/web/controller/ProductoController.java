@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import pe.canchero.backend.service.SupabaseDataService;
+import pe.canchero.backend.service.PosService;
 import pe.canchero.backend.service.VenueAccessService;
 import pe.canchero.backend.web.dto.AuthUserDto;
 import pe.canchero.backend.web.dto.ErrorResponse;
@@ -20,10 +20,10 @@ import java.util.List;
 @RequestMapping("/api/productos")
 public class ProductoController {
 
-    private final SupabaseDataService data;
+    private final PosService data;
     private final VenueAccessService access;
 
-    public ProductoController(SupabaseDataService data, VenueAccessService access) {
+    public ProductoController(PosService data, VenueAccessService access) {
         this.data = data;
         this.access = access;
     }

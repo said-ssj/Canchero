@@ -41,7 +41,7 @@ class PostgresPaymentMethodsTest {
             int sessionId = PostgresTestSupport.openSession(app, PostgresTestSupport.BOX_A,
                     PostgresTestSupport.OWNER_A, 100.0);
 
-            SaleDto cash = app.data().processSale(PostgresTestSupport.sale(
+            SaleDto cash = app.pos().processSale(PostgresTestSupport.sale(
                     PostgresTestSupport.VENUE_A, sessionId, PostgresTestSupport.OWNER_A,
                     "pay-cash-1", PostgresTestSupport.PRODUCT_A, 4, "efectivo", 20.0, null));
             assertEquals(10.0, cash.total());
@@ -49,7 +49,7 @@ class PostgresPaymentMethodsTest {
             assertEquals(20.0, cash.montoPagado());
             assertEquals(10.0, cash.vuelto());
 
-            SaleDto card = app.data().processSale(PostgresTestSupport.sale(
+            SaleDto card = app.pos().processSale(PostgresTestSupport.sale(
                     PostgresTestSupport.VENUE_A, sessionId, PostgresTestSupport.OWNER_A,
                     "pay-card-1", PostgresTestSupport.PRODUCT_A, 4, "tarjeta", null,
                     List.of(new SalePaymentDto("tarjeta", new BigDecimal("10.00"), new BigDecimal("10.00")))));
@@ -57,21 +57,21 @@ class PostgresPaymentMethodsTest {
             assertEquals(10.0, card.montoPagado());
             assertEquals(0.0, card.vuelto());
 
-            SaleDto yape = app.data().processSale(PostgresTestSupport.sale(
+            SaleDto yape = app.pos().processSale(PostgresTestSupport.sale(
                     PostgresTestSupport.VENUE_A, sessionId, PostgresTestSupport.OWNER_A,
                     "pay-yape-1", PostgresTestSupport.PRODUCT_A, 4, "yape", null, null));
             assertEquals("yape", yape.metodoPago());
             assertEquals(10.0, yape.montoPagado());
             assertEquals(0.0, yape.vuelto());
 
-            SaleDto plin = app.data().processSale(PostgresTestSupport.sale(
+            SaleDto plin = app.pos().processSale(PostgresTestSupport.sale(
                     PostgresTestSupport.VENUE_A, sessionId, PostgresTestSupport.OWNER_A,
                     "pay-plin-1", PostgresTestSupport.PRODUCT_A, 4, "plin", null, null));
             assertEquals("plin", plin.metodoPago());
             assertEquals(10.0, plin.montoPagado());
             assertEquals(0.0, plin.vuelto());
 
-            SaleDto mixed = app.data().processSale(PostgresTestSupport.sale(
+            SaleDto mixed = app.pos().processSale(PostgresTestSupport.sale(
                     PostgresTestSupport.VENUE_A, sessionId, PostgresTestSupport.OWNER_A,
                     "pay-mixed-1", PostgresTestSupport.PRODUCT_A, 4, "mixto", null,
                     List.of(new SalePaymentDto("efectivo", new BigDecimal("4.00"), new BigDecimal("10.00")),
@@ -81,18 +81,18 @@ class PostgresPaymentMethodsTest {
             assertEquals(6.0, mixed.vuelto());
             assertEquals(2, mixed.pagos().size());
 
-            assertEquals(20, app.data().listProducts(PostgresTestSupport.VENUE_A).stream()
+            assertEquals(20, app.pos().listProducts(PostgresTestSupport.VENUE_A).stream()
                     .filter(p -> p.id() == PostgresTestSupport.PRODUCT_A)
                     .findFirst().orElseThrow().stock());
             assertEquals(6, jdbc.queryForObject("select count(*) from venta_pago", Integer.class));
 
-            SaleDto retried = app.data().processSale(PostgresTestSupport.sale(
+            SaleDto retried = app.pos().processSale(PostgresTestSupport.sale(
                     PostgresTestSupport.VENUE_A, sessionId, PostgresTestSupport.OWNER_A,
                     "pay-card-1", PostgresTestSupport.PRODUCT_A, 4, "tarjeta", null,
                     List.of(new SalePaymentDto("tarjeta", new BigDecimal("10.00"), new BigDecimal("10.00")))));
             assertEquals(card.id(), retried.id());
             assertEquals(6, jdbc.queryForObject("select count(*) from venta_pago", Integer.class));
-            assertEquals(20, app.data().listProducts(PostgresTestSupport.VENUE_A).stream()
+            assertEquals(20, app.pos().listProducts(PostgresTestSupport.VENUE_A).stream()
                     .filter(p -> p.id() == PostgresTestSupport.PRODUCT_A)
                     .findFirst().orElseThrow().stock());
 
@@ -101,22 +101,22 @@ class PostgresPaymentMethodsTest {
             assertEquals(0, new BigDecimal("36.00").compareTo(balance.pagosDigital()));
             assertEquals(0, new BigDecimal("114.00").compareTo(balance.montoSistema()));
 
-            assertBadRequest(() -> app.data().processSale(PostgresTestSupport.sale(
+            assertBadRequest(() -> app.pos().processSale(PostgresTestSupport.sale(
                     PostgresTestSupport.VENUE_A, sessionId, PostgresTestSupport.OWNER_A,
                     "pay-invalid-change", PostgresTestSupport.PRODUCT_A, 4, "efectivo", 5.0, null)));
-            assertBadRequest(() -> app.data().processSale(PostgresTestSupport.sale(
+            assertBadRequest(() -> app.pos().processSale(PostgresTestSupport.sale(
                     PostgresTestSupport.VENUE_A, sessionId, PostgresTestSupport.OWNER_A,
                     "pay-invalid-digital-change", PostgresTestSupport.PRODUCT_A, 4, "tarjeta", null,
                     List.of(new SalePaymentDto("tarjeta", new BigDecimal("10.00"), new BigDecimal("12.00"))))));
-            assertBadRequest(() -> app.data().processSale(PostgresTestSupport.sale(
+            assertBadRequest(() -> app.pos().processSale(PostgresTestSupport.sale(
                     PostgresTestSupport.VENUE_A, sessionId, PostgresTestSupport.OWNER_A,
                     "pay-invalid-sum", PostgresTestSupport.PRODUCT_A, 4, "mixto", null,
                     List.of(new SalePaymentDto("efectivo", new BigDecimal("4.00"), new BigDecimal("4.00")),
                             new SalePaymentDto("tarjeta", new BigDecimal("5.00"), new BigDecimal("5.00"))))));
-            assertBadRequest(() -> app.data().processSale(PostgresTestSupport.sale(
+            assertBadRequest(() -> app.pos().processSale(PostgresTestSupport.sale(
                     PostgresTestSupport.VENUE_A, sessionId, PostgresTestSupport.OWNER_A,
                     "pay-invalid-method", PostgresTestSupport.PRODUCT_A, 4, "transferencia", null, null)));
-            assertBadRequest(() -> app.data().processSale(PostgresTestSupport.sale(
+            assertBadRequest(() -> app.pos().processSale(PostgresTestSupport.sale(
                     PostgresTestSupport.VENUE_A, sessionId, PostgresTestSupport.OWNER_A,
                     "pay-invalid-duplicate", PostgresTestSupport.PRODUCT_A, 4, "mixto", null,
                     List.of(new SalePaymentDto("efectivo", new BigDecimal("5.00"), new BigDecimal("5.00")),

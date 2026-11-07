@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import pe.canchero.backend.service.SupabaseDataService;
+import pe.canchero.backend.service.PosService;
 import pe.canchero.backend.service.VenueAccessService;
 import pe.canchero.backend.web.dto.AuthUserDto;
 import pe.canchero.backend.web.dto.InventoryEntryRequest;
@@ -26,10 +26,10 @@ public class PosController {
         return org.springframework.http.ResponseEntity.status(ex.getStatusCode()).body(new pe.canchero.backend.web.dto.ErrorResponse(ex.getReason()));
     }
 
-    private final SupabaseDataService dataService;
+    private final PosService dataService;
     private final VenueAccessService access;
 
-    public PosController(SupabaseDataService dataService, VenueAccessService access) {
+    public PosController(PosService dataService, VenueAccessService access) {
         this.dataService = dataService;
         this.access = access;
     }

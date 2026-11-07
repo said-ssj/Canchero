@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class PosIsolationTest {
     private JdbcTemplate jdbc;
-    private SupabaseDataService data;
+    private PosService data;
     private VenueAccessService access;
     private final AuthUserDto owner = new AuthUserDto("owner-a", "Owner A", "", "", "dueno");
 
@@ -32,7 +32,7 @@ class PosIsolationTest {
         jdbc.update("insert into kardex values (1,1,1,9,'2026-01-01',null,'A'),(2,1,1,0,'2026-01-02',null,'A'),(3,1,2,22,'2026-01-01',null,'A'),(4,2,3,88,'2026-01-01',null,'A'),(5,1,1,999,'2026-01-03',null,'I')");
         jdbc.update("insert into caja values (1,1,'A'),(2,3,'A')");
         jdbc.update("insert into sesion_caja values (10,1,'A',null),(20,2,'A',null),(30,1,'A',current_timestamp)");
-        data = new SupabaseDataService(jdbc);
+        data = new PosService(jdbc);
         jdbc.execute("alter table producto add (contenido numeric, unidad_medida varchar, descripcion varchar, foto_url varchar)");
         access = new VenueAccessService(jdbc);
     }

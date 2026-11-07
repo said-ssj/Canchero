@@ -9,6 +9,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import pe.canchero.backend.service.AuthTokenService;
 import pe.canchero.backend.service.CashService;
+import pe.canchero.backend.service.PosService;
 import pe.canchero.backend.service.SupabaseDataService;
 import pe.canchero.backend.service.VenueAccessService;
 import pe.canchero.backend.web.dto.AuthUserDto;
@@ -72,6 +73,7 @@ public final class PostgresTestSupport {
                 context,
                 context.getBean(SupabaseDataService.class),
                 context.getBean(CashService.class),
+                context.getBean(PosService.class),
                 context.getBean(VenueAccessService.class),
                 context.getBean(AuthTokenService.class),
                 context.getBean(JdbcTemplate.class));
@@ -183,6 +185,7 @@ public final class PostgresTestSupport {
     public record App(AnnotationConfigApplicationContext context,
                       SupabaseDataService data,
                       CashService cash,
+                      PosService pos,
                       VenueAccessService access,
                       AuthTokenService tokens,
                       JdbcTemplate jdbc) implements AutoCloseable {
@@ -223,6 +226,11 @@ public final class PostgresTestSupport {
         @Bean
         public CashService cashService(JdbcTemplate jdbcTemplate) {
             return new CashService(jdbcTemplate);
+        }
+
+        @Bean
+        public PosService posService(JdbcTemplate jdbcTemplate) {
+            return new PosService(jdbcTemplate);
         }
 
         @Bean

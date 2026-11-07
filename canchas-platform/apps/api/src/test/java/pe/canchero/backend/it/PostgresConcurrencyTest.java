@@ -92,11 +92,11 @@ class PostgresConcurrencyTest {
             int sessionId = PostgresTestSupport.openSession(app, PostgresTestSupport.BOX_A,
                     PostgresTestSupport.OWNER_A, 100.0);
             List<Outcome<SaleDto>> outcomes = runTogether(
-                    () -> app.data().processSale(PostgresTestSupport.sale(
+                    () -> app.pos().processSale(PostgresTestSupport.sale(
                             PostgresTestSupport.VENUE_A, sessionId, PostgresTestSupport.OWNER_A,
                             "concurrent-pos-retry", PostgresTestSupport.PRODUCT_A, 2, "tarjeta", null,
                             List.of(new SalePaymentDto("tarjeta", new BigDecimal("5.00"), new BigDecimal("5.00"))))),
-                    () -> app.data().processSale(PostgresTestSupport.sale(
+                    () -> app.pos().processSale(PostgresTestSupport.sale(
                             PostgresTestSupport.VENUE_A, sessionId, PostgresTestSupport.OWNER_A,
                             "concurrent-pos-retry", PostgresTestSupport.PRODUCT_A, 2, "tarjeta", null,
                             List.of(new SalePaymentDto("tarjeta", new BigDecimal("5.00"), new BigDecimal("5.00"))))));
@@ -127,11 +127,11 @@ class PostgresConcurrencyTest {
             int sessionId = PostgresTestSupport.openSession(firstApp, PostgresTestSupport.BOX_A,
                     PostgresTestSupport.OWNER_A, 100.0);
             List<Outcome<SaleDto>> outcomes = runTogether(
-                    () -> firstApp.data().processSale(PostgresTestSupport.sale(
+                    () -> firstApp.pos().processSale(PostgresTestSupport.sale(
                             PostgresTestSupport.VENUE_A, sessionId, PostgresTestSupport.OWNER_A,
                             "concurrent-stock-a", 3, 6, "tarjeta", null,
                             List.of(new SalePaymentDto("tarjeta", new BigDecimal("18.00"), new BigDecimal("18.00"))))),
-                    () -> secondApp.data().processSale(PostgresTestSupport.sale(
+                    () -> secondApp.pos().processSale(PostgresTestSupport.sale(
                             PostgresTestSupport.VENUE_A, sessionId, PostgresTestSupport.OWNER_A,
                             "concurrent-stock-b", 3, 6, "tarjeta", null,
                             List.of(new SalePaymentDto("tarjeta", new BigDecimal("18.00"), new BigDecimal("18.00"))))));
