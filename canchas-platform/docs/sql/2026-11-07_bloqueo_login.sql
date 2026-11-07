@@ -1,4 +1,4 @@
--- PENDIENTE de aplicar. Aplicar ANTES de desplegar la API que la usa (si no, el login falla).
+-- APLICADA el 2026-11-07 en Supabase. No volver a ejecutar alli.
 -- Aditiva: solo agrega columnas con default y un trigger; no modifica datos existentes.
 -- Politica (SupabaseDataService.login): 5 fallos -> espera de 30 s; 5 fallos mas (10) -> cuenta bloqueada
 -- hasta que cambie la contrasena (el trigger reinicia el contador) o soporte la desbloquee:
