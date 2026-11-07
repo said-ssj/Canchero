@@ -21,7 +21,9 @@ CREATE TABLE usuario (
     estado char(1) NOT NULL DEFAULT 'A',
     feccre timestamp without time zone NOT NULL DEFAULT now(),
     intentos_fallidos integer NOT NULL DEFAULT 0,
-    bloqueo_hasta timestamptz
+    bloqueo_hasta timestamptz,
+    reset_token_hash varchar(64),
+    reset_expira timestamptz
 );
 
 CREATE UNIQUE INDEX usuario_correo_unico ON usuario (lower(correo));

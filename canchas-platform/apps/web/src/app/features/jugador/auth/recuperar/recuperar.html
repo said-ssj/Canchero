@@ -1,0 +1,147 @@
+<main class="login-split-page">
+  <div class="login-split-wrapper">
+    <section class="login-brand-panel">
+      <div class="brand-panel-decor" aria-hidden="true">
+        <div class="decor-circle decor-circle-lg"></div>
+        <div class="decor-circle decor-circle-md"></div>
+        <div class="decor-court-arc"></div>
+      </div>
+      <div class="brand-panel-header">
+        <a routerLink="/login" class="login-back">
+          <span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
+          Volver al inicio de sesión
+        </a>
+        <div class="login-brand-logo">
+          <div class="brand-icon">C</div>
+          <span class="brand-name">Canchero<span class="brand-badge">.MVP</span></span>
+        </div>
+      </div>
+      <div class="brand-panel-body">
+        <span class="brand-eyebrow">RECUPERA TU CUENTA</span>
+        <h1 class="brand-headline">
+          Vuelve a la cancha <br />
+          <span class="brand-headline-highlight">en un minuto.</span>
+        </h1>
+        <p class="brand-description">
+          Te enviamos un enlace seguro a tu correo. Vence en 30 minutos y solo sirve una vez.
+        </p>
+      </div>
+    </section>
+
+    <section class="login-form-panel">
+      <div class="login-form-card">
+        <div class="form-header">
+          <app-theme-toggle class="theme-toggle" />
+          <span class="form-eyebrow">{{
+            token ? 'NUEVA CONTRASEÑA' : '¿OLVIDASTE TU CONTRASEÑA?'
+          }}</span>
+          <h2 class="form-title">
+            {{ token ? 'Crea una nueva contraseña' : 'Recupera tu acceso' }}
+          </h2>
+          <p class="form-subtitle">
+            {{
+              token
+                ? 'Elige una contraseña de al menos 8 caracteres. Tu cuenta quedará desbloqueada.'
+                : 'Escribe el correo de tu cuenta y te enviaremos un enlace para cambiarla.'
+            }}
+          </p>
+        </div>
+
+        @if (error()) {
+          <div class="auth-error-alert" role="alert">
+            <span class="material-symbols-outlined icon-18" aria-hidden="true">error</span>
+            <span>{{ error() }}</span>
+          </div>
+        }
+
+        @if (done()) {
+          <div class="auth-success-alert" role="status">
+            <span class="material-symbols-outlined icon-18" aria-hidden="true">check_circle</span>
+            <span>{{ done() }}</span>
+          </div>
+          @if (token) {
+            <button type="button" class="btn-login-primary" (click)="irAlLogin()">
+              Iniciar sesión
+            </button>
+          }
+        } @else if (token) {
+          <form novalidate (ngSubmit)="cambiarClave()" class="auth-form">
+            <div class="form-group">
+              <label class="form-label" for="password">Nueva contraseña</label>
+              <div class="input-wrap">
+                <span class="input-icon">
+                  <span class="material-symbols-outlined icon-20" aria-hidden="true">lock</span>
+                </span>
+                <input
+                  [type]="showPassword() ? 'text' : 'password'"
+                  id="password"
+                  name="password"
+                  class="form-input has-toggle"
+                  placeholder="Mínimo 8 caracteres"
+                  [(ngModel)]="password"
+                  autocomplete="new-password"
+                  required
+                />
+                <button
+                  type="button"
+                  class="pwd-toggle-btn"
+                  (click)="showPassword.set(!showPassword())"
+                  [attr.aria-label]="showPassword() ? 'Ocultar contraseña' : 'Ver contraseña'"
+                >
+                  <span class="material-symbols-outlined icon-20" aria-hidden="true">
+                    {{ showPassword() ? 'visibility_off' : 'visibility' }}
+                  </span>
+                </button>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="confirm">Repite la contraseña</label>
+              <div class="input-wrap">
+                <span class="input-icon">
+                  <span class="material-symbols-outlined icon-20" aria-hidden="true">lock</span>
+                </span>
+                <input
+                  [type]="showPassword() ? 'text' : 'password'"
+                  id="confirm"
+                  name="confirm"
+                  class="form-input"
+                  placeholder="Repite la contraseña"
+                  [(ngModel)]="confirm"
+                  autocomplete="new-password"
+                  required
+                />
+              </div>
+            </div>
+            <button type="submit" class="btn-login-primary" [disabled]="submitting()">
+              {{ submitting() ? 'Guardando...' : 'Guardar contraseña' }}
+            </button>
+          </form>
+        } @else {
+          <form novalidate (ngSubmit)="pedirEnlace()" class="auth-form">
+            <div class="form-group">
+              <label class="form-label" for="email">Correo electrónico</label>
+              <div class="input-wrap">
+                <span class="input-icon">
+                  <span class="material-symbols-outlined icon-20" aria-hidden="true">mail</span>
+                </span>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  class="form-input"
+                  placeholder="tu@correo.com"
+                  [(ngModel)]="email"
+                  autocomplete="username"
+                  required
+                />
+              </div>
+            </div>
+            <button type="submit" class="btn-login-primary" [disabled]="submitting()">
+              {{ submitting() ? 'Enviando...' : 'Enviarme el enlace' }}
+            </button>
+          </form>
+        }
+      </div>
+    </section>
+  </div>
+</main>

@@ -49,7 +49,8 @@ public class ApiAuthorizationInterceptor implements HandlerInterceptor {
 
     private boolean isPublicEndpoint(String path, String method) {
         if ("POST".equalsIgnoreCase(method) && "/api/auth/google".equals(path)) return true;
-        if (path.startsWith("/api/auth/login") || path.startsWith("/api/auth/register")) return true;
+        if (path.startsWith("/api/auth/login") || path.startsWith("/api/auth/register")
+                || path.startsWith("/api/auth/password/")) return true;
         if (path.startsWith("/api/catalog")) return true;
         if ("GET".equalsIgnoreCase(method) && (path.startsWith("/api/venues") || path.startsWith("/api/courts"))) return true;
         if ("GET".equalsIgnoreCase(method) && path.startsWith("/api/bookings/pase/")) return true;

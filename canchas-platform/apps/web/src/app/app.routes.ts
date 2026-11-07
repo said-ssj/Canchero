@@ -30,6 +30,11 @@ export const routes: Routes = [
         loadComponent: () => import('./features/jugador/auth/login/login').then((m) => m.Login),
       },
       {
+        path: 'recuperar',
+        loadComponent: () =>
+          import('./features/jugador/auth/recuperar/recuperar').then((m) => m.Recuperar),
+      },
+      {
         path: 'auth/google/callback',
         loadComponent: () =>
           import('./features/jugador/auth/google-callback').then((m) => m.GoogleCallback),

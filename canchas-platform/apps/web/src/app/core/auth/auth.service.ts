@@ -238,6 +238,21 @@ export class AuthService {
     }
   }
 
+  /** Pide el enlace de recuperación; el servidor responde igual exista o no la cuenta. */
+  requestPasswordReset(email: string): Observable<{ message: string }> {
+    return this.sessionHttp
+      .post<{ message: string }>(`${this.apiUrl}/auth/password/forgot`, {
+        email: email.trim().toLowerCase(),
+      })
+      .pipe(timeout(12000));
+  }
+
+  resetPassword(token: string, password: string): Observable<{ message: string }> {
+    return this.sessionHttp
+      .post<{ message: string }>(`${this.apiUrl}/auth/password/reset`, { token, password })
+      .pipe(timeout(12000));
+  }
+
   exchangeGoogle(accessToken: string, rememberMe: boolean, password?: string): Observable<User> {
     return this.sessionHttp
       .post<BackendAuthResponse>(`${this.apiUrl}/auth/google`, {

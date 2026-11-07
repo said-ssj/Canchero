@@ -23,6 +23,7 @@ import java.util.regex.Pattern;
 public class AuthService extends JdbcSupport {
     private static final Set<String> PUBLIC_PLAYER_ROLES = Set.of("cliente", "jugador", "player");
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
+    private static final java.security.SecureRandom RANDOM = new java.security.SecureRandom();
     private final AuthTokenService authTokenService;
     static final int INTENTOS_ANTES_DE_ESPERA = 5;
     static final int INTENTOS_ANTES_DE_BLOQUEO = 10;
@@ -140,15 +141,7 @@ public class AuthService extends JdbcSupport {
         if (!EMAIL_PATTERN.matcher(email).matches()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El correo electrónico no es válido");
         }
-        if (request.password() == null || request.password().isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La contraseña es obligatoria");
-        }
-        if (request.password().length() < 8) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La contraseña debe contener al menos 8 caracteres");
-        }
-        if (request.password().getBytes(StandardCharsets.UTF_8).length > 72) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La contraseña no debe exceder 72 bytes");
-        }
+        validatePassword(request.password());
 
         Integer exists = jdbc.queryForObject("select count(*) from usuario where lower(correo) = ?", Integer.class, email);
         if (exists != null && exists > 0) {
@@ -253,5 +246,62 @@ public class AuthService extends JdbcSupport {
                         rs.getString("telefono"),
                         rs.getString("rol")),
                 userId).stream().findFirst();
+    }
+
+    private static void validatePassword(String password) {
+        if (password == null || password.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La contraseña es obligatoria");
+        }
+        if (password.length() < 8) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La contraseña debe contener al menos 8 caracteres");
+        }
+        if (password.getBytes(StandardCharsets.UTF_8).length > 72) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La contraseña no debe exceder 72 bytes");
+        }
+    }
+
+    /**
+     * Crea un enlace de recuperación (30 min, un solo uso) y devuelve el token en claro para enviarlo por correo.
+     * Vacío si el correo no tiene cuenta activa o si ya se pidió uno hace menos de un minuto.
+     */
+    public Optional<String> requestPasswordReset(String rawEmail) {
+        String email = rawEmail == null ? "" : rawEmail.trim().toLowerCase(Locale.ROOT);
+        if (email.isEmpty()) return Optional.empty();
+        String token = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes());
+        int updated = jdbc.update("""
+                update usuario set reset_token_hash = ?, reset_expira = now() + interval '30' minute
+                where lower(correo) = ? and estado = 'A'
+                  and (reset_expira is null or reset_expira < now() + interval '29' minute)
+                """, sha256(token), email);
+        return updated == 1 ? Optional.of(token) : Optional.empty();
+    }
+
+    /** Cambia la contraseña con un enlace vigente; también desbloquea la cuenta. */
+    public void resetPassword(String token, String newPassword) {
+        validatePassword(newPassword);
+        int updated = token == null || token.isBlank() ? 0 : jdbc.update("""
+                update usuario
+                set password_hash = ?, reset_token_hash = null, reset_expira = null,
+                    intentos_fallidos = 0, bloqueo_hasta = null
+                where reset_token_hash = ? and reset_expira > now() and estado = 'A'
+                """, PasswordUtil.hash(newPassword), sha256(token.trim()));
+        if (updated != 1) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El enlace no es válido o ya venció. Pide uno nuevo.");
+        }
+    }
+
+    private static byte[] randomBytes() {
+        byte[] bytes = new byte[32];
+        RANDOM.nextBytes(bytes);
+        return bytes;
+    }
+
+    private static String sha256(String value) {
+        try {
+            return java.util.HexFormat.of().formatHex(
+                    java.security.MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8)));
+        } catch (java.security.NoSuchAlgorithmException ex) {
+            throw new IllegalStateException(ex);
+        }
     }
 }

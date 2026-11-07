@@ -29,7 +29,7 @@ class DatabaseAuthServiceTest {
     void setup() {
         jdbc = new JdbcTemplate(new DriverManagerDataSource("jdbc:h2:mem:" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL", "sa", ""));
         jdbc.execute("create table rol (id_rol int primary key, nombre varchar, estado varchar)");
-        jdbc.execute("create table usuario (id_usuario uuid primary key, id_rol int, nombre varchar, correo varchar unique, telefono varchar, password_hash varchar, estado varchar, usucre varchar, pccre varchar, intentos_fallidos int not null default 0, bloqueo_hasta timestamp with time zone)");
+        jdbc.execute("create table usuario (id_usuario uuid primary key, id_rol int, nombre varchar, correo varchar unique, telefono varchar, password_hash varchar, estado varchar, usucre varchar, pccre varchar, intentos_fallidos int not null default 0, bloqueo_hasta timestamp with time zone, reset_token_hash varchar, reset_expira timestamp with time zone)");
         jdbc.update("insert into rol values (1, 'admin', 'A'), (2, 'cliente', 'A')");
         jdbc.update("insert into usuario (id_usuario,id_rol,nombre,correo,password_hash,estado) values (?,1,'Dueno','dueno@canchero.pe',?,'A')", owner, PasswordUtil.hash("unit-test-only-password"));
         service = new AuthService(jdbc, new AuthTokenService("unit-test-only-secret"));
@@ -70,6 +70,25 @@ class DatabaseAuthServiceTest {
         assertEquals(423, statusOf(buena));                // sigue bloqueada sin importar el tiempo
         jdbc.update("update usuario set intentos_fallidos = 0, bloqueo_hasta = null"); // desbloqueo de soporte
         assertTrue(service.login(buena).isPresent());
+    }
+
+    @Test
+    void recuperarClaveConEnlaceDeUnSoloUsoYDesbloquea() {
+        jdbc.update("update usuario set intentos_fallidos = 10");               // cuenta bloqueada
+        assertTrue(service.requestPasswordReset("nadie@canchero.pe").isEmpty());
+        String token = service.requestPasswordReset(" DUENO@canchero.pe ").orElseThrow();
+        assertTrue(service.requestPasswordReset("dueno@canchero.pe").isEmpty()); // no reenviar antes de 1 min
+        assertNotEquals(token, jdbc.queryForObject("select reset_token_hash from usuario", String.class));
+        assertEquals(400, assertThrows(org.springframework.web.server.ResponseStatusException.class,
+                () -> service.resetPassword(token, "corta")).getStatusCode().value());
+        service.resetPassword(token, "nueva-clave-segura");
+        assertTrue(service.login(new LoginRequest("dueno@canchero.pe", "nueva-clave-segura")).isPresent());
+        assertEquals(400, assertThrows(org.springframework.web.server.ResponseStatusException.class,
+                () -> service.resetPassword(token, "otra-clave-segura")).getStatusCode().value()); // un solo uso
+        String vencido = service.requestPasswordReset("dueno@canchero.pe").orElseThrow();
+        jdbc.update("update usuario set reset_expira = now() - interval '1' second");
+        assertEquals(400, assertThrows(org.springframework.web.server.ResponseStatusException.class,
+                () -> service.resetPassword(vencido, "otra-clave-segura")).getStatusCode().value());
     }
 
     @Test
