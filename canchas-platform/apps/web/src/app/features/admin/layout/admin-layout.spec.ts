@@ -1,3 +1,4 @@
+import { of } from 'rxjs';
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { provideRouter } from '@angular/router';
@@ -52,6 +53,8 @@ describe('AdminLayout', () => {
           provide: AuthService,
           useValue: {
             currentUser: mockUser,
+            playerProfile: signal(null),
+            loadPlayerProfile: () => of(null),
             logout: logoutSpy,
           },
         },

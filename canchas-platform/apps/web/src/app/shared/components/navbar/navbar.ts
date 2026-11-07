@@ -1,11 +1,11 @@
 import { ThemeService } from '@core/theme/theme.service';
 import { ThemeToggle } from '../theme-toggle/theme-toggle';
 import { Component, HostListener, computed, effect, inject, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '@core/auth/auth.service';
 
 @Component({
-  imports: [RouterLink, ThemeToggle],
+  imports: [RouterLink, RouterLinkActive, ThemeToggle],
   selector: 'app-navbar',
   styleUrl: './navbar.css',
   templateUrl: './navbar.html',
@@ -46,7 +46,7 @@ export class Navbar {
 
   constructor() {
     effect((onCleanup) => {
-      if (this.user()?.rol !== 'cliente') return;
+      if (!this.user()?.id) return;
       const request = this.auth.loadPlayerProfile().subscribe({ error: () => undefined });
       onCleanup(() => request.unsubscribe());
     });

@@ -168,7 +168,11 @@
       <div class="user-profile-row">
         <div class="user-avatar-sm">
           <div class="avatar-placeholder" matRipple [matRippleCentered]="true">
-            {{ initials(nombreAdmin()) }}
+            @if (profile()?.foto; as foto) {
+              <img class="admin-profile-photo" [src]="foto" alt="" />
+            } @else {
+              {{ initials(nombreAdmin()) }}
+            }
           </div>
         </div>
         <div class="user-profile-info">
@@ -268,18 +272,38 @@
           aria-label="Menú de usuario"
           aria-haspopup="true"
         >
-          <span class="user-avatar-badge">{{ initials(nombreAdmin()) }}</span>
+          <span class="user-avatar-badge">
+            @if (profile()?.foto; as foto) {
+              <img class="admin-profile-photo" [src]="foto" alt="" />
+            } @else {
+              {{ initials(nombreAdmin()) }}
+            }
+          </span>
         </button>
 
         <mat-menu #adminProfileMenu="matMenu" class="profile-mat-menu" xPosition="before">
           <div class="profile-menu-header">
-            <div class="profile-header-avatar">{{ initials(nombreAdmin()) }}</div>
+            <div class="profile-header-avatar">
+              @if (profile()?.foto; as foto) {
+                <img class="admin-profile-photo" [src]="foto" alt="" />
+              } @else {
+                {{ initials(nombreAdmin()) }}
+              }
+            </div>
             <div class="profile-header-info">
               <span class="profile-full-name">{{ nombreAdmin() }}</span>
               <span class="profile-user-email">{{ perfilEmail() }}</span>
             </div>
           </div>
 
+          <button
+            mat-menu-item
+            routerLink="/perfil"
+            [queryParams]="{ regreso: '/admin/configuracion' }"
+          >
+            <mat-icon matMenuItemIcon aria-hidden="true">person</mat-icon>
+            <span>Mi perfil</span>
+          </button>
           <button mat-menu-item [routerLink]="['/admin/configuracion']">
             <mat-icon matMenuItemIcon aria-hidden="true">settings</mat-icon>
             <span>Configuración</span>

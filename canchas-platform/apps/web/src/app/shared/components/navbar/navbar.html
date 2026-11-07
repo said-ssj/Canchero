@@ -6,12 +6,41 @@
     </a>
 
     <nav id="navMenu" class="nav-menu" [class.is-open]="menuOpen()">
-      <a routerLink="/" class="nav-link" (click)="menuOpen.set(false)">Inicio</a>
-      <a routerLink="/sedes" class="nav-link" (click)="menuOpen.set(false)">Sedes</a>
-      <a routerLink="/itinerario" class="nav-link" (click)="menuOpen.set(false)">Mi Itinerario</a>
+      <a
+        routerLink="/"
+        routerLinkActive="is-active"
+        ariaCurrentWhenActive="page"
+        [routerLinkActiveOptions]="{ exact: true }"
+        class="nav-link"
+        (click)="menuOpen.set(false)"
+        >Inicio</a
+      >
+      <a
+        routerLink="/sedes"
+        routerLinkActive="is-active"
+        ariaCurrentWhenActive="page"
+        class="nav-link"
+        (click)="menuOpen.set(false)"
+        >Sedes</a
+      >
+      <a
+        routerLink="/itinerario"
+        routerLinkActive="is-active"
+        ariaCurrentWhenActive="page"
+        class="nav-link"
+        (click)="menuOpen.set(false)"
+        >Mi Itinerario</a
+      >
       <span class="nav-link" style="opacity: 0.6; cursor: default">Torneos (Próximamente)</span>
       @if (isOwner()) {
-        <a routerLink="/admin" class="nav-link" (click)="menuOpen.set(false)">Administración</a>
+        <a
+          routerLink="/admin"
+          routerLinkActive="is-active"
+          ariaCurrentWhenActive="page"
+          class="nav-link"
+          (click)="menuOpen.set(false)"
+          >Administración</a
+        >
       }
     </nav>
 
@@ -61,18 +90,14 @@
 
               <!-- Lista de opciones del menú -->
               <div class="profile-menu-items">
-                @if (u.rol === 'cliente') {
-                  <a
-                    class="profile-menu-item"
-                    routerLink="/perfil"
-                    (click)="profileMenuOpen.set(false)"
-                  >
-                    <span class="material-symbols-outlined menu-icon" aria-hidden="true"
-                      >person</span
-                    >
-                    <span class="menu-label">Mi perfil</span>
-                  </a>
-                }
+                <a
+                  class="profile-menu-item"
+                  routerLink="/perfil"
+                  (click)="profileMenuOpen.set(false)"
+                >
+                  <span class="material-symbols-outlined menu-icon" aria-hidden="true">person</span>
+                  <span class="menu-label">Mi perfil</span>
+                </a>
                 <!-- Configuración -->
                 <button type="button" class="profile-menu-item" (click)="abrirConfiguracion()">
                   <span class="material-symbols-outlined menu-icon" aria-hidden="true"

@@ -1264,7 +1264,7 @@ public class SupabaseDataService {
         return jdbc.query("""
                 select p.id_producto, k.id_sede, p.id_categoria, coalesce(cp.nombre, 'General') as categoria_nombre,
                        p.codigo_barras, p.nombre, p.precio_compra, p.precio_venta, p.stock_minimo,
-                       k.saldo_stock as stock
+                       k.saldo_stock as stock, p.contenido, p.unidad_medida, p.descripcion, p.foto_url
                 from producto p
                 left join categoria_producto cp on cp.id_categoria = p.id_categoria
                 join kardex k on k.id_kardex = (
@@ -1994,7 +1994,8 @@ public class SupabaseDataService {
                 rs.getBigDecimal("precio_venta") == null ? 0 : rs.getBigDecimal("precio_venta").doubleValue(),
                 rs.getInt("stock"),
                 rs.getObject("stock_minimo") == null ? 5 : rs.getInt("stock_minimo"),
-                "inventory");
+                "inventory", rs.getBigDecimal("contenido"), rs.getString("unidad_medida"),
+                rs.getString("descripcion"), rs.getString("foto_url"));
     }
 
     private RowMapper<InventoryMovementDto> inventoryRowMapper() {

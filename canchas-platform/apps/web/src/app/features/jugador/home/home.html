@@ -60,6 +60,7 @@
         <div>
           <img
             [src]="heroImage()"
+            (error)="onImageError($event)"
             alt="Cancha destacada"
             style="
               width: 100%;

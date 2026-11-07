@@ -16,12 +16,14 @@ describe('AdminPos Component - Etapa 6 (Punto de Venta POS & Kardex)', () => {
   let posService: PosService;
   let cajaService: CajaService;
 
-  const mockCurrentUser = signal<{ id: string; email: string; nombre: string; rol: string } | null>({
-    id: 'owner-test-uuid',
-    email: 'admin@canchero.pe',
-    nombre: 'Roberto Mendoza',
-    rol: 'dueno',
-  });
+  const mockCurrentUser = signal<{ id: string; email: string; nombre: string; rol: string } | null>(
+    {
+      id: 'owner-test-uuid',
+      email: 'admin@canchero.pe',
+      nombre: 'Roberto Mendoza',
+      rol: 'dueno',
+    },
+  );
 
   const mockDbService = {
     sedeOperativaId: signal<number | null>(1),
@@ -81,20 +83,43 @@ describe('AdminPos Component - Etapa 6 (Punto de Venta POS & Kardex)', () => {
   beforeEach(async () => {
     localStorage.clear();
     vi.clearAllMocks();
-    vi.spyOn(CajaService.prototype as any, 'setupRealtimeSubscriptions').mockImplementation(async () => {});
-    vi.spyOn(CajaService.prototype as any, 'sincronizarAperturaBackend').mockImplementation(async (s: any) => ({ ...s, id: 10 }));
-    vi.spyOn(CajaService.prototype as any, 'sincronizarMovimientoBackend').mockImplementation(async (m: any) => ({ ...m, id: crypto.randomUUID() }));
-    vi.spyOn(CajaService.prototype as any, 'sincronizarCierreBackend').mockImplementation(async (s: any, count: any) => {
-      const expected = s.montoApertura + cajaService.balanceMovimientosManuales();
-      const difference = count.totalEfectivoFisico - expected;
-      return { id: 'server-audit', sesionId: s.id, cajaNombre: s.cajaNombre, cajeroNombre: s.cajeroNombre, fechaArqueo: new Date().toISOString(),
-        ...count, montoApertura: s.montoApertura, totalPagosEfectivo: 0, totalIngresos: cajaService.totalIngresosManuales(),
-        totalEgresos: cajaService.totalEgresosManuales(), balanceEstado: difference < 0 ? 'faltante' : difference > 0 ? 'sobrante' : 'cuadrada',
-        montoSistema: expected, diferencia: difference };
-    });
-    vi.spyOn(PosService.prototype as any, 'setupRealtimeSubscriptions').mockImplementation(async () => {});
+    vi.spyOn(CajaService.prototype as any, 'setupRealtimeSubscriptions').mockImplementation(
+      async () => {},
+    );
+    vi.spyOn(CajaService.prototype as any, 'sincronizarAperturaBackend').mockImplementation(
+      async (s: any) => ({ ...s, id: 10 }),
+    );
+    vi.spyOn(CajaService.prototype as any, 'sincronizarMovimientoBackend').mockImplementation(
+      async (m: any) => ({ ...m, id: crypto.randomUUID() }),
+    );
+    vi.spyOn(CajaService.prototype as any, 'sincronizarCierreBackend').mockImplementation(
+      async (s: any, count: any) => {
+        const expected = s.montoApertura + cajaService.balanceMovimientosManuales();
+        const difference = count.totalEfectivoFisico - expected;
+        return {
+          id: 'server-audit',
+          sesionId: s.id,
+          cajaNombre: s.cajaNombre,
+          cajeroNombre: s.cajeroNombre,
+          fechaArqueo: new Date().toISOString(),
+          ...count,
+          montoApertura: s.montoApertura,
+          totalPagosEfectivo: 0,
+          totalIngresos: cajaService.totalIngresosManuales(),
+          totalEgresos: cajaService.totalEgresosManuales(),
+          balanceEstado: difference < 0 ? 'faltante' : difference > 0 ? 'sobrante' : 'cuadrada',
+          montoSistema: expected,
+          diferencia: difference,
+        };
+      },
+    );
+    vi.spyOn(PosService.prototype as any, 'setupRealtimeSubscriptions').mockImplementation(
+      async () => {},
+    );
 
-    vi.spyOn(PosService.prototype as any, 'sincronizarEntradaMercaderiaBackend').mockResolvedValue(undefined);
+    vi.spyOn(PosService.prototype as any, 'sincronizarEntradaMercaderiaBackend').mockResolvedValue(
+      undefined,
+    );
 
     await TestBed.configureTestingModule({
       imports: [AdminPos],
@@ -114,7 +139,7 @@ describe('AdminPos Component - Etapa 6 (Punto de Venta POS & Kardex)', () => {
     posService.carrito.set([]);
     posService.ventas.set([]);
     posService.kardex.set([]);
-    posService.categoriaSeleccionada.set(1);
+    posService.categoriaSeleccionada.set(0);
     posService.filtroBusqueda.set('');
     posService.soloFavoritos.set(false);
     posService.favoritosProductoIds.set(new Set());
@@ -127,7 +152,9 @@ describe('AdminPos Component - Etapa 6 (Punto de Venta POS & Kardex)', () => {
     component = fixture.componentInstance;
     fixture.componentRef.setInput('venueId', 1);
     fixture.detectChanges();
-    TestBed.inject(HttpTestingController).match(() => true).forEach(request => request.flush([]));
+    TestBed.inject(HttpTestingController)
+      .match(() => true)
+      .forEach((request) => request.flush([]));
     await fixture.whenStable();
     await vi.waitFor(() => expect(cajaService.loading()).toBe(false));
     await vi.waitFor(() => expect(posService.loading()).toBe(false));
@@ -157,7 +184,9 @@ describe('AdminPos Component - Etapa 6 (Punto de Venta POS & Kardex)', () => {
     fixture.detectChanges();
     const el = fixture.nativeElement as HTMLElement;
     expect(el.textContent).toContain('Esta sede no tiene productos vinculados');
-    const entry = Array.from(el.querySelectorAll('button')).find(button => button.textContent?.includes('Ingreso de mercadería'));
+    const entry = Array.from(el.querySelectorAll('button')).find((button) =>
+      button.textContent?.includes('Ingreso de mercadería'),
+    );
     expect(entry?.disabled).toBe(true);
   });
 
@@ -226,7 +255,9 @@ describe('AdminPos Component - Etapa 6 (Punto de Venta POS & Kardex)', () => {
     posService.productos.set([]);
     component.switchPosSubTab('kardex');
     fixture.detectChanges();
-    const entry = fixture.nativeElement.querySelector('.kardex-header-content button') as HTMLButtonElement;
+    const entry = fixture.nativeElement.querySelector(
+      '.kardex-header-content button',
+    ) as HTMLButtonElement;
     expect(entry.disabled).toBe(true);
     entry.click();
     expect(component.modalIngresoMercaderiaOpen()).toBe(false);
@@ -248,7 +279,7 @@ describe('AdminPos Component - Etapa 6 (Punto de Venta POS & Kardex)', () => {
     expect(posService.productosFiltrados()[0].nombre).toContain('Papas Lays');
 
     // 4. Filtrar por favoritos
-    component.setCategoriaPOS(1); // Todas
+    component.setCategoriaPOS(0); // Todas
     expect(component.esProductoFavoritoPOS(1)).toBe(false);
     component.toggleFavoritoProductoPOS(1, { stopPropagation: async () => {} } as any);
     expect(component.esProductoFavoritoPOS(1)).toBe(true);
@@ -344,23 +375,41 @@ describe('AdminPos Component - Etapa 6 (Punto de Venta POS & Kardex)', () => {
     component.posMontoPagado.set(20);
     const http = TestBed.inject(HttpTestingController);
     const operation = component.procesarCobroPOS();
-    const post = http.expectOne(request => request.url.endsWith('/pos/sales'));
+    const post = http.expectOne((request) => request.url.endsWith('/pos/sales'));
     expect(component.modalTicketVentaOpen()).toBe(false);
     expect(posService.carrito()).toHaveLength(1);
     expect(posService.productos()[0].stock).toBe(20);
-    post.flush({ id: 'VNT-1', sedeId: 1, numeroComprobante: 'B001-000001', items: post.request.body.items,
-      total: 13, subtotal: 11.02, igv: 1.98, metodoPago: 'efectivo', montoPagado: 20, vuelto: 7,
-      clienteNombre: 'Cliente Mostrador', clienteDocumento: '', cajeroNombre: 'Titular',
-      tipoComprobante: 'boleta', fecha: new Date().toISOString(), estado: 'completada' });
-    await Promise.resolve();
-    await Promise.resolve();
-    http.match(request => request.method === 'GET').forEach(request => {
-      if (request.request.url.includes('/products')) request.flush([{ ...testProductos[0], stock: 18 }]);
-      else if (request.request.url.includes('payment-capabilities')) request.flush({ ready: true });
-      else request.flush([]);
+    post.flush({
+      id: 'VNT-1',
+      sedeId: 1,
+      numeroComprobante: 'B001-000001',
+      items: post.request.body.items,
+      total: 13,
+      subtotal: 11.02,
+      igv: 1.98,
+      metodoPago: 'efectivo',
+      montoPagado: 20,
+      vuelto: 7,
+      clienteNombre: 'Cliente Mostrador',
+      clienteDocumento: '',
+      cajeroNombre: 'Titular',
+      tipoComprobante: 'boleta',
+      fecha: new Date().toISOString(),
+      estado: 'completada',
     });
+    await Promise.resolve();
+    await Promise.resolve();
+    http
+      .match((request) => request.method === 'GET')
+      .forEach((request) => {
+        if (request.request.url.includes('/products'))
+          request.flush([{ ...testProductos[0], stock: 18 }]);
+        else if (request.request.url.includes('payment-capabilities'))
+          request.flush({ ready: true });
+        else request.flush([]);
+      });
     await operation;
-    http.match(request => request.method === 'GET').forEach(request => request.flush([]));
+    http.match((request) => request.method === 'GET').forEach((request) => request.flush([]));
     expect(component.modalTicketVentaOpen()).toBe(true);
     expect(component.ventaEmitidaSeleccionada()?.id).toBe('VNT-1');
     expect(posService.carrito()).toHaveLength(0);
@@ -377,7 +426,7 @@ describe('AdminPos Component - Etapa 6 (Punto de Venta POS & Kardex)', () => {
     let key = '';
     for (let attempt = 0; attempt < 2; attempt++) {
       const operation = component.procesarCobroPOS();
-      const request = http.expectOne(r => r.url.endsWith('/pos/sales'));
+      const request = http.expectOne((r) => r.url.endsWith('/pos/sales'));
       if (!key) key = request.request.body.idempotencyKey;
       expect(request.request.body.idempotencyKey).toBe(key);
       request.flush({ message: 'No guardado' }, { status: 503, statusText: 'Unavailable' });

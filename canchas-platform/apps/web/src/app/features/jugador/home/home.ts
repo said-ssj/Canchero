@@ -14,10 +14,16 @@ export class Home {
 
   protected readonly featuredVenue = computed<Venue | undefined>(() => {
     const venues = this.db.getVenuesPublicos();
-    return venues.find(v => v.fotos.length > 0) ?? venues[0];
+    return venues.find((v) => v.fotos.length > 0) ?? venues[0];
   });
 
-  protected readonly heroImage = computed(() => 
-    this.featuredVenue()?.fotos[0] ?? 'https://images.unsplash.com/photo-1551958219-acbc608c6377?q=80&w=800&auto=format&fit=crop'
+  protected readonly fallbackImage = '/images/IMAGEN_FUTBOL.webp';
+  protected readonly heroImage = computed(
+    () => this.featuredVenue()?.fotos[0]?.trim() || this.fallbackImage,
   );
+
+  protected onImageError(event: Event): void {
+    const image = event.target as HTMLImageElement;
+    if (image.getAttribute('src') !== this.fallbackImage) image.src = this.fallbackImage;
+  }
 }

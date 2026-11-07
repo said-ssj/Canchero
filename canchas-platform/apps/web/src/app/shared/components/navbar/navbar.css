@@ -336,3 +336,7 @@
   object-fit: cover;
   border-radius: 50%;
 }
+
+.navbar .nav-menu .nav-link.is-active {
+  color: #25832a;
+}

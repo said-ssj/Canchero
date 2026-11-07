@@ -1,0 +1,240 @@
+<dialog #dialog aria-labelledby="catalog-title" (cancel)="$event.preventDefault(); close()">
+  <header>
+    <div>
+      <h2 id="catalog-title">{{ categoryMode() ? 'Nueva categoría' : 'Agregar producto' }}</h2>
+      <p>Catálogo de la sede seleccionada</p>
+    </div>
+    <button
+      type="button"
+      class="close"
+      aria-label="Cerrar formulario"
+      [disabled]="busy() || processingPhoto()"
+      (click)="close()"
+    >
+      ×
+    </button>
+  </header>
+  @if (error()) {
+    <p class="error" role="alert">{{ error() }}</p>
+  }
+  @if (categoryMode()) {
+    <form #categoryForm="ngForm" (ngSubmit)="categoryForm.valid && saveCategory()">
+      <fieldset [disabled]="busy()">
+        <label
+          >Nombre de categoría<input
+            name="categoryName"
+            required
+            maxlength="100"
+            [(ngModel)]="categoryName"
+            placeholder="Ej. Bebidas"
+        /></label>
+        <label
+          >Descripción (opcional)<textarea
+            name="categoryDescription"
+            maxlength="1000"
+            [(ngModel)]="categoryDescription"
+          ></textarea>
+        </label>
+      </fieldset>
+      <footer>
+        <button type="button" (click)="categoryMode.set(false); error.set('')" [disabled]="busy()">
+          Volver al producto
+        </button>
+        <button
+          type="submit"
+          class="primary"
+          [disabled]="categoryForm.invalid || !categoryName.trim() || busy()"
+        >
+          {{ busy() ? 'Guardando…' : 'Crear categoría' }}
+        </button>
+      </footer>
+    </form>
+  } @else {
+    <form #productForm="ngForm" (ngSubmit)="productForm.valid && saveProduct()">
+      <fieldset [disabled]="busy() || loading() || processingPhoto()">
+        <label
+          >Nombre del producto<input
+            name="nombre"
+            required
+            maxlength="150"
+            [(ngModel)]="product.nombre"
+            placeholder="Ej. Agua mineral"
+        /></label>
+        <div class="category-row">
+          <label
+            >Categoría<select name="categoria" required [(ngModel)]="product.categoriaId">
+              <option [ngValue]="null">
+                {{ loading() ? 'Cargando categorías…' : 'Selecciona una categoría' }}
+              </option>
+              @for (c of categories(); track c.id) {
+                <option [ngValue]="c.id">{{ c.nombre }}</option>
+              }
+            </select></label
+          >
+          <button type="button" (click)="categoryMode.set(true); error.set('')">
+            + Nueva categoría
+          </button>
+        </div>
+        <label
+          >Código de barras / SKU (opcional)<input
+            name="codigo"
+            maxlength="50"
+            [(ngModel)]="product.codigoBarras"
+        /></label>
+        <div class="grid">
+          <label
+            >Contenido por unidad<input
+              type="number"
+              name="contenido"
+              required
+              min="0.001"
+              max="999999999"
+              step="0.001"
+              [(ngModel)]="product.contenido"
+              placeholder="Ej. 600"
+          /></label>
+          <label
+            >Unidad de medida<select name="unidad" required [(ngModel)]="product.unidadMedida">
+              <option value="">Selecciona una unidad</option>
+              <option value="und">Unidades (und)</option>
+              <option value="ml">Mililitros (ml)</option>
+              <option value="l">Litros (l)</option>
+              <option value="g">Gramos (g)</option>
+              <option value="kg">Kilogramos (kg)</option>
+              <option value="pack">Paquete (pack)</option>
+              <option value="caja">Caja</option>
+            </select></label
+          >
+          <label
+            >Precio de compra (S/)<input
+              type="number"
+              name="compra"
+              required
+              min="0"
+              max="9999999.99"
+              step="0.01"
+              [(ngModel)]="product.precioCompra"
+          /></label>
+          <label
+            >Precio de venta (S/)<input
+              type="number"
+              name="venta"
+              required
+              min="0.01"
+              max="9999999.99"
+              step="0.01"
+              [(ngModel)]="product.precioVenta"
+          /></label>
+          <label
+            >Stock inicial<input
+              type="number"
+              name="stock"
+              required
+              min="0"
+              max="1000000"
+              step="1"
+              [(ngModel)]="product.stockInicial"
+          /></label>
+          <label
+            >Stock mínimo<input
+              type="number"
+              name="minimo"
+              required
+              min="0"
+              max="1000000"
+              step="1"
+              [(ngModel)]="product.stockMinimo"
+          /></label>
+        </div>
+        <p class="hint">
+          El stock cuenta unidades de venta completas. El contenido describe cada unidad, por
+          ejemplo una botella de 600 ml.
+        </p>
+        <label
+          >Descripción (opcional)<textarea
+            name="descripcion"
+            maxlength="1000"
+            [(ngModel)]="product.descripcion"
+          ></textarea>
+        </label>
+        <section aria-label="Foto del producto">
+          <h3>Foto (opcional)</h3>
+          <div class="photo-options">
+            <button
+              type="button"
+              [attr.aria-pressed]="photoMode === 'upload'"
+              (click)="changePhotoMode('upload')"
+            >
+              Subir foto
+            </button>
+            <button
+              type="button"
+              [attr.aria-pressed]="photoMode === 'url'"
+              (click)="changePhotoMode('url')"
+            >
+              Pegar enlace
+            </button>
+          </div>
+          @if (photoMode === 'upload') {
+            <label
+              >JPG, PNG o WebP · Hasta 5 MB<input
+                type="file"
+                accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
+                (change)="readPhoto($event)"
+            /></label>
+          } @else {
+            <label
+              >Enlace de la imagen<input
+                type="url"
+                name="fotoUrl"
+                pattern="https://.+"
+                maxlength="2048"
+                [(ngModel)]="product.fotoUrl"
+                (ngModelChange)="photoError.set(false)"
+                placeholder="https://…"
+            /></label>
+          }
+          @if (product.fotoUrl) {
+            @if (!photoError()) {
+              <img
+                class="preview"
+                [src]="product.fotoUrl"
+                alt="Vista previa del producto"
+                referrerpolicy="no-referrer"
+                (error)="photoError.set(true)"
+              />
+            } @else {
+              <p class="hint">
+                No se puede mostrar este enlace. Comprueba que apunte a una imagen accesible.
+              </p>
+            }
+            <button type="button" (click)="product.fotoUrl = ''; photoError.set(false)">
+              Quitar foto
+            </button>
+          }
+        </section>
+      </fieldset>
+      @if (processingPhoto()) {
+        <p role="status">Procesando foto…</p>
+      }
+      <footer>
+        <button type="button" [disabled]="busy() || processingPhoto()" (click)="close()">
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          class="primary"
+          [disabled]="
+            productForm.invalid ||
+            !product.nombre.trim() ||
+            busy() ||
+            loading() ||
+            processingPhoto()
+          "
+        >
+          {{ busy() ? 'Guardando…' : 'Guardar producto' }}
+        </button>
+      </footer>
+    </form>
+  }
+</dialog>

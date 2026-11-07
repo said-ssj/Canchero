@@ -25,6 +25,20 @@
   --mat-icon-button-hover-state-layer-opacity: 0;
 }
 
+.pos-product-icon-box img {
+  width: 100%;
+  max-width: 100px;
+  height: 64px;
+  object-fit: contain;
+  border-radius: 6px;
+}
+.pos-product-measure {
+  display: block;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-top: 5px;
+}
+
 /* Scoped to this feature, including Material's internal animation elements. */
 :host ::ng-deep *,
 :host ::ng-deep *::before,
@@ -1230,4 +1244,75 @@ button:disabled {
   border-radius: 6px;
   font-size: 0.8rem;
   font-weight: 600;
+}
+
+.kardex-operation {
+  display: inline-flex;
+  white-space: nowrap;
+  align-items: center;
+}
+.pos-view-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0;
+}
+.pos-view-toolbar > span {
+  color: var(--color-ink-700);
+  font-size: 0.8rem;
+}
+.pos-view-options {
+  display: flex;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.pos-view-options button {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 32px;
+  border: 0;
+  background: var(--color-surface-card);
+  color: var(--color-ink-700);
+  cursor: pointer;
+}
+.pos-view-options button[aria-pressed='true'] {
+  background: var(--color-success-100);
+  color: #25832a;
+}
+.pos-view-options button:focus-visible {
+  outline: 2px solid #25832a;
+  outline-offset: -3px;
+}
+:host .pos-products-grid.is-list {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+.pos-products-grid.is-list .pos-product-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px 16px;
+  align-items: center;
+}
+.is-list .pos-product-icon-box {
+  display: none;
+}
+.is-list .pos-product-badge-row {
+  grid-column: 1 / -1;
+}
+.is-list .pos-product-details {
+  margin: 0;
+}
+.is-list .pos-product-footer {
+  border: 0;
+  padding: 0;
+  gap: 12px;
+  justify-content: flex-end;
+}
+@media (max-width: 480px) {
+  .is-list .pos-product-footer {
+    grid-column: 1 / -1;
+  }
 }

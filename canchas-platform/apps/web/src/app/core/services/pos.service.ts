@@ -22,14 +22,7 @@ const STORAGE_KEY_KARDEX = 'canchero_pos_kardex';
 const STORAGE_KEY_CORRELATIVOS = 'canchero_pos_correlativos';
 const STORAGE_KEY_FAVORITOS = 'canchero_pos_favoritos';
 
-const CATEGORIAS_DEFAULT: CategoriaProducto[] = [
-  { id: 1, nombre: 'Todas', icono: 'apps' },
-  { id: 2, nombre: 'Rehidratantes & Bebidas', icono: 'sports_bar' },
-  { id: 3, nombre: 'Aguas & Energizantes', icono: 'local_drink' },
-  { id: 4, nombre: 'Snacks & Golosinas', icono: 'fastfood' },
-  { id: 5, nombre: 'Cervezas & Licores', icono: 'sports_bar' },
-  { id: 6, nombre: 'Primeros Auxilios & Accesorios', icono: 'medical_services' },
-];
+const CATEGORIAS_DEFAULT: CategoriaProducto[] = [{ id: 0, nombre: 'Todas', icono: 'apps' }];
 
 @Injectable({ providedIn: 'root' })
 export class PosService {
@@ -53,10 +46,10 @@ export class PosService {
   private loadRequest = 0;
 
   readonly correlativos = signal<{ boleta: number; factura: number; ticket: number }>(
-    this.leerCorrelativosStorage()
+    this.leerCorrelativosStorage(),
   );
 
-  readonly categoriaSeleccionada = signal<number>(1); // 1 = Todas
+  readonly categoriaSeleccionada = signal<number>(0); // 0 no colisiona con IDs reales
   readonly filtroBusqueda = signal<string>('');
   readonly soloFavoritos = signal<boolean>(false);
   readonly favoritosProductoIds = signal<Set<number>>(this.leerFavoritosStorage());
@@ -73,7 +66,7 @@ export class PosService {
     const favoritos = this.favoritosProductoIds();
 
     return this.productos().filter((p) => {
-      const coincideCat = catId === 1 || p.categoriaId === catId;
+      const coincideCat = catId === 0 || p.categoriaId === catId;
       const coincideFavorito = !soloFavoritos || favoritos.has(p.id);
       const coincideQuery =
         !query ||
@@ -126,6 +119,8 @@ export class PosService {
       this.auth.currentUser()?.id;
       this.db.sedeOperativaId();
       this.productos.set([]);
+      this.categorias.set(CATEGORIAS_DEFAULT);
+      this.categoriaSeleccionada.set(0);
       this.ventas.set([]);
       this.kardex.set([]);
       this.carrito.set([]);
@@ -152,7 +147,9 @@ export class PosService {
   // ===== ACCIONES DEL CARRITO POS =====
 
   agregarAlCarrito(producto: Producto, cantidad = 1): void {
-    const scoped = this.productos().find(p => p.id === producto.id && this.belongsToCurrentSede(p));
+    const scoped = this.productos().find(
+      (p) => p.id === producto.id && this.belongsToCurrentSede(p),
+    );
     if (!this.auth.currentUser() || !scoped || !this.belongsToCurrentSede(producto)) {
       throw new Error('El producto no pertenece al inventario cargado de esta sede.');
     }
@@ -167,9 +164,7 @@ export class PosService {
     if (index >= 0) {
       const nuevaCantidad = items[index].cantidad + cantidad;
       if (nuevaCantidad > producto.stock) {
-        throw new Error(
-          `Solo hay ${producto.stock} unidades disponibles de "${producto.nombre}".`
-        );
+        throw new Error(`Solo hay ${producto.stock} unidades disponibles de "${producto.nombre}".`);
       }
       items[index] = {
         ...items[index],
@@ -261,14 +256,19 @@ export class PosService {
     pagos?: { metodoPago: string; monto: number; montoRecibido?: number }[];
   }): Promise<VentaPOS> {
     if (this.processing()) throw new Error('Ya se esta procesando una venta.');
-    if (!this.paymentsReady()) throw new Error('El registro de pagos requiere completar la migracion de base de datos.');
+    if (!this.paymentsReady())
+      throw new Error('El registro de pagos requiere completar la migracion de base de datos.');
     const userId = this.auth.currentUser()?.id;
     const sedeId = this.currentSedeId();
     const sessionId = this.cajaService.sesionActiva()?.id;
-    if (!userId || !sedeId || !sessionId) throw new Error('Inicia sesion y abre un turno de esta sede.');
-    const items = this.carrito().map(i => ({
-      productoId: i.producto.id, nombre: i.producto.nombre, cantidad: i.cantidad,
-      precioUnitario: i.producto.precioVenta, subtotal: i.subtotal,
+    if (!userId || !sedeId || !sessionId)
+      throw new Error('Inicia sesion y abre un turno de esta sede.');
+    const items = this.carrito().map((i) => ({
+      productoId: i.producto.id,
+      nombre: i.producto.nombre,
+      cantidad: i.cantidad,
+      precioUnitario: i.producto.precioVenta,
+      subtotal: i.subtotal,
     }));
     if (!items.length) throw new Error('El carrito esta vacio.');
     const payload = { ...datos, sedeId, sesionCajaId: sessionId, items };
@@ -278,15 +278,24 @@ export class PosService {
     }
     this.processing.set(true);
     try {
-      const saved = await firstValueFrom(this.http.post<VentaPOS>(`${this.apiUrl}/sales`, {
-        ...payload, idempotencyKey: this.pendingOperation.key,
-      }));
-      if (!saved?.id || Number(saved.sedeId) !== sedeId) throw new Error('El servidor no confirmo la venta.');
-      if (this.auth.currentUser()?.id !== userId || this.currentSedeId() !== sedeId ||
-          this.cajaService.sesionActiva()?.id !== sessionId) {
-        throw new Error('La venta se guardo en el contexto anterior. Consulta su historial antes de reintentar.');
+      const saved = await firstValueFrom(
+        this.http.post<VentaPOS>(`${this.apiUrl}/sales`, {
+          ...payload,
+          idempotencyKey: this.pendingOperation.key,
+        }),
+      );
+      if (!saved?.id || Number(saved.sedeId) !== sedeId)
+        throw new Error('El servidor no confirmo la venta.');
+      if (
+        this.auth.currentUser()?.id !== userId ||
+        this.currentSedeId() !== sedeId ||
+        this.cajaService.sesionActiva()?.id !== sessionId
+      ) {
+        throw new Error(
+          'La venta se guardo en el contexto anterior. Consulta su historial antes de reintentar.',
+        );
       }
-      this.ventas.update(current => [saved, ...current.filter(v => v.id !== saved.id)]);
+      this.ventas.update((current) => [saved, ...current.filter((v) => v.id !== saved.id)]);
       this.limpiarCarrito();
       this.pendingOperation = null;
       await this.cargarDesdeBackendSiExiste();
@@ -304,7 +313,7 @@ export class PosService {
     productoId: number,
     cantidad: number,
     precioCompra: number,
-    motivo: string
+    motivo: string,
   ): void {
     if (cantidad <= 0) return;
 
@@ -345,21 +354,23 @@ export class PosService {
 
   // ===== PERSISTENCIA ASÍNCRONA BACKEND =====
 
-
-
   private async sincronizarEntradaMercaderiaBackend(movimiento: MovimientoKardex): Promise<void> {
     try {
-      await firstValueFrom(this.http.post<MovimientoKardex>(`${this.apiUrl}/inventory/entries`, {
-        productoId: movimiento.productoId,
-        cantidad: movimiento.cantidad,
-        precioCompra: movimiento.precioUnitario,
-        motivo: movimiento.motivo,
-        sedeId: this.db.getSedeOperativaId(),
-      }));
+      await firstValueFrom(
+        this.http.post<MovimientoKardex>(`${this.apiUrl}/inventory/entries`, {
+          productoId: movimiento.productoId,
+          cantidad: movimiento.cantidad,
+          precioCompra: movimiento.precioUnitario,
+          motivo: movimiento.motivo,
+          sedeId: this.db.getSedeOperativaId(),
+        }),
+      );
       await this.cargarDesdeBackendSiExiste();
     } catch (error) {
       console.warn('Advertencia sincronizando entrada de mercadería en backend:', error);
-      this.loadError.set('No se pudo guardar el ingreso en el servidor. No se reenviara por otra via.');
+      this.loadError.set(
+        'No se pudo guardar el ingreso en el servidor. No se reenviara por otra via.',
+      );
     }
   }
 
@@ -376,7 +387,9 @@ export class PosService {
   private leerVentasStorage(): VentaPOS[] {
     try {
       const data = localStorage.getItem(this.storageKey(STORAGE_KEY_VENTAS));
-      return data ? (JSON.parse(data) as VentaPOS[]).filter((v) => this.belongsToCurrentSede(v)) : [];
+      return data
+        ? (JSON.parse(data) as VentaPOS[]).filter((v) => this.belongsToCurrentSede(v))
+        : [];
     } catch {
       return [];
     }
@@ -384,7 +397,10 @@ export class PosService {
 
   private guardarVentasStorage(ventas: VentaPOS[]): void {
     try {
-      localStorage.setItem(this.storageKey(STORAGE_KEY_VENTAS), JSON.stringify(ventas.filter((v) => this.belongsToCurrentSede(v))));
+      localStorage.setItem(
+        this.storageKey(STORAGE_KEY_VENTAS),
+        JSON.stringify(ventas.filter((v) => this.belongsToCurrentSede(v))),
+      );
     } catch {
       // Fallback
     }
@@ -395,7 +411,13 @@ export class PosService {
       const data = localStorage.getItem(this.storageKey(STORAGE_KEY_KARDEX));
       if (!data) return [];
       const k = JSON.parse(data);
-      if (Array.isArray(k) && k.some((item) => item.motivo?.includes('Inventario Inicial') || item.motivo?.includes('pedido Backus'))) {
+      if (
+        Array.isArray(k) &&
+        k.some(
+          (item) =>
+            item.motivo?.includes('Inventario Inicial') || item.motivo?.includes('pedido Backus'),
+        )
+      ) {
         localStorage.removeItem(this.storageKey(STORAGE_KEY_KARDEX));
         return [];
       }
@@ -407,7 +429,10 @@ export class PosService {
 
   private guardarKardexStorage(kardex: MovimientoKardex[]): void {
     try {
-      localStorage.setItem(this.storageKey(STORAGE_KEY_KARDEX), JSON.stringify(kardex.filter((item) => this.belongsToCurrentSede(item))));
+      localStorage.setItem(
+        this.storageKey(STORAGE_KEY_KARDEX),
+        JSON.stringify(kardex.filter((item) => this.belongsToCurrentSede(item))),
+      );
     } catch {
       // Fallback
     }
@@ -422,11 +447,7 @@ export class PosService {
     }
   }
 
-  private guardarCorrelativosStorage(c: {
-    boleta: number;
-    factura: number;
-    ticket: number;
-  }): void {
+  private guardarCorrelativosStorage(c: { boleta: number; factura: number; ticket: number }): void {
     try {
       localStorage.setItem(this.storageKey(STORAGE_KEY_CORRELATIVOS), JSON.stringify(c));
     } catch {
@@ -460,10 +481,18 @@ export class PosService {
       const channelName = `canchero-pos-refresh-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
       supabase
         .channel(channelName)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'producto' }, () => this.scheduleBackendRefresh())
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'kardex' }, () => this.scheduleBackendRefresh())
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'venta' }, () => this.scheduleBackendRefresh())
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'venta_detalle' }, () => this.scheduleBackendRefresh())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'producto' }, () =>
+          this.scheduleBackendRefresh(),
+        )
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'kardex' }, () =>
+          this.scheduleBackendRefresh(),
+        )
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'venta' }, () =>
+          this.scheduleBackendRefresh(),
+        )
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'venta_detalle' }, () =>
+          this.scheduleBackendRefresh(),
+        )
         .subscribe();
     } catch {
       // Entorno de test o offline sin realtime
@@ -484,23 +513,41 @@ export class PosService {
     const sedeId = this.currentSedeId();
     const ownerId = this.auth.currentUser()?.id;
     const request = ++this.loadRequest;
-      this.paymentsReady.set(false);
+    this.paymentsReady.set(false);
     this.loadError.set('');
-    if (!sedeId || !ownerId) { this.loading.set(false); return; }
+    if (!sedeId || !ownerId) {
+      this.loading.set(false);
+      return;
+    }
     this.loading.set(true);
     try {
-      const [productos, kardex, ventas, capabilities] = await Promise.all([
+      const [productos, kardex, ventas, capabilities, categorias] = await Promise.all([
         firstValueFrom(this.http.get<Producto[]>(`${this.apiUrl}/products?sedeId=${sedeId}`)),
-        firstValueFrom(this.http.get<MovimientoKardex[]>(`${this.apiUrl}/inventory?sedeId=${sedeId}`)),
+        firstValueFrom(
+          this.http.get<MovimientoKardex[]>(`${this.apiUrl}/inventory?sedeId=${sedeId}`),
+        ),
         firstValueFrom(this.http.get<VentaPOS[]>(`${this.apiUrl}/sales?sedeId=${sedeId}`)),
-          firstValueFrom(this.http.get<{ready: boolean}>(`${this.apiUrl}/payment-capabilities?sedeId=${sedeId}`)),
+        firstValueFrom(
+          this.http.get<{ ready: boolean }>(`${this.apiUrl}/payment-capabilities?sedeId=${sedeId}`),
+        ),
+        firstValueFrom(
+          this.http.get<CategoriaProducto[]>(`${this.apiUrl}/catalog/categories?sedeId=${sedeId}`),
+        ),
       ]);
-      if (request !== this.loadRequest || this.currentSedeId() !== sedeId || this.auth.currentUser()?.id !== ownerId) return;
+      if (
+        request !== this.loadRequest ||
+        this.currentSedeId() !== sedeId ||
+        this.auth.currentUser()?.id !== ownerId
+      )
+        return;
       const belongs = (item: { sedeId?: number | null }) => Number(item.sedeId) === sedeId;
       this.productos.set((productos ?? []).filter(belongs));
+      this.categorias.set([...CATEGORIAS_DEFAULT, ...categorias]);
+      if (!this.categorias().some((c) => c.id === this.categoriaSeleccionada()))
+        this.categoriaSeleccionada.set(0);
       this.kardex.set((kardex ?? []).filter(belongs));
       this.ventas.set((ventas ?? []).filter(belongs));
-        this.paymentsReady.set(capabilities?.ready === true);
+      this.paymentsReady.set(capabilities?.ready === true);
     } catch {
       if (request === this.loadRequest) {
         this.productos.set([]);
@@ -513,5 +560,4 @@ export class PosService {
       if (request === this.loadRequest) this.loading.set(false);
     }
   }
-
 }

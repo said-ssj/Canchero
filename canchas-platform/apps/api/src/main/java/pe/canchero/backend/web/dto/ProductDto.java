@@ -11,6 +11,10 @@ public record ProductDto(
         double precioVenta,
         int stock,
         int stockMinimo,
-        String icono
+        String icono,
+        java.math.BigDecimal contenido,
+        String unidadMedida,
+        String descripcion,
+        String fotoUrl
 ) {
 }

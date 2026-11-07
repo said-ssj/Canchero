@@ -9,6 +9,9 @@ export interface CategoriaProducto {
 }
 
 export interface Producto {
+  contenido?: number;
+  unidadMedida?: string;
+  descripcion?: string;
   id: number;
   sedeId?: number;
   categoriaId: number;
@@ -47,8 +50,8 @@ export interface VentaPOS {
     subtotal: number;
   }[];
   subtotal: number; // Base imponible = Total / 1.18
-  igv: number;      // IGV (18%) = Total - Subtotal
-  total: number;    // ∑ (Cantidad * Precio Venta)
+  igv: number; // IGV (18%) = Total - Subtotal
+  total: number; // ∑ (Cantidad * Precio Venta)
   metodoPago: MetodoPagoPOS;
   montoPagado?: number;
   vuelto?: number;

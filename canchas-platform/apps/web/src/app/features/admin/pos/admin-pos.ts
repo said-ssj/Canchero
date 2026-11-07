@@ -1,5 +1,6 @@
 import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
 import { AdminContext } from '../admin-context.service';
+import { PosCatalogEditor } from './pos-catalog-editor';
 import { CommonModule, DatePipe, UpperCasePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
@@ -16,17 +17,13 @@ import { PosService } from '@core/services/pos.service';
 import { CajaService } from '@core/services/caja.service';
 import { AuthService } from '@core/auth/auth.service';
 import { DatabaseService } from '@core/supabase/database.service';
-import type {
-  MetodoPagoPOS,
-  Producto,
-  TipoComprobante,
-  VentaPOS,
-} from '@shared/models/pos.model';
+import type { MetodoPagoPOS, Producto, TipoComprobante, VentaPOS } from '@shared/models/pos.model';
 
 @Component({
   standalone: true,
   selector: 'app-admin-pos',
   imports: [
+    PosCatalogEditor,
     CommonModule,
     DatePipe,
     UpperCasePipe,
@@ -48,19 +45,45 @@ import type {
 export class AdminPos {
   private readonly context = inject(AdminContext);
   readonly venueIdInput = input<number | null | undefined>(undefined, { alias: 'venueId' });
-  readonly venueId = computed(() => this.venueIdInput() !== undefined ? this.venueIdInput()! : this.context.venue()?.id ?? null);
+  readonly venueId = computed(() =>
+    this.venueIdInput() !== undefined ? this.venueIdInput()! : (this.context.venue()?.id ?? null),
+  );
   readonly venueNameInput = input<string | undefined>(undefined, { alias: 'venueName' });
-  readonly venueName = computed(() => this.venueNameInput() !== undefined ? this.venueNameInput()! : this.context.venue()?.nombre ?? 'Sin sede seleccionada');
+  readonly venueName = computed(() =>
+    this.venueNameInput() !== undefined
+      ? this.venueNameInput()!
+      : (this.context.venue()?.nombre ?? 'Sin sede seleccionada'),
+  );
   readonly venueAddressInput = input<string | undefined>(undefined, { alias: 'venueAddress' });
-  readonly venueAddress = computed(() => this.venueAddressInput() !== undefined ? this.venueAddressInput()! : this.context.venue()?.direccion ?? '');
+  readonly venueAddress = computed(() =>
+    this.venueAddressInput() !== undefined
+      ? this.venueAddressInput()!
+      : (this.context.venue()?.direccion ?? ''),
+  );
   readonly venuePhoneInput = input<string | undefined>(undefined, { alias: 'venuePhone' });
-  readonly venuePhone = computed(() => this.venuePhoneInput() !== undefined ? this.venuePhoneInput()! : this.context.venue()?.telefono ?? '');
+  readonly venuePhone = computed(() =>
+    this.venuePhoneInput() !== undefined
+      ? this.venuePhoneInput()!
+      : (this.context.venue()?.telefono ?? ''),
+  );
   readonly adminNameInput = input<string | undefined>(undefined, { alias: 'adminName' });
-  readonly adminName = computed(() => this.adminNameInput() !== undefined ? this.adminNameInput()! : this.auth.currentUser()?.nombre ?? '');
+  readonly adminName = computed(() =>
+    this.adminNameInput() !== undefined
+      ? this.adminNameInput()!
+      : (this.auth.currentUser()?.nombre ?? ''),
+  );
   readonly loadingInput = input<boolean | undefined>(undefined, { alias: 'loading' });
-  readonly loading = computed(() => this.loadingInput() !== undefined ? this.loadingInput()! : this.context.loading() || (this.posService.loading?.() ?? false));
+  readonly loading = computed(() =>
+    this.loadingInput() !== undefined
+      ? this.loadingInput()!
+      : this.context.loading() || (this.posService.loading?.() ?? false),
+  );
   readonly errorInput = input<string | undefined>(undefined, { alias: 'error' });
-  readonly error = computed(() => this.errorInput() !== undefined ? this.errorInput()! : this.context.error() || (this.posService.loadError?.() ?? ''));
+  readonly error = computed(() =>
+    this.errorInput() !== undefined
+      ? this.errorInput()!
+      : this.context.error() || (this.posService.loadError?.() ?? ''),
+  );
 
   readonly notice = output<string>();
 
@@ -70,9 +93,37 @@ export class AdminPos {
   protected readonly db = inject(DatabaseService);
 
   // Subpestañas del módulo POS
+  readonly productView = signal<'cards' | 'list'>('cards');
+  readonly catalogVenueId = signal<number | null>(null);
+  readonly failedProductPhotos = signal<Set<number>>(new Set());
+  productPhotoFailed(id: number): void {
+    this.failedProductPhotos.update((ids) => new Set([...ids, id]));
+  }
+  closeCatalog(): void {
+    this.catalogVenueId.set(null);
+    this.posService.recargar();
+  }
   readonly posSubTab = signal<'caja_pos' | 'kardex' | 'historial_ventas'>('caja_pos');
-  readonly posKardexColumns = ['fecha', 'producto', 'operacion', 'cantidad', 'precio', 'saldo', 'motivo'];
-  readonly posVentasColumns = ['numero', 'fecha', 'cliente', 'tipo', 'metodo', 'subtotal', 'igv', 'total', 'nota'];
+  readonly posKardexColumns = [
+    'fecha',
+    'producto',
+    'operacion',
+    'cantidad',
+    'precio',
+    'saldo',
+    'motivo',
+  ];
+  readonly posVentasColumns = [
+    'numero',
+    'fecha',
+    'cliente',
+    'tipo',
+    'metodo',
+    'subtotal',
+    'igv',
+    'total',
+    'nota',
+  ];
 
   // Formulario y estado de cobro
   readonly posTipoComprobante = signal<TipoComprobante>('boleta');
@@ -140,7 +191,11 @@ export class AdminPos {
   }
 
   setPosTabByIndex(index: number): void {
-    const tabs: Array<'caja_pos' | 'kardex' | 'historial_ventas'> = ['caja_pos', 'kardex', 'historial_ventas'];
+    const tabs: Array<'caja_pos' | 'kardex' | 'historial_ventas'> = [
+      'caja_pos',
+      'kardex',
+      'historial_ventas',
+    ];
     this.posSubTab.set(tabs[index] ?? 'caja_pos');
   }
 
@@ -227,11 +282,16 @@ export class AdminPos {
   }
 
   readonly mediosMixtos = ['efectivo', 'yape', 'plin', 'tarjeta'] as const;
-  readonly pagosMixtos = signal<Record<string, number>>({ efectivo: 0, yape: 0, plin: 0, tarjeta: 0 });
+  readonly pagosMixtos = signal<Record<string, number>>({
+    efectivo: 0,
+    yape: 0,
+    plin: 0,
+    tarjeta: 0,
+  });
 
   setImporteMixto(medio: string, event: Event): void {
     const value = Number((event.target as HTMLInputElement).value);
-    this.pagosMixtos.update(current => ({ ...current, [medio]: value }));
+    this.pagosMixtos.update((current) => ({ ...current, [medio]: value }));
   }
 
   async procesarCobroPOS(): Promise<void> {
@@ -250,17 +310,23 @@ export class AdminPos {
       const pagado = this.posMontoPagado();
       if (pagado < total) {
         this.notice.emit(
-          `El efectivo recibido (S/ ${pagado.toFixed(2)}) es menor al total a cobrar (S/ ${total.toFixed(2)})`
+          `El efectivo recibido (S/ ${pagado.toFixed(2)}) es menor al total a cobrar (S/ ${total.toFixed(2)})`,
         );
         return;
       }
     }
 
     try {
-      const pagos = this.posMetodoPago() === 'mixto'
-        ? this.mediosMixtos.filter(m => this.pagosMixtos()[m] > 0).map(metodoPago => ({ metodoPago, monto: this.pagosMixtos()[metodoPago] }))
-        : undefined;
-      if (pagos && Math.round(pagos.reduce((sum, p) => sum + p.monto, 0) * 100) !== Math.round(total * 100)) {
+      const pagos =
+        this.posMetodoPago() === 'mixto'
+          ? this.mediosMixtos
+              .filter((m) => this.pagosMixtos()[m] > 0)
+              .map((metodoPago) => ({ metodoPago, monto: this.pagosMixtos()[metodoPago] }))
+          : undefined;
+      if (
+        pagos &&
+        Math.round(pagos.reduce((sum, p) => sum + p.monto, 0) * 100) !== Math.round(total * 100)
+      ) {
         this.notice.emit('La suma de los medios debe coincidir con el total.');
         return;
       }
@@ -279,7 +345,9 @@ export class AdminPos {
       this.posMontoPagado.set(0);
       this.notice.emit(`Venta exitosa: Comprobante ${venta.numeroComprobante} emitido`);
     } catch (err: any) {
-      this.notice.emit(err?.error?.reason || err?.error?.message || err?.message || 'Error al procesar la venta');
+      this.notice.emit(
+        err?.error?.reason || err?.error?.message || err?.message || 'Error al procesar la venta',
+      );
     }
   }
 
@@ -471,6 +539,8 @@ export class AdminPos {
     this.posService.registrarEntradaMercaderia(prodId, cant, precio, motivo);
     const prod = this.posService.productos().find((p) => p.id === prodId);
     this.modalIngresoMercaderiaOpen.set(false);
-    this.notice.emit(`Ingreso registrado: +${cant} unids en Kardex para ${prod?.nombre || 'Producto'}`);
+    this.notice.emit(
+      `Ingreso registrado: +${cant} unids en Kardex para ${prod?.nombre || 'Producto'}`,
+    );
   }
 }

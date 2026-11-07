@@ -187,6 +187,10 @@ class CashAndLegacyOperationsIsolationTest {
                     precio_compra decimal(10,2),
                     precio_venta decimal(10,2),
                     stock_minimo int,
+                    contenido numeric,
+                    unidad_medida varchar(20),
+                    descripcion text,
+                    foto_url text,
                     estado char(1),
                     usucre varchar(40),
                     pccre varchar(40)

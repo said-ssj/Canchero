@@ -53,6 +53,7 @@ export class AdminLayout implements OnInit, OnDestroy {
   readonly context = inject(AdminContext);
   private readonly router = inject(Router);
   protected readonly auth = inject(AuthService);
+  readonly profile = this.auth.playerProfile;
   protected readonly db = inject(DatabaseService);
   protected readonly cajaService = inject(CajaService);
   protected readonly posService = inject(PosService);
@@ -119,6 +120,11 @@ export class AdminLayout implements OnInit, OnDestroy {
   readonly stockCriticoCount = computed(() => this.posService.productosStockCritico().length);
 
   constructor() {
+    effect((onCleanup) => {
+      if (!this.auth.currentUser()?.id) return;
+      const request = this.auth.loadPlayerProfile().subscribe({ error: () => undefined });
+      onCleanup(() => request.unsubscribe());
+    });
     effect(() => {
       if (!this.auth.currentUser() && !this.auth.restoring?.())
         void this.router.navigate(['/login']);
@@ -190,7 +196,12 @@ export class AdminLayout implements OnInit, OnDestroy {
   }
 
   nombreAdmin(): string {
-    return this.auth.currentUser()?.nombre ?? 'Administrador';
+    const profile = this.profile();
+    return (
+      [profile?.nombre, profile?.apellido].filter(Boolean).join(' ') ||
+      this.auth.currentUser()?.nombre ||
+      'Administrador'
+    );
   }
 
   perfilEmail(): string {
