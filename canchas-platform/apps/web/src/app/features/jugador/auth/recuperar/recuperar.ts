@@ -1,6 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
+import { Location } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from '@core/auth/auth.service';
@@ -17,6 +18,11 @@ export class Recuperar {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   protected readonly token = inject(ActivatedRoute).snapshot.queryParamMap.get('token') ?? '';
+
+  constructor() {
+    // El enlace es una llave de la cuenta: se saca de la barra de direcciones para que no quede en el historial.
+    if (this.token) inject(Location).replaceState('/recuperar');
+  }
 
   protected readonly email = signal('');
   protected readonly password = signal('');

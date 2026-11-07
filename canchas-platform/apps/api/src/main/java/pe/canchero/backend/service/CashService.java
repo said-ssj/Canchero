@@ -85,12 +85,13 @@ public class CashService extends JdbcSupport {
 
     public Optional<CashSessionDto> getOpenCashSessionForOwner(AuthUserDto user) {
         UUID ownerUuid = resolveOperationalUserId(user.id());
-        boolean admin = Roles.isAdmin(user.rol()); // el admin de la plataforma ve todas las sedes
+        // Sin cajaId solo se buscan sedes propias, también para el admin: "la última caja abierta" de toda la
+        // plataforma podría ser de otra sede. Para una sede ajena el admin pide la caja con ?cajaId=.
         return jdbc.query(cashSessionSql() + """
                 join sede s on s.id_sede = c.id_sede
-                where sc.estado = 'A' and sc.fecha_cierre is null and (? or s.id_dueno = ?)
+                where sc.estado = 'A' and sc.fecha_cierre is null and s.id_dueno = ?
                 order by sc.fecha_apertura desc limit 1
-                """, cashSessionRowMapper(), admin, ownerUuid).stream().findFirst();
+                """, cashSessionRowMapper(), ownerUuid).stream().findFirst();
     }
 
     public List<CashMovementDto> listCashMovements(int sessionId) {

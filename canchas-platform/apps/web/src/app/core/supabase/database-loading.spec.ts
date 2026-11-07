@@ -11,14 +11,36 @@ describe('DatabaseService catalog lifecycle', () => {
 
   it('recovers through the API using the confirmed identity and preserves failure as an error', async () => {
     vi.spyOn(loader, 'cargarDatosIniciales').mockResolvedValue(undefined);
-    const post = vi.fn().mockReturnValue(of({ id: '701', venueId: 54, nombre: 'Grass', disponible: true, precioHora: 50, precioHoraNoche: 60 }));
+    const post = vi
+      .fn()
+      .mockReturnValue(
+        of({
+          id: '701',
+          venueId: 54,
+          nombre: 'Grass',
+          disponible: true,
+          precioHora: 50,
+          precioHoraNoche: 60,
+        }),
+      );
     TestBed.configureTestingModule({ providers: [{ provide: HttpClient, useValue: { post } }] });
     const service = TestBed.inject(DatabaseService);
-    const draft = { id: 601, sede_id: 54, nombre: 'Grass', activa: true, precio_hora: 50, precio_hora_noche: 60 };
+    const draft = {
+      id: 601,
+      sede_id: 54,
+      nombre: 'Grass',
+      activa: true,
+      precio_hora: 50,
+      precio_hora_noche: 60,
+    };
     const remap = vi.spyOn(service as any, 'updateLocalCanchaId').mockImplementation(() => {});
     await service.recuperarCancha(draft);
     expect(post.mock.calls[0][0]).toMatch(/\/courts\/recover$/);
-    expect(post.mock.calls[0][1]).toMatchObject({ venueId: '54', precioHora: 50, precioHoraNoche: 60 });
+    expect(post.mock.calls[0][1]).toMatchObject({
+      venueId: '54',
+      precioHora: 50,
+      precioHoraNoche: 60,
+    });
     expect(remap).toHaveBeenCalledWith(601, 701);
     expect(service.canchas()[0].id).toBe(701);
     post.mockReturnValue(throwError(() => new Error('failed')));
@@ -49,6 +71,19 @@ describe('DatabaseService catalog lifecycle', () => {
     expect(service.canchas()[0].activa).toBe(false);
   });
 
+  it('un admin no edita "su primera sede" (sería de otro dueño): debe indicar cuál', async () => {
+    vi.spyOn(loader, 'cargarDatosIniciales').mockResolvedValue(undefined);
+    const put = vi.fn().mockReturnValue(of({ id: 5, nombre: 'Nueva' }));
+    TestBed.configureTestingModule({ providers: [{ provide: HttpClient, useValue: { put } }] });
+    const service = TestBed.inject(DatabaseService);
+    vi.spyOn((service as any).auth, 'currentUser').mockReturnValue({ id: 'admin-1', rol: 'admin' });
+    service.sedes.set([{ id: 5, nombre: 'Ajena', dueno_id: 'owner-b' }] as any);
+    await expect(service.saveOrUpdateSede('admin-1', { nombre: 'X' })).rejects.toThrow('qué sede');
+    expect(put).not.toHaveBeenCalled();
+    await service.saveOrUpdateSede('admin-1', { id: 5, nombre: 'Nueva' });
+    expect(put.mock.calls[0][0]).toMatch(/\/venues\/5$/);
+  });
+
   it('keeps unsaved local drafts separate from the operational catalog', () => {
     vi.spyOn(loader, 'cargarDatosIniciales').mockResolvedValue(undefined);
     TestBed.configureTestingModule({ providers: [{ provide: HttpClient, useValue: {} }] });
@@ -62,7 +97,9 @@ describe('DatabaseService catalog lifecycle', () => {
 
   it('finishes an empty load and coalesces overlapping refresh requests', async () => {
     let finish!: () => void;
-    const pending = new Promise<void>(resolve => { finish = resolve; });
+    const pending = new Promise<void>((resolve) => {
+      finish = resolve;
+    });
     // Mock the network boundary, not the loading implementation being tested.
     const load = vi.spyOn(loader, 'cargarDatosIniciales').mockReturnValue(pending);
     TestBed.configureTestingModule({ providers: [{ provide: HttpClient, useValue: {} }] });
@@ -88,8 +125,11 @@ describe('DatabaseService catalog lifecycle', () => {
     await service.refreshCatalogo();
     const uuid = 'f2340000-0000-0000-0000-000000000001';
     const legacy = service['uuidToNumber'](uuid);
-    service.sedes.set([{ id: 10, dueno_id: legacy }, { id: 20, dueno_id: 1 }]);
-    expect(service.getSedesPorDueno(uuid).map(sede => sede.id)).toEqual([10]);
+    service.sedes.set([
+      { id: 10, dueno_id: legacy },
+      { id: 20, dueno_id: 1 },
+    ]);
+    expect(service.getSedesPorDueno(uuid).map((sede) => sede.id)).toEqual([10]);
     expect(service.getSedesPorDueno('')).toEqual([]);
   });
 });

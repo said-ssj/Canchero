@@ -77,7 +77,7 @@ class DatabaseAuthServiceTest {
         jdbc.update("update usuario set intentos_fallidos = 10");               // cuenta bloqueada
         assertTrue(service.requestPasswordReset("nadie@canchero.pe").isEmpty());
         String token = service.requestPasswordReset(" DUENO@canchero.pe ").orElseThrow();
-        assertTrue(service.requestPasswordReset("dueno@canchero.pe").isEmpty()); // no reenviar antes de 1 min
+        assertTrue(service.requestPasswordReset("dueno@canchero.pe").isEmpty()); // no reemplaza un enlace vigente
         assertNotEquals(token, jdbc.queryForObject("select reset_token_hash from usuario", String.class));
         assertEquals(400, assertThrows(org.springframework.web.server.ResponseStatusException.class,
                 () -> service.resetPassword(token, "corta")).getStatusCode().value());

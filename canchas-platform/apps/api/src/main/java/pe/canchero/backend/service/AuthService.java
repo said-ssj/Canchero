@@ -271,7 +271,7 @@ public class AuthService extends JdbcSupport {
 
     /**
      * Crea un enlace de recuperación (30 min, un solo uso) y devuelve el token en claro para enviarlo por correo.
-     * Vacío si el correo no tiene cuenta activa o si ya se pidió uno hace menos de un minuto.
+     * Vacío si el correo no tiene cuenta activa o si ya tiene un enlace vigente: no se reemplaza, así nadie puede anular el enlace del dueño pidiendo otro.
      */
     public Optional<String> requestPasswordReset(String rawEmail) {
         String email = rawEmail == null ? "" : rawEmail.trim().toLowerCase(Locale.ROOT);
@@ -280,7 +280,7 @@ public class AuthService extends JdbcSupport {
         int updated = jdbc.update("""
                 update usuario set reset_token_hash = ?, reset_expira = now() + interval '30' minute
                 where lower(correo) = ? and estado = 'A'
-                  and (reset_expira is null or reset_expira < now() + interval '29' minute)
+                  and (reset_expira is null or reset_expira <= now())
                 """, sha256(token), email);
         return updated == 1 ? Optional.of(token) : Optional.empty();
     }

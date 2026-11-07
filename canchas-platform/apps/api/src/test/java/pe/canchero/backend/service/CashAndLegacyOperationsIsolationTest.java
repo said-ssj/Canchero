@@ -438,6 +438,15 @@ class CashAndLegacyOperationsIsolationTest {
     }
 
     @Test
+    void openSessionWithoutCajaIdOnlyLooksAtOwnVenuesEvenForAdmin() {
+        var ownerA = new pe.canchero.backend.web.dto.AuthUserDto(ownerAId.toString(), "Owner", "", "", "dueno");
+        var admin = new pe.canchero.backend.web.dto.AuthUserDto(adminId.toString(), "Admin", "", "", "admin");
+        assertTrue(cashService.getOpenCashSessionForOwner(ownerA).isPresent());
+        // Sin cajaId, "la última caja abierta" de toda la plataforma podría ser de otra sede: el admin no la recibe.
+        assertTrue(cashService.getOpenCashSessionForOwner(admin).isEmpty());
+    }
+
+    @Test
     void idempotentRetryDoesNotDuplicateSalePaymentOrStockAndRejectsChangedRequest() {
         var request = paymentRequest("retry-sale-key",java.util.List.of(new pe.canchero.backend.web.dto.SalePaymentDto("tarjeta",new BigDecimal("10.00"),null)));
         var sale = posService.processSale(request);

@@ -59,9 +59,14 @@ public class AuthController {
 
     /** El dueño real se entera del bloqueo y puede desbloquear la cuenta con un solo clic. */
     private void avisarBloqueo(String email) {
-        data.requestPasswordReset(email).ifPresent(token -> mail.sendResetLink(email, "Tu cuenta de Canchero fue bloqueada",
-                "Tu cuenta se bloqueó tras " + AuthService.INTENTOS_ANTES_DE_BLOQUEO + " intentos fallidos de inicio de sesión. "
-                        + "Si no fuiste tú, alguien intentó entrar con tu correo. Para desbloquearla, cambia tu contraseña.", token));
+        String intro = "Tu cuenta se bloqueó tras " + AuthService.INTENTOS_ANTES_DE_BLOQUEO + " intentos fallidos de inicio de sesión. "
+                + "Si no fuiste tú, alguien intentó entrar con tu correo. Para desbloquearla, cambia tu contraseña.";
+        String asunto = "Tu cuenta de Canchero fue bloqueada";
+        data.requestPasswordReset(email).ifPresentOrElse(
+                token -> mail.sendResetLink(email, asunto, intro, token),
+                // Ya hay un enlace vigente enviado antes: no se reemplaza, solo se avisa.
+                () -> mail.sendLater(email, asunto, intro + "\n\nUsa el enlace que ya te enviamos o pide uno nuevo en "
+                        + mail.recoverUrl() + " cuando venza."));
     }
 
     @PostMapping("/register")

@@ -36,12 +36,26 @@ class LoginIpLimiterTest {
     }
 
     @Test
-    void usaLaIpDeCloudflareYNoConfiaEnXForwardedFor() {
+    void usaSoloLaIpQuePoneCloudflare() {
         var request = new MockHttpServletRequest();
         request.setRemoteAddr("10.0.0.1");
         request.addHeader("X-Forwarded-For", "6.6.6.6");
+        request.addHeader("True-Client-IP", "7.7.7.7");
         assertEquals("10.0.0.1", LoginIpLimiter.clientIp(request));
-        request.addHeader("True-Client-IP", "8.8.8.8");
+        request.addHeader("CF-Connecting-IP", "8.8.8.8");
         assertEquals("8.8.8.8", LoginIpLimiter.clientIp(request));
+    }
+
+    @Test
+    void conElMapaLlenoLasIpsNuevasCompartenUnContador() {
+        var limiter = new LoginIpLimiter(clock);
+        for (int i = 0; i < LoginIpLimiter.MAX_IPS; i++) limiter.registrarFallo("ip-" + i);
+        for (int i = 0; i < LoginIpLimiter.MAX_FALLOS; i++) limiter.registrarFallo("nueva-" + i);
+        assertTrue(limiter.bloqueada("otra-nueva"));    // inventar IPs ya no sirve para saltarse el límite
+        assertFalse(limiter.bloqueada("ip-1"));          // las IPs ya conocidas siguen con su propio contador
+
+        ahora = ahora.plus(LoginIpLimiter.VENTANA).plus(Duration.ofMinutes(2));
+        limiter.registrarFallo("tras-limpieza");          // limpia las vencidas
+        assertFalse(limiter.bloqueada("otra-nueva"));
     }
 }

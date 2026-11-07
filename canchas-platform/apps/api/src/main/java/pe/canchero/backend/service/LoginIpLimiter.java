@@ -17,11 +17,14 @@ import java.util.concurrent.ConcurrentHashMap;
 public class LoginIpLimiter {
     static final int MAX_FALLOS = 20;
     static final Duration VENTANA = Duration.ofMinutes(15);
+    static final int MAX_IPS = 10_000;
+    private static final String DESBORDE = "desborde";
 
     private record Ventana(Instant inicio, int fallos) {}
 
     private final ConcurrentHashMap<String, Ventana> porIp = new ConcurrentHashMap<>();
     private final Clock clock;
+    private volatile Instant ultimaLimpieza = Instant.EPOCH;
 
     public LoginIpLimiter() {
         this(Clock.systemUTC());
@@ -32,27 +35,33 @@ public class LoginIpLimiter {
     }
 
     /**
-     * En Render, Cloudflare va delante y pone True-Client-IP con la IP real (sobrescribe la que mande el cliente).
-     * X-Forwarded-For no se usa: Render no limpia lo que envía el cliente y se podría falsificar.
+     * Render pone Cloudflare delante de sus servicios, y Cloudflare SOBRESCRIBE CF-Connecting-IP con la IP real aunque
+     * el cliente mande otra. True-Client-IP y X-Forwarded-For no se usan: se pueden falsificar.
+     * Si alguna vez la IP vista fuera siempre la misma (sin Cloudflare), el mapa con tope igual evita el abuso de memoria.
      */
     public static String clientIp(HttpServletRequest request) {
-        for (String header : new String[] {"True-Client-IP", "CF-Connecting-IP"}) {
-            String value = request.getHeader(header);
-            if (value != null && !value.isBlank()) return value.trim();
-        }
-        return request.getRemoteAddr();
-    }
-
-    public boolean bloqueada(String ip) {
-        Ventana v = porIp.get(ip);
-        return v != null && v.fallos() >= MAX_FALLOS && !vencida(v);
+        String value = request.getHeader("CF-Connecting-IP");
+        return value != null && !value.isBlank() ? value.trim() : request.getRemoteAddr();
     }
 
     public void registrarFallo(String ip) {
         Instant ahora = clock.instant();
-        if (porIp.size() > 10_000) porIp.values().removeIf(this::vencida);
+        if (porIp.size() >= MAX_IPS && !porIp.containsKey(ip)) {
+            // Limpieza como mucho una vez por minuto, para no recorrer el mapa en cada fallo.
+            if (ahora.isAfter(ultimaLimpieza.plusSeconds(60))) {
+                ultimaLimpieza = ahora;
+                porIp.values().removeIf(this::vencida);
+            }
+            // Mapa lleno de IPs vigentes (posible ataque con muchas IPs): las nuevas comparten un solo contador.
+            if (porIp.size() >= MAX_IPS) ip = DESBORDE;
+        }
         porIp.merge(ip, new Ventana(ahora, 1),
                 (vieja, nueva) -> vencida(vieja) ? nueva : new Ventana(vieja.inicio(), vieja.fallos() + 1));
+    }
+
+    public boolean bloqueada(String ip) {
+        Ventana v = porIp.get(porIp.containsKey(ip) || porIp.size() < MAX_IPS ? ip : DESBORDE);
+        return v != null && v.fallos() >= MAX_FALLOS && !vencida(v);
     }
 
     private boolean vencida(Ventana v) {

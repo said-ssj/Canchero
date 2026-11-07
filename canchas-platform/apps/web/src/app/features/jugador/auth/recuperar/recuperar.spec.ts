@@ -1,3 +1,4 @@
+import { Location } from '@angular/common';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { of } from 'rxjs';
@@ -36,6 +37,13 @@ describe('Recuperar', () => {
     fixture.detectChanges();
     expect(auth.requestPasswordReset).toHaveBeenCalledWith('jugador@test.pe');
     expect(fixture.nativeElement.textContent).toContain('te enviamos un enlace');
+  });
+
+  it('con token lo quita de la barra de direcciones', () => {
+    const replaceState = vi.spyOn(Location.prototype, 'replaceState');
+    setup('abc');
+    expect(replaceState).toHaveBeenCalledWith('/recuperar');
+    replaceState.mockRestore();
   });
 
   it('con token no envía si las contraseñas no coinciden', async () => {

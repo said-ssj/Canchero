@@ -876,6 +876,10 @@ export class DatabaseService {
   }
 
   async saveOrUpdateSede(duenoId: string | number, data: any): Promise<any> {
+    // El admin ve todas las sedes: "su primera sede" sería la de otro dueño, así que debe indicar cuál editar.
+    if (!data['id'] && !data['isNew'] && this.auth.currentUser()?.rol === 'admin') {
+      throw new Error('Indica qué sede quieres editar.');
+    }
     const existing = data['id']
       ? this.sedeById(data['id'])
       : data['isNew']
