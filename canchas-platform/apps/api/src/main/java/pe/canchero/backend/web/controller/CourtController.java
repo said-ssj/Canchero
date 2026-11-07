@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import pe.canchero.backend.service.SupabaseDataService;
+import pe.canchero.backend.service.VenueService;
 import pe.canchero.backend.service.CourtOperationService;
 import pe.canchero.backend.service.CourtRecoveryService;
 import pe.canchero.backend.service.VenueAccessService;
@@ -31,12 +31,12 @@ import java.util.List;
 @RequestMapping("/api/courts")
 public class CourtController {
 
-    private final SupabaseDataService data;
+    private final VenueService data;
     private final CourtOperationService operation;
     private final CourtRecoveryService recovery;
     private final VenueAccessService access;
 
-    public CourtController(SupabaseDataService data, CourtOperationService operation, CourtRecoveryService recovery,
+    public CourtController(VenueService data, CourtOperationService operation, CourtRecoveryService recovery,
             VenueAccessService access) {
         this.data = data;
         this.operation = operation;

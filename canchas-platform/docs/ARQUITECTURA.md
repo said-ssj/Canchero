@@ -13,7 +13,7 @@ Revision documental: 2026-10-13. Describe el codigo inspeccionado y el objetivo 
 ## Situacion actual
 DatabaseService mezcla llamadas HTTP a Spring Boot, consultas directas a Supabase y datos de localStorage.
 Actualizacion 2026-10-15: AuthService usa exclusivamente la autenticacion existente del backend para login/registro/restauracion. Ya no restaura perfiles demo ni usa Supabase Auth como fallback silencioso. El cache conserva token, pero no acredita identidad: /auth/me debe validarlo antes de exponer usuario o abrir admin. El cliente Supabase sigue presente en datos/Storage y para cerrar sesiones historicas; no es un acceso alternativo.
-El backend usa mayormente JdbcTemplate en SupabaseDataService; existe dependencia JPA pero no debe suponerse una arquitectura de repositorios JPA.
+El backend usa JdbcTemplate en servicios por area (AuthService, VenueService, BookingService, PosService, CashService) que heredan de JdbcSupport; existe dependencia JPA pero no debe suponerse una arquitectura de repositorios JPA.
 Actualizacion 2026-10-15: AdminLayout y ocho rutas hijas son el admin activo; AdminContext coordina identidad, sede y carga. El antiguo Admin queda como compatibilidad, no como shell activo. Separar componentes no ha eliminado todas las reglas CSS superpuestas ni terminado los contratos de negocio.
 
 ## Direccion de correccion

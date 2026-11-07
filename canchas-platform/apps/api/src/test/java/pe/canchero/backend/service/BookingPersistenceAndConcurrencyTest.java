@@ -37,7 +37,7 @@ class BookingPersistenceAndConcurrencyTest {
             LIMA_ZONE);
 
     private JdbcTemplate jdbc;
-    private SupabaseDataService service;
+    private BookingService service;
 
     private UUID otherClienteId;
     private UUID playerOneId;
@@ -225,7 +225,7 @@ class BookingPersistenceAndConcurrencyTest {
         jdbc.update("insert into estado_reserva values (1, 'Pendiente', 'A'), (2, 'Confirmada', 'A'), (4, 'Cancelada', 'A')");
         jdbc.update("insert into metodo_pago values (1, 'Yape', 'A'), (2, 'Tarjeta', 'A')");
 
-        service = new SupabaseDataService(jdbc, FIXED_LIMA_CLOCK);
+        service = new BookingService(jdbc, new VenueService(jdbc), FIXED_LIMA_CLOCK);
     }
 
     @Test

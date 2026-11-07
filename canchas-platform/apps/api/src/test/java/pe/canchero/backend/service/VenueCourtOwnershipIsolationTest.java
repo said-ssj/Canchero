@@ -28,7 +28,7 @@ class VenueCourtOwnershipIsolationTest {
     private final UUID ownerB = UUID.randomUUID();
     private final UUID admin = UUID.randomUUID();
     private final AuthTokenService tokens = new AuthTokenService("unit-test-only-secret");
-    private SupabaseDataService data;
+    private VenueService data;
     private MockMvc mvc;
 
     @BeforeEach
@@ -40,7 +40,7 @@ class VenueCourtOwnershipIsolationTest {
         jdbc.update("insert into sede values (1, ?, 'A'), (2, ?, 'A')", ownerA.toString(), ownerB.toString());
         jdbc.update("insert into cancha values (10, 1), (20, 2)");
 
-        data = mock(SupabaseDataService.class);
+        data = mock(VenueService.class);
         var auth = mock(AuthService.class);
         when(auth.currentUser(any())).thenAnswer(call -> {
             UUID id = call.getArgument(0);

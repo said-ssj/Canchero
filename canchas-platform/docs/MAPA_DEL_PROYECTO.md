@@ -42,7 +42,7 @@ No agregar un segundo ajuste de dimensiones sin revisar la regla que ya gobierna
 ## Backend (relativo a apps/api/src/main/java/pe/canchero/backend)
 - web/controller: endpoints.
 - web/dto: contratos actuales.
-- service/SupabaseDataService.java: SQL y multiples operaciones del negocio.
+- service/AuthService, VenueService, BookingService, PosService, CashService: SQL por area del negocio (cuentas, sedes/canchas, reservas, punto de venta, caja); JdbcSupport tiene lo comun.
 - service/VenueHoursService.java: horario semanal por sede, implementacion inicial.
 - config/ApiAuthorizationInterceptor.java: verificacion actual de sesion y rol.
 - service/AuthTokenService.java: tokens propios actuales.

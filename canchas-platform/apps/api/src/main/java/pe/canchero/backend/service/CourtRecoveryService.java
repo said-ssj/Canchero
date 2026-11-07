@@ -13,9 +13,9 @@ import pe.canchero.backend.web.dto.CourtRequest;
 public class CourtRecoveryService {
     private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(CourtRecoveryService.class);
     private final JdbcTemplate jdbc;
-    private final SupabaseDataService data;
+    private final VenueService data;
 
-    public CourtRecoveryService(JdbcTemplate jdbc, SupabaseDataService data) {
+    public CourtRecoveryService(JdbcTemplate jdbc, VenueService data) {
         this.jdbc = jdbc;
         this.data = data;
     }

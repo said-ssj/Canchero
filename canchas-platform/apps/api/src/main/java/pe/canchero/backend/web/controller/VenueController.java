@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import pe.canchero.backend.service.SupabaseDataService;
+import pe.canchero.backend.service.VenueService;
 import pe.canchero.backend.service.VenueAccessService;
 import pe.canchero.backend.web.dto.AuthUserDto;
 import pe.canchero.backend.web.dto.ErrorResponse;
@@ -26,10 +26,10 @@ import java.util.UUID;
 @RequestMapping("/api/venues")
 public class VenueController {
 
-    private final SupabaseDataService data;
+    private final VenueService data;
     private final VenueAccessService access;
 
-    public VenueController(SupabaseDataService data, VenueAccessService access) {
+    public VenueController(VenueService data, VenueAccessService access) {
         this.data = data;
         this.access = access;
     }

@@ -24,7 +24,7 @@ class ReviewPrivacyAndPassIsolationTest {
     private MockMvc mvc;
     private JdbcTemplate jdbc;
     private AuthTokenService tokenService;
-    private SupabaseDataService dataService;
+    private BookingService dataService;
 
     private UUID ownerAId;
     private UUID ownerBId;
@@ -210,7 +210,7 @@ class ReviewPrivacyAndPassIsolationTest {
 
         // Services & Tokens
         tokenService = new AuthTokenService("test-fase4-secret-key-canchero-token-xyz-123456");
-        dataService = new SupabaseDataService(jdbc);
+        dataService = new BookingService(jdbc, new VenueService(jdbc));
 
         tokenPlayer1 = tokenService.issue(player1UserId, true);
         tokenPlayer2 = tokenService.issue(player2UserId, true);

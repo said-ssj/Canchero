@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
-import pe.canchero.backend.service.SupabaseDataService;
+import pe.canchero.backend.service.BookingService;
 import pe.canchero.backend.service.VenueAccessService;
 import pe.canchero.backend.web.dto.AuthUserDto;
 import pe.canchero.backend.web.dto.ErrorResponse;
@@ -21,10 +21,10 @@ import java.util.List;
 @RequestMapping("/api/pagos-reserva")
 public class PagoReservaController {
 
-    private final SupabaseDataService data;
+    private final BookingService data;
     private final VenueAccessService access;
 
-    public PagoReservaController(SupabaseDataService data, VenueAccessService access) {
+    public PagoReservaController(BookingService data, VenueAccessService access) {
         this.data = data;
         this.access = access;
     }

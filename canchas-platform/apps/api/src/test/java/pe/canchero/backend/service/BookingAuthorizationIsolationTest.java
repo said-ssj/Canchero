@@ -21,7 +21,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class BookingAuthorizationIsolationTest {
 
     private JdbcTemplate jdbc;
-    private SupabaseDataService dataService;
+    private BookingService dataService;
     private AuthTokenService tokenService;
     private MockMvc mvc;
 
@@ -182,7 +182,7 @@ class BookingAuthorizationIsolationTest {
 
         // Initialize services and MockMvc with interceptor
         tokenService = new AuthTokenService("test-secret-phase2-isolation-token");
-        dataService = new SupabaseDataService(jdbc);
+        dataService = new BookingService(jdbc, new VenueService(jdbc));
 
         tokenOwnerA = tokenService.issue(ownerAId, true);
         tokenOwnerB = tokenService.issue(ownerBId, true);

@@ -3,7 +3,7 @@ package pe.canchero.backend.web.controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import pe.canchero.backend.service.SupabaseDataService;
+import pe.canchero.backend.service.VenueService;
 
 import java.util.List;
 import java.util.Map;
@@ -12,9 +12,9 @@ import java.util.Map;
 @RequestMapping("/api/catalog")
 public class CatalogController {
 
-    private final SupabaseDataService data;
+    private final VenueService data;
 
-    public CatalogController(SupabaseDataService data) {
+    public CatalogController(VenueService data) {
         this.data = data;
     }
 

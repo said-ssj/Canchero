@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
-import pe.canchero.backend.service.SupabaseDataService;
+import pe.canchero.backend.service.BookingService;
 import pe.canchero.backend.web.dto.AuthUserDto;
 import pe.canchero.backend.web.dto.ErrorResponse;
 import pe.canchero.backend.web.dto.ReviewRequest;
@@ -23,9 +23,9 @@ import java.util.List;
 @RequestMapping("/api/reviews")
 public class ReviewController {
 
-    private final SupabaseDataService data;
+    private final BookingService data;
 
-    public ReviewController(SupabaseDataService data) {
+    public ReviewController(BookingService data) {
         this.data = data;
     }
 

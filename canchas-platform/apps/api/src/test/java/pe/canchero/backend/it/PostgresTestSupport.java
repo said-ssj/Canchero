@@ -10,7 +10,8 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 import pe.canchero.backend.service.AuthTokenService;
 import pe.canchero.backend.service.CashService;
 import pe.canchero.backend.service.PosService;
-import pe.canchero.backend.service.SupabaseDataService;
+import pe.canchero.backend.service.VenueService;
+import pe.canchero.backend.service.BookingService;
 import pe.canchero.backend.service.VenueAccessService;
 import pe.canchero.backend.web.dto.AuthUserDto;
 import pe.canchero.backend.web.dto.BookingRequest;
@@ -71,7 +72,7 @@ public final class PostgresTestSupport {
         context.refresh();
         return new App(
                 context,
-                context.getBean(SupabaseDataService.class),
+                context.getBean(BookingService.class),
                 context.getBean(CashService.class),
                 context.getBean(PosService.class),
                 context.getBean(VenueAccessService.class),
@@ -183,7 +184,7 @@ public final class PostgresTestSupport {
     }
 
     public record App(AnnotationConfigApplicationContext context,
-                      SupabaseDataService data,
+                      BookingService data,
                       CashService cash,
                       PosService pos,
                       VenueAccessService access,
@@ -219,10 +220,14 @@ public final class PostgresTestSupport {
         }
 
         @Bean
-        public SupabaseDataService dataService(JdbcTemplate jdbcTemplate, AuthTokenService authTokenService) {
-            return new SupabaseDataService(jdbcTemplate, CLOCK);
+        public VenueService venueService(JdbcTemplate jdbcTemplate) {
+            return new VenueService(jdbcTemplate);
         }
 
+        @Bean
+        public BookingService dataService(JdbcTemplate jdbcTemplate, VenueService venueService) {
+            return new BookingService(jdbcTemplate, venueService, CLOCK);
+        }
         @Bean
         public CashService cashService(JdbcTemplate jdbcTemplate) {
             return new CashService(jdbcTemplate);

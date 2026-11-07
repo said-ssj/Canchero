@@ -14,7 +14,7 @@ import static org.mockito.Mockito.*;
 
 class CourtRecoveryServiceTest {
     private JdbcTemplate jdbc;
-    private SupabaseDataService data;
+    private VenueService data;
     private CourtRecoveryService service;
     private final AuthUserDto owner = new AuthUserDto("owner-a", "", "", "", "dueno");
     private final CourtRequest request = new CourtRequest("54", "Grass Sintetico", "Futbol 7", "Grass", "foto.jpg", List.of(), true, true, 50, 60.0, "18:00");
@@ -26,7 +26,7 @@ class CourtRecoveryServiceTest {
         jdbc.execute("create table sede (id_sede int primary key, id_dueno varchar(40), estado char(1))");
         jdbc.execute("create table cancha (id_cancha int primary key, id_sede int, nombre_numero varchar(100))");
         jdbc.update("insert into sede values (54, 'owner-a', 'A')");
-        data = mock(SupabaseDataService.class);
+        data = mock(VenueService.class);
         service = new CourtRecoveryService(jdbc, data);
     }
 

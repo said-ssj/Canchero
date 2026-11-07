@@ -25,7 +25,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class CashAndLegacyOperationsIsolationTest {
 
     private JdbcTemplate jdbc;
-    private SupabaseDataService dataService;
+    private BookingService dataService;
     private CashService cashService;
     private PosService posService;
     private CashVenueStateService venueStateService;
@@ -312,7 +312,7 @@ class CashAndLegacyOperationsIsolationTest {
 
         // Services
         tokenService = new AuthTokenService("test-phase3-secret-key-canchero-token-xyz");
-        dataService = new SupabaseDataService(jdbc);
+        dataService = new BookingService(jdbc, new VenueService(jdbc));
         cashService = new CashService(jdbc);
         posService = new PosService(jdbc);
         accessService = new VenueAccessService(jdbc);
