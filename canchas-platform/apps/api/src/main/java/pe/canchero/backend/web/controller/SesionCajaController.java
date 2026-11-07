@@ -51,7 +51,7 @@ public class SesionCajaController {
             access.requireOwnedVenue(sedeId, user);
             return ResponseEntity.ok(data.listSesionesCajaForVenue(sedeId));
         }
-        return ResponseEntity.ok(data.listSesionesCajaForOwner(user.id()));
+        return ResponseEntity.ok(data.listSesionesCajaForOwner(user));
     }
 
     @PostMapping("/abrir")

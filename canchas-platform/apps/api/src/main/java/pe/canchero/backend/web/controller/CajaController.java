@@ -40,7 +40,7 @@ public class CajaController {
             access.requireOwnedVenue(sedeId, user);
             return ResponseEntity.ok(data.listCajas(sedeId));
         }
-        return ResponseEntity.ok(data.listCajasForOwner(user.id()));
+        return ResponseEntity.ok(data.listCajasForOwner(user));
     }
 
     @GetMapping("/{id}")

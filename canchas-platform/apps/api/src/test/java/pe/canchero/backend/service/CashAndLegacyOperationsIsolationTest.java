@@ -427,7 +427,13 @@ class CashAndLegacyOperationsIsolationTest {
         var audit = cashService.closeCashSession(10,new pe.canchero.backend.web.dto.CloseCashSessionRequest(109,0,0,999,"Test",null),
                 new pe.canchero.backend.web.dto.AuthUserDto(ownerAId.toString(),"Owner","","","dueno"));
         assertEquals(109, audit.montoSistema());
-        assertEquals(9, cashService.listCashAuditsForOwner(ownerAId.toString()).get(0).totalPagosEfectivo());
+        var ownerA = new pe.canchero.backend.web.dto.AuthUserDto(ownerAId.toString(), "Owner", "", "", "dueno");
+        assertEquals(9, cashService.listCashAuditsForOwner(ownerA).get(0).totalPagosEfectivo());
+        // El admin de la plataforma ve los arqueos de todas las sedes; un dueño ajeno no ve los de A.
+        var admin = new pe.canchero.backend.web.dto.AuthUserDto(adminId.toString(), "Admin", "", "", "admin");
+        assertEquals(1, cashService.listCashAuditsForOwner(admin).size());
+        assertTrue(cashService.listCashAuditsForOwner(
+                new pe.canchero.backend.web.dto.AuthUserDto(ownerBId.toString(), "B", "", "", "dueno")).isEmpty());
         assertEquals(new BigDecimal("14.00"), jdbc.queryForObject("select total_digital from arqueo_caja",BigDecimal.class));
     }
 

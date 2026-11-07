@@ -58,15 +58,16 @@ public class CashService extends JdbcSupport {
                 """, cashBoxRowMapper());
     }
 
-    public List<CashBoxDto> listCashBoxesForOwner(String ownerId) {
-        UUID ownerUuid = resolveOperationalUserId(ownerId);
+    public List<CashBoxDto> listCashBoxesForOwner(AuthUserDto user) {
+        UUID ownerUuid = resolveOperationalUserId(user.id());
+        boolean admin = Roles.isAdmin(user.rol()); // el admin de la plataforma ve todas las sedes
         return jdbc.query("""
                 select c.id_caja, c.nombre_identificador, c.id_sede
                 from caja c
                 join sede s on s.id_sede = c.id_sede
-                where c.estado = 'A' and s.estado = 'A' and s.id_dueno = ?
+                where c.estado = 'A' and s.estado = 'A' and (? or s.id_dueno = ?)
                 order by c.id_sede, c.id_caja
-                """, cashBoxRowMapper(), ownerUuid);
+                """, cashBoxRowMapper(), admin, ownerUuid);
     }
 
     public Optional<CashSessionDto> getOpenCashSession(Integer cajaId) {
@@ -82,13 +83,14 @@ public class CashService extends JdbcSupport {
         return jdbc.query(sql.toString(), cashSessionRowMapper(), args.toArray()).stream().findFirst();
     }
 
-    public Optional<CashSessionDto> getOpenCashSessionForOwner(String ownerId) {
-        UUID ownerUuid = resolveOperationalUserId(ownerId);
+    public Optional<CashSessionDto> getOpenCashSessionForOwner(AuthUserDto user) {
+        UUID ownerUuid = resolveOperationalUserId(user.id());
+        boolean admin = Roles.isAdmin(user.rol()); // el admin de la plataforma ve todas las sedes
         return jdbc.query(cashSessionSql() + """
                 join sede s on s.id_sede = c.id_sede
-                where sc.estado = 'A' and sc.fecha_cierre is null and s.id_dueno = ?
+                where sc.estado = 'A' and sc.fecha_cierre is null and (? or s.id_dueno = ?)
                 order by sc.fecha_apertura desc limit 1
-                """, cashSessionRowMapper(), ownerUuid).stream().findFirst();
+                """, cashSessionRowMapper(), admin, ownerUuid).stream().findFirst();
     }
 
     public List<CashMovementDto> listCashMovements(int sessionId) {
@@ -130,8 +132,9 @@ public class CashService extends JdbcSupport {
                 """, cashAuditRowMapper(), sedeId);
     }
 
-    public List<CashAuditDto> listCashAuditsForOwner(String ownerId) {
-        UUID ownerUuid = resolveOperationalUserId(ownerId);
+    public List<CashAuditDto> listCashAuditsForOwner(AuthUserDto user) {
+        UUID ownerUuid = resolveOperationalUserId(user.id());
+        boolean admin = Roles.isAdmin(user.rol()); // el admin de la plataforma ve todas las sedes
         return jdbc.query("""
                 select a.*, a.id_arqueo, a.id_sesion_caja, coalesce(c.nombre_identificador, 'Caja ' || sc.id_caja) as caja_nombre,
                        coalesce(u.nombre, 'Cajero') as cajero_nombre, a.fecha_arqueo,
@@ -142,9 +145,9 @@ public class CashService extends JdbcSupport {
                 left join caja c on c.id_caja = sc.id_caja
                 left join sede s on s.id_sede = c.id_sede
                 left join usuario u on u.id_usuario = a.id_usuario
-                where a.estado = 'A' and s.id_dueno = ?
+                where a.estado = 'A' and (? or s.id_dueno = ?)
                 order by a.fecha_arqueo desc nulls last, a.id_arqueo desc
-                """, cashAuditRowMapper(), ownerUuid);
+                """, cashAuditRowMapper(), admin, ownerUuid);
     }
 
     public CashSessionDto openCashSession(OpenCashSessionRequest request) {
@@ -414,8 +417,8 @@ public class CashService extends JdbcSupport {
                 .toList();
     }
 
-    public List<CajaResponse> listCajasForOwner(String ownerId) {
-        return listCashBoxesForOwner(ownerId).stream()
+    public List<CajaResponse> listCajasForOwner(AuthUserDto user) {
+        return listCashBoxesForOwner(user).stream()
                 .map(c -> new CajaResponse(
                         String.valueOf(c.id()),
                         c.nombre(),
@@ -488,14 +491,15 @@ public class CashService extends JdbcSupport {
         return jdbc.query(sql, sesionCajaRowMapper(), sedeId);
     }
 
-    public List<SesionCajaResponse> listSesionesCajaForOwner(String ownerId) {
-        UUID ownerUuid = resolveOperationalUserId(ownerId);
+    public List<SesionCajaResponse> listSesionesCajaForOwner(AuthUserDto user) {
+        UUID ownerUuid = resolveOperationalUserId(user.id());
+        boolean admin = Roles.isAdmin(user.rol()); // el admin de la plataforma ve todas las sedes
         String sql = cashSessionSql() + """
                 join sede s on s.id_sede = c.id_sede
-                where s.id_dueno = ?
+                where (? or s.id_dueno = ?)
                 order by sc.fecha_apertura desc
                 """;
-        return jdbc.query(sql, sesionCajaRowMapper(), ownerUuid);
+        return jdbc.query(sql, sesionCajaRowMapper(), admin, ownerUuid);
     }
 
     private RowMapper<SesionCajaResponse> sesionCajaRowMapper() {

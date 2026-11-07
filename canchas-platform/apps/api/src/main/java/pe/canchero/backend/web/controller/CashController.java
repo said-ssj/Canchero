@@ -54,7 +54,7 @@ public class CashController {
             int verifiedSedeId = access.requireOwnedVenue(sedeId, user);
             return dataService.listCashBoxes(verifiedSedeId);
         }
-        return dataService.listCashBoxesForOwner(user.id());
+        return dataService.listCashBoxesForOwner(user);
     }
 
     @GetMapping("/sessions/open")
@@ -66,7 +66,7 @@ public class CashController {
                     .map(ResponseEntity::ok)
                     .orElseGet(() -> ResponseEntity.noContent().build());
         }
-        return dataService.getOpenCashSessionForOwner(user.id())
+        return dataService.getOpenCashSessionForOwner(user)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.noContent().build());
     }
@@ -107,7 +107,7 @@ public class CashController {
             access.requireOwnedVenue(sedeId, user);
             return dataService.listCashAuditsForVenue(sedeId);
         }
-        return dataService.listCashAuditsForOwner(user.id());
+        return dataService.listCashAuditsForOwner(user);
     }
 
     @ExceptionHandler(ResponseStatusException.class)

@@ -421,12 +421,20 @@ public class BookingService extends JdbcSupport {
             validateNotPastInLima(fecha, slotRange.startHour());
             validateWithinVenueOperatingHours(lockedCourt.sedeId(), fecha, slotRange);
             validateNoOverlappingReservationsOrMaintenance(courtId, fecha, slotRange, id);
-            // shortcut: conserva monto y pagos originales aunque la tarifa del nuevo horario sea distinta; recalcular cuando haya ajustes de cobro.
+            QuoteResponse quote = venues.quoteCourtBooking(String.valueOf(courtId), new QuoteRequest(fecha.toString(), slotRange.hours()));
+            if (!quote.valid()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, quote.errorMessage());
+            }
+            // El total sigue la tarifa del nuevo horario; lo ya pagado (adelanto) se respeta y el saldo es la diferencia.
+            // Si el nuevo horario es más barato, el saldo queda en 0 y la devolución del exceso se hace en caja.
             jdbc.update("""
                     update reserva
-                    set fecha_reserva = ?, hora_inicio = ?, hora_fin = ?, fecmod = now(), usmod = 'API', pcmod = 'SPRING'
+                    set fecha_reserva = ?, hora_inicio = ?, hora_fin = ?,
+                        monto_total = ?, saldo = greatest(? - coalesce(adelanto, 0), 0),
+                        fecmod = now(), usmod = 'API', pcmod = 'SPRING'
                     where id_reserva = ? and estado = 'A'
-                    """, fecha, slotRange.startTime(), slotRange.endTime(), id);
+                    """, fecha, slotRange.startTime(), slotRange.endTime(),
+                    BigDecimal.valueOf(quote.total()), BigDecimal.valueOf(quote.total()), id);
             return getBookingById(id);
         } finally {
             courtLock.unlock();

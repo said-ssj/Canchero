@@ -51,7 +51,7 @@ public class VentaController {
             access.requireOwnedVenue(sedeId, user);
             return ResponseEntity.ok(data.listVentasForVenue(sedeId));
         }
-        return ResponseEntity.ok(data.listVentasForOwner(user.id()));
+        return ResponseEntity.ok(data.listVentasForOwner(user));
     }
 
     @GetMapping("/{id}")

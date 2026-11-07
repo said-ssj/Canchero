@@ -680,6 +680,16 @@ class BookingPersistenceAndConcurrencyTest {
         assertTrue(service.rescheduleBooking(first, "2026-10-23", "09:00 - 11:00", owner).isPresent());
         assertEquals("11:00:00", jdbc.queryForObject(
                 "select cast(hora_fin as varchar) from reserva where id_reserva = ?", String.class, first));
+        // 2 h a S/90: el total sube a 180, lo pagado (90) se respeta y el saldo es la diferencia.
+        assertEquals(0, new java.math.BigDecimal("180").compareTo(jdbc.queryForObject(
+                "select monto_total from reserva where id_reserva = ?", java.math.BigDecimal.class, first)));
+        assertEquals(0, new java.math.BigDecimal("90").compareTo(jdbc.queryForObject(
+                "select saldo from reserva where id_reserva = ?", java.math.BigDecimal.class, first)));
+        // Volver a 1 h: el total baja a 90 y el saldo nunca queda negativo.
+        service.rescheduleBooking(first, "2026-10-23", "09:00 - 10:00", owner);
+        assertEquals(0, java.math.BigDecimal.ZERO.compareTo(jdbc.queryForObject(
+                "select saldo from reserva where id_reserva = ?", java.math.BigDecimal.class, first)));
+        service.rescheduleBooking(first, "2026-10-23", "09:00 - 11:00", owner);
 
         assertEquals(HttpStatus.CONFLICT, assertThrows(ResponseStatusException.class,
                 () -> service.rescheduleBooking(first, "2026-10-23", "10:00 - 12:00", owner)).getStatusCode());
