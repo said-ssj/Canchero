@@ -109,7 +109,7 @@ class CourtAvailabilityAndQuoteTest {
         jdbc.update("insert into reserva (id_cancha, id_estado_reserva, codigo_pase, fecha_reserva, hora_inicio, hora_fin, monto_total, estado) values (101, 4, '#CAN-2222', '2026-10-22', '20:00:00', '21:00:00', 120.00, 'A')");
         jdbc.update("insert into reserva (id_cancha, id_estado_reserva, codigo_pase, fecha_reserva, hora_inicio, hora_fin, monto_total, estado) values (202, 2, '#CAN-3333', '2026-10-22', '16:00:00', '18:00:00', 280.00, 'A')");
 
-        service = new SupabaseDataService(jdbc, null);
+        service = new SupabaseDataService(jdbc);
     }
 
     @Test

@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class DatabaseAuthServiceTest {
     private JdbcTemplate jdbc;
-    private SupabaseDataService service;
+    private AuthService service;
     private final UUID owner = UUID.randomUUID();
 
     @BeforeEach
@@ -32,7 +32,7 @@ class DatabaseAuthServiceTest {
         jdbc.execute("create table usuario (id_usuario uuid primary key, id_rol int, nombre varchar, correo varchar unique, telefono varchar, password_hash varchar, estado varchar, usucre varchar, pccre varchar, intentos_fallidos int not null default 0, bloqueo_hasta timestamp with time zone)");
         jdbc.update("insert into rol values (1, 'admin', 'A'), (2, 'cliente', 'A')");
         jdbc.update("insert into usuario (id_usuario,id_rol,nombre,correo,password_hash,estado) values (?,1,'Dueno','dueno@canchero.pe',?,'A')", owner, PasswordUtil.hash("unit-test-only-password"));
-        service = new SupabaseDataService(jdbc, new AuthTokenService("unit-test-only-secret"));
+        service = new AuthService(jdbc, new AuthTokenService("unit-test-only-secret"));
     }
 
     @Test
@@ -99,7 +99,7 @@ class DatabaseAuthServiceTest {
 
     @Test
     void loginHonorsExplicitPolicyAndLegacyDefaults() throws Exception {
-        service = new SupabaseDataService(jdbc, AuthTokenServiceTest.at(AuthTokenServiceTest.NOW));
+        service = new AuthService(jdbc, AuthTokenServiceTest.at(AuthTokenServiceTest.NOW));
         ObjectMapper mapper = new ObjectMapper();
         for (String policy : new String[]{"", ",\"rememberMe\":null", ",\"rememberMe\":true", ",\"rememberMe\":false"}) {
             LoginRequest request = mapper.readValue("{\"email\":\"dueno@canchero.pe\",\"password\":\"unit-test-only-password\"" + policy + "}", LoginRequest.class);

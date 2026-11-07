@@ -16,7 +16,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 class AuthControllerTest {
-    private static class UnavailableData extends SupabaseDataService {
+    private static class UnavailableData extends AuthService {
         int reads;
         UnavailableData() { super(null, null); }
         @Override public Optional<AuthResponse> login(LoginRequest request) {

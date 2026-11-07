@@ -41,7 +41,8 @@ class VenueCourtOwnershipIsolationTest {
         jdbc.update("insert into cancha values (10, 1), (20, 2)");
 
         data = mock(SupabaseDataService.class);
-        when(data.currentUser(any())).thenAnswer(call -> {
+        var auth = mock(AuthService.class);
+        when(auth.currentUser(any())).thenAnswer(call -> {
             UUID id = call.getArgument(0);
             return Optional.of(new AuthUserDto(id.toString(), "Usuario", id + "@test", null, id.equals(admin) ? "administrador" : "dueno"));
         });
@@ -50,7 +51,7 @@ class VenueCourtOwnershipIsolationTest {
                         new VenueController(data, access),
                         new CourtController(data, null, null, access))
                 .setControllerAdvice(new ApiExceptionHandler())
-                .addInterceptors(new ApiAuthorizationInterceptor(tokens, data))
+                .addInterceptors(new ApiAuthorizationInterceptor(tokens, auth))
                 .build();
     }
 

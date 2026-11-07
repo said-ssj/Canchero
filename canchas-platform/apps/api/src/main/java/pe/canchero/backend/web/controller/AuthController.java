@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import pe.canchero.backend.service.AuthTokenService;
-import pe.canchero.backend.service.SupabaseDataService;
+import pe.canchero.backend.service.AuthService;
 import pe.canchero.backend.web.dto.ErrorResponse;
 import pe.canchero.backend.web.dto.AuthResponse;
 import pe.canchero.backend.web.dto.LoginRequest;
@@ -23,10 +23,10 @@ import java.util.UUID;
 @RequestMapping("/api/auth")
 public class AuthController {
 
-    private final SupabaseDataService data;
+    private final AuthService data;
     private final AuthTokenService authTokenService;
 
-    public AuthController(SupabaseDataService data, AuthTokenService authTokenService) {
+    public AuthController(AuthService data, AuthTokenService authTokenService) {
         this.data = data;
         this.authTokenService = authTokenService;
     }

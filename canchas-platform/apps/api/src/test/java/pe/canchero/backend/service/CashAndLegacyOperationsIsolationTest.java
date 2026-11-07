@@ -310,7 +310,7 @@ class CashAndLegacyOperationsIsolationTest {
 
         // Services
         tokenService = new AuthTokenService("test-phase3-secret-key-canchero-token-xyz");
-        dataService = new SupabaseDataService(jdbc, tokenService);
+        dataService = new SupabaseDataService(jdbc);
         accessService = new VenueAccessService(jdbc);
         venueStateService = new CashVenueStateService(jdbc, dataService);
 
@@ -328,7 +328,7 @@ class CashAndLegacyOperationsIsolationTest {
                         new PagoReservaController(dataService, accessService),
                         new VentaController(dataService, accessService),
                         new pe.canchero.backend.web.controller.PosController(dataService, accessService))
-                .addInterceptors(new ApiAuthorizationInterceptor(tokenService, dataService))
+                .addInterceptors(new ApiAuthorizationInterceptor(tokenService, new AuthService(jdbc, tokenService)))
                 .build();
     }
 
@@ -362,7 +362,7 @@ class CashAndLegacyOperationsIsolationTest {
         String url = jdbc.getDataSource().getConnection().getMetaData().getURL();
         var datasource = new org.springframework.jdbc.datasource.DriverManagerDataSource(url, "sa", "");
         var concurrentJdbc = new JdbcTemplate(datasource);
-        var service = new SupabaseDataService(concurrentJdbc, tokenService);
+        var service = new SupabaseDataService(concurrentJdbc);
         var transaction = new org.springframework.transaction.support.TransactionTemplate(
                 new org.springframework.jdbc.datasource.DataSourceTransactionManager(datasource));
         var request = paymentRequest("concurrent-sale-key", java.util.List.of(

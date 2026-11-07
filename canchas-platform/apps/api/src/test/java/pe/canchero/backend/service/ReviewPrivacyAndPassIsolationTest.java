@@ -210,7 +210,7 @@ class ReviewPrivacyAndPassIsolationTest {
 
         // Services & Tokens
         tokenService = new AuthTokenService("test-fase4-secret-key-canchero-token-xyz-123456");
-        dataService = new SupabaseDataService(jdbc, tokenService);
+        dataService = new SupabaseDataService(jdbc);
 
         tokenPlayer1 = tokenService.issue(player1UserId, true);
         tokenPlayer2 = tokenService.issue(player2UserId, true);
@@ -219,7 +219,7 @@ class ReviewPrivacyAndPassIsolationTest {
         mvc = MockMvcBuilders.standaloneSetup(
                         new ReviewController(dataService),
                         new BookingController(dataService))
-                .addInterceptors(new ApiAuthorizationInterceptor(tokenService, dataService))
+                .addInterceptors(new ApiAuthorizationInterceptor(tokenService, new AuthService(jdbc, tokenService)))
                 .build();
     }
 

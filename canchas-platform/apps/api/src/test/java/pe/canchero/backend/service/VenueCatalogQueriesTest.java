@@ -52,7 +52,7 @@ class VenueCatalogQueriesTest {
         jdbc.update("insert into cancha values (99, 1, 1, 'Mantenimiento', false, null, 'Grass', 'I')");
         jdbc.execute("alter table cancha add column equipamiento varchar array");
         jdbc.update("update cancha set equipamiento = array['Con Malla'] where id_cancha = 1");
-        var service = new SupabaseDataService(jdbc, null);
+        var service = new SupabaseDataService(jdbc);
         statements.set(0);
         var venues = service.listVenues(null, null, null);
         assertEquals(20, venues.size());

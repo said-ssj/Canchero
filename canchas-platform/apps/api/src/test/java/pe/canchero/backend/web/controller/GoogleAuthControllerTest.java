@@ -8,7 +8,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.server.ResponseStatusException;
-import pe.canchero.backend.service.SupabaseDataService;
+import pe.canchero.backend.service.AuthService;
 import pe.canchero.backend.web.dto.AuthResponse;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -18,7 +18,7 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 
 class GoogleAuthControllerTest {
     private static final String USER_URL = "https://project.example.test/auth/v1/user";
-    private final SupabaseDataService data = mock(SupabaseDataService.class);
+    private final AuthService data = mock(AuthService.class);
     private MockRestServiceServer supabase;
     private GoogleAuthController controller;
 

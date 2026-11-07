@@ -214,7 +214,7 @@ public final class PostgresTestSupport {
 
         @Bean
         public SupabaseDataService dataService(JdbcTemplate jdbcTemplate, AuthTokenService authTokenService) {
-            return new SupabaseDataService(jdbcTemplate, authTokenService, CLOCK);
+            return new SupabaseDataService(jdbcTemplate, CLOCK);
         }
 
         @Bean

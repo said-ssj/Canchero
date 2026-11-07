@@ -182,7 +182,7 @@ class BookingAuthorizationIsolationTest {
 
         // Initialize services and MockMvc with interceptor
         tokenService = new AuthTokenService("test-secret-phase2-isolation-token");
-        dataService = new SupabaseDataService(jdbc, tokenService);
+        dataService = new SupabaseDataService(jdbc);
 
         tokenOwnerA = tokenService.issue(ownerAId, true);
         tokenOwnerB = tokenService.issue(ownerBId, true);
@@ -191,7 +191,7 @@ class BookingAuthorizationIsolationTest {
         tokenAdmin = tokenService.issue(adminId, true);
 
         mvc = MockMvcBuilders.standaloneSetup(new BookingController(dataService))
-                .addInterceptors(new ApiAuthorizationInterceptor(tokenService, dataService))
+                .addInterceptors(new ApiAuthorizationInterceptor(tokenService, new AuthService(jdbc, tokenService)))
                 .build();
     }
 

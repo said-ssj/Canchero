@@ -20,7 +20,7 @@ class CourtTariffsTest {
                 pccre varchar(100), fecmod timestamp, usmod varchar(100))
                 """);
         var request = new CourtRequest("54", "Cancha", "Futbol 7", "Grass", null, List.of(), true, true, 50, 60.0, "18:00");
-        ReflectionTestUtils.invokeMethod(new SupabaseDataService(jdbc, null), "syncTarifas", 701, request);
+        ReflectionTestUtils.invokeMethod(new SupabaseDataService(jdbc), "syncTarifas", 701, request);
         assertEquals(14, jdbc.queryForObject("select count(*) from tarifa_cancha where estado = 'A'", Integer.class));
         assertEquals(7, jdbc.queryForObject("select count(*) from tarifa_cancha where precio = 50 and hora_fin = ?", Integer.class, Time.valueOf("18:00:00")));
         assertEquals(7, jdbc.queryForObject("select count(*) from tarifa_cancha where precio = 60 and hora_inicio = ?", Integer.class, Time.valueOf("18:00:00")));

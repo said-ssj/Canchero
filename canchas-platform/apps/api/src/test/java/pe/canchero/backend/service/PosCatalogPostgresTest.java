@@ -42,7 +42,7 @@ class PosCatalogPostgresTest {
     @Test void createsPersistentProductAndInitialMovementOnlyInOwnedVenue() {
         var cat = service.createCategory(new PosCatalogService.CategoryRequest(VENUE_A,"Bebidas nuevas","Frías"), OWNER_A);
         int id = service.createProduct(product(cat.id(), "NUEVO-600", 0), OWNER_A);
-        var data = new SupabaseDataService(jdbc, null);
+        var data = new SupabaseDataService(jdbc);
         var saved = data.listProducts(VENUE_A).stream().filter(p -> p.id()==id).findFirst().orElseThrow();
         assertEquals(0, saved.stock());
         assertEquals(0, saved.contenido().compareTo(new BigDecimal("600")));

@@ -81,29 +81,20 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.IntStream;
 
 @Service
-public class SupabaseDataService {
+public class SupabaseDataService extends JdbcSupport {
 
-    private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
-    private static final ZoneId LIMA_ZONE = ZoneId.of("America/Lima");
-    private static final Set<String> PUBLIC_PLAYER_ROLES = Set.of("cliente", "jugador", "player");
-    private static final Set<String> PUBLIC_OWNER_ROLES = Set.of("dueno", "dueño", "owner", "propietario");
-    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
-
-    private final JdbcTemplate jdbc;
-    private final AuthTokenService authTokenService;
     private final Clock clock;
     private final SalePaymentLedger salePayments;
     private final Map<Integer, ReentrantLock> courtLocks = new ConcurrentHashMap<>();
 
     @Autowired
-    public SupabaseDataService(JdbcTemplate jdbc, AuthTokenService authTokenService) {
-        this(jdbc, authTokenService, Clock.system(LIMA_ZONE));
+    public SupabaseDataService(JdbcTemplate jdbc) {
+        this(jdbc, Clock.system(LIMA_ZONE));
     }
 
-    public SupabaseDataService(JdbcTemplate jdbc, AuthTokenService authTokenService, Clock clock) {
-        this.jdbc = jdbc;
+    public SupabaseDataService(JdbcTemplate jdbc, Clock clock) {
+        super(jdbc);
         this.salePayments = new SalePaymentLedger(jdbc);
-        this.authTokenService = authTokenService;
         this.clock = clock == null ? Clock.system(LIMA_ZONE) : clock;
     }
 
@@ -2133,17 +2124,6 @@ public class SupabaseDataService {
         return ((Number) keyHolder.getKeys().get("id_kardex")).intValue();
     }
 
-    private UUID resolveOperationalUserId(String userId) {
-        if (userId != null && !userId.isBlank()) {
-            try {
-                return UUID.fromString(userId);
-            } catch (IllegalArgumentException e) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Identificador de usuario inválido");
-            }
-        }
-        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Sesión inválida o expirada");
-    }
-
     private String nextSaleNumber(String type) {
         String prefix = switch (type) {
             case "factura" -> "F001";
@@ -2356,113 +2336,6 @@ public class SupabaseDataService {
                 distritoId).stream().findFirst().orElse("");
     }
 
-    private int lookupCatalogId(String table, String idColumn, String requested, String fallbackName, String errorMessage) {
-        String needle = normalize(requested);
-        List<Integer> exact = jdbc.queryForList("""
-                        select %s
-                        from %s
-                        where estado = 'A' and lower(nombre) = ?
-                        limit 1
-                        """.formatted(idColumn, table),
-                Integer.class,
-                needle);
-        if (!exact.isEmpty()) {
-            return exact.get(0);
-        }
-
-        if (!needle.isBlank()) {
-            List<Integer> partial = jdbc.queryForList("""
-                            select %s
-                            from %s
-                            where estado = 'A' and lower(nombre) like ?
-                            order by %s
-                            limit 1
-                            """.formatted(idColumn, table, idColumn),
-                    Integer.class,
-                    "%" + needle + "%");
-            if (!partial.isEmpty()) {
-                return partial.get(0);
-            }
-        }
-
-        List<Integer> fallback = jdbc.queryForList("""
-                        select %s
-                        from %s
-                        where estado = 'A' and lower(nombre) = lower(?)
-                        limit 1
-                        """.formatted(idColumn, table),
-                Integer.class,
-                fallbackName);
-        if (!fallback.isEmpty()) {
-            return fallback.get(0);
-        }
-
-        List<Integer> firstActive = jdbc.queryForList("""
-                        select %s
-                        from %s
-                        where estado = 'A'
-                        order by %s
-                        limit 1
-                        """.formatted(idColumn, table, idColumn),
-                Integer.class);
-        if (!firstActive.isEmpty()) {
-            return firstActive.get(0);
-        }
-
-        throw new ResponseStatusException(HttpStatus.CONFLICT, errorMessage);
-    }
-
-    private int roleId(String rawRole) {
-        String normalized = normalize(rawRole);
-        if (normalized.isEmpty()) {
-            normalized = "cliente";
-        }
-
-        List<String> candidates;
-        if (PUBLIC_PLAYER_ROLES.contains(normalized)) {
-            candidates = List.of("cliente", "jugador", "player");
-        } else if (PUBLIC_OWNER_ROLES.contains(normalized)) {
-            candidates = List.of("dueño", "dueno", "owner", "propietario");
-        } else {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Rol de registro no permitido");
-        }
-
-        for (String candidate : candidates) {
-            List<Integer> ids = jdbc.queryForList("""
-                            select id_rol
-                            from rol
-                            where estado = 'A' and lower(nombre) = lower(?)
-                            limit 1
-                            """,
-                    Integer.class,
-                    candidate);
-            if (!ids.isEmpty()) {
-                return ids.get(0);
-            }
-        }
-
-        throw new ResponseStatusException(HttpStatus.CONFLICT, "El rol solicitado no se encuentra disponible");
-    }
-
-    private String fallback(String value, String fallback) {
-        return value == null || value.isBlank() ? fallback : value.trim();
-    }
-
-    private LocalDate parseDate(String value) {
-        if (value == null || value.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La fecha de reserva es obligatoria");
-        }
-        try {
-            return LocalDate.parse(value.trim());
-        } catch (RuntimeException ex) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La fecha debe tener formato YYYY-MM-DD");
-        }
-    }
-
-    private String normalize(String value) {
-        return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
-    }
-
     private Double nullableDouble(ResultSet rs, String column) throws java.sql.SQLException {
         double value = rs.getDouble(column);
         return rs.wasNull() ? null : value;
@@ -2471,38 +2344,6 @@ public class SupabaseDataService {
     private Double nullableBigDecimal(ResultSet rs, String column) throws java.sql.SQLException {
         BigDecimal value = rs.getBigDecimal(column);
         return value == null ? null : value.doubleValue();
-    }
-
-    private String formatTime(Time time) {
-        return time == null ? "" : time.toLocalTime().format(TIME_FORMAT);
-    }
-
-    private String stringDateTime(ResultSet rs, String column) throws java.sql.SQLException {
-        Object value = rs.getObject(column);
-        return value == null ? null : value.toString();
-    }
-
-    private LocalDateTime toLocalDateTime(ResultSet rs, String column) throws java.sql.SQLException {
-        Object value = rs.getObject(column);
-        if (value == null) return null;
-        if (value instanceof LocalDateTime localDateTime) return localDateTime;
-        return parseLocalDateTime(value.toString());
-    }
-
-    private LocalDateTime parseLocalDateTime(String value) {
-        if (value == null || value.isBlank()) return null;
-        String normalized = value.trim();
-        if (normalized.endsWith("Z")) {
-            normalized = normalized.substring(0, normalized.length() - 1);
-        }
-        int zoneIndex = Math.max(normalized.lastIndexOf('+'), normalized.lastIndexOf('-'));
-        if (zoneIndex > 10) {
-            normalized = normalized.substring(0, zoneIndex);
-        }
-        if (normalized.length() > 19) {
-            normalized = normalized.substring(0, 19);
-        }
-        return LocalDateTime.parse(normalized.replace(' ', 'T'));
     }
 
     private String formatDateTimeAsTime(ResultSet rs, String column) throws java.sql.SQLException {
@@ -2518,10 +2359,6 @@ public class SupabaseDataService {
         return "cuadrada";
     }
 
-    private double round2(double value) {
-        return BigDecimal.valueOf(value).setScale(2, java.math.RoundingMode.HALF_UP).doubleValue();
-    }
-
     private Array textArray(Connection connection, List<String> values) throws java.sql.SQLException {
         return connection.createArrayOf("text", values == null ? new String[0] : values.toArray(String[]::new));
     }
@@ -2534,199 +2371,6 @@ public class SupabaseDataService {
             LocalTime end = parts.length > 1 ? LocalTime.parse(parts[1].trim()) : start.plusHours(1);
             return new TimeRange(start, end);
         }
-    }
-
-    static final int INTENTOS_ANTES_DE_ESPERA = 5;
-    static final int INTENTOS_ANTES_DE_BLOQUEO = 10;
-    private static final String CUENTA_BLOQUEADA = "Tu cuenta fue bloqueada por demasiados intentos fallidos. "
-            + "Cambia tu contraseña o comunícate con soporte para desbloquearla.";
-
-    /**
-     * 5 fallos -> espera de 30 s; 5 fallos más -> bloqueo hasta cambio de contraseña o soporte.
-     * Cada intento se "reserva" con un UPDATE atómico antes del bcrypt, así las peticiones en paralelo
-     * no pueden saltarse el límite.
-     */
-    public Optional<AuthResponse> login(LoginRequest request) {
-        String email = request.email().trim().toLowerCase();
-        record Cuenta(UUID id, String nombre, String email, String telefono, String hash, String rol) {}
-        var cuentas = jdbc.query("""
-                        select u.id_usuario, u.nombre, u.correo as email, u.telefono, u.password_hash, r.nombre as rol
-                        from usuario u
-                        join rol r on r.id_rol = u.id_rol
-                        where lower(u.correo) = ? and u.estado = 'A' and r.estado = 'A'
-                        """,
-                (rs, rowNum) -> new Cuenta(rs.getObject("id_usuario", UUID.class), rs.getString("nombre"),
-                        rs.getString("email"), rs.getString("telefono"), rs.getString("password_hash"), rs.getString("rol")),
-                email);
-        if (cuentas.isEmpty()) return Optional.empty();
-        Cuenta cuenta = cuentas.get(0);
-
-        int reservado = jdbc.update("""
-                update usuario
-                set intentos_fallidos = intentos_fallidos + 1,
-                    bloqueo_hasta = case when intentos_fallidos + 1 = ? then now() + interval '30' second else bloqueo_hasta end
-                where id_usuario = ? and intentos_fallidos < ? and (bloqueo_hasta is null or bloqueo_hasta <= now())
-                """, INTENTOS_ANTES_DE_ESPERA, cuenta.id(), INTENTOS_ANTES_DE_BLOQUEO);
-        if (reservado == 0) throw intentoRechazado(cuenta.id());
-
-        if (!PasswordUtil.matches(request.password(), cuenta.hash())) {
-            Integer fallos = jdbc.queryForObject("select intentos_fallidos from usuario where id_usuario = ?", Integer.class, cuenta.id());
-            int n = fallos == null ? 0 : fallos;
-            if (n >= INTENTOS_ANTES_DE_BLOQUEO) throw new ResponseStatusException(HttpStatus.LOCKED, CUENTA_BLOQUEADA);
-            if (n == INTENTOS_ANTES_DE_ESPERA) {
-                throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
-                        "Fallaste " + n + " intentos. Espera 30 segundos para volver a intentarlo. "
-                                + "Si fallas " + (INTENTOS_ANTES_DE_BLOQUEO - n) + " veces más, tu cuenta se bloqueará.");
-            }
-            int quedan = (n < INTENTOS_ANTES_DE_ESPERA ? INTENTOS_ANTES_DE_ESPERA : INTENTOS_ANTES_DE_BLOQUEO) - n;
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Correo o contraseña incorrectos. Te quedan " + quedan
-                    + (n < INTENTOS_ANTES_DE_ESPERA ? " intentos antes de una espera de 30 segundos." : " intentos antes de que tu cuenta se bloquee."));
-        }
-
-        jdbc.update("update usuario set intentos_fallidos = 0, bloqueo_hasta = null where id_usuario = ?", cuenta.id());
-        return Optional.of(new AuthResponse(
-                authTokenService.issue(cuenta.id(), request.rememberMe()),
-                new AuthUserDto(cuenta.id().toString(), cuenta.nombre(), cuenta.email(), cuenta.telefono(), cuenta.rol())));
-    }
-
-    private ResponseStatusException intentoRechazado(UUID userId) {
-        record Estado(int fallos, java.time.OffsetDateTime hasta) {}
-        Estado estado = jdbc.queryForObject("select intentos_fallidos, bloqueo_hasta from usuario where id_usuario = ?",
-                (rs, rowNum) -> new Estado(rs.getInt(1), rs.getObject(2, java.time.OffsetDateTime.class)), userId);
-        if (estado.fallos() >= INTENTOS_ANTES_DE_BLOQUEO) return new ResponseStatusException(HttpStatus.LOCKED, CUENTA_BLOQUEADA);
-        long segundos = estado.hasta() == null ? 30
-                : Math.max(1, (java.time.Duration.between(java.time.OffsetDateTime.now(), estado.hasta()).toMillis() + 999) / 1000);
-        return new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
-                "Demasiados intentos fallidos. Espera " + segundos + " segundos para volver a intentarlo.");
-    }
-
-    public Optional<AuthResponse> register(RegisterRequest request) {
-        if (request == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Datos de registro obligatorios");
-        }
-        if (request.nombre() == null || request.nombre().trim().isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El nombre es obligatorio");
-        }
-        if (request.email() == null || request.email().trim().isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El correo electrónico es obligatorio");
-        }
-        String email = request.email().trim().toLowerCase(Locale.ROOT);
-        if (!EMAIL_PATTERN.matcher(email).matches()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El correo electrónico no es válido");
-        }
-        if (request.password() == null || request.password().isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La contraseña es obligatoria");
-        }
-        if (request.password().length() < 8) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La contraseña debe contener al menos 8 caracteres");
-        }
-        if (request.password().getBytes(StandardCharsets.UTF_8).length > 72) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La contraseña no debe exceder 72 bytes");
-        }
-
-        Integer exists = jdbc.queryForObject("select count(*) from usuario where lower(correo) = ?", Integer.class, email);
-        if (exists != null && exists > 0) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "El email ya está registrado");
-        }
-        Integer rolId = roleId(request.rol());
-        UUID userId = UUID.randomUUID();
-        try {
-            jdbc.update("""
-                    insert into usuario (id_usuario, id_rol, nombre, correo, telefono, password_hash, estado, usucre, pccre)
-                    values (?, ?, ?, ?, ?, ?, 'A', 'API', 'SPRING')
-                    """,
-                    userId, rolId, request.nombre().trim(), email,
-                    request.telefono() == null ? "" : request.telefono().trim(),
-                    PasswordUtil.hash(request.password()));
-        } catch (org.springframework.dao.DuplicateKeyException ex) {
-            // Dos registros simultáneos con el mismo correo: el índice único usuario_correo_unico decide.
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "El email ya está registrado");
-        }
-        return login(new LoginRequest(email, request.password()));
-    }
-
-    @org.springframework.transaction.annotation.Transactional
-    public AuthResponse loginGoogle(UUID authId, String rawEmail, String name, String password, boolean rememberMe) {
-        String email = normalize(rawEmail);
-        if (!EMAIL_PATTERN.matcher(email).matches()) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Correo de Google inválido");
-        }
-        // Serializa los callbacks de una misma identidad durante el alta o la vinculación.
-        jdbc.query("select pg_advisory_xact_lock(?)", (rs, rowNum) -> true,
-                authId.getMostSignificantBits() ^ authId.getLeastSignificantBits());
-        List<UUID> linked = jdbc.queryForList("select id_usuario from public.usuario_auth_google where id_auth = ?",
-                UUID.class, authId);
-        UUID userId;
-        if (!linked.isEmpty()) {
-            userId = linked.get(0);
-        } else {
-            List<UUID> existing = jdbc.queryForList(
-                    "select id_usuario from usuario where lower(correo) = ? for update", UUID.class, email);
-            if (!existing.isEmpty()) {
-                userId = existing.get(0);
-                // El trigger de Supabase crea este perfil con el mismo UUID antes del callback.
-                boolean provisionedBySupabase = userId.equals(authId) && Boolean.TRUE.equals(
-                        jdbc.queryForObject("""
-                                select exists (
-                                    select 1 from public.usuario u
-                                    join public.rol r on r.id_rol = u.id_rol
-                                    where u.id_usuario = ? and u.usucre = 'AUTH_SIGNUP'
-                                      and u.pccre = 'WEBAPP' and u.estado = 'A'
-                                      and r.nombre = 'user' and r.estado = 'A'
-                                      and coalesce(u.password_hash, '') = ''
-                                )
-                                """, Boolean.class, userId));
-                if (!provisionedBySupabase) {
-                    if (password == null || password.isEmpty()) {
-                        throw new ResponseStatusException(HttpStatus.PRECONDITION_REQUIRED, "Confirma tu contraseña de Canchero");
-                    }
-                    String hash = jdbc.queryForObject("select password_hash from usuario where id_usuario = ?",
-                            String.class, userId);
-                    if (!PasswordUtil.matches(password, hash) || currentUser(userId).isEmpty()) {
-                        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "No se pudo confirmar la cuenta de Canchero");
-                    }
-                }
-            } else {
-                userId = UUID.randomUUID();
-                String displayName = name.isBlank() ? "Jugador" : name.strip();
-                displayName = displayName.substring(0, displayName.offsetByCodePoints(0,
-                        Math.min(80, displayName.codePointCount(0, displayName.length()))));
-                int created = jdbc.update("""
-                        insert into usuario (id_usuario, id_rol, nombre, correo, telefono, password_hash,
-                                             estado, usucre, pccre)
-                        values (?, ?, ?, ?, '', 'oauth:google', 'A', 'API', 'SPRING')
-                        on conflict do nothing
-                        """, userId, roleId("cliente"), displayName, email);
-                if (created != 1) {
-                    throw new ResponseStatusException(HttpStatus.CONFLICT, "La cuenta cambió. Vuelve a iniciar sesión con Google");
-                }
-            }
-            int mapped = jdbc.update("""
-                    insert into public.usuario_auth_google (id_auth, id_usuario)
-                    values (?, ?) on conflict do nothing
-                    """, authId, userId);
-            if (mapped != 1) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "La cuenta ya está vinculada");
-            }
-        }
-        return new AuthResponse(authTokenService.issue(userId, rememberMe), currentUser(userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "La cuenta no está activa")));
-    }
-
-    public Optional<AuthUserDto> currentUser(UUID userId) {
-        return jdbc.query("""
-                        select u.id_usuario, u.nombre, u.correo as email, u.telefono, r.nombre as rol
-                        from usuario u
-                        join rol r on r.id_rol = u.id_rol
-                        where u.id_usuario = ? and u.estado = 'A' and r.estado = 'A'
-                        """,
-                (rs, rowNum) -> new AuthUserDto(
-                        rs.getObject("id_usuario", UUID.class).toString(),
-                        rs.getString("nombre"),
-                        rs.getString("email"),
-                        rs.getString("telefono"),
-                        rs.getString("rol")),
-                userId).stream().findFirst();
     }
 
     public List<ReviewResponse> listReviewsBySede(int sedeId) {

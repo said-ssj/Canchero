@@ -6,7 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 import pe.canchero.backend.service.AuthTokenService;
-import pe.canchero.backend.service.SupabaseDataService;
+import pe.canchero.backend.service.AuthService;
 import pe.canchero.backend.web.dto.AuthUserDto;
 
 import java.io.IOException;
@@ -17,9 +17,9 @@ import java.util.UUID;
 public class ApiAuthorizationInterceptor implements HandlerInterceptor {
 
     private final AuthTokenService authTokenService;
-    private final SupabaseDataService data;
+    private final AuthService data;
 
-    public ApiAuthorizationInterceptor(AuthTokenService authTokenService, SupabaseDataService data) {
+    public ApiAuthorizationInterceptor(AuthTokenService authTokenService, AuthService data) {
         this.authTokenService = authTokenService;
         this.data = data;
     }

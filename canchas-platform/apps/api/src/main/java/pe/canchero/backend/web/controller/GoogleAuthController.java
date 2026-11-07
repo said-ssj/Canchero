@@ -18,7 +18,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.server.ResponseStatusException;
-import pe.canchero.backend.service.SupabaseDataService;
+import pe.canchero.backend.service.AuthService;
 import pe.canchero.backend.web.dto.AuthResponse;
 
 @RestController
@@ -26,16 +26,16 @@ import pe.canchero.backend.web.dto.AuthResponse;
 @ConditionalOnProperty(name = "GOOGLE_AUTH_ENABLED", havingValue = "true")
 public class GoogleAuthController {
     private final RestClient supabase;
-    private final SupabaseDataService data;
+    private final AuthService data;
 
     @Autowired
-    public GoogleAuthController(SupabaseDataService data,
+    public GoogleAuthController(AuthService data,
             @Value("${SUPABASE_URL}") String projectUrl,
             @Value("${SUPABASE_ANON_KEY}") String publicKey) {
         this(data, buildClient(projectUrl, publicKey));
     }
 
-    GoogleAuthController(SupabaseDataService data, RestClient supabase) {
+    GoogleAuthController(AuthService data, RestClient supabase) {
         this.data = data;
         this.supabase = supabase;
     }
