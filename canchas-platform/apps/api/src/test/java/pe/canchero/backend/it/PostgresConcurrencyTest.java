@@ -150,10 +150,10 @@ class PostgresConcurrencyTest {
             int sessionId = PostgresTestSupport.openSession(firstApp, PostgresTestSupport.BOX_A,
                     PostgresTestSupport.OWNER_A, 100.0);
             var outcomes = runTogether(
-                    () -> firstApp.data().closeCashSession(sessionId,
+                    () -> firstApp.cash().closeCashSession(sessionId,
                             new CloseCashSessionRequest(100.0, 0, 0, 0, "Cierre A",
                                     PostgresTestSupport.OWNER_A.id()), PostgresTestSupport.OWNER_A),
-                    () -> secondApp.data().closeCashSession(sessionId,
+                    () -> secondApp.cash().closeCashSession(sessionId,
                             new CloseCashSessionRequest(100.0, 0, 0, 0, "Cierre B",
                                     PostgresTestSupport.OWNER_A.id()), PostgresTestSupport.OWNER_A));
 

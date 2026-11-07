@@ -20,11 +20,13 @@ public class CashVenueStateService {
     }
 
     private final JdbcTemplate jdbc;
-    private final SupabaseDataService data;
+    private final CashService data;
+    private final SalePaymentLedger salePayments;
 
-    public CashVenueStateService(JdbcTemplate jdbc, SupabaseDataService data) {
+    public CashVenueStateService(JdbcTemplate jdbc, CashService data) {
         this.jdbc = jdbc;
         this.data = data;
+        this.salePayments = new SalePaymentLedger(jdbc);
     }
 
     @Transactional(readOnly = true)
@@ -51,7 +53,7 @@ public class CashVenueStateService {
         var audits = ids.isEmpty() ? List.<CashAuditDto>of()
                 : data.listCashAudits().stream().filter(audit -> ids.contains(audit.sesionId())).toList();
         var movements = session == null ? List.<CashMovementDto>of() : data.listCashMovements(session.id());
-        boolean ready = data.salePaymentsReady();
+        boolean ready = salePayments.available();
         CashBalanceDto balance = null;
         String error = "";
         if (session != null) {

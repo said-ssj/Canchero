@@ -107,12 +107,12 @@ class PostgresFullCycleTest {
             assertEquals(0, new BigDecimal("10.00").compareTo((BigDecimal) salePayments.get(0).get("monto")));
             assertEquals(0, new BigDecimal("20.00").compareTo((BigDecimal) salePayments.get(0).get("monto_recibido")));
 
-            CashBalanceDto balance = app.data().cashBalance(sessionId);
+            CashBalanceDto balance = app.cash().cashBalance(sessionId);
             assertEquals(0, new BigDecimal("10.00").compareTo(balance.pagosEfectivo()));
             assertEquals(0, BigDecimal.ZERO.compareTo(balance.pagosDigital()));
             assertEquals(0, new BigDecimal("110.00").compareTo(balance.montoSistema()));
 
-            CashAuditDto audit = app.data().closeCashSession(sessionId,
+            CashAuditDto audit = app.cash().closeCashSession(sessionId,
                     new CloseCashSessionRequest(110.0, 0, 0, 0, "Cierre ciclo completo",
                             PostgresTestSupport.OWNER_A.id()),
                     PostgresTestSupport.OWNER_A);
@@ -124,9 +124,9 @@ class PostgresFullCycleTest {
             assertTrue(audit.desgloseDisponible());
             assertEquals("Cierre ciclo completo", audit.observaciones());
 
-            assertTrue(app.data().getOpenCashSession(PostgresTestSupport.BOX_A).isEmpty());
+            assertTrue(app.cash().getOpenCashSession(PostgresTestSupport.BOX_A).isEmpty());
 
-            List<CashAuditDto> audits = app.data().listCashAuditsForVenue(PostgresTestSupport.VENUE_A);
+            List<CashAuditDto> audits = app.cash().listCashAuditsForVenue(PostgresTestSupport.VENUE_A);
             assertEquals(1, audits.size());
             assertEquals(audit.id(), audits.get(0).id());
 

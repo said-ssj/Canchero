@@ -96,7 +96,7 @@ class PostgresPaymentMethodsTest {
                     .filter(p -> p.id() == PostgresTestSupport.PRODUCT_A)
                     .findFirst().orElseThrow().stock());
 
-            CashBalanceDto balance = app.data().cashBalance(sessionId);
+            CashBalanceDto balance = app.cash().cashBalance(sessionId);
             assertEquals(0, new BigDecimal("14.00").compareTo(balance.pagosEfectivo()));
             assertEquals(0, new BigDecimal("36.00").compareTo(balance.pagosDigital()));
             assertEquals(0, new BigDecimal("114.00").compareTo(balance.montoSistema()));
@@ -125,7 +125,7 @@ class PostgresPaymentMethodsTest {
             assertEquals(5, jdbc.queryForObject("select count(*) from venta", Integer.class));
             assertEquals(6, jdbc.queryForObject("select count(*) from venta_pago", Integer.class));
 
-            CashAuditDto audit = app.data().closeCashSession(sessionId,
+            CashAuditDto audit = app.cash().closeCashSession(sessionId,
                     new CloseCashSessionRequest(114.0, 0, 0, 0, "Cierre medios de pago",
                             PostgresTestSupport.OWNER_A.id()), PostgresTestSupport.OWNER_A);
             assertEquals(114.0, audit.totalEfectivoFisico());

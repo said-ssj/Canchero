@@ -13,13 +13,12 @@ import static org.junit.jupiter.api.Assertions.*;
 
 
 class CashVenueStateServiceTest {
-    static class StubData extends SupabaseDataService {
+    static class StubData extends CashService {
         int reads = 0;
         int auditReads = 0;
         List<CashBoxDto> boxes = List.of();
         List<CashAuditDto> audits = List.of();
-        StubData() { super(null, null); }
-        @Override public boolean salePaymentsReady() { return false; }
+        StubData() { super(null); }
         @Override public List<CashBoxDto> listCashBoxes(Integer id) { reads++; return boxes; }
         @Override public Optional<CashSessionDto> getOpenCashSession(Integer id) { reads++; return Optional.empty(); }
         @Override public List<CashAuditDto> listCashAudits() { reads++; auditReads++; return audits; }

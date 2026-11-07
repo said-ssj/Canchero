@@ -117,20 +117,20 @@ class PostgresTenantIsolationTest {
             assertEquals(1, app.data().listVentasForOwner(PostgresTestSupport.OWNER_A_ID.toString()).size());
             assertEquals(1, app.data().listVentasForOwner(PostgresTestSupport.OWNER_B_ID.toString()).size());
 
-            app.data().closeCashSession(sessionA,
+            app.cash().closeCashSession(sessionA,
                     new CloseCashSessionRequest(100.0, 0, 0, 10.0, "Cierre A",
                             PostgresTestSupport.OWNER_A.id()), PostgresTestSupport.OWNER_A);
-            app.data().closeCashSession(sessionB,
+            app.cash().closeCashSession(sessionB,
                     new CloseCashSessionRequest(100.0, 0, 0, 6.0, "Cierre B",
                             PostgresTestSupport.OWNER_B.id()), PostgresTestSupport.OWNER_B);
 
-            assertEquals(1, app.data().listCashAuditsForVenue(PostgresTestSupport.VENUE_A).size());
-            assertEquals(1, app.data().listCashAuditsForVenue(PostgresTestSupport.VENUE_B).size());
-            assertEquals(1, app.data().listCashAuditsForOwner(
+            assertEquals(1, app.cash().listCashAuditsForVenue(PostgresTestSupport.VENUE_A).size());
+            assertEquals(1, app.cash().listCashAuditsForVenue(PostgresTestSupport.VENUE_B).size());
+            assertEquals(1, app.cash().listCashAuditsForOwner(
                     PostgresTestSupport.OWNER_A_ID.toString()).size());
-            assertEquals(1, app.data().listCashAuditsForOwner(
+            assertEquals(1, app.cash().listCashAuditsForOwner(
                     PostgresTestSupport.OWNER_B_ID.toString()).size());
-            assertTrue(app.data().listCashAuditsForVenue(PostgresTestSupport.VENUE_A)
+            assertTrue(app.cash().listCashAuditsForVenue(PostgresTestSupport.VENUE_A)
                     .get(0).observaciones().contains("Cierre A"));
         }
     }

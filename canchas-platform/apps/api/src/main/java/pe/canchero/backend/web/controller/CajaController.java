@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
-import pe.canchero.backend.service.SupabaseDataService;
+import pe.canchero.backend.service.CashService;
 import pe.canchero.backend.service.VenueAccessService;
 import pe.canchero.backend.web.dto.AuthUserDto;
 import pe.canchero.backend.web.dto.CajaRequest;
@@ -25,10 +25,10 @@ import java.util.List;
 @RequestMapping("/api/cajas")
 public class CajaController {
 
-    private final SupabaseDataService data;
+    private final CashService data;
     private final VenueAccessService access;
 
-    public CajaController(SupabaseDataService data, VenueAccessService access) {
+    public CajaController(CashService data, VenueAccessService access) {
         this.data = data;
         this.access = access;
     }

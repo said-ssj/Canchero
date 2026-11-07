@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import pe.canchero.backend.service.CashVenueStateService;
-import pe.canchero.backend.service.SupabaseDataService;
+import pe.canchero.backend.service.CashService;
 import pe.canchero.backend.service.VenueAccessService;
 import pe.canchero.backend.web.dto.AuthUserDto;
 import pe.canchero.backend.web.dto.CashAuditDto;
@@ -31,11 +31,11 @@ import java.util.List;
 @RequestMapping("/api/cash")
 public class CashController {
 
-    private final SupabaseDataService dataService;
+    private final CashService dataService;
     private final CashVenueStateService venueState;
     private final VenueAccessService access;
 
-    public CashController(SupabaseDataService dataService, CashVenueStateService venueState, VenueAccessService access) {
+    public CashController(CashService dataService, CashVenueStateService venueState, VenueAccessService access) {
         this.dataService = dataService;
         this.venueState = venueState;
         this.access = access;

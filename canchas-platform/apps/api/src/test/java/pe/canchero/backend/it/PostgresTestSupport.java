@@ -8,6 +8,7 @@ import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import pe.canchero.backend.service.AuthTokenService;
+import pe.canchero.backend.service.CashService;
 import pe.canchero.backend.service.SupabaseDataService;
 import pe.canchero.backend.service.VenueAccessService;
 import pe.canchero.backend.web.dto.AuthUserDto;
@@ -70,6 +71,7 @@ public final class PostgresTestSupport {
         return new App(
                 context,
                 context.getBean(SupabaseDataService.class),
+                context.getBean(CashService.class),
                 context.getBean(VenueAccessService.class),
                 context.getBean(AuthTokenService.class),
                 context.getBean(JdbcTemplate.class));
@@ -161,7 +163,7 @@ public final class PostgresTestSupport {
     }
 
     public static int openSession(App app, int boxId, AuthUserDto owner, double openingCash) {
-        return app.data().openCashSession(new OpenCashSessionRequest(
+        return app.cash().openCashSession(new OpenCashSessionRequest(
                 boxId, owner.nombre(), owner.email(), openingCash, owner.id()), owner).id();
     }
 
@@ -180,6 +182,7 @@ public final class PostgresTestSupport {
 
     public record App(AnnotationConfigApplicationContext context,
                       SupabaseDataService data,
+                      CashService cash,
                       VenueAccessService access,
                       AuthTokenService tokens,
                       JdbcTemplate jdbc) implements AutoCloseable {
@@ -215,6 +218,11 @@ public final class PostgresTestSupport {
         @Bean
         public SupabaseDataService dataService(JdbcTemplate jdbcTemplate, AuthTokenService authTokenService) {
             return new SupabaseDataService(jdbcTemplate, CLOCK);
+        }
+
+        @Bean
+        public CashService cashService(JdbcTemplate jdbcTemplate) {
+            return new CashService(jdbcTemplate);
         }
 
         @Bean

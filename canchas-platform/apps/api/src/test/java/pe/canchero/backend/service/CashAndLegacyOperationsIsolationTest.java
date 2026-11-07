@@ -26,6 +26,7 @@ class CashAndLegacyOperationsIsolationTest {
 
     private JdbcTemplate jdbc;
     private SupabaseDataService dataService;
+    private CashService cashService;
     private CashVenueStateService venueStateService;
     private VenueAccessService accessService;
     private AuthTokenService tokenService;
@@ -311,8 +312,9 @@ class CashAndLegacyOperationsIsolationTest {
         // Services
         tokenService = new AuthTokenService("test-phase3-secret-key-canchero-token-xyz");
         dataService = new SupabaseDataService(jdbc);
+        cashService = new CashService(jdbc);
         accessService = new VenueAccessService(jdbc);
-        venueStateService = new CashVenueStateService(jdbc, dataService);
+        venueStateService = new CashVenueStateService(jdbc, cashService);
 
         tokenOwnerA = tokenService.issue(ownerAId, true);
         tokenOwnerB = tokenService.issue(ownerBId, true);
@@ -321,10 +323,10 @@ class CashAndLegacyOperationsIsolationTest {
         tokenAdmin = tokenService.issue(adminId, true);
 
         mvc = MockMvcBuilders.standaloneSetup(
-                        new CashController(dataService, venueStateService, accessService),
-                        new CajaController(dataService, accessService),
-                        new SesionCajaController(dataService, accessService),
-                        new MovimientoCajaController(dataService, accessService),
+                        new CashController(cashService, venueStateService, accessService),
+                        new CajaController(cashService, accessService),
+                        new SesionCajaController(cashService, accessService),
+                        new MovimientoCajaController(cashService, accessService),
                         new PagoReservaController(dataService, accessService),
                         new VentaController(dataService, accessService),
                         new pe.canchero.backend.web.controller.PosController(dataService, accessService))
@@ -388,7 +390,7 @@ class CashAndLegacyOperationsIsolationTest {
         jdbc.update("update reserva set id_cancha=301 where id_reserva=101");
         jdbc.update("insert into pago_reserva (id_pago_reserva,id_reserva,id_metodo_pago,id_sesion_caja,monto,estado) values (603,101,1,10,5,'A')");
         assertEquals(409, assertThrows(org.springframework.web.server.ResponseStatusException.class,
-                () -> dataService.cashBalance(10)).getStatusCode().value());
+                () -> cashService.cashBalance(10)).getStatusCode().value());
     }
 
     @Test
@@ -401,7 +403,7 @@ class CashAndLegacyOperationsIsolationTest {
             assertEquals(method, sale.metodoPago());
             assertEquals(method.equals("efectivo") ? 10 : 0, sale.vuelto());
             assertEquals(new BigDecimal("10.00"), dataService.listSales(10).get(0).pagos().get(0).monto());
-            var audit = dataService.closeCashSession(10, new pe.canchero.backend.web.dto.CloseCashSessionRequest(method.equals("efectivo") ? 110 : 100,999,999,999,"Test",null),
+            var audit = cashService.closeCashSession(10, new pe.canchero.backend.web.dto.CloseCashSessionRequest(method.equals("efectivo") ? 110 : 100,999,999,999,"Test",null),
                     new pe.canchero.backend.web.dto.AuthUserDto(ownerAId.toString(),"Owner","","","dueno"));
             assertEquals(0, audit.diferencia());
             assertEquals(method.equals("efectivo") ? 10 : 0, audit.totalPagosEfectivo());
@@ -417,13 +419,13 @@ class CashAndLegacyOperationsIsolationTest {
         assertEquals("mixto", sale.metodoPago());
         assertEquals(6, sale.vuelto());
         jdbc.update("insert into pago_reserva (id_pago_reserva,id_reserva,id_metodo_pago,id_sesion_caja,monto,estado) values (601,101,1,10,5,'A'),(602,101,3,10,8,'A')");
-        var balance = dataService.cashBalance(10);
+        var balance = cashService.cashBalance(10);
         assertEquals(new BigDecimal("9.00"), balance.pagosEfectivo());
         assertEquals(new BigDecimal("14.00"), balance.pagosDigital());
-        var audit = dataService.closeCashSession(10,new pe.canchero.backend.web.dto.CloseCashSessionRequest(109,0,0,999,"Test",null),
+        var audit = cashService.closeCashSession(10,new pe.canchero.backend.web.dto.CloseCashSessionRequest(109,0,0,999,"Test",null),
                 new pe.canchero.backend.web.dto.AuthUserDto(ownerAId.toString(),"Owner","","","dueno"));
         assertEquals(109, audit.montoSistema());
-        assertEquals(9, dataService.listCashAuditsForOwner(ownerAId.toString()).get(0).totalPagosEfectivo());
+        assertEquals(9, cashService.listCashAuditsForOwner(ownerAId.toString()).get(0).totalPagosEfectivo());
         assertEquals(new BigDecimal("14.00"), jdbc.queryForObject("select total_digital from arqueo_caja",BigDecimal.class));
     }
 
@@ -450,7 +452,7 @@ class CashAndLegacyOperationsIsolationTest {
     @Test
     void historicalSaleWithoutPaymentNeverBecomesCashOrAnAutomaticallyRepairedSale() {
         jdbc.update("insert into venta (id_usuario,id_sesion_caja,total,estado) values (?,10,10,'A')",ownerAId);
-        assertEquals(409,assertThrows(org.springframework.web.server.ResponseStatusException.class,()->dataService.cashBalance(10)).getStatusCode().value());
+        assertEquals(409,assertThrows(org.springframework.web.server.ResponseStatusException.class,()->cashService.cashBalance(10)).getStatusCode().value());
         assertEquals("sin_desglose",dataService.listSales(10).get(0).metodoPago());
         assertEquals(0,jdbc.queryForObject("select count(*) from venta_pago",Integer.class));
     }
