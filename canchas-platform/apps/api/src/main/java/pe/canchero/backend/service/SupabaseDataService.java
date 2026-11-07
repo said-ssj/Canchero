@@ -2630,13 +2630,18 @@ public class SupabaseDataService {
         }
         Integer rolId = roleId(request.rol());
         UUID userId = UUID.randomUUID();
-        jdbc.update("""
-                insert into usuario (id_usuario, id_rol, nombre, correo, telefono, password_hash, estado, usucre, pccre)
-                values (?, ?, ?, ?, ?, ?, 'A', 'API', 'SPRING')
-                """,
-                userId, rolId, request.nombre().trim(), email,
-                request.telefono() == null ? "" : request.telefono().trim(),
-                PasswordUtil.hash(request.password()));
+        try {
+            jdbc.update("""
+                    insert into usuario (id_usuario, id_rol, nombre, correo, telefono, password_hash, estado, usucre, pccre)
+                    values (?, ?, ?, ?, ?, ?, 'A', 'API', 'SPRING')
+                    """,
+                    userId, rolId, request.nombre().trim(), email,
+                    request.telefono() == null ? "" : request.telefono().trim(),
+                    PasswordUtil.hash(request.password()));
+        } catch (org.springframework.dao.DuplicateKeyException ex) {
+            // Dos registros simultáneos con el mismo correo: el índice único usuario_correo_unico decide.
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "El email ya está registrado");
+        }
         return login(new LoginRequest(email, request.password()));
     }
 

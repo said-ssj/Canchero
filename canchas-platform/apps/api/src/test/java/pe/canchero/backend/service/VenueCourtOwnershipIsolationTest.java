@@ -10,6 +10,7 @@ import org.springframework.jdbc.datasource.SingleConnectionDataSource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import pe.canchero.backend.config.ApiAuthorizationInterceptor;
+import pe.canchero.backend.web.controller.ApiExceptionHandler;
 import pe.canchero.backend.web.controller.CourtController;
 import pe.canchero.backend.web.controller.VenueController;
 import pe.canchero.backend.web.dto.AuthUserDto;
@@ -48,6 +49,7 @@ class VenueCourtOwnershipIsolationTest {
         mvc = MockMvcBuilders.standaloneSetup(
                         new VenueController(data, access),
                         new CourtController(data, null, null, access))
+                .setControllerAdvice(new ApiExceptionHandler())
                 .addInterceptors(new ApiAuthorizationInterceptor(tokens, data))
                 .build();
     }
@@ -109,5 +111,7 @@ class VenueCourtOwnershipIsolationTest {
         mvc.perform(delete("/api/venues/abc").header("Authorization", a)).andExpect(status().isBadRequest());
         mvc.perform(post("/api/courts").header("Authorization", a).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"venueId\":\"abc\"}")).andExpect(status().isBadRequest());
+        when(data.getCourtAvailability(eq("abc"), any(), any())).thenThrow(new NumberFormatException("abc"));
+        mvc.perform(get("/api/courts/abc/availability?from=2026-11-07&to=2026-11-08")).andExpect(status().isBadRequest());
     }
 }

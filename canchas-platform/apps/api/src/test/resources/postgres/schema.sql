@@ -24,6 +24,8 @@ CREATE TABLE usuario (
     bloqueo_hasta timestamptz
 );
 
+CREATE UNIQUE INDEX usuario_correo_unico ON usuario (lower(correo));
+
 CREATE TABLE departamento (
     id_departamento integer PRIMARY KEY,
     nombre varchar(100) NOT NULL,
