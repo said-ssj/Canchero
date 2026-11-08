@@ -81,6 +81,22 @@ class CourtReportControllerTest {
     }
 
     @Test
+    void listsAllReportsForAdmin() throws Exception {
+        AuthUserDto admin = new AuthUserDto("admin-uuid", "Admin", "admin@canchero.pe", "999", "admin");
+        CourtReportResponse mockResp = new CourtReportResponse(
+                1, 101, "Cancha 1", 10, "Sede Central",
+                "player-uuid", "Jugador", "ILUMINACION", "Foco fundido",
+                "PENDIENTE", "ALTA", null, null, "2026-11-07T21:00:00"
+        );
+        when(service.listAllReports(any(AuthUserDto.class))).thenReturn(List.of(mockResp));
+
+        mvc.perform(get("/api/court-reports")
+                        .requestAttr("auth.user", admin))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(1));
+    }
+
+    @Test
     void updatesReportStatus() throws Exception {
         CourtReportResponse mockResp = new CourtReportResponse(
                 1, 101, "Cancha 1", 10, "Sede Central",
