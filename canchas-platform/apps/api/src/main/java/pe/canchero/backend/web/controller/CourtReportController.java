@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.bind.annotation.RequestParam;
+import pe.canchero.backend.service.Roles;
 import pe.canchero.backend.service.CourtReportService;
 import pe.canchero.backend.web.dto.AuthUserDto;
 import pe.canchero.backend.web.dto.CourtReportRequest;
@@ -46,6 +48,21 @@ public class CourtReportController {
         AuthUserDto authUser = getAuthenticatedUser(httpRequest);
         CourtReportResponse response = service.createReport(request, authUser);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @GetMapping
+    public ResponseEntity<List<CourtReportResponse>> listReports(
+            @RequestParam(required = false) Integer sedeId,
+            @RequestParam(required = false) Integer canchaId,
+            HttpServletRequest httpRequest) {
+        AuthUserDto authUser = getAuthenticatedUser(httpRequest);
+        if (canchaId != null) {
+            return ResponseEntity.ok(service.listReportsByCourt(canchaId, authUser));
+        }
+        if (sedeId != null) {
+            return ResponseEntity.ok(service.listReportsByVenue(sedeId, authUser));
+        }
+        return ResponseEntity.ok(service.listAllReports(authUser));
     }
 
     @GetMapping("/mine")

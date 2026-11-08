@@ -34,6 +34,11 @@ public class ReviewController {
         return ResponseEntity.ok(data.listReviewsBySede(sedeId));
     }
 
+    @GetMapping("/court/{canchaId}")
+    public ResponseEntity<List<ReviewResponse>> byCourt(@PathVariable int canchaId) {
+        return ResponseEntity.ok(data.listReviewsByCourt(canchaId));
+    }
+
     @PostMapping
     public ResponseEntity<?> create(
             @RequestBody ReviewRequest request,

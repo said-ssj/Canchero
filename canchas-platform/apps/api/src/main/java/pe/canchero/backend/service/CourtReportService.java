@@ -99,6 +99,24 @@ public class CourtReportService extends JdbcSupport {
                 new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "No se pudo recuperar el reporte creado"));
     }
 
+    public List<CourtReportResponse> listAllReports(AuthUserDto authUser) {
+        if (authUser == null || !Roles.isAdmin(authUser.rol())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Acceso restringido a administradores");
+        }
+        return jdbc.query("""
+                select r.id_reporte, r.id_cancha, c.nombre_numero as nombre_cancha,
+                       r.id_sede, s.nombre as nombre_sede,
+                       r.id_usuario, u.nombre as nombre_usuario,
+                       r.tipo_problema, r.descripcion, r.estado, r.prioridad,
+                       r.resolucion, r.fecha_resolucion, r.fecha_creacion
+                from reporte_cancha r
+                join cancha c on c.id_cancha = r.id_cancha
+                join sede s on s.id_sede = r.id_sede
+                join usuario u on u.id_usuario = r.id_usuario
+                order by r.fecha_creacion desc
+                """, this::mapReportRow);
+    }
+
     public List<CourtReportResponse> listReportsByVenue(int sedeId, AuthUserDto authUser) {
         venueAccess.requireOwnedVenue(sedeId, authUser);
         return jdbc.query("""
