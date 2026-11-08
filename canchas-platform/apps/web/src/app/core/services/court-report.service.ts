@@ -46,6 +46,19 @@ export class CourtReportService {
     return this.http.post<CourtReportResponse>(`${environment.apiUrl}/court-reports`, data);
   }
 
+  getAll(params?: { sedeId?: number; canchaId?: number }): Observable<CourtReportResponse[]> {
+    const queryParams: Record<string, string> = {};
+    if (params?.sedeId != null) {
+      queryParams['sedeId'] = String(params.sedeId);
+    }
+    if (params?.canchaId != null) {
+      queryParams['canchaId'] = String(params.canchaId);
+    }
+    return this.http.get<CourtReportResponse[]>(`${environment.apiUrl}/court-reports`, {
+      params: queryParams,
+    });
+  }
+
   getByVenue(sedeId: number): Observable<CourtReportResponse[]> {
     return this.http.get<CourtReportResponse[]>(
       `${environment.apiUrl}/court-reports/venue/${sedeId}`,

@@ -12,6 +12,8 @@ export interface ReviewResponse {
   puntuacion: number;
   comentario: string;
   fecha?: string;
+  canchaId?: number;
+  canchaNombre?: string;
 }
 
 export interface PublishReviewData {
@@ -26,13 +28,15 @@ export interface PublishReviewData {
 @Injectable({ providedIn: 'root' })
 export class ReviewService {
   private readonly http = inject(HttpClient);
-  getByVenue(venueId: string): Observable<ReviewResponse[]> {
-    return this.http
-      .get<ReviewResponse[]>(`${environment.apiUrl}/reviews/sede/${venueId}`);
+  getByVenue(venueId: string | number): Observable<ReviewResponse[]> {
+    return this.http.get<ReviewResponse[]>(`${environment.apiUrl}/reviews/sede/${venueId}`);
+  }
+
+  getByCourt(canchaId: string | number): Observable<ReviewResponse[]> {
+    return this.http.get<ReviewResponse[]>(`${environment.apiUrl}/reviews/court/${canchaId}`);
   }
 
   publish(data: PublishReviewData): Observable<ReviewResponse> {
-    return this.http
-      .post<ReviewResponse>(`${environment.apiUrl}/reviews`, data);
+    return this.http.post<ReviewResponse>(`${environment.apiUrl}/reviews`, data);
   }
 }
