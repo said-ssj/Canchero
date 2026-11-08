@@ -147,7 +147,21 @@
           <span>Personalización & QR</span>
         </a>
 
-        <!-- 7. Configuración -->
+        <!-- 7. Reportes & Opiniones -->
+        <a
+          class="sidebar-nav-item"
+          routerLink="/admin/reportes"
+          routerLinkActive="active"
+          (click)="closeMobileSidebar()"
+          matRipple
+        >
+          <span class="material-symbols-outlined icon sidebar-nav-icon" aria-hidden="true"
+            >reviews</span
+          >
+          <span>Reportes & Opiniones</span>
+        </a>
+
+        <!-- 8. Configuración -->
         <a
           class="sidebar-nav-item"
           routerLink="/admin/configuracion"
@@ -160,6 +174,22 @@
           >
           <span>Configuración</span>
         </a>
+
+        <!-- 8. Gestión de Usuarios (Exclusivo Superadmin) -->
+        @if (isSuperAdmin()) {
+          <a
+            class="sidebar-nav-item"
+            routerLink="/admin/usuarios"
+            routerLinkActive="active"
+            (click)="closeMobileSidebar()"
+            matRipple
+          >
+            <span class="material-symbols-outlined icon sidebar-nav-icon" aria-hidden="true"
+              >manage_accounts</span
+            >
+            <span>Usuarios & Roles</span>
+          </a>
+        }
       </nav>
     </div>
 

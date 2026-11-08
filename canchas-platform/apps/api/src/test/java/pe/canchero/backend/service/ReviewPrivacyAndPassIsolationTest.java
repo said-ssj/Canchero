@@ -432,6 +432,12 @@ class ReviewPrivacyAndPassIsolationTest {
                 .andExpect(jsonPath("$", hasSize(1)))
                 .andExpect(jsonPath("$[0].reservaCodigoPase").doesNotExist())
                 .andExpect(jsonPath("$[0].codigoPase").doesNotExist());
+
+        // And verify the public list endpoint by court returns it
+        mvc.perform(get("/api/reviews/court/201"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].canchaId").value(201));
     }
 
     @Test

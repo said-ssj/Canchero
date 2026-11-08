@@ -20,6 +20,7 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { DatabaseService } from '@core/supabase/database.service';
 import { AuthService } from '@core/auth/auth.service';
+import { CourtReportService, type CourtReportResponse } from '@core/services/court-report.service';
 import { AdminAddAction } from '../components/add-action/add-action';
 import type {
   AdminCourt,
@@ -96,6 +97,37 @@ export class AdminCanchas {
 
   private readonly auth = inject(AuthService, { optional: true });
   private readonly router = inject(Router, { optional: true });
+  private readonly courtReportService = inject(CourtReportService, { optional: true });
+
+  protected readonly reportesSede = signal<CourtReportResponse[]>([]);
+  protected readonly modalReportesAbierto = signal<boolean>(false);
+  protected readonly canchaFiltroReporte = signal<number | null>(null);
+  protected readonly filtroEstadoReporte = signal<string>('TODOS');
+  protected readonly resolviendoReporteId = signal<number | null>(null);
+  protected readonly notaResolucion = signal<string>('');
+  protected readonly guardandoResolucion = signal<boolean>(false);
+
+  protected readonly reportesFiltrados = computed(() => {
+    const list = this.reportesSede();
+    const canchaId = this.canchaFiltroReporte();
+    const estado = this.filtroEstadoReporte();
+    return list.filter((r) => {
+      const matchCancha = canchaId ? r.canchaId === canchaId : true;
+      const matchEstado = estado !== 'TODOS' ? r.estado === estado : true;
+      return matchCancha && matchEstado;
+    });
+  });
+
+  protected readonly reportesPendientesCount = computed(() => {
+    return this.reportesSede().filter((r) => r.estado === 'PENDIENTE' || r.estado === 'EN_REVISION')
+      .length;
+  });
+
+  protected reportesDeCanchaCount(canchaId: number): number {
+    return this.reportesSede().filter(
+      (r) => r.canchaId === canchaId && (r.estado === 'PENDIENTE' || r.estado === 'EN_REVISION'),
+    ).length;
+  }
 
   readonly duenoIdInput = input<string | number>(undefined, { alias: 'duenoId' });
   readonly duenoId = computed<string | number>(() => {
@@ -177,6 +209,14 @@ export class AdminCanchas {
       untracked(() => {
         void this.recuperarCanchas(drafts);
       });
+    });
+    effect(() => {
+      const sede = this.sedeDelDueno();
+      if (sede && sede.id) {
+        untracked(() => this.cargarReportesSede(Number(sede.id)));
+      } else {
+        this.reportesSede.set([]);
+      }
     });
   }
 
@@ -1026,6 +1066,68 @@ export class AdminCanchas {
       return;
     }
     this.mostrarToast(`Reserva ${reserva.codigoPase} cancelada manualmente.`);
+  }
+
+  /* ================= GESTIÓN DE REPORTES E INCIDENCIAS DE CANCHAS ================= */
+  protected cargarReportesSede(sedeId: number): void {
+    if (!this.courtReportService) return;
+    this.courtReportService.getByVenue(sedeId).subscribe({
+      next: (data) => this.reportesSede.set(data),
+      error: () => this.reportesSede.set([]),
+    });
+  }
+
+  protected abrirModalReportes(canchaId?: number): void {
+    this.canchaFiltroReporte.set(canchaId ?? null);
+    this.filtroEstadoReporte.set('TODOS');
+    this.resolviendoReporteId.set(null);
+    this.notaResolucion.set('');
+    this.modalReportesAbierto.set(true);
+    const sedeId = this.sedeDelDueno()?.id;
+    if (sedeId) {
+      this.cargarReportesSede(Number(sedeId));
+    }
+  }
+
+  protected cerrarModalReportes(): void {
+    this.modalReportesAbierto.set(false);
+    this.resolviendoReporteId.set(null);
+    this.notaResolucion.set('');
+  }
+
+  protected iniciarResolucionReporte(reporte: CourtReportResponse): void {
+    this.resolviendoReporteId.set(reporte.id);
+    this.notaResolucion.set(reporte.resolucion || '');
+  }
+
+  protected cancelarResolucionReporte(): void {
+    this.resolviendoReporteId.set(null);
+    this.notaResolucion.set('');
+  }
+
+  protected guardarResolucionReporte(reportId: number, nuevoEstado: string): void {
+    if (!this.courtReportService) return;
+    this.guardandoResolucion.set(true);
+    this.courtReportService
+      .updateStatus(reportId, {
+        estado: nuevoEstado,
+        resolucion: this.notaResolucion().trim() || undefined,
+      })
+      .subscribe({
+        next: (actualizado) => {
+          this.guardandoResolucion.set(false);
+          this.resolviendoReporteId.set(null);
+          this.notaResolucion.set('');
+          this.reportesSede.update((list) =>
+            list.map((r) => (r.id === actualizado.id ? actualizado : r)),
+          );
+          this.mostrarToast(`Incidencia #${actualizado.id} actualizada a "${actualizado.estado}".`);
+        },
+        error: (err) => {
+          this.guardandoResolucion.set(false);
+          this.mostrarToast(err?.error?.message || 'Error al actualizar el estado del reporte.');
+        },
+      });
   }
 
   protected fmtPEN(n: number): string {

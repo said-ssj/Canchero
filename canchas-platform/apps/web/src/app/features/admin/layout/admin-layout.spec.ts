@@ -56,6 +56,7 @@ describe('AdminLayout', () => {
             playerProfile: signal(null),
             loadPlayerProfile: () => of(null),
             logout: logoutSpy,
+            isSuperAdmin: () => false,
           },
         },
         {
@@ -95,9 +96,9 @@ describe('AdminLayout', () => {
     vi.restoreAllMocks();
   });
 
-  it('debe crearse correctamente e inicializar los 8 módulos de navegación', () => {
+  it('debe crearse correctamente e inicializar los 9 módulos de navegación', () => {
     expect(component).toBeTruthy();
-    expect(component.navItems.length).toBe(8);
+    expect(component.navItems.length).toBe(9);
 
     const routes = component.navItems.map((item) => item.route);
     expect(routes).toContain('/admin/sedes');
@@ -107,6 +108,7 @@ describe('AdminLayout', () => {
     expect(routes).toContain('/admin/pos');
     expect(routes).toContain('/admin/finanzas');
     expect(routes).toContain('/admin/personalizacion');
+    expect(routes).toContain('/admin/reportes');
     expect(routes).toContain('/admin/configuracion');
   });
 

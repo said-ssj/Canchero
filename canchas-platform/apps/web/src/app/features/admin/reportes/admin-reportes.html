@@ -1,0 +1,370 @@
+<main class="reportes-admin-page">
+  <header class="reportes-header">
+    <div class="header-titles">
+      <div class="badge-role">Control de Incidencias & Feedback</div>
+      <h1>Reportes de Canchas & Comentarios</h1>
+      <p class="subtitle">
+        Supervisa las incidencias técnicas reportadas por los jugadores y analiza la satisfacción de
+        tus sedes y canchas.
+      </p>
+    </div>
+
+    <div class="header-actions">
+      <button type="button" class="btn btn-outline" (click)="loadData()" [disabled]="loading()">
+        <span class="material-symbols-outlined icon-18" aria-hidden="true">refresh</span>
+        Recargar
+      </button>
+    </div>
+  </header>
+
+  <!-- Alertas -->
+  @if (error()) {
+    <div class="notice danger" role="alert" style="margin-bottom: 20px">
+      <span class="material-symbols-outlined icon-20" aria-hidden="true">error</span>
+      <span>{{ error() }}</span>
+    </div>
+  }
+  @if (successMessage()) {
+    <div class="notice success" role="alert" style="margin-bottom: 20px">
+      <span class="material-symbols-outlined icon-20" aria-hidden="true">check_circle</span>
+      <span>{{ successMessage() }}</span>
+    </div>
+  }
+
+  <!-- KPIs y Estadísticas Rápidas -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <span class="stat-label">Total Reportes</span>
+      <span class="stat-value">{{ stats().totalReportes }}</span>
+      <span class="stat-desc">Incidencias registradas</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Pendientes</span>
+      <span class="stat-value text-danger">{{ stats().pendientes }}</span>
+      <span class="stat-desc">Requieren atención urgente</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">En Revisión</span>
+      <span class="stat-value text-warning">{{ stats().enRevision }}</span>
+      <span class="stat-desc">En proceso de atención</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Resueltos</span>
+      <span class="stat-value text-success">{{ stats().resueltos }}</span>
+      <span class="stat-desc">Incidencias solucionadas</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Valoración Promedio</span>
+      <span class="stat-value text-primary">★ {{ stats().avgRating }}</span>
+      <span class="stat-desc">{{ stats().totalReviews }} comentarios evaluados</span>
+    </div>
+  </div>
+
+  <!-- Barra de Filtros Unificada (Sede & Cancha) -->
+  <div class="filters-card">
+    <div class="filters-grid">
+      <!-- Selector de Sede -->
+      <div class="filter-group">
+        <label for="sede-filter">Filtrar por Sede:</label>
+        <select
+          id="sede-filter"
+          class="form-control"
+          [ngModel]="selectedSedeId() !== null ? selectedSedeId() : ''"
+          (ngModelChange)="onSedeChange($event)"
+        >
+          <option value="">Todas las Sedes</option>
+          @for (s of sedesDisponibles(); track s.id) {
+            <option [value]="s.id">{{ s.nombre }}</option>
+          }
+        </select>
+      </div>
+
+      <!-- Selector de Cancha -->
+      <div class="filter-group">
+        <label for="cancha-filter">Filtrar por Cancha:</label>
+        <select
+          id="cancha-filter"
+          class="form-control"
+          [disabled]="!selectedSedeId()"
+          [ngModel]="selectedCanchaId() !== null ? selectedCanchaId() : ''"
+          (ngModelChange)="onCanchaChange($event)"
+        >
+          <option value="">Todas las Canchas de la sede</option>
+          @for (c of canchasDisponibles(); track c.id) {
+            <option [value]="c.id">{{ c.nombre }} ({{ c.deporte }})</option>
+          }
+        </select>
+      </div>
+
+      <!-- Filtro secundario según pestaña -->
+      @if (activeTab() === 'reportes') {
+        <div class="filter-group">
+          <label for="estado-filter">Estado de Reporte:</label>
+          <select
+            id="estado-filter"
+            class="form-control"
+            [ngModel]="selectedEstadoReporte()"
+            (ngModelChange)="selectedEstadoReporte.set($event)"
+          >
+            <option value="TODOS">Todos los estados</option>
+            <option value="PENDIENTE">Pendientes</option>
+            <option value="EN_REVISION">En Revisión</option>
+            <option value="RESUELTO">Resueltos</option>
+            <option value="DESCARTADO">Descartados</option>
+          </select>
+        </div>
+      } @else {
+        <div class="filter-group">
+          <label for="rating-filter">Calificación mínima:</label>
+          <select
+            id="rating-filter"
+            class="form-control"
+            [ngModel]="selectedRatingComentario()"
+            (ngModelChange)="selectedRatingComentario.set($event)"
+          >
+            <option value="TODOS">Todas las estrellas</option>
+            <option value="5">★★★★★ (5 estrellas)</option>
+            <option value="4">★★★★ (4 estrellas)</option>
+            <option value="3">★★★ (3 estrellas)</option>
+            <option value="2">★★ (2 estrellas)</option>
+            <option value="1">★ (1 estrella)</option>
+          </select>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Navegación por Pestañas -->
+  <div class="tabs-nav">
+    <button
+      type="button"
+      class="tab-btn"
+      [class.active]="activeTab() === 'reportes'"
+      (click)="activeTab.set('reportes')"
+    >
+      <span class="material-symbols-outlined icon-20" aria-hidden="true">report_problem</span>
+      Reportes e Incidencias ({{ filteredReports().length }})
+    </button>
+    <button
+      type="button"
+      class="tab-btn"
+      [class.active]="activeTab() === 'comentarios'"
+      (click)="activeTab.set('comentarios')"
+    >
+      <span class="material-symbols-outlined icon-20" aria-hidden="true">rate_review</span>
+      Comentarios & Calificaciones ({{ filteredReviews().length }})
+    </button>
+  </div>
+
+  <!-- Vista: Reportes de Canchas -->
+  @if (activeTab() === 'reportes') {
+    <div class="content-table-card">
+      @if (loading()) {
+        <div class="empty-state">
+          <span class="material-symbols-outlined spin icon-32" aria-hidden="true">sync</span>
+          <p>Cargando reportes...</p>
+        </div>
+      } @else if (filteredReports().length === 0) {
+        <div class="empty-state">
+          <span class="material-symbols-outlined icon-48" aria-hidden="true">verified</span>
+          <h3>No hay reportes de incidencias</h3>
+          <p>
+            Todas las canchas se encuentran operando con normalidad o no coinciden con los filtros
+            aplicados.
+          </p>
+        </div>
+      } @else {
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Cancha / Sede</th>
+                <th>Tipo de Problema</th>
+                <th>Descripción</th>
+                <th>Reportado por</th>
+                <th>Prioridad</th>
+                <th>Estado</th>
+                <th>Fecha</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (rep of filteredReports(); track rep.id) {
+                <tr>
+                  <td class="font-mono text-muted">#{{ rep.id }}</td>
+                  <td>
+                    <div class="court-venue-info">
+                      <strong>{{ rep.nombreCancha }}</strong>
+                      <span class="venue-pill">{{ rep.nombreSede }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="badge-issue-type">{{ rep.tipoProblema }}</span>
+                  </td>
+                  <td class="desc-cell">
+                    <p class="report-desc">{{ rep.descripcion }}</p>
+                    @if (rep.resolucion) {
+                      <div class="resolution-badge">
+                        <span class="material-symbols-outlined icon-14" aria-hidden="true"
+                          >task_alt</span
+                        >
+                        <span><strong>Resuelto:</strong> {{ rep.resolucion }}</span>
+                      </div>
+                    }
+                  </td>
+                  <td>
+                    <span class="text-user">{{ rep.usuarioNombre || 'Jugador' }}</span>
+                  </td>
+                  <td>
+                    <span class="badge-priority" [class]="rep.prioridad?.toLowerCase()">
+                      {{ rep.prioridad }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="badge-status" [class]="rep.estado?.toLowerCase()">
+                      {{ rep.estado }}
+                    </span>
+                  </td>
+                  <td class="font-mono text-muted">{{ formatDate(rep.fechaCreacion) }}</td>
+                  <td>
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-outline"
+                      (click)="openResolutionModal(rep)"
+                      matTooltip="Cambiar estado o resolver incidencia"
+                    >
+                      <span class="material-symbols-outlined icon-16" aria-hidden="true">edit</span>
+                      Gestionar
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Vista: Comentarios y Reseñas -->
+  @if (activeTab() === 'comentarios') {
+    <div class="content-table-card">
+      @if (loading()) {
+        <div class="empty-state">
+          <span class="material-symbols-outlined spin icon-32" aria-hidden="true">sync</span>
+          <p>Cargando opiniones y valoraciones...</p>
+        </div>
+      } @else if (filteredReviews().length === 0) {
+        <div class="empty-state">
+          <span class="material-symbols-outlined icon-48" aria-hidden="true">forum</span>
+          <h3>No hay reseñas disponibles</h3>
+          <p>No se encontraron comentarios para los filtros seleccionados.</p>
+        </div>
+      } @else {
+        <div class="reviews-grid">
+          @for (rev of filteredReviews(); track rev.id) {
+            <div class="review-card">
+              <div class="review-card-header">
+                <div class="reviewer-meta">
+                  <div class="reviewer-avatar">
+                    {{ (rev.clienteNombre || rev.playerName || 'J').charAt(0).toUpperCase() }}
+                  </div>
+                  <div>
+                    <strong>{{ rev.clienteNombre || rev.playerName || 'Jugador Anónimo' }}</strong>
+                    <span class="review-date">{{ formatDate(rev.fecha) }}</span>
+                  </div>
+                </div>
+                <div class="stars-badge">
+                  <span class="stars-stars">{{ '★'.repeat(rev.puntuacion || 5) }}</span>
+                  <span class="stars-score">({{ rev.puntuacion }}/5)</span>
+                </div>
+              </div>
+
+              @if (rev.canchaNombre) {
+                <div class="court-tag">
+                  <span class="material-symbols-outlined icon-14" aria-hidden="true"
+                    >sports_soccer</span
+                  >
+                  <span
+                    >Cancha: <strong>{{ rev.canchaNombre }}</strong></span
+                  >
+                </div>
+              }
+
+              <p class="review-text">"{{ rev.comentario }}"</p>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Modal para Resolver / Gestionar Reporte -->
+  @if (resolvingReport(); as rep) {
+    <div class="modal-backdrop" (click)="closeResolutionModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div>
+            <h3>Gestionar Incidencia #{{ rep.id }}</h3>
+            <span class="subtitle">{{ rep.nombreCancha }} ({{ rep.nombreSede }})</span>
+          </div>
+          <button type="button" class="btn-close" (click)="closeResolutionModal()">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="report-summary-box">
+            <p><strong>Problema:</strong> {{ rep.tipoProblema }}</p>
+            <p><strong>Detalle:</strong> {{ rep.descripcion }}</p>
+            <p><strong>Reportado el:</strong> {{ formatDate(rep.fechaCreacion) }}</p>
+          </div>
+
+          <div class="form-group">
+            <label for="resolving-status">Cambiar Estado:</label>
+            <select
+              id="resolving-status"
+              class="form-control"
+              [ngModel]="resolvingStatus()"
+              (ngModelChange)="resolvingStatus.set($event)"
+            >
+              <option value="PENDIENTE">PENDIENTE</option>
+              <option value="EN_REVISION">EN_REVISION</option>
+              <option value="RESUELTO">RESUELTO</option>
+              <option value="DESCARTADO">DESCARTADO</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="resolving-comment">Nota de Resolución o Comentario:</label>
+            <textarea
+              id="resolving-comment"
+              rows="3"
+              class="form-control"
+              placeholder="Ej: Se reemplazaron los reflectores afectados y se verificó la red..."
+              [ngModel]="resolvingComment()"
+              (ngModelChange)="resolvingComment.set($event)"
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" (click)="closeResolutionModal()">
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="btn btn-primary"
+            (click)="saveResolution()"
+            [disabled]="isSavingResolution()"
+          >
+            @if (isSavingResolution()) {
+              Guardando...
+            } @else {
+              Actualizar Incidencia
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</main>

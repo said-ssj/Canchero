@@ -1050,9 +1050,12 @@ public class BookingService extends JdbcSupport {
             return jdbc.query("""
                             select res.id_resena, res.id_sede,
                                    coalesce(trim(coalesce(c.nombres, '') || ' ' || coalesce(c.apellidos, '')), 'Cliente') as cliente_nombre,
-                                   res.puntuacion, res.comentario, res.fecha_creacion
+                                   res.puntuacion, res.comentario, res.fecha_creacion,
+                                   ca.id_cancha, ca.nombre_numero as cancha_nombre
                             from resena res
                             join cliente c on c.id_cliente = res.id_cliente
+                            left join reserva r on r.id_reserva = res.id_reserva
+                            left join cancha ca on ca.id_cancha = r.id_cancha
                             where res.id_sede = ? and res.estado = 'A'
                             order by res.fecha_creacion desc
                             """,
@@ -1064,8 +1067,41 @@ public class BookingService extends JdbcSupport {
                             rs.getString("comentario"),
                             rs.getObject("fecha_creacion", LocalDateTime.class) != null
                                     ? rs.getObject("fecha_creacion", LocalDateTime.class).toString()
-                                    : null),
+                                    : null,
+                            rs.getObject("id_cancha") != null ? rs.getInt("id_cancha") : null,
+                            rs.getString("cancha_nombre")),
                     sedeId);
+        } catch (Exception e) {
+            return List.of();
+        }
+    }
+
+    public List<ReviewResponse> listReviewsByCourt(int canchaId) {
+        try {
+            return jdbc.query("""
+                            select res.id_resena, res.id_sede,
+                                   coalesce(trim(coalesce(c.nombres, '') || ' ' || coalesce(c.apellidos, '')), 'Cliente') as cliente_nombre,
+                                   res.puntuacion, res.comentario, res.fecha_creacion,
+                                   ca.id_cancha, ca.nombre_numero as cancha_nombre
+                            from resena res
+                            join cliente c on c.id_cliente = res.id_cliente
+                            join reserva r on r.id_reserva = res.id_reserva
+                            join cancha ca on ca.id_cancha = r.id_cancha
+                            where ca.id_cancha = ? and res.estado = 'A'
+                            order by res.fecha_creacion desc
+                            """,
+                    (rs, rowNum) -> new ReviewResponse(
+                            String.valueOf(rs.getInt("id_resena")),
+                            String.valueOf(rs.getInt("id_sede")),
+                            rs.getString("cliente_nombre"),
+                            rs.getInt("puntuacion"),
+                            rs.getString("comentario"),
+                            rs.getObject("fecha_creacion", LocalDateTime.class) != null
+                                    ? rs.getObject("fecha_creacion", LocalDateTime.class).toString()
+                                    : null,
+                            rs.getInt("id_cancha"),
+                            rs.getString("cancha_nombre")),
+                    canchaId);
         } catch (Exception e) {
             return List.of();
         }

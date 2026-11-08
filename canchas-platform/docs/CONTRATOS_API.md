@@ -14,6 +14,22 @@
 Inventario inicial del codigo al 2026-10-13, no garantia de autorizacion correcta en todos los endpoints.
 Fuente ejecutable: apps/api/src/main/java/pe/canchero/backend/web/controller y web/dto.
 
+### Reportes e Incidencias de Canchas (2026-11-07)
+- `POST /api/court-reports`: Permite a un jugador autenticado reportar una cancha específica (`canchaId`, `tipoProblema`, `descripcion`, `prioridad`). El backend resuelve y asigna automáticamente la sede asociada (`cancha.id_sede`). Retorna 201 Created con `CourtReportResponse`.
+- `GET /api/court-reports`: Lista de reportes con filtros opcionales query params `?sedeId=&canchaId=`. Si no se pasan filtros, administradores y superadministradores pueden listar todas las incidencias de la plataforma.
+- `GET /api/court-reports/venue/{sedeId}`: Lista todos los reportes de las canchas pertenecientes a la sede. Exige que el usuario sea el dueño de la sede o administrador global (`VenueAccessService.requireOwnedVenue`).
+- `GET /api/court-reports/court/{canchaId}`: Lista los reportes de una cancha específica. Exige propiedad de la cancha/sede o admin (`VenueAccessService.requireOwnedCourt`).
+- `GET /api/court-reports/mine`: Lista los reportes emitidos por el usuario jugador autenticado.
+- `PATCH /api/court-reports/{id}/status`: Actualiza el estado (`PENDIENTE`, `EN_REVISION`, `RESUELTO`, `DESCARTADO`) y la nota de resolución. Exige que el usuario sea el dueño de la sede que contiene dicha cancha o admin.
+
+### Reseñas y Comentarios por Cancha (2026-11-07)
+- `GET /api/reviews/court/{canchaId}`: Retorna la lista de opiniones y valoraciones aprobadas asociadas a una cancha específica (`ReviewResponse` enriquecido con `canchaId` y `canchaNombre`).
+- `GET /api/reviews/sede/{sedeId}`: Retorna la lista de opiniones asociadas a una sede con detalle de la cancha vinculada si proviene de una reserva.
+
+### Superadministrador y Gestión de Roles (2026-11-07)
+- `GET /api/users`: Lista todos los usuarios registrados de la plataforma (id, nombre, email, teléfono, rol y estado). Exclusivo para usuarios autenticados con rol `superadmin`.
+- `PATCH /api/users/{id}/role`: Permite al superadministrador asignar o revocar roles (`admin`, `dueno`, `cliente`). No permite auto-modificación de rol del superadministrador ni asignación de roles inexistentes. Retorna `UserDto` actualizado.
+
 ## Endpoints observados
 
 Actualizacion autenticacion 2026-10-16: POST /api/auth/login recibe email/password/rememberMe (boolean). true usa el limite vigente7dias; false token firmado de15min. Omision/null conserva true por compatibilidad. POST /api/auth/refresh requiere Bearer valido y usuario/rol activos, devuelve AuthResponse {token,user}; la duracion procede de la politica firmada original, no de un body enviado por cliente. Token expirado/invalido o cuenta inactiva ->401; error de BD ->503. Tokens legacy siguen validandose con politica persistente anterior. No hay migracion ni nueva tabla de sesiones.

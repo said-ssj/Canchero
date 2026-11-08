@@ -293,11 +293,24 @@ export class AuthService {
 
   isOwner(): boolean {
     const role = this._user()?.rol;
-    return role === 'dueno' || role === 'admin' || role === 'OWNER';
+    return role === 'dueno' || role === 'admin' || role === 'superadmin' || role === 'OWNER';
+  }
+
+  isSuperAdmin(): boolean {
+    return this._user()?.rol === 'superadmin';
+  }
+
+  isAdminOrSuperAdmin(): boolean {
+    const role = this._user()?.rol;
+    return role === 'admin' || role === 'superadmin';
   }
 
   private mapRoleName(name: string): UserRole {
     switch (name.trim().toLowerCase()) {
+      case 'superadmin':
+      case 'super_admin':
+      case 'super-admin':
+        return 'superadmin';
       case 'dueno':
       case 'dueño':
       case 'owner':

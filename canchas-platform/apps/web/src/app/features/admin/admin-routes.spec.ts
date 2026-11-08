@@ -63,7 +63,12 @@ describe('Admin child route integration', () => {
         provideHttpClientTesting(),
         {
           provide: AuthService,
-          useValue: { currentUser, playerProfile: signal(null), loadPlayerProfile: () => EMPTY },
+          useValue: {
+            currentUser,
+            playerProfile: signal(null),
+            loadPlayerProfile: () => EMPTY,
+            isSuperAdmin: () => false,
+          },
         },
         { provide: DatabaseService, useValue: db },
         {

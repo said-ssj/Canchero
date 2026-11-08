@@ -66,6 +66,7 @@ export class PlayerProfilePage {
   }
   protected get roleLabel(): string {
     const role = this.account()?.rol;
+    if (role === 'superadmin') return 'Superadministrador';
     if (role === 'admin') return 'Administrador';
     if (role === 'operador') return 'Operador';
     if (role === 'caja') return 'Cajero';

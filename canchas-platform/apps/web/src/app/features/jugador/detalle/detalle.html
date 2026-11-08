@@ -45,6 +45,25 @@
       [description]="v.descripcion || ''"
     >
       <div profileActions class="business-actions">
+        <button
+          class="btn icon-only"
+          type="button"
+          disabled
+          title="Notificaciones de horarios (próximamente)"
+          aria-label="Notificaciones de horarios próximamente"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">notifications</span>
+        </button>
+        <button
+          class="btn outline"
+          type="button"
+          [disabled]="!v.canchas.length"
+          aria-label="Reportar incidencia en cancha"
+          (click)="abrirModalReporteDesdeSede()"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">report_problem</span>Reportar
+          incidencia
+        </button>
         <a class="btn primary" [href]="'/sedes/' + v.id + '#canchas'"
           ><span class="material-symbols-outlined" aria-hidden="true">sports_soccer</span>Ver
           canchas</a
@@ -224,6 +243,17 @@
                         >calendar_month</span
                       >
                       Elegir horario
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn-outline btn-sm"
+                      (click)="abrirModalReporte(cancha)"
+                      title="Reportar problema en esta cancha"
+                    >
+                      <span class="material-symbols-outlined icon-16" aria-hidden="true"
+                        >report_problem</span
+                      >
+                      Reportar problema
                     </button>
                   </div>
                 </div>
@@ -553,6 +583,198 @@
               <span class="material-symbols-outlined icon-18" aria-hidden="true">content_copy</span>
               Copiar Coordenadas GPS
             </button>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Modal: Reportar problema en la cancha -->
+    @if (reportModalOpen()) {
+      <div class="como-llegar-modal-backdrop" (click)="cerrarModalReporte()">
+        <div
+          class="como-llegar-modal-card"
+          style="max-width: 520px"
+          (click)="$event.stopPropagation()"
+        >
+          <div class="como-llegar-modal-header">
+            <h3>
+              <span class="material-symbols-outlined icon-20" style="color: var(--orange, #f59e0b)"
+                >report_problem</span
+              >
+              Reportar Incidencia en Cancha
+            </h3>
+            <button
+              type="button"
+              class="btn-close-modal"
+              aria-label="Cerrar modal"
+              (click)="cerrarModalReporte()"
+            >
+              <span class="material-symbols-outlined">close</span>
+            </button>
+          </div>
+
+          <div class="como-llegar-modal-body stack" style="gap: 14px; padding: 1.25rem">
+            @if (reportSuccessMessage()) {
+              <div class="notice success" role="alert" style="padding: 1rem; border-radius: 8px">
+                <span class="material-symbols-outlined icon-20" aria-hidden="true"
+                  >check_circle</span
+                >
+                <p>{{ reportSuccessMessage() }}</p>
+              </div>
+              <button type="button" class="btn primary btn-full" (click)="cerrarModalReporte()">
+                Aceptar
+              </button>
+            } @else {
+              <div
+                style="
+                  background: var(--color-surface-muted, #f8fafc);
+                  padding: 0.75rem 1rem;
+                  border-radius: 8px;
+                  border: 1px solid var(--color-border, #e2e8f0);
+                "
+              >
+                <div class="field" style="margin-bottom: 6px">
+                  <label
+                    for="report-cancha-select"
+                    style="display: block; font-weight: 700; margin-bottom: 4px; font-size: 0.88rem"
+                    >Cancha a reportar:</label
+                  >
+                  @if (v.canchas.length > 1) {
+                    <select
+                      id="report-cancha-select"
+                      class="field-select"
+                      style="
+                        width: 100%;
+                        padding: 0.4rem;
+                        border-radius: 6px;
+                        border: 1px solid var(--color-border, #cbd5e1);
+                        font-weight: 600;
+                      "
+                      [value]="reportCancha()?.id || ''"
+                      (change)="cambiarCanchaReporte($any($event.target).value)"
+                    >
+                      @for (c of v.canchas; track c.id) {
+                        <option [value]="c.id" [selected]="c.id === reportCancha()?.id">
+                          {{ c.nombre }} ({{ c.superficie || c.tipo }})
+                        </option>
+                      }
+                    </select>
+                  } @else {
+                    <strong>{{ reportCancha()?.nombre }}</strong>
+                  }
+                </div>
+                <p class="muted small" style="margin: 2px 0 0">
+                  Sede: {{ v.nombre }} ({{ v.distrito }})
+                </p>
+                <small class="muted" style="display: block; margin-top: 4px">
+                  La sede deportiva recibirá este reporte automáticamente en su panel para su
+                  atención y mantenimiento.
+                </small>
+              </div>
+
+              @if (reportErrorMessage()) {
+                <div
+                  class="notice danger"
+                  role="alert"
+                  style="padding: 0.5rem 0.75rem; border-radius: 6px; font-size: 0.85rem"
+                >
+                  {{ reportErrorMessage() }}
+                </div>
+              }
+
+              <div class="field">
+                <label
+                  for="report-issue-type"
+                  style="display: block; font-weight: 600; margin-bottom: 4px; font-size: 0.88rem"
+                  >Tipo de problema</label
+                >
+                <select
+                  id="report-issue-type"
+                  class="field-select"
+                  style="
+                    width: 100%;
+                    padding: 0.5rem;
+                    border-radius: 6px;
+                    border: 1px solid var(--color-border, #cbd5e1);
+                  "
+                  [value]="reportTipo()"
+                  (change)="reportTipo.set($any($event.target).value)"
+                >
+                  <option value="ILUMINACION">
+                    💡 Iluminación deficiente / reflectores fundidos
+                  </option>
+                  <option value="ESTADO_CESPED">🌱 Césped sintético dañado / baches</option>
+                  <option value="REDES_ARCOS">🥅 Redes rotas o arcos inestables</option>
+                  <option value="LIMPIEZA">🧹 Limpieza o suciedad en el campo</option>
+                  <option value="HORARIO_CONFLICTO">
+                    ⏰ Conflicto de turno / cancha ocupada indebidamente
+                  </option>
+                  <option value="OTRO">⚠️ Otro problema</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label
+                  for="report-priority"
+                  style="display: block; font-weight: 600; margin-bottom: 4px; font-size: 0.88rem"
+                  >Nivel de urgencia</label
+                >
+                <select
+                  id="report-priority"
+                  class="field-select"
+                  style="
+                    width: 100%;
+                    padding: 0.5rem;
+                    border-radius: 6px;
+                    border: 1px solid var(--color-border, #cbd5e1);
+                  "
+                  [value]="reportPrioridad()"
+                  (change)="reportPrioridad.set($any($event.target).value)"
+                >
+                  <option value="BAJA">Baja (Sugerencia de mantenimiento)</option>
+                  <option value="MEDIA">Media (Afecta parcialmente el juego)</option>
+                  <option value="ALTA">Alta (Impide jugar adecuadamente)</option>
+                  <option value="URGENTE">Urgente (Riesgo físico / emergencia inmediata)</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label
+                  for="report-desc"
+                  style="display: block; font-weight: 600; margin-bottom: 4px; font-size: 0.88rem"
+                  >Detalle del problema *</label
+                >
+                <textarea
+                  id="report-desc"
+                  rows="3"
+                  style="
+                    width: 100%;
+                    padding: 0.5rem;
+                    border-radius: 6px;
+                    border: 1px solid var(--color-border, #cbd5e1);
+                  "
+                  [value]="reportDescripcion()"
+                  (input)="reportDescripcion.set($any($event.target).value)"
+                  placeholder="Describe qué ocurrió o qué parte de la cancha necesita reparación..."
+                >
+                </textarea>
+                <small class="muted" style="font-size: 0.75rem">Mínimo 5 caracteres.</small>
+              </div>
+
+              <div class="row" style="gap: 8px; justify-content: flex-end; margin-top: 8px">
+                <button type="button" class="btn btn-outline" (click)="cerrarModalReporte()">
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  class="btn primary"
+                  [disabled]="reportSubmitting() || reportDescripcion().trim().length < 5"
+                  (click)="enviarReporteCancha()"
+                >
+                  {{ reportSubmitting() ? 'Enviando...' : 'Enviar Reporte' }}
+                </button>
+              </div>
+            }
           </div>
         </div>
       </div>

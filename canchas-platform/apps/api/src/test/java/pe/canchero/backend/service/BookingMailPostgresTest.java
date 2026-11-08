@@ -68,7 +68,12 @@ class BookingMailPostgresTest {
         jdbc.update("""
             update reserva set fecha_reserva=(timezone('America/Lima',now())+interval '90 minutes')::date,
                 hora_inicio=(timezone('America/Lima',now())+interval '90 minutes')::time,
-                hora_fin=(timezone('America/Lima',now())+interval '150 minutes')::time,fecmod=now()
+                hora_fin=case
+                    when (timezone('America/Lima',now())+interval '150 minutes')::date
+                        > (timezone('America/Lima',now())+interval '90 minutes')::date
+                    then time '00:00:00'
+                    else (timezone('America/Lima',now())+interval '150 minutes')::time
+                end,fecmod=now()
                 where id_reserva=?
             """,id);
         service.process(); service.process();

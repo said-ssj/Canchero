@@ -70,6 +70,7 @@ export class AdminLayout implements OnInit, OnDestroy {
   readonly isDarkMode = this.theme.isDark;
   readonly adminModalPrivacidadOpen = signal(false);
   readonly adminModalAyudaOpen = signal(false);
+  readonly isSuperAdmin = computed(() => this.auth.isSuperAdmin());
 
   readonly navItems: AdminNavItem[] = [
     { label: 'Mi Sede', route: '/admin/sedes', icon: 'stadium' },
@@ -79,6 +80,7 @@ export class AdminLayout implements OnInit, OnDestroy {
     { label: 'Punto de Venta (POS) & Kardex', route: '/admin/pos', icon: 'shopping_cart' },
     { label: 'Finanzas & Liquidación', route: '/admin/finanzas', icon: 'payments' },
     { label: 'Personalización & QR', route: '/admin/personalizacion', icon: 'qr_code_2' },
+    { label: 'Reportes & Opiniones', route: '/admin/reportes', icon: 'reviews' },
     { label: 'Configuración', route: '/admin/configuracion', icon: 'settings' },
   ];
 

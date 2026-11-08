@@ -9,5 +9,11 @@ public record ReviewResponse(
         String clienteNombre,
         int puntuacion,
         String comentario,
-        String fecha) {
+        String fecha,
+        Integer canchaId,
+        String canchaNombre) {
+
+    public ReviewResponse(String id, String sedeId, String clienteNombre, int puntuacion, String comentario, String fecha) {
+        this(id, sedeId, clienteNombre, puntuacion, comentario, fecha, null, null);
+    }
 }

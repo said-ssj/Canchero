@@ -13,6 +13,7 @@ import { CourtFilterService } from '@core/services/court-filter.service';
 import { MapsService } from '@core/services/maps.service';
 import { ReviewService, type ReviewResponse } from './review.service';
 import { AuthService } from '@core/auth/auth.service';
+import { CourtReportService } from '@core/services/court-report.service';
 import type { Venue } from '@shared/models/venue.model';
 import type { Court } from '@shared/models/court.model';
 
@@ -53,6 +54,7 @@ export class Detalle {
   protected readonly courtFilters = inject(CourtFilterService);
   private readonly sanitizer = inject(DomSanitizer);
   private readonly mapsService = inject(MapsService);
+  private readonly courtReportService = inject(CourtReportService, { optional: true });
   protected readonly comoLlegarModalOpen = signal(false);
   protected readonly venueHours = signal<VenueDayHours[]>([]);
   protected readonly hoursLoading = signal(false);
@@ -93,6 +95,15 @@ export class Detalle {
     if (/^9\d{8}$/.test(number)) number = '51' + number;
     return /^\d{10,15}$/.test(number) ? `https://wa.me/${number}` : null;
   });
+
+  protected readonly reportModalOpen = signal(false);
+  protected readonly reportCancha = signal<Court | null>(null);
+  protected readonly reportTipo = signal<string>('ILUMINACION');
+  protected readonly reportDescripcion = signal<string>('');
+  protected readonly reportPrioridad = signal<string>('MEDIA');
+  protected readonly reportSubmitting = signal(false);
+  protected readonly reportSuccessMessage = signal<string | null>(null);
+  protected readonly reportErrorMessage = signal<string | null>(null);
 
   protected readonly safeMapUrl = computed<SafeResourceUrl>(() => {
     const coords = this.coordinates();
@@ -555,5 +566,86 @@ export class Detalle {
       clearTimeout(this.toastTimer);
     }
     this.toastTimer = setTimeout(() => this.toastVisible.set(false), 3000);
+  }
+
+  /* ================= REPORTE DE INCIDENCIAS EN CANCHAS ================= */
+  protected abrirModalReporteDesdeSede(): void {
+    const v = this.venue();
+    if (!v || !v.canchas || v.canchas.length === 0) {
+      this.showToast('Esta sede no tiene canchas registradas para reportar.');
+      return;
+    }
+    const currentId = this.selectedCourtId();
+    const defaultCourt = v.canchas.find((c) => c.id === currentId) || v.canchas[0];
+    this.abrirModalReporte(defaultCourt);
+  }
+
+  protected cambiarCanchaReporte(courtId: string): void {
+    const v = this.venue();
+    if (!v || !v.canchas) return;
+    const match = v.canchas.find((c) => c.id === courtId);
+    if (match) {
+      this.reportCancha.set(match);
+    }
+  }
+
+  protected abrirModalReporte(cancha: Court): void {
+    if (!this.auth.currentUser()) {
+      void this.router.navigate(['/login'], { queryParams: { returnUrl: this.router.url } });
+      return;
+    }
+    this.reportCancha.set(cancha);
+    this.reportTipo.set('ILUMINACION');
+    this.reportDescripcion.set('');
+    this.reportPrioridad.set('MEDIA');
+    this.reportSuccessMessage.set(null);
+    this.reportErrorMessage.set(null);
+    this.reportModalOpen.set(true);
+  }
+
+  protected cerrarModalReporte(): void {
+    this.reportModalOpen.set(false);
+    this.reportCancha.set(null);
+    this.reportSuccessMessage.set(null);
+    this.reportErrorMessage.set(null);
+  }
+
+  protected enviarReporteCancha(): void {
+    const cancha = this.reportCancha();
+    if (!cancha || !this.courtReportService) return;
+    const desc = this.reportDescripcion().trim();
+    if (desc.length < 5) {
+      this.reportErrorMessage.set('La descripción debe tener al menos 5 caracteres.');
+      return;
+    }
+    this.reportSubmitting.set(true);
+    this.reportErrorMessage.set(null);
+    const canchaIdNumeric =
+      cancha.id_cancha ||
+      (typeof cancha.id === 'string'
+        ? parseInt(cancha.id.replace(/\D/g, '') || '0', 10)
+        : Number(cancha.id));
+    this.courtReportService
+      .createReport({
+        canchaId: canchaIdNumeric,
+        tipoProblema: this.reportTipo(),
+        descripcion: desc,
+        prioridad: this.reportPrioridad(),
+      })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (resp) => {
+          this.reportSubmitting.set(false);
+          this.reportSuccessMessage.set(
+            `Reporte #${resp.id} registrado con éxito. La sede "${resp.nombreSede}" ha recibido la notificación.`,
+          );
+        },
+        error: (err) => {
+          this.reportSubmitting.set(false);
+          this.reportErrorMessage.set(
+            err?.error?.message || 'No se pudo registrar el reporte. Inténtalo nuevamente.',
+          );
+        },
+      });
   }
 }
