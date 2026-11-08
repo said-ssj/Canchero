@@ -21,6 +21,10 @@ Fuente ejecutable: apps/api/src/main/java/pe/canchero/backend/web/controller y w
 - `GET /api/court-reports/mine`: Lista los reportes emitidos por el usuario jugador autenticado.
 - `PATCH /api/court-reports/{id}/status`: Actualiza el estado (`PENDIENTE`, `EN_REVISION`, `RESUELTO`, `DESCARTADO`) y la nota de resolución. Exige que el usuario sea el dueño de la sede que contiene dicha cancha o admin.
 
+### Superadministrador y Gestión de Roles (2026-11-07)
+- `GET /api/users`: Lista todos los usuarios registrados de la plataforma (id, nombre, email, teléfono, rol y estado). Exclusivo para usuarios autenticados con rol `superadmin`.
+- `PATCH /api/users/{id}/role`: Permite al superadministrador asignar o revocar roles (`admin`, `dueno`, `cliente`). No permite auto-modificación de rol del superadministrador ni asignación de roles inexistentes. Retorna `UserDto` actualizado.
+
 ## Endpoints observados
 
 Actualizacion autenticacion 2026-10-16: POST /api/auth/login recibe email/password/rememberMe (boolean). true usa el limite vigente7dias; false token firmado de15min. Omision/null conserva true por compatibilidad. POST /api/auth/refresh requiere Bearer valido y usuario/rol activos, devuelve AuthResponse {token,user}; la duracion procede de la politica firmada original, no de un body enviado por cliente. Token expirado/invalido o cuenta inactiva ->401; error de BD ->503. Tokens legacy siguen validandose con politica persistente anterior. No hay migracion ni nueva tabla de sesiones.
