@@ -23,7 +23,7 @@ public class PosCatalogService {
     public PosCatalogService(JdbcTemplate jdbc, VenueAccessService access) { this.jdbc = jdbc; this.access = access; }
 
     public List<Category> categories(Integer venue, AuthUserDto user) {
-        int sede = access.requireOwnedVenue(venue, user);
+        int sede = access.requireOwnedVenue(venue, user, VenueAccessService.PRODUCTO_VER);
         return jdbc.query("""
                 select id_categoria, nombre, descripcion from categoria_producto
                 where estado='A' and (id_sede is null or id_sede=?) order by nombre
@@ -32,7 +32,7 @@ public class PosCatalogService {
 
     @Transactional
     public Category createCategory(CategoryRequest request, AuthUserDto user) {
-        int sede = access.requireOwnedVenue(request.sedeId(), user);
+        int sede = access.requireOwnedVenue(request.sedeId(), user, VenueAccessService.PRODUCTO_GESTIONAR);
         String nombre = required(request.nombre(), 100, "Nombre de categoría");
         String descripcion = optional(request.descripcion(), 1000, "Descripción");
         lockVenue(sede);
@@ -49,7 +49,7 @@ public class PosCatalogService {
 
     @Transactional
     public int createProduct(ProductRequest r, AuthUserDto user) {
-        int sede = access.requireOwnedVenue(r.sedeId(), user);
+        int sede = access.requireOwnedVenue(r.sedeId(), user, VenueAccessService.PRODUCTO_GESTIONAR);
         String nombre = required(r.nombre(), 150, "Nombre");
         String codigo = optional(r.codigoBarras(), 50, "Código de barras");
         String descripcion = optional(r.descripcion(), 1000, "Descripción");

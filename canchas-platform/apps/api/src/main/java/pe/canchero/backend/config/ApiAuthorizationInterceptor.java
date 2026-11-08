@@ -38,7 +38,7 @@ public class ApiAuthorizationInterceptor implements HandlerInterceptor {
         }
 
         AuthUserDto user = currentUser(request);
-        if (requiresOwnerOrAdmin(path, method) && !Roles.isOwnerOrAdmin(user.rol())) {
+        if (requiresPanelRole(path, method) && !Roles.canEnterPanel(user.rol())) {
             writeError(response, HttpStatus.FORBIDDEN, "No tienes permisos para realizar esta operación");
             return false;
         }
@@ -58,7 +58,7 @@ public class ApiAuthorizationInterceptor implements HandlerInterceptor {
         return false;
     }
 
-    private boolean requiresOwnerOrAdmin(String path, String method) {
+    private boolean requiresPanelRole(String path, String method) {
         if (path.startsWith("/api/cash")) return true;
         if (path.startsWith("/api/pos")) return true;
         if (path.startsWith("/api/cajas")) return true;
@@ -73,6 +73,7 @@ public class ApiAuthorizationInterceptor implements HandlerInterceptor {
         if (path.startsWith("/api/venues") && !"GET".equalsIgnoreCase(method)) return true;
         if (path.startsWith("/api/courts") && !"GET".equalsIgnoreCase(method)) return true;
         if (path.startsWith("/api/users")) return true;
+        if (path.startsWith("/api/staff")) return true;
         if ("PATCH".equalsIgnoreCase(method) && path.matches("^/api/bookings/\\d+/cancel$")) {
             return false;
         }

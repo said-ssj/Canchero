@@ -84,7 +84,7 @@ export class AdminSedes implements OnInit, OnDestroy {
   protected readonly liveVenueAddress = signal('');
   protected readonly liveVenueCiudad = signal('');
   protected readonly liveVenueTelefono = signal('');
-  protected readonly esAdmin = computed(() => this.auth.currentUser()?.rol === 'admin');
+  protected readonly esAdmin = computed(() => this.auth.currentUser()?.rol === 'superadmin');
   protected readonly correoNuevoDueno = signal('');
   protected readonly transfiriendo = signal(false);
   protected readonly liveVenueStory = signal('');

@@ -86,6 +86,7 @@ public class BookingService extends JdbcSupport {
 
     private final VenueService venues;
     private final Clock clock;
+    private final VenueAccessService access;
     private final Map<Integer, ReentrantLock> courtLocks = new ConcurrentHashMap<>();
 
     @Autowired
@@ -96,6 +97,7 @@ public class BookingService extends JdbcSupport {
     public BookingService(JdbcTemplate jdbc, VenueService venues, Clock clock) {
         super(jdbc);
         this.venues = venues;
+        this.access = new VenueAccessService(jdbc);
         this.clock = clock == null ? Clock.system(LIMA_ZONE) : clock;
     }
 
@@ -254,7 +256,7 @@ public class BookingService extends JdbcSupport {
         }
 
         List<Map<String, Object>> rows = jdbc.queryForList("""
-                select r.id_reserva, s.id_dueno
+                select r.id_reserva, s.id_dueno, s.id_sede
                 from reserva r
                 join cancha c on c.id_cancha = r.id_cancha
                 join sede s on s.id_sede = c.id_sede
@@ -264,18 +266,7 @@ public class BookingService extends JdbcSupport {
             return Optional.empty();
         }
 
-        String rol = authUser.rol() == null ? "" : authUser.rol().trim().toLowerCase(Locale.ROOT);
-        boolean isAdmin = Roles.isAdmin(rol);
-        boolean isOwner = Roles.isOwner(rol);
-
-        if (!isAdmin && !isOwner) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tienes permisos para realizar esta operación");
-        }
-
-        UUID duenoId = (UUID) rows.get(0).get("id_dueno");
-        if (!isAdmin && (duenoId == null || !authUuid.equals(duenoId))) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tienes permiso para modificar reservas de otra sede.");
-        }
+        requireBookingPermission(rows.get(0), authUser, VenueAccessService.RESERVA_GESTIONAR);
 
         return updateBookingStatus(id, reservationStatusId("confirm"));
     }
@@ -292,7 +283,7 @@ public class BookingService extends JdbcSupport {
         }
 
         List<Map<String, Object>> rows = jdbc.queryForList("""
-                select r.id_usuario, r.id_cliente, s.id_dueno, r.id_estado_reserva,
+                select r.id_usuario, r.id_cliente, s.id_dueno, s.id_sede, r.id_estado_reserva,
                        (select c2.id_usuario from cliente c2 where c2.id_cliente = r.id_cliente) as cliente_usuario_id
                 from reserva r
                 join cancha c on c.id_cancha = r.id_cancha
@@ -306,17 +297,12 @@ public class BookingService extends JdbcSupport {
         UUID reservaUsuarioId = (UUID) row.get("id_usuario");
         UUID reservaClienteId = (UUID) row.get("id_cliente");
         UUID clienteUsuarioId = (UUID) row.get("cliente_usuario_id");
-        UUID duenoId = (UUID) row.get("id_dueno");
-
-        String rol = authUser.rol() == null ? "" : authUser.rol().trim().toLowerCase(Locale.ROOT);
-        boolean isAdmin = Roles.isAdmin(rol);
-        boolean isVenueOwner = Roles.isOwner(rol)
-                && authUuid.equals(duenoId);
+        boolean isStaff = canOnBooking(row, authUser, VenueAccessService.RESERVA_CANCELAR);
         boolean isOwnerPlayer = authUuid.equals(reservaUsuarioId)
                 || authUuid.equals(reservaClienteId)
                 || (clienteUsuarioId != null && authUuid.equals(clienteUsuarioId));
 
-        if (!isAdmin && !isVenueOwner && !isOwnerPlayer) {
+        if (!isStaff && !isOwnerPlayer) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tienes permiso para cancelar esta reserva.");
         }
 
@@ -362,7 +348,7 @@ public class BookingService extends JdbcSupport {
         }
 
         List<Map<String, Object>> rows = jdbc.queryForList("""
-                select r.id_reserva, s.id_dueno
+                select r.id_reserva, s.id_dueno, s.id_sede
                 from reserva r
                 join cancha c on c.id_cancha = r.id_cancha
                 join sede s on s.id_sede = c.id_sede
@@ -372,18 +358,7 @@ public class BookingService extends JdbcSupport {
             return Optional.empty();
         }
 
-        String rol = authUser.rol() == null ? "" : authUser.rol().trim().toLowerCase(Locale.ROOT);
-        boolean isAdmin = Roles.isAdmin(rol);
-        boolean isOwner = Roles.isOwner(rol);
-
-        if (!isAdmin && !isOwner) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tienes permisos para realizar esta operación");
-        }
-
-        UUID duenoId = (UUID) rows.get(0).get("id_dueno");
-        if (!isAdmin && (duenoId == null || !authUuid.equals(duenoId))) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tienes permiso para modificar reservas de otra sede.");
-        }
+        requireBookingPermission(rows.get(0), authUser, VenueAccessService.RESERVA_GESTIONAR);
 
         return updateBookingStatus(id, reservationStatusId("complet"));
     }
@@ -394,7 +369,7 @@ public class BookingService extends JdbcSupport {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Debes iniciar sesión para reprogramar una reserva.");
         }
         List<Map<String, Object>> rows = jdbc.queryForList("""
-                select r.id_cancha, s.id_dueno
+                select r.id_cancha, s.id_dueno, s.id_sede
                 from reserva r
                 join cancha c on c.id_cancha = r.id_cancha
                 join sede s on s.id_sede = c.id_sede
@@ -403,13 +378,7 @@ public class BookingService extends JdbcSupport {
         if (rows.isEmpty()) {
             return Optional.empty();
         }
-        String rol = authUser.rol() == null ? "" : authUser.rol().trim().toLowerCase(Locale.ROOT);
-        boolean isAdmin = Roles.isAdmin(rol);
-        boolean isOwner = Roles.isOwner(rol);
-        Object duenoId = rows.get(0).get("id_dueno");
-        if (!isAdmin && (!isOwner || duenoId == null || !authUser.id().trim().equals(duenoId.toString()))) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tienes permiso para modificar reservas de otra sede.");
-        }
+        requireBookingPermission(rows.get(0), authUser, VenueAccessService.RESERVA_GESTIONAR);
 
         int courtId = ((Number) rows.get(0).get("id_cancha")).intValue();
         LocalDate fecha = parseDate(rawFecha);
@@ -480,11 +449,8 @@ public class BookingService extends JdbcSupport {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Identificador de usuario inválido.");
         }
 
-        String rol = authUser.rol() == null ? "" : authUser.rol().trim().toLowerCase(Locale.ROOT);
-        boolean isAdmin = Roles.isAdmin(rol);
-        boolean isOwner = Roles.isOwner(rol);
-
-        if (!isAdmin && !isOwner) {
+        boolean isAdmin = VenueAccessService.isSuperAdmin(authUser);
+        if (!isAdmin && !Roles.isOwner(authUser.rol()) && !Roles.isVenueStaff(authUser.rol())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tienes permiso para consultar el listado operativo de reservas.");
         }
 
@@ -497,10 +463,10 @@ public class BookingService extends JdbcSupport {
             }
 
             if (!isAdmin) {
-                List<UUID> duenos = jdbc.queryForList("""
+                List<String> duenos = jdbc.queryForList("""
                         select id_dueno from sede where id_sede = ? and estado = 'A'
-                        """, UUID.class, sedeId);
-                if (duenos.isEmpty() || !authUuid.equals(duenos.get(0))) {
+                        """, String.class, sedeId);
+                if (duenos.isEmpty() || !access.can(authUser, sedeId, duenos.get(0), VenueAccessService.RESERVA_VER)) {
                     throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tienes permiso para consultar reservas de esta sede.");
                 }
             }
@@ -516,9 +482,9 @@ public class BookingService extends JdbcSupport {
         }
 
         return jdbc.query(
-                bookingsSql() + " where s.id_dueno = ? order by r.fecha_reserva desc, r.hora_inicio desc",
+                bookingsSql() + " where " + VenueAccessService.VISIBLE_VENUE_SQL + " order by r.fecha_reserva desc, r.hora_inicio desc",
                 bookingRowMapper(),
-                authUuid);
+                authUuid, authUuid, VenueAccessService.RESERVA_VER);
     }
 
     public List<BookingResponse> listBookingsByPlayer(String playerId, AuthUserDto authUser) {
@@ -534,8 +500,7 @@ public class BookingService extends JdbcSupport {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Identificador de usuario inválido.");
         }
 
-        String rol = authUser.rol() == null ? "" : authUser.rol().trim().toLowerCase(Locale.ROOT);
-        boolean isAdmin = Roles.isAdmin(rol);
+        boolean isAdmin = VenueAccessService.isSuperAdmin(authUser);
         boolean isSelf = authUuid.equals(targetPlayerUuid);
 
         if (!isSelf && !isAdmin) {
@@ -551,6 +516,17 @@ public class BookingService extends JdbcSupport {
                 bookingRowMapper(),
                 targetPlayerUuid,
                 targetPlayerUuid);
+    }
+
+    private boolean canOnBooking(Map<String, Object> row, AuthUserDto user, String permiso) {
+        return access.can(user, ((Number) row.get("id_sede")).intValue(),
+                java.util.Objects.toString(row.get("id_dueno"), null), permiso);
+    }
+
+    private void requireBookingPermission(Map<String, Object> row, AuthUserDto user, String permiso) {
+        if (!canOnBooking(row, user, permiso)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tienes permiso para modificar reservas de otra sede.");
+        }
     }
 
     private Optional<BookingResponse> getBookingById(int id) {

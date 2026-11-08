@@ -51,7 +51,7 @@ public class CashController {
     public List<CashBoxDto> boxes(@RequestParam(required = false) Integer sedeId,
             @RequestAttribute("auth.user") AuthUserDto user) {
         if (sedeId != null) {
-            int verifiedSedeId = access.requireOwnedVenue(sedeId, user);
+            int verifiedSedeId = access.requireOwnedVenue(sedeId, user, VenueAccessService.CAJA_OPERAR);
             return dataService.listCashBoxes(verifiedSedeId);
         }
         return dataService.listCashBoxesForOwner(user);
@@ -61,7 +61,7 @@ public class CashController {
     public ResponseEntity<CashSessionDto> openSession(@RequestParam(required = false) Integer cajaId,
             @RequestAttribute("auth.user") AuthUserDto user) {
         if (cajaId != null) {
-            access.requireOwnedBox(cajaId, user);
+            access.requireOwnedBox(cajaId, user, VenueAccessService.CAJA_OPERAR);
             return dataService.getOpenCashSession(cajaId)
                     .map(ResponseEntity::ok)
                     .orElseGet(() -> ResponseEntity.noContent().build());
@@ -74,7 +74,7 @@ public class CashController {
     @PostMapping("/sessions")
     public CashSessionDto createSession(@RequestBody OpenCashSessionRequest request,
             @RequestAttribute("auth.user") AuthUserDto user) {
-        access.requireOwnedBox(request.cajaId(), user);
+        access.requireOwnedBox(request.cajaId(), user, VenueAccessService.CAJA_OPERAR);
         return dataService.openCashSession(request, user);
     }
 
@@ -104,7 +104,7 @@ public class CashController {
     public List<CashAuditDto> audits(@RequestParam(required = false) Integer sedeId,
             @RequestAttribute("auth.user") AuthUserDto user) {
         if (sedeId != null) {
-            access.requireOwnedVenue(sedeId, user);
+            access.requireOwnedVenue(sedeId, user, VenueAccessService.CAJA_SUPERVISAR);
             return dataService.listCashAuditsForVenue(sedeId);
         }
         return dataService.listCashAuditsForOwner(user);

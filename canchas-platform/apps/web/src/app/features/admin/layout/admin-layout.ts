@@ -71,6 +71,16 @@ export class AdminLayout implements OnInit, OnDestroy {
   readonly adminModalPrivacidadOpen = signal(false);
   readonly adminModalAyudaOpen = signal(false);
   readonly isSuperAdmin = computed(() => this.auth.isSuperAdmin());
+  private static readonly ROL_ETIQUETAS: Record<string, string> = {
+    superadmin: 'Superadministrador',
+    admin: 'Administrador',
+    cajero: 'Cajero',
+    almacen: 'Almacén',
+    ayudante: 'Ayudante',
+  };
+  readonly rolEtiqueta = computed(
+    () => AdminLayout.ROL_ETIQUETAS[this.auth.currentUser()?.rol ?? ''] ?? 'Dueño Sede',
+  );
 
   readonly navItems: AdminNavItem[] = [
     { label: 'Mi Sede', route: '/admin/sedes', icon: 'stadium' },

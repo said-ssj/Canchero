@@ -42,9 +42,7 @@ public class VenueHoursService {
         if (owners.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Sede no encontrada");
         }
-        if (!VenueAccessService.canManage(user, owners.get(0))) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "La sede no pertenece a tu cuenta");
-        }
+        new VenueAccessService(jdbc).requireVenuePermission(sedeId, owners.get(0), user, VenueAccessService.CANCHA_GESTIONAR);
         jdbc.update("delete from tipo_horario where id_sede = ?", sedeId);
         for (var day : days) {
             jdbc.update("""

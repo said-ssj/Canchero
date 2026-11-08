@@ -82,7 +82,7 @@ class CourtReportServiceTest {
                     fecmod timestamp
                 )""");
 
-        jdbc.update("insert into rol values (1, 'cliente', 'A'), (2, 'dueno', 'A'), (3, 'admin', 'A')");
+        jdbc.update("insert into rol values (1, 'cliente', 'A'), (2, 'dueno', 'A'), (3, 'superadmin', 'A')");
         jdbc.update("insert into usuario values (?, 2, 'Dueño A', 'duenoA@canchero.pe', 'hash', 'A')", ownerAUuid);
         jdbc.update("insert into usuario values (?, 2, 'Dueño B', 'duenoB@canchero.pe', 'hash', 'A')", ownerBUuid);
         jdbc.update("insert into usuario values (?, 1, 'Jugador Test', 'jugador@canchero.pe', 'hash', 'A')", playerUuid);
@@ -91,11 +91,12 @@ class CourtReportServiceTest {
         ownerA = new AuthUserDto(ownerAUuid.toString(), "Dueño A", "duenoA@canchero.pe", "900000001", "dueno");
         ownerB = new AuthUserDto(ownerBUuid.toString(), "Dueño B", "duenoB@canchero.pe", "900000002", "dueno");
         player = new AuthUserDto(playerUuid.toString(), "Jugador Test", "jugador@canchero.pe", "900000003", "cliente");
-        admin = new AuthUserDto(adminUuid.toString(), "Admin Global", "admin@canchero.pe", "900000004", "admin");
+        admin = new AuthUserDto(adminUuid.toString(), "Admin Global", "admin@canchero.pe", "900000004", "superadmin");
 
         // Sede 10 tiene 2 canchas (101 y 102); Sede 20 tiene 1 cancha (201)
         jdbc.update("insert into sede values (10, ?, 'Complejo San Isidro', 'A')", ownerAUuid);
         jdbc.update("insert into sede values (20, ?, 'Complejo Miraflores', 'A')", ownerBUuid);
+        StaffTestSchema.create(jdbc);
         jdbc.update("insert into cancha values (101, 10, 'Cancha Sintética 1', 'A')");
         jdbc.update("insert into cancha values (102, 10, 'Cancha Sintética 2', 'A')");
         jdbc.update("insert into cancha values (201, 20, 'Cancha Pádel 1', 'A')");

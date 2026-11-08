@@ -88,12 +88,15 @@ describe('AdminUsuarios Component', () => {
     expect(component.filteredUsers()[0].rol).toBe('admin');
   });
 
-  it('debe permitir alternar rol de administrador', () => {
+  it('debe permitir cambiar a cualquier rol excepto superadmin', () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true);
 
     const playerUser = mockUsers[2];
-    component.toggleAdminRole(playerUser);
+    component.cambiarRol(playerUser, 'cajero');
+    expect(mockUserService.updateUserRole).toHaveBeenCalledWith('u-3', 'cajero');
 
-    expect(mockUserService.updateUserRole).toHaveBeenCalledWith('u-3', 'admin');
+    mockUserService.updateUserRole.mockClear();
+    component.cambiarRol(mockUsers[0], 'cliente');
+    expect(mockUserService.updateUserRole).not.toHaveBeenCalled();
   });
 });

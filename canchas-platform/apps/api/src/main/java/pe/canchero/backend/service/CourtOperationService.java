@@ -85,13 +85,13 @@ public class CourtOperationService {
 
     private void requireOwnedCourt(int courtId, AuthUserDto user) {
         var owners = jdbc.queryForList("""
-                select s.id_dueno from cancha c join sede s on s.id_sede = c.id_sede
+                select s.id_sede, s.id_dueno from cancha c join sede s on s.id_sede = c.id_sede
                 where c.id_cancha = ? and s.estado = 'A' for update
-                """, String.class, courtId);
+                """, courtId);
         if (owners.isEmpty()) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Cancha no encontrada");
-        if (!Roles.isOwnerOrAdmin(user.rol()) || !VenueAccessService.canManage(user, owners.get(0))) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "La cancha no pertenece a tu cuenta");
-        }
+        new VenueAccessService(jdbc).requireVenuePermission(
+                ((Number) owners.get(0).get("id_sede")).intValue(), java.util.Objects.toString(owners.get(0).get("id_dueno"), null),
+                user, VenueAccessService.CANCHA_GESTIONAR);
     }
 
     /** Acepta "2026-11-05T10:00" (hora de Lima) o ISO con zona ("...Z"), y lo guarda en hora de Lima. */

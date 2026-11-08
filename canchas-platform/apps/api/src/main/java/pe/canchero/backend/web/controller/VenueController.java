@@ -59,7 +59,7 @@ public class VenueController {
     @PutMapping("/{id}")
     public ResponseEntity<?> update(@PathVariable int id, @RequestAttribute("auth.user") AuthUserDto user,
             @RequestBody VenueRequest request) {
-        access.requireOwnedVenue(id, user);
+        access.requireOwnedVenue(id, user, VenueAccessService.SEDE_EDITAR);
         return data.updateVenue(String.valueOf(id), request)
                 .<ResponseEntity<?>>map(ResponseEntity::ok)
                 .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse("Sede no encontrada")));
@@ -70,8 +70,8 @@ public class VenueController {
     @PutMapping("/{id}/owner")
     public ResponseEntity<?> assignOwner(@PathVariable int id, @RequestAttribute("auth.user") AuthUserDto user,
             @RequestBody OwnerRequest request) {
-        if (!Roles.isAdmin(user.rol())) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ErrorResponse("Solo el administrador puede cambiar el dueño de una sede"));
+        if (!Roles.isSuperAdmin(user.rol())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ErrorResponse("Solo el superadministrador puede cambiar el dueño de una sede"));
         }
         return data.assignOwner(id, request == null ? null : request.email())
                 .<ResponseEntity<?>>map(ResponseEntity::ok)
@@ -80,7 +80,7 @@ public class VenueController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> delete(@PathVariable int id, @RequestAttribute("auth.user") AuthUserDto user) {
-        access.requireOwnedVenue(id, user);
+        access.requireOwnedVenue(id, user, VenueAccessService.SEDE_ELIMINAR);
         if (!data.deleteVenue(String.valueOf(id))) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse("Sede no encontrada"));
         }

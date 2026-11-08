@@ -55,7 +55,8 @@ export class AdminUsuarios implements OnInit {
       admins: all.filter((u) => u.rol.toLowerCase() === 'admin').length,
       superadmins: all.filter((u) => u.rol.toLowerCase() === 'superadmin').length,
       duenos: all.filter((u) => u.rol.toLowerCase() === 'dueno').length,
-      clientes: all.filter((u) => u.rol.toLowerCase() === 'cliente').length,
+      clientes: all.filter((u) => ['user', 'userpremium', 'cliente'].includes(u.rol.toLowerCase()))
+        .length,
     };
   });
 
@@ -86,18 +87,31 @@ export class AdminUsuarios implements OnInit {
     });
   }
 
-  toggleAdminRole(user: AdminUserItem): void {
+  /** Roles que el superadmin puede dar (el de superadmin no se asigna desde aquí). */
+  readonly rolesAsignables = [
+    { value: 'user', label: 'Jugador (user)' },
+    { value: 'userPremium', label: 'Jugador premium' },
+    { value: 'cliente', label: 'Cliente presencial' },
+    { value: 'dueno', label: 'Dueño' },
+    { value: 'admin', label: 'Administrador de sede' },
+    { value: 'cajero', label: 'Cajero' },
+    { value: 'almacen', label: 'Almacén' },
+    { value: 'ayudante', label: 'Ayudante' },
+  ];
+
+  cambiarRol(user: AdminUserItem, newRol: string): void {
     if (user.id === this.currentUserId() || user.rol.toLowerCase() === 'superadmin') {
       return;
     }
+    if (newRol.toLowerCase() === user.rol.toLowerCase()) return;
 
-    const currentRol = user.rol.toLowerCase();
-    const newRol = currentRol === 'admin' ? 'cliente' : 'admin';
-    const actionText =
-      newRol === 'admin' ? 'otorgar rol de Administrador a' : 'quitar rol de Administrador de';
-
-    const confirmed = window.confirm(`¿Estás seguro de ${actionText} ${user.nombre}?`);
-    if (!confirmed) return;
+    const label = this.rolesAsignables.find((r) => r.value === newRol)?.label ?? newRol;
+    const confirmed = window.confirm(`¿Cambiar el rol de ${user.nombre} a ${label}?`);
+    if (!confirmed) {
+      // Devuelve el selector a su valor actual.
+      this.users.update((current) => [...current]);
+      return;
+    }
 
     this.updatingId.set(user.id);
     this.error.set(null);

@@ -17,7 +17,8 @@ import java.util.UUID;
 @Service
 public class UserService extends JdbcSupport {
 
-    private static final Set<String> ROLES_PERMITIDOS_ASIGNACION = Set.of("cliente", "dueno", "admin");
+    private static final Set<String> ROLES_PERMITIDOS_ASIGNACION = Set.of(
+            "user", "userpremium", "cliente", "dueno", "admin", "almacen", "ayudante", "cajero");
 
     public UserService(JdbcTemplate jdbc) {
         super(jdbc);
@@ -60,7 +61,7 @@ public class UserService extends JdbcSupport {
         String rawRole = request.rol() == null ? "" : request.rol().trim().toLowerCase(Locale.ROOT);
         String targetRoleNorm = Roles.normalize(rawRole);
         if (!ROLES_PERMITIDOS_ASIGNACION.contains(targetRoleNorm)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Rol no permitido. Roles válidos: cliente, dueno, admin");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Rol no permitido. Roles válidos: user, userPremium, cliente, dueno, admin, almacen, ayudante, cajero");
         }
 
         // Buscar el id_rol correspondiente

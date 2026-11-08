@@ -11,6 +11,7 @@ import type { NuevaReservaPresencialInput } from './legacy.types';
 import { UBIGEO_LOOKUP } from './ubigeo-data';
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../auth/auth.service';
+import { StaffService } from '../services/staff.service';
 
 const COMISION_PORCENTAJE = 0.05;
 
@@ -41,6 +42,7 @@ export interface NuevoPagoReservaInput {
 export class DatabaseService {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthService);
+  private readonly staff = inject(StaffService);
   private readonly apiUrl = environment.apiUrl;
 
   // ===== SIGNALS REACTIVOS (API principal) =====
@@ -850,9 +852,14 @@ export class DatabaseService {
   // ===== SEPARACIÓN POR DUEÑO =====
   getSedesPorDueno(duenoId: string | number) {
     if (duenoId === '' || duenoId == null) return [];
-    // El administrador de la plataforma gestiona todas las sedes (la API también se lo permite).
+    // El superadmin gestiona todas las sedes (la API también se lo permite).
     const user = this.auth.currentUser();
-    if (user?.rol === 'admin' && String(duenoId) === String(user.id)) return this.sedes();
+    if (user?.rol === 'superadmin' && String(duenoId) === String(user.id)) return this.sedes();
+    // Personal de sede (admin, cajero, almacen, ayudante): solo las sedes que le asignaron.
+    if (this.auth.isVenueStaff?.() && String(duenoId) === String(user?.id)) {
+      const ids = new Set(this.staff.mine().map((a) => Number(a.sedeId)));
+      return this.sedes().filter((s) => ids.has(Number(s.id)));
+    }
     // Existing catalog adapters expose numeric aliases for UUID owners.
     const legacyId = typeof duenoId === 'string' ? this.uuidToNumber(duenoId) : duenoId;
     const belongsToOwner = (s: {
@@ -876,8 +883,8 @@ export class DatabaseService {
   }
 
   async saveOrUpdateSede(duenoId: string | number, data: any): Promise<any> {
-    // El admin ve todas las sedes: "su primera sede" sería la de otro dueño, así que debe indicar cuál editar.
-    if (!data['id'] && !data['isNew'] && this.auth.currentUser()?.rol === 'admin') {
+    // El superadmin ve todas las sedes: "su primera sede" sería la de otro dueño, así que debe indicar cuál editar.
+    if (!data['id'] && !data['isNew'] && this.auth.currentUser()?.rol === 'superadmin') {
       throw new Error('Indica qué sede quieres editar.');
     }
     const existing = data['id']

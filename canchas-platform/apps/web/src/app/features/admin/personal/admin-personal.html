@@ -1,0 +1,87 @@
+<main class="personal-page">
+  <header class="personal-header">
+    <h1>Personal de la sede</h1>
+    <p>
+      Asigna administradores, cajeros, almacén y ayudantes a
+      <strong>{{ context.venue()?.nombre || 'tu sede' }}</strong
+      >. Cada uno solo ve y opera esta sede con los permisos de su rol.
+    </p>
+  </header>
+
+  @if (error()) {
+    <div class="notice danger" role="alert">{{ error() }}</div>
+  }
+  @if (aviso()) {
+    <div class="notice success" role="status">{{ aviso() }}</div>
+  }
+
+  @if (!context.venue()) {
+    <p class="muted">Selecciona una sede para ver su personal.</p>
+  } @else {
+    <form class="assign-form" (ngSubmit)="asignar()">
+      <label>
+        <span>Correo de la cuenta</span>
+        <input
+          type="email"
+          name="email"
+          required
+          autocomplete="off"
+          placeholder="persona@correo.com"
+          [ngModel]="email()"
+          (ngModelChange)="email.set($event)"
+        />
+      </label>
+      <label>
+        <span>Rol</span>
+        <select name="rol" [ngModel]="rol()" (ngModelChange)="rol.set($event)">
+          @for (r of roles(); track r.value) {
+            <option [value]="r.value">{{ r.label }} — {{ r.desc }}</option>
+          }
+        </select>
+      </label>
+      <button mat-flat-button type="submit" [disabled]="guardando() || !email().trim()">
+        {{ guardando() ? 'Asignando…' : 'Asignar' }}
+      </button>
+    </form>
+    <p class="muted small">
+      La persona debe tener una cuenta en Canchero. Si es jugador, pasa a tener acceso al panel solo
+      para las sedes que le asignes.
+    </p>
+
+    @if (cargando()) {
+      <p class="muted">Cargando personal…</p>
+    } @else if (lista().length === 0) {
+      <p class="muted">Esta sede aún no tiene personal asignado.</p>
+    } @else {
+      <table class="staff-table">
+        <thead>
+          <tr>
+            <th scope="col">Persona</th>
+            <th scope="col">Rol</th>
+            <th scope="col">Permisos</th>
+            <th scope="col"><span class="sr-only">Acciones</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (a of lista(); track a.id) {
+            <tr>
+              <td>
+                <strong>{{ a.nombre }}</strong>
+                <div class="muted small">{{ a.email }}</div>
+              </td>
+              <td>
+                <span class="role-tag">{{ etiqueta(a.rol) }}</span>
+              </td>
+              <td class="muted small">{{ a.permisos.join(', ') }}</td>
+              <td class="actions">
+                @if (a.rol !== 'admin' || puedeGestionarAdmins()) {
+                  <button mat-stroked-button type="button" (click)="quitar(a)">Quitar</button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  }
+</main>

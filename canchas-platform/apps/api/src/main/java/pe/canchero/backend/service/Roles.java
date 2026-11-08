@@ -4,11 +4,17 @@ import java.text.Normalizer;
 import java.util.Locale;
 import java.util.Set;
 
-/** Única definición de los roles con permisos de gestión (sin distinguir mayúsculas ni tildes). */
+/**
+ * Roles globales (sin distinguir mayúsculas ni tildes).
+ * superadmin: control total de la plataforma. dueno: sus sedes.
+ * admin, cajero, almacen, ayudante: solo las sedes que el dueño les asigne (asignacion_sede),
+ * con los permisos de rol_sede_permiso; ver {@link VenueAccessService}.
+ */
 public final class Roles {
     private static final Set<String> SUPERADMIN = Set.of("superadmin", "super_admin", "super-admin");
-    private static final Set<String> ADMIN = Set.of("admin", "administrador");
     private static final Set<String> OWNER = Set.of("dueno", "owner", "propietario");
+    /** Coinciden con rol_sede.codigo; "administrador" se acepta como alias de admin. */
+    private static final Set<String> VENUE_STAFF = Set.of("admin", "administrador", "cajero", "almacen", "ayudante");
 
     private Roles() {}
 
@@ -16,17 +22,17 @@ public final class Roles {
         return SUPERADMIN.contains(normalize(rol));
     }
 
-    public static boolean isAdmin(String rol) {
-        String normalized = normalize(rol);
-        return ADMIN.contains(normalized) || SUPERADMIN.contains(normalized);
-    }
-
     public static boolean isOwner(String rol) {
         return OWNER.contains(normalize(rol));
     }
 
-    public static boolean isOwnerOrAdmin(String rol) {
-        return isAdmin(rol) || isOwner(rol);
+    public static boolean isVenueStaff(String rol) {
+        return VENUE_STAFF.contains(normalize(rol));
+    }
+
+    /** Puede entrar al panel de gestión; qué sedes y acciones se decide sede por sede. */
+    public static boolean canEnterPanel(String rol) {
+        return isSuperAdmin(rol) || isOwner(rol) || isVenueStaff(rol);
     }
 
     public static String normalize(String rol) {

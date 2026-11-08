@@ -52,13 +52,13 @@ class PosIsolationTest {
 
     @Test
     void rejectsForeignVenueForOwnersButAllowsPlatformAdmin() {
-        assertEquals(3, access.requireOwnedVenue(3, new AuthUserDto("admin-x", "Admin", "", "", "administrador")));
-        assertEquals(1, access.requireOwnedVenue(1, owner));
-        assertEquals(2, access.requireOwnedVenue(2, owner));
-        assertEquals(403, assertThrows(ResponseStatusException.class, () -> access.requireOwnedVenue(3, owner)).getStatusCode().value());
-        assertEquals(401, assertThrows(ResponseStatusException.class, () -> access.requireOwnedVenue(1, null)).getStatusCode().value());
-        assertEquals(400, assertThrows(ResponseStatusException.class, () -> access.requireOwnedVenue(null, owner)).getStatusCode().value());
-        assertEquals(404, assertThrows(ResponseStatusException.class, () -> access.requireOwnedVenue(999, owner)).getStatusCode().value());
+        assertEquals(3, access.requireOwnedVenue(3, new AuthUserDto("admin-x", "Admin", "", "", "superadmin"), VenueAccessService.PRODUCTO_VER));
+        assertEquals(1, access.requireOwnedVenue(1, owner, VenueAccessService.PRODUCTO_VER));
+        assertEquals(2, access.requireOwnedVenue(2, owner, VenueAccessService.PRODUCTO_VER));
+        assertEquals(403, assertThrows(ResponseStatusException.class, () -> access.requireOwnedVenue(3, owner, VenueAccessService.PRODUCTO_VER)).getStatusCode().value());
+        assertEquals(401, assertThrows(ResponseStatusException.class, () -> access.requireOwnedVenue(1, null, VenueAccessService.PRODUCTO_VER)).getStatusCode().value());
+        assertEquals(400, assertThrows(ResponseStatusException.class, () -> access.requireOwnedVenue(null, owner, VenueAccessService.PRODUCTO_VER)).getStatusCode().value());
+        assertEquals(404, assertThrows(ResponseStatusException.class, () -> access.requireOwnedVenue(999, owner, VenueAccessService.PRODUCTO_VER)).getStatusCode().value());
     }
 
     @Test

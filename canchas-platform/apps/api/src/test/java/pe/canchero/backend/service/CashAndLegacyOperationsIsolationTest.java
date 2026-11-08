@@ -252,7 +252,7 @@ class CashAndLegacyOperationsIsolationTest {
         jdbc.execute("alter table arqueo_caja add ingresos_manuales numeric(12,2)");
         jdbc.execute("alter table arqueo_caja add egresos_manuales numeric(12,2)");
         // Seed roles
-        jdbc.update("insert into rol values (1, 'cliente', 'A'), (2, 'dueño', 'A'), (3, 'admin', 'A')");
+        jdbc.update("insert into rol values (1, 'cliente', 'A'), (2, 'dueño', 'A'), (3, 'superadmin', 'A'), (4, 'cajero', 'A'), (5, 'admin', 'A')");
         jdbc.update("insert into metodo_pago values (1, 'Efectivo', 'A'), (2, 'Tarjeta', 'A'), (3, 'Yape', 'A'), (4, 'Plin', 'A')");
         jdbc.update("insert into estado_reserva values (1, 'Pendiente', 'A'), (2, 'Confirmada', 'A')");
         jdbc.update("insert into categoria_producto values (1, 'Bebidas')");
@@ -274,6 +274,7 @@ class CashAndLegacyOperationsIsolationTest {
         jdbc.update("insert into sede values (10, ?, 'Sede Norte', 'A')", ownerAId.toString());
         jdbc.update("insert into sede values (20, ?, 'Sede Sur', 'A')", ownerAId.toString());
         jdbc.update("insert into sede values (30, ?, 'Sede Este', 'A')", ownerBId.toString());
+        StaffTestSchema.create(jdbc);
 
         // Canchas
         jdbc.update("insert into cancha values (101, 10, 'Cancha 101', 'A')");
@@ -429,9 +430,18 @@ class CashAndLegacyOperationsIsolationTest {
         assertEquals(109, audit.montoSistema());
         var ownerA = new pe.canchero.backend.web.dto.AuthUserDto(ownerAId.toString(), "Owner", "", "", "dueno");
         assertEquals(9, cashService.listCashAuditsForOwner(ownerA).get(0).totalPagosEfectivo());
-        // El admin de la plataforma ve los arqueos de todas las sedes; un dueño ajeno no ve los de A.
-        var admin = new pe.canchero.backend.web.dto.AuthUserDto(adminId.toString(), "Admin", "", "", "admin");
+        // El superadmin ve los arqueos de todas las sedes; un dueño ajeno no ve los de A.
+        var superadmin = new pe.canchero.backend.web.dto.AuthUserDto(adminId.toString(), "Admin", "", "", "superadmin");
+        assertEquals(1, cashService.listCashAuditsForOwner(superadmin).size());
+        // Un admin solo ve las sedes que le asignaron; el cajero no supervisa arqueos.
+        var admin = new pe.canchero.backend.web.dto.AuthUserDto(player2Id.toString(), "Admin", "", "", "admin");
+        var cajero = new pe.canchero.backend.web.dto.AuthUserDto(player1Id.toString(), "Cajero", "", "", "cajero");
+        assertTrue(cashService.listCashAuditsForOwner(admin).isEmpty());
+        int sedeArqueo = jdbc.queryForObject("select c.id_sede from sesion_caja sc join caja c on c.id_caja = sc.id_caja where sc.id_sesion_caja = 10", Integer.class);
+        StaffTestSchema.assign(jdbc, player2Id, sedeArqueo, "admin");
+        StaffTestSchema.assign(jdbc, player1Id, sedeArqueo, "cajero");
         assertEquals(1, cashService.listCashAuditsForOwner(admin).size());
+        assertTrue(cashService.listCashAuditsForOwner(cajero).isEmpty());
         assertTrue(cashService.listCashAuditsForOwner(
                 new pe.canchero.backend.web.dto.AuthUserDto(ownerBId.toString(), "B", "", "", "dueno")).isEmpty());
         assertEquals(new BigDecimal("14.00"), jdbc.queryForObject("select total_digital from arqueo_caja",BigDecimal.class));

@@ -434,7 +434,7 @@ public class PosService extends JdbcSupport {
 
     public List<VentaResponse> listVentasForOwner(AuthUserDto user) {
         UUID ownerUuid = resolveOperationalUserId(user.id());
-        boolean admin = Roles.isAdmin(user.rol()); // el admin de la plataforma ve todas las sedes
+        boolean admin = Roles.isSuperAdmin(user.rol()); // el superadmin ve todas las sedes; el resto, propias o asignadas
         return jdbc.query("""
                 select v.id_venta, v.id_sede, v.fecha_venta, v.id_sesion_caja,
                        v.cajero_nombre, v.tipo_comprobante, v.numero_comprobante,
@@ -466,9 +466,9 @@ public class PosService extends JdbcSupport {
                     left join caja c on c.id_caja = sc.id_caja
                 ) v
                 join sede s on s.id_sede = v.id_sede
-                where v.estado = 'A' and (? or s.id_dueno = ?)
+                where v.estado = 'A' and (? or {VISIBLE})
                 order by v.fecha_venta desc, v.id_venta desc
-                """, (rs, rowNum) -> mapSale(rs, saleItems(rs.getInt("id_venta"))), admin, ownerUuid).stream()
+                """.replace("{VISIBLE}", VenueAccessService.VISIBLE_VENUE_SQL), (rs, rowNum) -> mapSale(rs, saleItems(rs.getInt("id_venta"))), admin, ownerUuid, ownerUuid, VenueAccessService.VENTA_VER).stream()
                 .map(this::toVentaResponse)
                 .toList();
     }

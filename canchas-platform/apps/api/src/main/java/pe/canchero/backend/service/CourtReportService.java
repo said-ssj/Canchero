@@ -100,8 +100,8 @@ public class CourtReportService extends JdbcSupport {
     }
 
     public List<CourtReportResponse> listAllReports(AuthUserDto authUser) {
-        if (authUser == null || !Roles.isAdmin(authUser.rol())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Acceso restringido a administradores");
+        if (authUser == null || !Roles.isSuperAdmin(authUser.rol())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Solo el superadministrador ve los reportes de todas las sedes");
         }
         return jdbc.query("""
                 select r.id_reporte, r.id_cancha, c.nombre_numero as nombre_cancha,
@@ -118,7 +118,7 @@ public class CourtReportService extends JdbcSupport {
     }
 
     public List<CourtReportResponse> listReportsByVenue(int sedeId, AuthUserDto authUser) {
-        venueAccess.requireOwnedVenue(sedeId, authUser);
+        venueAccess.requireOwnedVenue(sedeId, authUser, VenueAccessService.REPORTE_VER);
         return jdbc.query("""
                 select r.id_reporte, r.id_cancha, c.nombre_numero as nombre_cancha,
                        r.id_sede, s.nombre as nombre_sede,
@@ -135,7 +135,7 @@ public class CourtReportService extends JdbcSupport {
     }
 
     public List<CourtReportResponse> listReportsByCourt(int canchaId, AuthUserDto authUser) {
-        venueAccess.requireOwnedCourt(canchaId, authUser);
+        venueAccess.requireOwnedCourt(canchaId, authUser, VenueAccessService.REPORTE_VER);
         return jdbc.query("""
                 select r.id_reporte, r.id_cancha, c.nombre_numero as nombre_cancha,
                        r.id_sede, s.nombre as nombre_sede,
@@ -189,7 +189,7 @@ public class CourtReportService extends JdbcSupport {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Reporte no encontrado");
         }
         int sedeId = sedes.get(0);
-        venueAccess.requireOwnedVenue(sedeId, authUser);
+        venueAccess.requireOwnedVenue(sedeId, authUser, VenueAccessService.REPORTE_GESTIONAR);
 
         UUID operatorId = resolveOperationalUserId(authUser.id());
         String resolucion = request.resolucion() != null ? request.resolucion().trim() : null;

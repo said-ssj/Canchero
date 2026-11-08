@@ -93,7 +93,12 @@
           <option value="TODOS">Todos los roles</option>
           <option value="admin">Administradores</option>
           <option value="dueno">Dueños</option>
-          <option value="cliente">Jugadores / Clientes</option>
+          <option value="user">Jugadores (user)</option>
+          <option value="userpremium">Jugadores premium</option>
+          <option value="cliente">Clientes presenciales</option>
+          <option value="cajero">Cajeros</option>
+          <option value="almacen">Almacén</option>
+          <option value="ayudante">Ayudantes</option>
           <option value="superadmin">Superadministradores</option>
         </select>
       </div>
@@ -123,7 +128,7 @@
               <th>Contacto</th>
               <th>Rol Actual</th>
               <th>Estado</th>
-              <th style="text-align: right">Acciones de Rol</th>
+              <th style="text-align: right">Cambiar Rol</th>
             </tr>
           </thead>
           <tbody>
@@ -169,31 +174,19 @@
                   } @else if (u.id === currentUserId()) {
                     <span class="text-muted small">Tu cuenta</span>
                   } @else {
-                    <button
-                      type="button"
-                      class="btn btn-sm"
-                      [class.btn-outline]="u.rol.toLowerCase() !== 'admin'"
-                      [class.btn-danger]="u.rol.toLowerCase() === 'admin'"
-                      (click)="toggleAdminRole(u)"
+                    <select
+                      class="form-control"
+                      [attr.aria-label]="'Rol de ' + u.nombre"
+                      [value]="u.rol"
                       [disabled]="updatingId() === u.id"
+                      (change)="cambiarRol(u, $any($event.target).value)"
                     >
-                      @if (updatingId() === u.id) {
-                        <span class="material-symbols-outlined icon-16 spin" aria-hidden="true"
-                          >sync</span
-                        >
-                        Actualizando...
-                      } @else if (u.rol.toLowerCase() === 'admin') {
-                        <span class="material-symbols-outlined icon-16" aria-hidden="true"
-                          >person_remove</span
-                        >
-                        Quitar Admin
-                      } @else {
-                        <span class="material-symbols-outlined icon-16" aria-hidden="true"
-                          >admin_panel_settings</span
-                        >
-                        Hacer Admin
+                      @for (r of rolesAsignables; track r.value) {
+                        <option [value]="r.value" [selected]="r.value === u.rol">
+                          {{ r.label }}
+                        </option>
                       }
-                    </button>
+                    </select>
                   }
                 </td>
               </tr>

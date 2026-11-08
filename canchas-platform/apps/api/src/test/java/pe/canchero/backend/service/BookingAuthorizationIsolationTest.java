@@ -129,7 +129,7 @@ class BookingAuthorizationIsolationTest {
                 """);
 
         // Seed roles
-        jdbc.update("insert into rol values (1, 'cliente', 'A'), (2, 'dueño', 'A'), (3, 'admin', 'A')");
+        jdbc.update("insert into rol values (1, 'cliente', 'A'), (2, 'dueño', 'A'), (3, 'superadmin', 'A'), (4, 'cajero', 'A'), (5, 'admin', 'A')");
 
         // Seed users
         ownerAId = UUID.randomUUID();
@@ -148,6 +148,8 @@ class BookingAuthorizationIsolationTest {
         jdbc.update("insert into sede values (10, ?, 'Sede Norte', 'A')", ownerAId);
         jdbc.update("insert into sede values (20, ?, 'Sede Sur', 'A')", ownerAId);
         jdbc.update("insert into sede values (30, ?, 'Sede Este', 'A')", ownerBId);
+
+        StaffTestSchema.create(jdbc);
 
         // Seed canchas
         jdbc.update("insert into cancha values (101, 10, 'Cancha 101', 'A')");
@@ -489,5 +491,39 @@ class BookingAuthorizationIsolationTest {
         mvc.perform(get("/api/bookings/pase/PASE-INEXISTENTE"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value("Pase no encontrado"));
+    }
+
+    @Test
+    void staffOnlyActsOnAssignedVenuesWithTheirRolePermissions() throws Exception {
+        UUID cajeroId = UUID.randomUUID();
+        UUID adminSedeId = UUID.randomUUID();
+        jdbc.update("insert into usuario values (?, 4, 'Cajero', 'cajero@canchero.pe', '900000006', 'h', 'A', current_timestamp)", cajeroId);
+        jdbc.update("insert into usuario values (?, 5, 'Admin sede', 'adminsede@canchero.pe', '900000007', 'h', 'A', current_timestamp)", adminSedeId);
+        StaffTestSchema.assign(jdbc, cajeroId, 10, "cajero");
+        String cajero = "Bearer " + tokenService.issue(cajeroId, true);
+        String adminSinSede = "Bearer " + tokenService.issue(adminSedeId, true);
+
+        // El cajero ve y confirma reservas solo de su sede; no puede cancelar (sin reserva.cancelar).
+        mvc.perform(get("/api/bookings").header("Authorization", cajero))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].id", containsInAnyOrder("1")));
+        mvc.perform(patch("/api/bookings/" + booking1Id + "/confirm").header("Authorization", cajero))
+                .andExpect(status().isOk());
+        mvc.perform(patch("/api/bookings/" + booking3Id + "/confirm").header("Authorization", cajero))
+                .andExpect(status().isForbidden());
+        mvc.perform(patch("/api/bookings/" + booking1Id + "/cancel").header("Authorization", cajero))
+                .andExpect(status().isForbidden());
+
+        // Un admin sin sedes asignadas no ve ni toca nada; asignado a la sede 30, gestiona solo esa.
+        mvc.perform(get("/api/bookings").header("Authorization", adminSinSede))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(0)));
+        mvc.perform(patch("/api/bookings/" + booking3Id + "/cancel").header("Authorization", adminSinSede))
+                .andExpect(status().isForbidden());
+        StaffTestSchema.assign(jdbc, adminSedeId, 30, "admin");
+        mvc.perform(patch("/api/bookings/" + booking3Id + "/cancel").header("Authorization", adminSinSede))
+                .andExpect(status().isOk());
+        mvc.perform(get("/api/bookings").param("venueId", "10").header("Authorization", adminSinSede))
+                .andExpect(status().isForbidden());
     }
 }

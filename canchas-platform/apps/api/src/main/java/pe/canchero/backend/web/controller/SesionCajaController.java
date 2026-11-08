@@ -44,11 +44,11 @@ public class SesionCajaController {
             } catch (NumberFormatException e) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Caja inválida");
             }
-            access.requireOwnedBox(cId, user);
+            access.requireOwnedBox(cId, user, VenueAccessService.CAJA_SUPERVISAR);
             return ResponseEntity.ok(data.listSesionesCaja(cId));
         }
         if (sedeId != null) {
-            access.requireOwnedVenue(sedeId, user);
+            access.requireOwnedVenue(sedeId, user, VenueAccessService.CAJA_SUPERVISAR);
             return ResponseEntity.ok(data.listSesionesCajaForVenue(sedeId));
         }
         return ResponseEntity.ok(data.listSesionesCajaForOwner(user));
@@ -66,7 +66,7 @@ public class SesionCajaController {
         } catch (NumberFormatException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Caja inválida");
         }
-        access.requireOwnedBox(cId, user);
+        access.requireOwnedBox(cId, user, VenueAccessService.CAJA_OPERAR);
         return ResponseEntity.status(HttpStatus.CREATED).body(data.openSesionCaja(request, user));
     }
 

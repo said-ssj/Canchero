@@ -48,7 +48,7 @@ public class VentaController {
             return ResponseEntity.ok(data.listVentasBySession(sId));
         }
         if (sedeId != null) {
-            access.requireOwnedVenue(sedeId, user);
+            access.requireOwnedVenue(sedeId, user, VenueAccessService.VENTA_VER);
             return ResponseEntity.ok(data.listVentasForVenue(sedeId));
         }
         return ResponseEntity.ok(data.listVentasForOwner(user));

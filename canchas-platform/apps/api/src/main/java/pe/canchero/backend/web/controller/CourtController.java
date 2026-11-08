@@ -100,14 +100,14 @@ public class CourtController {
     @PostMapping
     public ResponseEntity<CourtDto> create(@RequestAttribute("auth.user") AuthUserDto user,
             @RequestBody CourtRequest request) {
-        access.requireOwnedVenue(parseId(request.venueId()), user);
+        access.requireOwnedVenue(parseId(request.venueId()), user, VenueAccessService.CANCHA_GESTIONAR);
         return ResponseEntity.status(HttpStatus.CREATED).body(data.createCourt(request));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<?> update(@PathVariable int id, @RequestAttribute("auth.user") AuthUserDto user,
             @RequestBody CourtRequest request) {
-        access.requireOwnedCourt(id, user);
+        access.requireOwnedCourt(id, user, VenueAccessService.CANCHA_GESTIONAR);
         return data.updateCourt(String.valueOf(id), request)
                 .<ResponseEntity<?>>map(ResponseEntity::ok)
                 .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse("Cancha no encontrada")));
@@ -115,7 +115,7 @@ public class CourtController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> delete(@PathVariable int id, @RequestAttribute("auth.user") AuthUserDto user) {
-        access.requireOwnedCourt(id, user);
+        access.requireOwnedCourt(id, user, VenueAccessService.CANCHA_GESTIONAR);
         if (!data.deleteCourt(String.valueOf(id))) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse("Cancha no encontrada"));
         }

@@ -36,35 +36,35 @@ public class PosController {
 
     @GetMapping("/products")
     public List<ProductDto> products(@RequestParam(required = false) Integer sedeId, @RequestAttribute(value = "auth.user", required = false) AuthUserDto user) {
-        return dataService.listProducts(access.requireOwnedVenue(sedeId, user));
+        return dataService.listProducts(access.requireOwnedVenue(sedeId, user, VenueAccessService.PRODUCTO_VER));
     }
 
     @GetMapping("/payment-capabilities")
     public java.util.Map<String, Boolean> paymentCapabilities(@RequestParam Integer sedeId,
             @RequestAttribute("auth.user") AuthUserDto user) {
-        access.requireOwnedVenue(sedeId, user);
+        access.requireOwnedVenue(sedeId, user, VenueAccessService.VENTA_CREAR);
         return java.util.Map.of("ready", dataService.salePaymentsReady());
     }
 
     @GetMapping("/inventory")
     public List<InventoryMovementDto> inventory(@RequestParam(required = false) Integer sedeId, @RequestAttribute(value = "auth.user", required = false) AuthUserDto user) {
-        return dataService.listInventoryMovements(access.requireOwnedVenue(sedeId, user));
+        return dataService.listInventoryMovements(access.requireOwnedVenue(sedeId, user, VenueAccessService.INVENTARIO_VER));
     }
 
     @PostMapping("/inventory/entries")
     public InventoryMovementDto inventoryEntry(@RequestBody InventoryEntryRequest request, @RequestAttribute(value = "auth.user", required = false) AuthUserDto user) {
-        access.requireOwnedVenue(request.sedeId(), user);
+        access.requireOwnedVenue(request.sedeId(), user, VenueAccessService.INVENTARIO_INGRESAR);
         return dataService.registerInventoryEntry(request);
     }
 
     @GetMapping("/sales")
     public List<SaleDto> sales(@RequestParam(required = false) Integer sedeId, @RequestAttribute(value = "auth.user", required = false) AuthUserDto user) {
-        return dataService.listSales(access.requireOwnedVenue(sedeId, user));
+        return dataService.listSales(access.requireOwnedVenue(sedeId, user, VenueAccessService.VENTA_VER));
     }
 
     @PostMapping("/sales")
     public SaleDto processSale(@RequestBody ProcessSaleRequest request, @RequestAttribute(value = "auth.user", required = false) AuthUserDto user) {
-        int sedeId = access.requireOwnedVenue(request.sedeId(), user);
+        int sedeId = access.requireOwnedVenue(request.sedeId(), user, VenueAccessService.VENTA_CREAR);
         return dataService.processSale(new ProcessSaleRequest(request.tipoComprobante(), request.metodoPago(),
                 user.nombre(), request.clienteNombre(), request.clienteDocumento(), request.montoPagado(),
                 request.sesionCajaId(), sedeId, user.id(), request.items(), request.pagos(), request.idempotencyKey()));

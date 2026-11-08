@@ -52,14 +52,18 @@ export class Registro {
   protected verTerminos(e: Event): void {
     e.preventDefault();
     this.modalTitulo.set('Términos y Condiciones del Servicio');
-    this.modalContenido.set('Canchero.MVP facilita la reserva de canchas deportivas. Al utilizar la plataforma aceptas respetar los horarios confirmados y las normas internas de cada complejo.');
+    this.modalContenido.set(
+      'Canchero.MVP facilita la reserva de canchas deportivas. Al utilizar la plataforma aceptas respetar los horarios confirmados y las normas internas de cada complejo.',
+    );
     this.terminosModalOpen.set(true);
   }
 
   protected verPrivacidad(e: Event): void {
     e.preventDefault();
     this.modalTitulo.set('Política de Privacidad');
-    this.modalContenido.set('Tus datos personales y de contacto se utilizan exclusivamente para la gestión de reservas, emisión de pases QR y contacto de emergencia con la sede.');
+    this.modalContenido.set(
+      'Tus datos personales y de contacto se utilizan exclusivamente para la gestión de reservas, emisión de pases QR y contacto de emergencia con la sede.',
+    );
     this.terminosModalOpen.set(true);
   }
 
@@ -116,7 +120,14 @@ export class Registro {
     const userRole: UserRole = this.rol() === 'dueno' ? 'OWNER' : 'PLAYER';
     const ownerRegistration = this.rol() === 'dueno';
     this.auth
-      .register({ nombre, email, telefono, rol: userRole, password: pass, sedeSolicitada: this.sede() })
+      .register({
+        nombre,
+        email,
+        telefono,
+        rol: userRole,
+        password: pass,
+        sedeSolicitada: this.sede(),
+      })
       .subscribe((user) => {
         if (!user) {
           this.submitting.set(false);
@@ -131,7 +142,7 @@ export class Registro {
           this.ownerPending.set(ownerRegistration && !this.auth.isOwner());
           if (this.ownerPending()) return;
           setTimeout(() => {
-            if (user.rol === 'OWNER' || user.rol === 'dueno' || user.rol === 'admin') {
+            if (this.auth.isOwner()) {
               void this.router.navigate(['/admin']);
             } else {
               void this.router.navigate(['/itinerario']);
