@@ -70,6 +70,7 @@ export class AdminLayout implements OnInit, OnDestroy {
   readonly isDarkMode = this.theme.isDark;
   readonly adminModalPrivacidadOpen = signal(false);
   readonly adminModalAyudaOpen = signal(false);
+  readonly isSuperAdmin = computed(() => this.auth.isSuperAdmin());
 
   readonly navItems: AdminNavItem[] = [
     { label: 'Mi Sede', route: '/admin/sedes', icon: 'stadium' },

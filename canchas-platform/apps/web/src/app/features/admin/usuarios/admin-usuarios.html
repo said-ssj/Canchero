@@ -1,0 +1,206 @@
+<main class="usuarios-admin-page">
+  <header class="usuarios-header">
+    <div class="header-titles">
+      <div class="badge-role">Panel Superadministrador</div>
+      <h1>Gestión Integral de Usuarios & Roles</h1>
+      <p class="subtitle">
+        Visualiza a todos los usuarios registrados en Canchero y gestiona los privilegios de
+        administración.
+      </p>
+    </div>
+
+    @if (isSuperAdmin()) {
+      <div class="header-actions">
+        <button type="button" class="btn btn-outline" (click)="loadUsers()" [disabled]="loading()">
+          <span class="material-symbols-outlined icon-18" aria-hidden="true">refresh</span>
+          Recargar
+        </button>
+      </div>
+    }
+  </header>
+
+  @if (!isSuperAdmin()) {
+    <div class="notice danger" role="alert">
+      <span class="material-symbols-outlined icon-24" aria-hidden="true">security</span>
+      <div>
+        <strong>Acceso Restringido</strong>
+        <p>
+          Esta sección es de uso exclusivo para usuarios con rol de
+          <strong>Superadministrador</strong>.
+        </p>
+      </div>
+    </div>
+  } @else {
+    <!-- Alertas de estado -->
+    @if (error()) {
+      <div class="notice danger" role="alert" style="margin-bottom: 20px">
+        <span class="material-symbols-outlined icon-20" aria-hidden="true">error</span>
+        <span>{{ error() }}</span>
+      </div>
+    }
+    @if (successMessage()) {
+      <div class="notice success" role="alert" style="margin-bottom: 20px">
+        <span class="material-symbols-outlined icon-20" aria-hidden="true">check_circle</span>
+        <span>{{ successMessage() }}</span>
+      </div>
+    }
+
+    <!-- Tarjetas de métricas -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <span class="stat-label">Total Usuarios</span>
+        <span class="stat-value">{{ stats().total }}</span>
+        <span class="stat-desc">Registrados en la plataforma</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Administradores</span>
+        <span class="stat-value text-primary">{{ stats().admins }}</span>
+        <span class="stat-desc">Con control operativo</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Dueños de Sede</span>
+        <span class="stat-value text-accent">{{ stats().duenos }}</span>
+        <span class="stat-desc">Propietarios de recintos</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Jugadores</span>
+        <span class="stat-value">{{ stats().clientes }}</span>
+        <span class="stat-desc">Clientes finales</span>
+      </div>
+    </div>
+
+    <!-- Barra de Filtros -->
+    <div class="filters-toolbar">
+      <div class="search-box">
+        <span class="material-symbols-outlined icon-20 search-icon" aria-hidden="true">search</span>
+        <input
+          type="text"
+          placeholder="Buscar por nombre, correo o teléfono..."
+          [ngModel]="searchFilter()"
+          (ngModelChange)="searchFilter.set($event)"
+          class="form-control"
+        />
+      </div>
+
+      <div class="role-filter-group">
+        <label for="role-select">Filtrar por Rol:</label>
+        <select
+          id="role-select"
+          class="form-control"
+          [ngModel]="roleFilter()"
+          (ngModelChange)="roleFilter.set($event)"
+        >
+          <option value="TODOS">Todos los roles</option>
+          <option value="admin">Administradores</option>
+          <option value="dueno">Dueños</option>
+          <option value="cliente">Jugadores / Clientes</option>
+          <option value="superadmin">Superadministradores</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Tabla de Usuarios -->
+    <div class="table-container">
+      @if (loading()) {
+        <div class="table-state-loading">
+          <span class="material-symbols-outlined icon-24 spin" aria-hidden="true"
+            >progress_activity</span
+          >
+          <span>Cargando usuarios de Canchero...</span>
+        </div>
+      } @else if (filteredUsers().length === 0) {
+        <div class="table-state-empty">
+          <span class="material-symbols-outlined icon-32 text-muted" aria-hidden="true"
+            >person_search</span
+          >
+          <p>No se encontraron usuarios con los filtros aplicados.</p>
+        </div>
+      } @else {
+        <table class="users-table">
+          <thead>
+            <tr>
+              <th>Usuario</th>
+              <th>Contacto</th>
+              <th>Rol Actual</th>
+              <th>Estado</th>
+              <th style="text-align: right">Acciones de Rol</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (u of filteredUsers(); track u.id) {
+              <tr [class.is-current-user]="u.id === currentUserId()">
+                <td>
+                  <div class="user-info">
+                    <span
+                      class="user-avatar"
+                      [class.avatar-super]="u.rol.toLowerCase() === 'superadmin'"
+                      [class.avatar-admin]="u.rol.toLowerCase() === 'admin'"
+                    >
+                      {{ u.nombre.charAt(0).toUpperCase() }}
+                    </span>
+                    <div>
+                      <div class="user-name">
+                        {{ u.nombre }}
+                        @if (u.id === currentUserId()) {
+                          <span class="tag tag-self">Tú</span>
+                        }
+                      </div>
+                      <div class="user-id">ID: {{ u.id }}</div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div class="contact-email">{{ u.email }}</div>
+                  <div class="contact-phone">{{ u.telefono || 'Sin teléfono' }}</div>
+                </td>
+                <td>
+                  <span class="badge-role-tag" [attr.data-role]="u.rol.toLowerCase()">
+                    {{ u.rol | uppercase }}
+                  </span>
+                </td>
+                <td>
+                  <span class="status-indicator" [class.active]="u.estado === 'A'">
+                    {{ u.estado === 'A' ? 'Activo' : 'Inactivo' }}
+                  </span>
+                </td>
+                <td style="text-align: right">
+                  @if (u.rol.toLowerCase() === 'superadmin') {
+                    <span class="text-muted small">Superadmin protegido</span>
+                  } @else if (u.id === currentUserId()) {
+                    <span class="text-muted small">Tu cuenta</span>
+                  } @else {
+                    <button
+                      type="button"
+                      class="btn btn-sm"
+                      [class.btn-outline]="u.rol.toLowerCase() !== 'admin'"
+                      [class.btn-danger]="u.rol.toLowerCase() === 'admin'"
+                      (click)="toggleAdminRole(u)"
+                      [disabled]="updatingId() === u.id"
+                    >
+                      @if (updatingId() === u.id) {
+                        <span class="material-symbols-outlined icon-16 spin" aria-hidden="true"
+                          >sync</span
+                        >
+                        Actualizando...
+                      } @else if (u.rol.toLowerCase() === 'admin') {
+                        <span class="material-symbols-outlined icon-16" aria-hidden="true"
+                          >person_remove</span
+                        >
+                        Quitar Admin
+                      } @else {
+                        <span class="material-symbols-outlined icon-16" aria-hidden="true"
+                          >admin_panel_settings</span
+                        >
+                        Hacer Admin
+                      }
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </div>
+  }
+</main>

@@ -99,6 +99,11 @@ export const routes: Routes = [
             (m) => m.AdminConfiguracion,
           ),
       },
+      {
+        path: 'usuarios',
+        loadComponent: () =>
+          import('./features/admin/usuarios/admin-usuarios').then((m) => m.AdminUsuarios),
+      },
     ],
   },
   { path: '**', redirectTo: '' },
