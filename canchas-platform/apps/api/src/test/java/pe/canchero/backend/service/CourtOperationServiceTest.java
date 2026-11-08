@@ -34,8 +34,9 @@ class CourtOperationServiceTest {
         assertTrue(Roles.isOwnerOrAdmin("Due\u00f1o"));
         assertTrue(Roles.isOwnerOrAdmin(" OWNER "));
         assertTrue(Roles.isOwnerOrAdmin("Administrador"));
+        assertTrue(Roles.isOwnerOrAdmin("superadmin"));
         assertFalse(Roles.isOwnerOrAdmin("jugador"));
-        assertFalse(Roles.isOwnerOrAdmin("superadmin"));
+        assertFalse(Roles.isOwnerOrAdmin("cliente"));
         assertFalse(Roles.isOwnerOrAdmin(null));
     }
 

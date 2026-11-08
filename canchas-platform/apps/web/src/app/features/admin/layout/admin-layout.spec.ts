@@ -56,6 +56,7 @@ describe('AdminLayout', () => {
             playerProfile: signal(null),
             loadPlayerProfile: () => of(null),
             logout: logoutSpy,
+            isSuperAdmin: () => false,
           },
         },
         {
