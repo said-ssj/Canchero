@@ -234,6 +234,7 @@
 /* Toast */
 .toast-popup {
   position: fixed;
+  max-width: calc(100vw - 48px);
   bottom: 24px;
   right: 24px;
   background: var(--color-contrast-bg);
@@ -300,5 +301,16 @@
   }
   .price {
     font-size: 16px;
+  }
+}
+
+/* Teléfono: la foto arriba a todo el ancho; en columna de 88px se recortaba y empujaba los textos. */
+@media (max-width: 560px) {
+  .public-venue {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .public-venue .photo-wrapper,
+  .venue-skeleton .photo-wrapper {
+    min-height: 160px;
   }
 }

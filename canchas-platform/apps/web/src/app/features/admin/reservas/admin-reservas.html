@@ -33,7 +33,10 @@
       [disableRipple]="true"
       [disabled]="
         !presentialOperationsAvailable ||
-        loading() || !!error() || venueId() === null || !courts().length
+        loading() ||
+        !!error() ||
+        venueId() === null ||
+        !courts().length
       "
       (click)="openNewBooking()"
     >
@@ -214,7 +217,9 @@
           </tr>
         } @empty {
           <tr>
-            <td colspan="6" class="state">No hay reservas que coincidan con los filtros.</td>
+            <td colspan="6" class="state">
+              <div class="table-empty-sticky">No hay reservas que coincidan con los filtros.</div>
+            </td>
           </tr>
         }
       </tbody>

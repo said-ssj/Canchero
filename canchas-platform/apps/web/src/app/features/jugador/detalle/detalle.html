@@ -44,7 +44,12 @@
     <div class="details-layout">
       <div>
         <div class="venue-cover-wrapper">
-          <img class="venue-cover" [src]="currentHero()" [alt]="'Fotografía de ' + v.nombre" />
+          <img
+            class="venue-cover"
+            [src]="currentHero()"
+            (error)="onImgError($event)"
+            [alt]="'Fotografía de ' + v.nombre"
+          />
           <div class="carousel-top-controls">
             <button
               id="btnFav"
@@ -190,6 +195,7 @@
                 <img
                   class="venue-photo"
                   [src]="cancha.foto ?? v.fotos[0] ?? fallbackVenueImg"
+                  (error)="onImgError($event)"
                   [alt]="cancha.nombre"
                 />
                 <div class="venue-body">

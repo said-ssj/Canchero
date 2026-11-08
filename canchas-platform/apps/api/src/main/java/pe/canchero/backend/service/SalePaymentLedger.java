@@ -15,15 +15,20 @@ final class SalePaymentLedger {
     private final JdbcTemplate jdbc;
     SalePaymentLedger(JdbcTemplate jdbc) { this.jdbc = jdbc; }
 
+    /** El esquema no se revierte: una vez disponible no se vuelve a consultar information_schema. */
+    private volatile boolean ready;
+
     boolean available() {
+        if (ready) return true;
         boolean tables = jdbc.queryForObject("""
                 select count(*) from information_schema.tables
                 where lower(table_schema) = 'public' and lower(table_name) in ('venta_pago', 'venta_operacion')
                 """, Integer.class) == 2;
-        return tables && jdbc.queryForObject("""
+        ready = tables && jdbc.queryForObject("""
                 select count(*) from information_schema.columns where lower(table_schema)='public'
                 and lower(table_name)='arqueo_caja' and lower(column_name) in ('pagos_efectivo','ingresos_manuales','egresos_manuales')
                 """, Integer.class) == 3;
+        return ready;
     }
 
     void requireSchema() {
@@ -106,13 +111,19 @@ final class SalePaymentLedger {
                 saleId, UUID.fromString(request.usuarioId()), key, hash);
     }
 
-    List<SalePaymentDto> payments(int saleId) {
-        if (!available()) return List.of();
-        return jdbc.query("""
-                select mp.nombre, p.monto, p.monto_recibido from venta_pago p
+    /** Pagos de varias ventas en una consulta, agrupados por venta. */
+    java.util.Map<Integer, List<SalePaymentDto>> payments(List<Integer> saleIds) {
+        java.util.Map<Integer, List<SalePaymentDto>> bySale = new java.util.HashMap<>();
+        if (saleIds.isEmpty() || !available()) return bySale;
+        jdbc.query("""
+                select p.id_venta, mp.nombre, p.monto, p.monto_recibido from venta_pago p
                 join metodo_pago mp on mp.id_metodo_pago=p.id_metodo_pago
-                where p.id_venta=? and p.estado='A' order by p.id_venta_pago
-                """, (r, n) -> new SalePaymentDto(method(r.getString(1)), r.getBigDecimal(2), r.getBigDecimal(3)), saleId);
+                where p.estado='A' and p.id_venta in (%s) order by p.id_venta, p.id_venta_pago
+                """.formatted(PosService.placeholders(saleIds.size())),
+                r -> { bySale.computeIfAbsent(r.getInt(1), k -> new java.util.ArrayList<>())
+                        .add(new SalePaymentDto(method(r.getString(2)), r.getBigDecimal(3), r.getBigDecimal(4))); },
+                saleIds.toArray());
+        return bySale;
     }
 
     record Totals(BigDecimal efectivo, BigDecimal digital) {}

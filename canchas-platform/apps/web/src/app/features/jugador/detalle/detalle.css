@@ -208,6 +208,7 @@
 
 .toast-popup {
   position: fixed;
+  max-width: calc(100vw - 48px);
   bottom: 24px;
   right: 24px;
   background: var(--color-contrast-bg);
@@ -262,5 +263,18 @@
   }
   .summary {
     padding: 18px;
+  }
+}
+
+/* Teléfono: foto de la cancha arriba; en la columna de 88px se recortaba. */
+@media (max-width: 560px) {
+  .venue-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .venue-card .venue-photo {
+    width: 100%;
+    height: 130px;
+    min-height: 0;
+    object-fit: cover;
   }
 }

@@ -56,6 +56,7 @@
   flex-direction: column;
   gap: 4px;
   flex: 1 1 240px;
+  min-width: 0;
   font-size: 13px;
   font-weight: 600;
 }
@@ -68,6 +69,9 @@
   background: var(--color-surface-card);
   color: var(--color-ink-900);
   font: inherit;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .staff-table {
