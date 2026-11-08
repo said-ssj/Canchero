@@ -45,6 +45,11 @@ export const routes: Routes = [
           import('./features/jugador/auth/player-profile').then((m) => m.PlayerProfilePage),
       },
       {
+        path: 'perfiles/:id',
+        loadComponent: () =>
+          import('./features/jugador/auth/community-profile').then((m) => m.CommunityProfilePage),
+      },
+      {
         path: 'registro',
         loadComponent: () =>
           import('./features/jugador/auth/registro/registro').then((m) => m.Registro),

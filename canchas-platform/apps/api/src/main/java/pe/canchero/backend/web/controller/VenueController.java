@@ -1,6 +1,7 @@
 package pe.canchero.backend.web.controller;
 
 import org.springframework.http.HttpStatus;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -52,13 +53,13 @@ public class VenueController {
 
     @PostMapping
     public ResponseEntity<VenueResponse> create(@RequestAttribute("auth.user") AuthUserDto user,
-            @RequestBody VenueRequest request) {
+            @Valid @RequestBody VenueRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(data.createVenue(request, UUID.fromString(user.id())));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<?> update(@PathVariable int id, @RequestAttribute("auth.user") AuthUserDto user,
-            @RequestBody VenueRequest request) {
+            @Valid @RequestBody VenueRequest request) {
         access.requireOwnedVenue(id, user);
         return data.updateVenue(String.valueOf(id), request)
                 .<ResponseEntity<?>>map(ResponseEntity::ok)

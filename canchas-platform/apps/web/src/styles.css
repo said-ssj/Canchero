@@ -1397,10 +1397,6 @@ textarea.form-control {
     display: flex;
   }
 
-  .nav-actions .nav-login {
-    display: none;
-  }
-
   /* Buscador Rápido */
   .search-card {
     flex-direction: column;

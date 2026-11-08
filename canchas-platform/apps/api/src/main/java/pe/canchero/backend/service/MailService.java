@@ -13,12 +13,13 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-/** Correos transaccionales vía Brevo. Sin BREVO_API_KEY (desarrollo) el mensaje se escribe en el log. */
+/** Resend preferido; compatibilidad con Brevo para los correos de acceso existentes. */
 @Service
 public class MailService {
     private static final Logger log = LoggerFactory.getLogger(MailService.class);
 
     private final String apiKey;
+    private final String resendKey;
     private final String from;
     private final String appUrl;
     private final RestClient client;
@@ -29,22 +30,40 @@ public class MailService {
         return t;
     });
 
+    @org.springframework.beans.factory.annotation.Autowired
     public MailService(@Value("${BREVO_API_KEY:}") String apiKey,
                        @Value("${MAIL_FROM_EMAIL:noreply@canchero.pe}") String from,
-                       @Value("${APP_PUBLIC_URL:http://localhost:4200}") String appUrl) {
+                       @Value("${APP_PUBLIC_URL:http://localhost:4200}") String appUrl,
+                       @Value("${RESEND_API_KEY:}") String resendKey) {
         this.apiKey = apiKey;
+        this.resendKey = resendKey;
         this.from = from;
         this.appUrl = appUrl.replaceAll("/+$", "");
         var timeouts = new SimpleClientHttpRequestFactory();
         timeouts.setConnectTimeout(Duration.ofSeconds(5));
         timeouts.setReadTimeout(Duration.ofSeconds(10));
-        this.client = RestClient.builder().baseUrl("https://api.brevo.com").requestFactory(timeouts).build();
+        this.client = RestClient.builder().baseUrl(resendKey.isBlank() ? "https://api.brevo.com" : "https://api.resend.com").requestFactory(timeouts).build();
+    }
+
+    public MailService(String apiKey, String from, String appUrl) { this(apiKey,from,appUrl,""); }
+    public boolean resendConfigured() { return !resendKey.isBlank() && !from.isBlank(); }
+    public String itineraryUrl() { return appUrl + "/itinerario"; }
+
+    public void sendResend(String to, String subject, String text, String idempotencyKey) {
+        if (!resendConfigured()) throw new IllegalStateException("Resend no configurado");
+        client.post().uri("/emails").header("Authorization","Bearer " + resendKey)
+                .header("Idempotency-Key",idempotencyKey)
+                .body(Map.of("from","Canchero <" + from + ">","to",List.of(to),"subject",subject,"text",text))
+                .retrieve().toBodilessEntity();
     }
 
     public void send(String to, String subject, String text) {
+        if (resendConfigured()) {
+            sendResend(to,subject,text,"auth-" + java.util.UUID.randomUUID());
+            return;
+        }
         if (apiKey.isBlank()) {
-            // shortcut: solo para desarrollo local; en producción configura BREVO_API_KEY o el enlace queda en los logs.
-            log.warn("BREVO_API_KEY no configurada; correo para {} no enviado:\n{}\n{}", to, subject, text);
+            log.warn("Proveedor de correo no configurado; correo no enviado. No se registran destinatarios ni enlaces de acceso.");
             return;
         }
         client.post().uri("/v3/smtp/email")
@@ -63,7 +82,7 @@ public class MailService {
             try {
                 send(to.trim(), subject, text);
             } catch (RuntimeException ex) {
-                log.error("No se pudo enviar el correo \"{}\": {}", subject, ex.getMessage());
+                log.error("No se pudo enviar un correo de acceso ({})", ex.getClass().getSimpleName());
             }
         });
     }
@@ -77,4 +96,6 @@ public class MailService {
     public String recoverUrl() {
         return appUrl + "/recuperar";
     }
+    @jakarta.annotation.PreDestroy
+    public void close() { sender.shutdown(); }
 }

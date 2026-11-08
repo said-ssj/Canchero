@@ -308,9 +308,13 @@ export class AdminSedes implements OnInit, OnDestroy {
     const duenoId = this.duenoId();
     if (!duenoId || this.uploadingPhotos()) return;
     const nombre = this.liveVenueName().trim() || 'Mi Sede Deportiva';
-    const direccion = this.liveVenueAddress().trim() || 'Sin dirección física';
+    const direccion = this.liveVenueAddress().trim();
+    if (!direccion) {
+      this.mostrarToast('Ingresa la dirección de la sede antes de guardar.');
+      return;
+    }
     const ciudad = this.liveVenueCiudad().trim();
-    const telefono = this.liveVenueTelefono().trim() || '+51 987 654 321';
+    const telefono = this.liveVenueTelefono().trim();
     const descripcion = this.liveVenueStory().trim();
     const logo = this.liveVenueLogo();
     const fotosGaleria = this.galeriaFotos()

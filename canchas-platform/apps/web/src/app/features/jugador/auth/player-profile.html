@@ -1,161 +1,351 @@
-<main class="container profile-page">
-  <section class="card profile-card" aria-labelledby="profile-title">
-    <h1 id="profile-title">{{ firstAccess ? 'Completa tu perfil' : 'Mi perfil' }}</h1>
+@if (!firstAccess && !editing() && profile && account()?.id) {
+  <app-community-profile
+    [userId]="account()!.id"
+    [embedded]="true"
+    (editAccount)="editing.set(true); saved.set(false)"
+  />
+} @else {
+  <main class="container profile-page">
     @if (loading()) {
-      <p role="status">Cargando tu perfil…</p>
+      <section class="card loading-state" role="status">Cargando tu perfil…</section>
     }
     @if (error()) {
-      <p class="error" role="alert">{{ error() }}</p>
+      <p class="error status-message" role="alert">{{ error() }}</p>
     }
     @if (!loading() && !profile && error()) {
       <button type="button" class="btn primary" (click)="load()">Volver a intentar</button>
     }
     @if (profile; as p) {
-      <p>Personaliza tu cuenta de Canchero.</p>
-      <form #form="ngForm" (ngSubmit)="save()">
-        <fieldset [disabled]="saving()">
-          <div class="photo">
-            <input
-              #photo
-              id="profile-photo"
-              type="file"
-              hidden
-              accept=".jpg,.jpeg,.png,.svg,.webp,.heic,.heif,image/jpeg,image/png,image/svg+xml,image/webp,image/heic,image/heif"
-              (change)="selectPhoto(photo)"
-            />
+      <app-profile-header
+        [name]="fullName"
+        [initials]="initials"
+        [photo]="p.foto"
+        [badge]="roleLabel"
+        [description]="
+          p.completo
+            ? 'Tu espacio en Canchero. Mantén tus datos al día para organizar tu próximo partido.'
+            : 'Completa tus nombres y apellidos para personalizar tu experiencia en Canchero.'
+        "
+      >
+        <div profileActions>
+          @if (!firstAccess && !editing()) {
             <button
               type="button"
-              class="photo-pin"
-              aria-label="Cambiar foto de perfil"
-              [disabled]="readingPhoto()"
-              (click)="photo.click()"
+              class="btn primary edit-profile"
+              (click)="editing.set(true); saved.set(false)"
             >
-              @if (p.foto) {
-                <img [src]="p.foto" alt="" />
-              } @else {
-                <span class="material-symbols-outlined" aria-hidden="true">person</span>
-              }
-              <span class="photo-pin-label" aria-hidden="true">Cambiar</span>
+              <span class="material-symbols-outlined" aria-hidden="true">edit</span>Editar perfil
             </button>
-            <div>
-              <strong>Foto de perfil (opcional)</strong>
-              <small>JPG, PNG, SVG, WebP o HEIC/HEIF · Hasta 5 MB</small>
-              @if (readingPhoto()) {
-                <small role="status">Preparando foto…</small>
-              }
-              @if (p.foto) {
-                <button
-                  type="button"
-                  class="btn outline"
-                  (click)="p.foto = null"
-                  [disabled]="readingPhoto()"
-                >
-                  Quitar foto
+          }
+        </div>
+        <div profileMeta>
+          <p class="profile-email">{{ account()?.email }}</p>
+          <div class="identity-details">
+            <span
+              ><span class="material-symbols-outlined" aria-hidden="true">location_on</span
+              >{{ locationLabel }}</span
+            >
+            @if (p.telefono) {
+              <span
+                ><span class="material-symbols-outlined" aria-hidden="true">call</span
+                >{{ p.telefono }}</span
+              >
+            }
+          </div>
+        </div>
+        <div profileNotice class="profile-note">
+          <span class="material-symbols-outlined" aria-hidden="true">lock</span>Solo tú puedes ver
+          tus datos de contacto y dirección en este perfil.
+        </div>
+        <div profileTabs>
+          @if (!firstAccess && !editing()) {
+            <nav class="profile-tabs" aria-label="Secciones del perfil">
+              <button
+                type="button"
+                [class.active]="activeTab() === 'information'"
+                [attr.aria-current]="activeTab() === 'information' ? 'page' : null"
+                (click)="activeTab.set('information')"
+              >
+                Información
+              </button>
+              <button
+                type="button"
+                [class.active]="activeTab() === 'photos'"
+                [attr.aria-current]="activeTab() === 'photos' ? 'page' : null"
+                (click)="activeTab.set('photos')"
+              >
+                Foto de perfil
+              </button>
+              <button type="button" disabled title="Publicaciones aún no disponible">
+                Publicaciones
+              </button>
+              <button type="button" disabled title="Seguidores aún no disponible">
+                Seguidores
+              </button>
+              <button type="button" disabled title="Siguiendo aún no disponible">Siguiendo</button>
+            </nav>
+          }
+        </div></app-profile-header
+      >
+      @if (saved()) {
+        <p class="saved status-message" role="status">Tu perfil se guardó correctamente.</p>
+      }
+      <div class="profile-layout">
+        <aside class="profile-sidebar">
+          @if (managesVenues) {
+            <section class="card info-card"><app-managed-venue-profiles /></section>
+          }
+          <section class="card info-card">
+            <h2>Sobre mí</h2>
+            <dl>
+              <div>
+                <dt>Tipo de cuenta</dt>
+                <dd>{{ roleLabel }}</dd>
+              </div>
+              <div>
+                <dt>Ubicación</dt>
+                <dd>{{ locationLabel }}</dd>
+              </div>
+              <div>
+                <dt>Celular</dt>
+                <dd>{{ p.telefono || 'Sin agregar' }}</dd>
+              </div>
+              <div>
+                <dt>Dirección</dt>
+                <dd>{{ p.direccion || 'Sin agregar' }}</dd>
+              </div>
+            </dl>
+          </section>
+          <section class="card info-card account-note">
+            <span class="material-symbols-outlined" aria-hidden="true">manage_accounts</span>
+            <h2>Una cuenta, tu experiencia</h2>
+            <p>Tu foto y nombre se usan en tu cuenta y en las reservas que realizas.</p>
+          </section>
+        </aside>
+        <div class="profile-main">
+          @if (firstAccess || editing()) {
+            <section class="card profile-card" aria-labelledby="edit-title">
+              <div class="section-heading">
+                <span class="material-symbols-outlined" aria-hidden="true">person_edit</span>
+                <div>
+                  <h2 id="edit-title">
+                    {{ firstAccess ? 'Completa tu perfil' : 'Editar perfil' }}
+                  </h2>
+                  <p>Los campos opcionales puedes completarlos después.</p>
+                </div>
+              </div>
+              <form #form="ngForm" (ngSubmit)="save()">
+                <fieldset [disabled]="saving()">
+                  <div class="photo">
+                    <input
+                      #photo
+                      id="profile-photo"
+                      type="file"
+                      hidden
+                      accept=".jpg,.jpeg,.png,.svg,.webp,.heic,.heif,image/jpeg,image/png,image/svg+xml,image/webp,image/heic,image/heif"
+                      (change)="selectPhoto(photo)"
+                    />
+                    <button
+                      type="button"
+                      class="photo-pin"
+                      aria-label="Cambiar foto de perfil"
+                      [disabled]="readingPhoto()"
+                      (click)="photo.click()"
+                    >
+                      @if (p.foto) {
+                        <img [src]="p.foto" alt="" />
+                      } @else {
+                        <span class="material-symbols-outlined" aria-hidden="true">person</span>
+                      }
+                      <span class="photo-pin-label" aria-hidden="true">Cambiar</span>
+                    </button>
+                    <div>
+                      <strong>Foto de perfil (opcional)</strong>
+                      <small>JPG, PNG, SVG, WebP o HEIC/HEIF · Hasta 5 MB</small>
+                      @if (readingPhoto()) {
+                        <small role="status">Preparando foto…</small>
+                      }
+                      @if (p.foto) {
+                        <button
+                          type="button"
+                          class="btn outline"
+                          (click)="p.foto = null"
+                          [disabled]="readingPhoto()"
+                        >
+                          Quitar foto
+                        </button>
+                      }
+                      @if (photoError()) {
+                        <small class="error" role="alert">{{ photoError() }}</small>
+                      }
+                    </div>
+                  </div>
+                  <div class="names">
+                    <label
+                      >Nombre
+                      <input
+                        name="nombre"
+                        autocomplete="given-name"
+                        maxlength="80"
+                        required
+                        [(ngModel)]="p.nombre"
+                    /></label>
+                    <label
+                      >Apellido
+                      <input
+                        name="apellido"
+                        autocomplete="family-name"
+                        maxlength="80"
+                        required
+                        [(ngModel)]="p.apellido"
+                    /></label>
+                  </div>
+                  <label
+                    >Celular (opcional)
+                    <input
+                      name="telefono"
+                      type="tel"
+                      autocomplete="tel"
+                      maxlength="20"
+                      pattern="[+0-9 ()\-]{7,20}"
+                      [(ngModel)]="p.telefono"
+                    />
+                  </label>
+                  <fieldset class="location">
+                    <legend>Ubicación (opcional)</legend>
+                    <label
+                      >Departamento
+                      <select
+                        name="departamento"
+                        [ngModel]="departmentId"
+                        (ngModelChange)="selectDepartment($event)"
+                      >
+                        <option [ngValue]="null">Selecciona un departamento</option>
+                        @for (department of departments; track department[0]) {
+                          <option [ngValue]="department[0]">{{ department[1] }}</option>
+                        }
+                      </select>
+                    </label>
+                    <label
+                      >Ciudad o provincia
+                      <select
+                        name="provincia"
+                        [ngModel]="provinceId"
+                        (ngModelChange)="selectProvince($event)"
+                        [disabled]="departmentId === null"
+                        [required]="departmentId !== null"
+                      >
+                        <option [ngValue]="null">Selecciona una ciudad o provincia</option>
+                        @for (province of provinces; track province[0]) {
+                          <option [ngValue]="province[0]">{{ province[1] }}</option>
+                        }
+                      </select>
+                    </label>
+                    <label
+                      >Distrito
+                      <select
+                        name="distrito"
+                        [(ngModel)]="p.idDistrito"
+                        [disabled]="provinceId === null"
+                        [required]="provinceId !== null"
+                      >
+                        <option [ngValue]="null">Selecciona un distrito</option>
+                        @for (district of availableDistricts; track district.id_distrito) {
+                          <option [ngValue]="district.id_distrito">{{ district.distrito }}</option>
+                        }
+                      </select>
+                    </label>
+                    <label
+                      >Dirección (opcional)
+                      <input
+                        name="direccion"
+                        autocomplete="street-address"
+                        maxlength="180"
+                        placeholder="Calle, avenida o referencia"
+                        [(ngModel)]="p.direccion"
+                      />
+                      <small>Con el distrito basta para sugerirte canchas cercanas.</small>
+                    </label>
+                  </fieldset>
+                </fieldset>
+                <div class="actions">
+                  @if (!firstAccess) {
+                    <button
+                      type="button"
+                      class="btn outline"
+                      [disabled]="saving() || readingPhoto()"
+                      (click)="cancelEdit()"
+                    >
+                      Cancelar
+                    </button>
+                  }
+                  <button
+                    type="submit"
+                    class="btn primary"
+                    [disabled]="form.invalid || saving() || readingPhoto()"
+                  >
+                    {{
+                      saving()
+                        ? 'Guardando…'
+                        : firstAccess
+                          ? 'Guardar y continuar'
+                          : 'Guardar cambios'
+                    }}
+                  </button>
+                </div>
+              </form>
+            </section>
+          } @else if (activeTab() === 'information') {
+            <section class="card info-card">
+              <div class="section-heading">
+                <span class="material-symbols-outlined" aria-hidden="true">badge</span>
+                <div>
+                  <h2>Información de la cuenta</h2>
+                  <p>Tus datos personales, siempre a mano.</p>
+                </div>
+              </div>
+              <dl class="account-details">
+                <div>
+                  <dt>Nombres</dt>
+                  <dd>{{ p.nombre || 'Sin completar' }}</dd>
+                </div>
+                <div>
+                  <dt>Apellidos</dt>
+                  <dd>{{ p.apellido || 'Sin completar' }}</dd>
+                </div>
+                <div>
+                  <dt>Correo electrónico</dt>
+                  <dd>{{ account()?.email || 'No disponible' }}</dd>
+                </div>
+                <div>
+                  <dt>Estado del perfil</dt>
+                  <dd>{{ p.completo ? 'Datos básicos completos' : 'Pendiente de completar' }}</dd>
+                </div>
+              </dl>
+            </section>
+            <section class="card info-card preferences-card">
+              <app-notification-preferences />
+            </section>
+          } @else {
+            <section class="card info-card photo-gallery">
+              <h2>Tu foto de perfil</h2>
+              @if (p.foto && !photoFailed()) {
+                <img [src]="p.foto" [alt]="'Foto de ' + fullName" (error)="photoFailed.set(true)" />
+                <p>Puedes cambiarla desde Editar perfil.</p>
+              } @else {
+                <div class="photo-empty">
+                  <span class="material-symbols-outlined" aria-hidden="true">add_a_photo</span>
+                  <h3>Aún no agregaste una foto</h3>
+                  <p>Personaliza tu cuenta con una foto de perfil.</p>
+                </div>
+                <button type="button" class="btn outline" (click)="editing.set(true)">
+                  Agregar foto de perfil
                 </button>
               }
-              @if (photoError()) {
-                <small class="error" role="alert">{{ photoError() }}</small>
-              }
-            </div>
-          </div>
-          <div class="names">
-            <label
-              >Nombre
-              <input
-                name="nombre"
-                autocomplete="given-name"
-                maxlength="80"
-                required
-                [(ngModel)]="p.nombre"
-            /></label>
-            <label
-              >Apellido
-              <input
-                name="apellido"
-                autocomplete="family-name"
-                maxlength="80"
-                required
-                [(ngModel)]="p.apellido"
-            /></label>
-          </div>
-          <label
-            >Celular (opcional)
-            <input
-              name="telefono"
-              type="tel"
-              autocomplete="tel"
-              maxlength="20"
-              pattern="[+0-9 ()\-]{7,20}"
-              [(ngModel)]="p.telefono"
-            />
-          </label>
-          <fieldset class="location">
-            <legend>Ubicación (opcional)</legend>
-            <label
-              >Departamento
-              <select
-                name="departamento"
-                [ngModel]="departmentId"
-                (ngModelChange)="selectDepartment($event)"
-              >
-                <option [ngValue]="null">Selecciona un departamento</option>
-                @for (department of departments; track department[0]) {
-                  <option [ngValue]="department[0]">{{ department[1] }}</option>
-                }
-              </select>
-            </label>
-            <label
-              >Ciudad o provincia
-              <select
-                name="provincia"
-                [ngModel]="provinceId"
-                (ngModelChange)="selectProvince($event)"
-                [disabled]="departmentId === null"
-                [required]="departmentId !== null"
-              >
-                <option [ngValue]="null">Selecciona una ciudad o provincia</option>
-                @for (province of provinces; track province[0]) {
-                  <option [ngValue]="province[0]">{{ province[1] }}</option>
-                }
-              </select>
-            </label>
-            <label
-              >Distrito
-              <select
-                name="distrito"
-                [(ngModel)]="p.idDistrito"
-                [disabled]="provinceId === null"
-                [required]="provinceId !== null"
-              >
-                <option [ngValue]="null">Selecciona un distrito</option>
-                @for (district of availableDistricts; track district.id_distrito) {
-                  <option [ngValue]="district.id_distrito">{{ district.distrito }}</option>
-                }
-              </select>
-            </label>
-            <label
-              >Dirección (opcional)
-              <input
-                name="direccion"
-                autocomplete="street-address"
-                maxlength="180"
-                placeholder="Calle, avenida o referencia"
-                [(ngModel)]="p.direccion"
-              />
-              <small>Con el distrito basta para sugerirte canchas cercanas.</small>
-            </label>
-          </fieldset>
-        </fieldset>
-        <div class="actions">
-          <button
-            type="submit"
-            class="btn primary"
-            [disabled]="form.invalid || saving() || readingPhoto()"
-          >
-            {{ saving() ? 'Guardando…' : firstAccess ? 'Guardar y continuar' : 'Guardar cambios' }}
-          </button>
+            </section>
+          }
         </div>
-      </form>
+      </div>
     }
-  </section>
-</main>
+  </main>
+}

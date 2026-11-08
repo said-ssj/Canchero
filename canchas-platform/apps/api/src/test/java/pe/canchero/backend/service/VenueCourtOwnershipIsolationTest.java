@@ -63,7 +63,7 @@ class VenueCourtOwnershipIsolationTest {
     @Test
     void dueñoBNoPuedeTocarLaSedeNiCanchasDeA() throws Exception {
         String b = bearer(ownerB);
-        mvc.perform(put("/api/venues/1").header("Authorization", b).contentType(MediaType.APPLICATION_JSON).content("{}"))
+        mvc.perform(put("/api/venues/1").header("Authorization", b).contentType(MediaType.APPLICATION_JSON).content("{\"direccion\":\"Av. Prueba 123\"}"))
                 .andExpect(status().isForbidden());
         mvc.perform(delete("/api/venues/1").header("Authorization", b)).andExpect(status().isForbidden());
         mvc.perform(post("/api/courts").header("Authorization", b).contentType(MediaType.APPLICATION_JSON)
@@ -130,8 +130,20 @@ class VenueCourtOwnershipIsolationTest {
     @Test
     void crearSedeUsaElDueñoDeLaSesionNoElDelCuerpo() throws Exception {
         mvc.perform(post("/api/venues").header("Authorization", bearer(ownerA)).contentType(MediaType.APPLICATION_JSON)
-                .content("{\"nombre\":\"Nueva\",\"ownerId\":\"" + ownerB + "\"}")).andExpect(status().isCreated());
+                .content("{\"nombre\":\"Nueva\",\"direccion\":\"Av. Prueba 123\",\"ownerId\":\"" + ownerB + "\"}")).andExpect(status().isCreated());
         verify(data).createVenue(any(VenueRequest.class), eq(ownerA));
+    }
+
+    @Test
+    void direccionObligatoriaParaCrearYEditarSede() throws Exception {
+        for (String body : new String[]{"{}", "{\"direccion\":\"   \"}"}) {
+            mvc.perform(post("/api/venues").header("Authorization", bearer(ownerA))
+                    .contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isBadRequest());
+            mvc.perform(put("/api/venues/1").header("Authorization", bearer(ownerA))
+                    .contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isBadRequest());
+        }
+        verify(data, never()).createVenue(any(), any());
+        verify(data, never()).updateVenue(any(), any());
     }
 
     @Test

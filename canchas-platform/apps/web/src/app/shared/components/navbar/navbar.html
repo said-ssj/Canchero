@@ -130,16 +130,29 @@
           }
         </div>
       } @else {
-        <a routerLink="/login" class="nav-login">Ingresar</a>
+        <a
+          routerLink="/login"
+          class="nav-login"
+          aria-label="Iniciar sesión"
+          title="Iniciar sesión"
+          (click)="menuOpen.set(false)"
+        >
+          <span class="material-symbols-outlined nav-login-icon" aria-hidden="true">person</span>
+          <span class="nav-login-label">Ingresar</span>
+        </a>
       }
       <button
         type="button"
         id="mobileMenuBtn"
         class="mobile-menu-btn"
         (click)="menuOpen.set(!menuOpen())"
-        aria-label="Abrir menú"
+        [attr.aria-label]="menuOpen() ? 'Cerrar menú' : 'Abrir menú'"
+        [attr.aria-expanded]="menuOpen()"
+        aria-controls="navMenu"
       >
-        <span class="material-symbols-outlined">menu</span>
+        <span class="material-symbols-outlined" aria-hidden="true">{{
+          menuOpen() ? 'close' : 'menu'
+        }}</span>
       </button>
     </div>
   </div>

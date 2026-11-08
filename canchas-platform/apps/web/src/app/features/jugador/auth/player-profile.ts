@@ -5,6 +5,10 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService, PlayerProfile } from '@core/auth/auth.service';
 import { firstValueFrom } from 'rxjs';
+import { NotificationPreferences } from '@shared/components/notification-preferences/notification-preferences';
+import { ProfileHeader } from '@shared/components/profile-header/profile-header';
+import { ManagedVenueProfiles } from '@shared/components/profile-header/managed-venue-profiles';
+import { CommunityProfilePage } from './community-profile';
 
 interface District {
   id_departamento: number;
@@ -16,7 +20,13 @@ interface District {
 }
 
 @Component({
-  imports: [FormsModule],
+  imports: [
+    FormsModule,
+    NotificationPreferences,
+    ProfileHeader,
+    ManagedVenueProfiles,
+    CommunityProfilePage,
+  ],
   templateUrl: './player-profile.html',
   styleUrl: './player-profile.css',
 })
@@ -31,6 +41,52 @@ export class PlayerProfilePage {
   protected readonly readingPhoto = signal(false);
   protected readonly error = signal('');
   protected readonly photoError = signal('');
+  protected readonly editing = signal(this.route.snapshot.queryParamMap.get('editar') === '1');
+  protected readonly saved = signal(false);
+  protected readonly activeTab = signal<'information' | 'photos'>('information');
+  protected readonly photoFailed = signal(false);
+  protected readonly account = this.auth.user;
+  protected get managesVenues(): boolean {
+    return this.auth.isOwner();
+  }
+  protected get fullName(): string {
+    return (
+      [this.profile?.nombre, this.profile?.apellido].filter((value) => value?.trim()).join(' ') ||
+      'Tu perfil'
+    );
+  }
+  protected get initials(): string {
+    return (
+      [this.profile?.nombre, this.profile?.apellido]
+        .filter((value) => value?.trim())
+        .map((value) => value!.trim()[0])
+        .join('')
+        .toUpperCase() || 'U'
+    );
+  }
+  protected get roleLabel(): string {
+    const role = this.account()?.rol;
+    if (role === 'admin') return 'Administrador';
+    if (role === 'operador') return 'Operador';
+    if (role === 'caja') return 'Cajero';
+    return this.auth.isOwner() ? 'Dueño de sede' : 'Jugador';
+  }
+  protected get locationLabel(): string {
+    const district = this.districts.find((item) => item.id_distrito === this.profile?.idDistrito);
+    return district
+      ? [...new Set([district.distrito, district.provincia, district.departamento])].join(', ')
+      : 'Ubicación sin completar';
+  }
+  protected cancelEdit(): void {
+    if (this.persistedProfile) this.profile = { ...this.persistedProfile };
+    const district = this.districts.find((item) => item.id_distrito === this.profile?.idDistrito);
+    this.departmentId = district?.id_departamento ?? null;
+    this.provinceId = district?.id_provincia ?? null;
+    this.photoFailed.set(false);
+    this.editing.set(false);
+    this.photoError.set('');
+    this.error.set('');
+  }
   protected districts: District[] = [];
   protected departments = new Map<number, string>();
   protected departmentId: number | null = null;
@@ -59,6 +115,7 @@ export class PlayerProfilePage {
   }
 
   protected profile: PlayerProfile | null = null;
+  private persistedProfile: PlayerProfile | null = null;
 
   async ngOnInit(): Promise<void> {
     await this.auth.ready;
@@ -90,6 +147,7 @@ export class PlayerProfilePage {
         idDistrito: savedDistrict?.id_distrito ?? null,
         nombre: !profile.completo && profile.nombre === 'Usuario' ? '' : (profile.nombre ?? ''),
       };
+      this.persistedProfile = { ...this.profile };
     } catch {
       this.error.set('No pudimos cargar tu perfil. Inténtalo nuevamente.');
     } finally {
@@ -151,6 +209,7 @@ export class PlayerProfilePage {
         256,
       );
       this.profile.foto = canvas.toDataURL('image/jpeg', 0.82);
+      this.photoFailed.set(false);
     } catch {
       this.photoError.set('No pudimos abrir la imagen. Elige otra foto.');
     } finally {
@@ -165,7 +224,12 @@ export class PlayerProfilePage {
     this.saving.set(true);
     try {
       this.profile = await firstValueFrom(this.auth.savePlayerProfile(this.profile));
-      this.continue();
+      this.persistedProfile = { ...this.profile };
+      if (this.firstAccess) this.continue();
+      else {
+        this.editing.set(false);
+        this.saved.set(true);
+      }
     } catch {
       this.error.set('No pudimos guardar tu perfil. Revisa los datos e inténtalo nuevamente.');
     } finally {

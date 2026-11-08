@@ -1,0 +1,550 @@
+<main class="container community-page">
+  @if (loading() && !profile()) {
+    <section class="panel" role="status">Cargando perfil…</section>
+  }
+  @if (error()) {
+    <section class="panel" role="alert">
+      <p>{{ error() }}</p>
+      <button class="btn outline" type="button" (click)="load()">Reintentar</button>
+      @if (isSelf()) {
+        <button class="btn outline" type="button" (click)="editProfile()">
+          Editar datos personales
+        </button>
+      }
+    </section>
+  }
+  @if (profile(); as p) {
+    <app-profile-header
+      [name]="p.name"
+      [photo]="p.photo"
+      [cover]="p.cover"
+      [initials]="initials()"
+      [badge]="p.role"
+      [description]="p.biography"
+    >
+      <div profileActions class="header-actions">
+        @if (isSelf()) {
+          <button class="btn primary" type="button" (click)="editProfile()">
+            <span class="material-symbols-outlined" aria-hidden="true">edit</span>Editar perfil
+          </button>
+          <button class="btn outline" type="button" (click)="openSettings()">
+            Presentación y portada
+          </button>
+        } @else if (signedIn()) {
+          <button
+            class="btn primary"
+            type="button"
+            [disabled]="relationshipBusy() || following() === null"
+            (click)="follow()"
+          >
+            <span class="material-symbols-outlined" aria-hidden="true">person_add</span
+            >{{ following() ? 'Siguiendo' : 'Seguir' }}
+          </button>
+        } @else {
+          <a
+            class="btn primary"
+            routerLink="/login"
+            [queryParams]="{ returnUrl: '/perfiles/' + p.id }"
+            >Ingresar para seguir</a
+          >
+        }
+        @if (p.whatsapp) {
+          <a
+            class="btn outline"
+            [href]="'https://wa.me/' + p.whatsapp"
+            target="_blank"
+            rel="noopener noreferrer"
+            ><span class="material-symbols-outlined" aria-hidden="true">chat</span>WhatsApp</a
+          >
+        }
+      </div>
+      <div profileMeta class="profile-stats">
+        <span
+          ><strong>{{ p.postCount }}</strong> publicaciones</span
+        ><span
+          ><strong>{{ p.followers }}</strong> seguidores</span
+        ><span
+          ><strong>{{ p.following }}</strong> siguiendo</span
+        >
+        @if (business()) {
+          <span
+            ><strong>{{ p.venues.length }}</strong>
+            {{ p.venues.length === 1 ? 'sede' : 'sedes' }}</span
+          >
+          @if (p.reviewCount && p.rating !== null) {
+            <span
+              ><span class="material-symbols-outlined" aria-hidden="true">star</span
+              ><strong>{{ p.rating.toFixed(1) }}</strong> · {{ p.reviewCount }} reseñas en sus
+              sedes</span
+            >
+          } @else {
+            <span>Sin reseñas en sus sedes</span>
+          }
+        }
+      </div>
+      <nav profileTabs class="tabs" aria-label="Secciones del perfil">
+        @for (
+          item of business()
+            ? [
+                'publicaciones',
+                'sedes',
+                'canchas',
+                'servicios',
+                'galería',
+                'reseñas',
+                'ubicaciones',
+                'información',
+              ]
+            : ['publicaciones', 'galería', 'información'];
+          track item
+        ) {
+          <button
+            type="button"
+            [class.active]="tab() === item"
+            [attr.aria-current]="tab() === item ? 'page' : null"
+            (click)="tab.set(item)"
+          >
+            {{ item }}
+          </button>
+        }
+      </nav>
+    </app-profile-header>
+    @if (actionError()) {
+      <p class="action-error panel" role="alert">{{ actionError() }}</p>
+    }
+    @if (settingsOpen() && isSelf()) {
+      <section class="panel settings" aria-labelledby="presentation-title">
+        <h2 id="presentation-title">Tu presentación pública</h2>
+        <form #settingsForm="ngForm" (ngSubmit)="saveSettings()">
+          <fieldset [disabled]="busy() || reading()">
+            <label
+              >Biografía<textarea
+                name="biography"
+                maxlength="500"
+                rows="3"
+                [(ngModel)]="biography"
+                placeholder="Cuéntale a la comunidad sobre ti y tus actividades deportivas"
+              ></textarea>
+            </label>
+            <label
+              >WhatsApp público (opcional)<input
+                name="whatsapp"
+                type="tel"
+                maxlength="20"
+                pattern="[+0-9 ()\-]{10,20}"
+                [(ngModel)]="whatsapp"
+                placeholder="Código de país y número"
+              /><small
+                >Solo este número será visible. Tu celular privado no se publica
+                automáticamente.</small
+              ></label
+            >
+            <div class="cover-edit">
+              <label
+                >Portada personal (opcional)<input
+                  #coverInput
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  (change)="selectPhotos(coverInput, true)"
+              /></label>
+              @if (cover) {
+                <img [src]="cover" alt="Vista previa de tu portada" /><button
+                  type="button"
+                  class="btn outline"
+                  (click)="cover = null"
+                >
+                  Quitar portada
+                </button>
+              }
+            </div>
+          </fieldset>
+          <div class="actions">
+            <button
+              type="button"
+              class="btn outline"
+              [disabled]="busy() || reading()"
+              (click)="settingsOpen.set(false)"
+            >
+              Cancelar</button
+            ><button
+              class="btn primary"
+              type="submit"
+              [disabled]="settingsForm.invalid || busy() || reading()"
+            >
+              {{ busy() ? 'Guardando…' : reading() ? 'Preparando foto…' : 'Guardar presentación' }}
+            </button>
+          </div>
+        </form>
+      </section>
+    }
+    <div class="profile-body">
+      <aside class="profile-aside">
+        <section class="panel">
+          <h2>Sobre {{ p.name }}</h2>
+          <p>{{ p.biography || 'Aún no ha agregado una biografía.' }}</p>
+          @if (business()) {
+            <p>
+              Gestiona {{ p.venues.length }}
+              {{ p.venues.length === 1 ? 'sede deportiva' : 'sedes deportivas' }}. Puedes consultar
+              cada una y elegir dónde jugar.
+            </p>
+            <button type="button" class="btn outline" (click)="tab.set('sedes')">
+              Ver todas las sedes
+            </button>
+          }
+          @if (isSelf()) {
+            <a class="account-link" [routerLink]="['/perfiles', p.id]"
+              >Abrir mi perfil público<span class="material-symbols-outlined" aria-hidden="true"
+                >open_in_new</span
+              ></a
+            >
+          }
+        </section>
+        @if (business()) {
+          <section class="panel">
+            <h2>Reseñas generales</h2>
+            @if (p.reviewCount && p.rating !== null) {
+              <p class="general-rating">
+                <span class="material-symbols-outlined" aria-hidden="true">star</span
+                >{{ p.rating.toFixed(1) }}<small>/ 5</small>
+              </p>
+              <p>{{ p.reviewCount }} opiniones de todas sus sedes.</p>
+            } @else {
+              <p>Aún no hay reseñas publicadas.</p>
+            }
+            <small
+              >La calificación reúne opiniones de reservas completadas, con el mismo peso por
+              reseña.</small
+            >
+          </section>
+        }
+      </aside>
+      <section class="profile-content" [attr.aria-label]="tab()">
+        @if (tab() === 'publicaciones') {
+          @if (isSelf()) {
+            <section class="panel composer" aria-labelledby="composer-title">
+              <h2 id="composer-title">Comparte con la comunidad</h2>
+              <form (ngSubmit)="publish()">
+                <textarea
+                  name="postText"
+                  [(ngModel)]="text"
+                  rows="3"
+                  maxlength="2000"
+                  [disabled]="busy()"
+                  [placeholder]="
+                    business()
+                      ? 'Comparte novedades, promociones o fotos de tus sedes…'
+                      : '¿Cómo te fue en tu último partido?'
+                  "
+                  aria-label="Texto de tu publicación"
+                ></textarea>
+                <div class="draft-photos">
+                  @for (photo of draftPhotos(); track $index) {
+                    <div>
+                      <img [src]="photo" alt="Foto que adjuntarás a la publicación" /><button
+                        type="button"
+                        [disabled]="busy() || reading()"
+                        (click)="removePhoto($index)"
+                        aria-label="Quitar foto"
+                      >
+                        <span class="material-symbols-outlined" aria-hidden="true">close</span>
+                      </button>
+                    </div>
+                  }
+                </div>
+                <div class="actions spread">
+                  <input
+                    #postPhotoInput
+                    type="file"
+                    hidden
+                    multiple
+                    accept="image/jpeg,image/png,image/webp"
+                    (change)="selectPhotos(postPhotoInput)"
+                  /><button
+                    class="btn outline"
+                    type="button"
+                    [disabled]="reading() || busy() || draftPhotos().length >= 4"
+                    (click)="postPhotoInput.click()"
+                  >
+                    <span class="material-symbols-outlined" aria-hidden="true"
+                      >add_photo_alternate</span
+                    >{{ reading() ? 'Preparando…' : 'Agregar fotos' }}</button
+                  ><button
+                    class="btn primary"
+                    type="submit"
+                    [disabled]="busy() || reading() || (!text.trim() && !draftPhotos().length)"
+                  >
+                    {{ busy() ? 'Publicando…' : 'Publicar' }}
+                  </button>
+                </div>
+                <small
+                  >Esta publicación será pública. Hasta 4 fotos JPG, PNG o WebP de 5 MB cada una; se
+                  optimizan antes de guardarse.</small
+                >
+              </form>
+            </section>
+          }
+          @if (postsError()) {
+            <section class="panel" role="alert">
+              <p>{{ postsError() }}</p>
+              <button type="button" class="btn outline" (click)="retryPosts()">Reintentar</button>
+            </section>
+          }
+          @for (post of posts(); track post.id) {
+            <article class="panel post">
+              <div class="post-heading">
+                <div class="post-identity">
+                  @if (p.photo) {
+                    <img [src]="p.photo" alt="" />
+                  } @else {
+                    <span class="mini-avatar">{{ initials() }}</span>
+                  }
+                  <div>
+                    <strong>{{ p.name }}</strong
+                    ><time>{{ post.createdAt | date: 'mediumDate' }}</time>
+                  </div>
+                </div>
+                @if (isSelf()) {
+                  <button
+                    type="button"
+                    class="btn outline"
+                    [disabled]="busy()"
+                    (click)="deletePost(post)"
+                    aria-label="Eliminar publicación"
+                  >
+                    <span class="material-symbols-outlined" aria-hidden="true">delete</span>
+                  </button>
+                }
+              </div>
+              <p class="post-text">{{ post.text }}</p>
+              <div class="post-photos">
+                @for (photo of post.photos; track $index) {
+                  <img [src]="photo" alt="Foto de la publicación" loading="lazy" />
+                }
+              </div>
+            </article>
+          } @empty {
+            @if (!postsError() && !loading()) {
+              <section class="panel empty">
+                <span class="material-symbols-outlined" aria-hidden="true">photo_library</span>
+                <h2>Aún no hay publicaciones</h2>
+                <p>
+                  {{
+                    isSelf()
+                      ? 'Comparte fotos de tus partidos o novedades de tus sedes.'
+                      : 'Sus publicaciones aparecerán aquí.'
+                  }}
+                </p>
+              </section>
+            }
+          }
+          @if (hasMore()) {
+            <button type="button" class="btn outline" [disabled]="moreBusy()" (click)="more()">
+              {{ moreBusy() ? 'Cargando…' : 'Ver más publicaciones' }}
+            </button>
+          }
+        } @else if (tab() === 'sedes') {
+          <section class="panel">
+            <h2>Todas sus sedes</h2>
+            <p>
+              Elige el complejo donde quieres jugar. Cada sede mantiene sus propios horarios,
+              contacto y ubicación.
+            </p>
+          </section>
+          @for (venue of p.venues; track venue.id) {
+            <article class="panel venue-card">
+              @if (venue.photo) {
+                <img [src]="venue.photo" [alt]="venue.name" loading="lazy" />
+              }
+              <div>
+                <h3>{{ venue.name }}</h3>
+                <p>{{ venue.district }}, {{ venue.city }}</p>
+                <p>{{ venue.address || 'Dirección pendiente de completar' }}</p>
+                <a class="btn primary" [routerLink]="['/sedes', venue.id]"
+                  >Ver sede y reservar<span class="material-symbols-outlined" aria-hidden="true"
+                    >arrow_forward</span
+                  ></a
+                >
+              </div>
+            </article>
+          } @empty {
+            <section class="panel empty">Todavía no tiene sedes publicadas.</section>
+          }
+        } @else if (tab() === 'canchas') {
+          <section class="panel">
+            <h2>Canchas de todas sus sedes</h2>
+            <p>La disponibilidad por fecha se consulta al elegir horario.</p>
+          </section>
+          @if (db.catalogLoading()) {
+            <p role="status">Consultando canchas…</p>
+          } @else if (db.catalogError()) {
+            <section class="panel">
+              <p>No pudimos cargar las canchas.</p>
+              <button class="btn outline" type="button" (click)="db.refreshCatalogo()">
+                Reintentar
+              </button>
+            </section>
+          } @else {
+            @for (court of courts(); track court.id) {
+              <article class="panel venue-card">
+                @if (court.foto) {
+                  <img [src]="court.foto" [alt]="court.nombre" loading="lazy" />
+                }
+                <div>
+                  <p class="eyebrow">{{ court.venueName }}</p>
+                  <h3>{{ court.nombre }}</h3>
+                  <p>{{ court.tipo }} · {{ court.superficie }} · {{ court.cobertura }}</p>
+                  <strong>S/ {{ court.precioHora.toFixed(2) }} / hora</strong>
+                  <p>{{ court.disponible ? 'Operativa' : 'En mantenimiento' }}</p>
+                  @if (court.disponible) {
+                    <a
+                      class="btn primary"
+                      routerLink="/checkout"
+                      [queryParams]="{ courtId: court.id }"
+                      >Elegir horario</a
+                    >
+                  } @else {
+                    <button type="button" class="btn outline" disabled>En mantenimiento</button>
+                  }
+                </div>
+              </article>
+            } @empty {
+              <section class="panel empty">No hay canchas publicadas.</section>
+            }
+          }
+        } @else if (tab() === 'servicios') {
+          <section class="panel">
+            <h2>Servicios por sede</h2>
+            <p>Consulta qué características tiene cada complejo.</p>
+          </section>
+          @for (group of services(); track group.venue.id) {
+            <section class="panel">
+              <h3>{{ group.venue.name }}</h3>
+              <div class="chips">
+                @for (service of group.items; track service) {
+                  <span
+                    ><span class="material-symbols-outlined" aria-hidden="true">check_circle</span
+                    >{{ service }}</span
+                  >
+                } @empty {
+                  <p>Sin equipamiento publicado todavía.</p>
+                }
+              </div>
+              <a [routerLink]="['/sedes', group.venue.id]">Consultar esta sede</a>
+            </section>
+          }
+        } @else if (tab() === 'galería') {
+          <section class="panel">
+            <h2>
+              {{
+                business()
+                  ? 'Fotos de publicaciones y de todas sus sedes'
+                  : 'Fotos de sus publicaciones'
+              }}
+            </h2>
+            <div class="gallery">
+              @for (photo of gallery(); track photo.url) {
+                <figure>
+                  <img [src]="photo.url" [alt]="photo.label" loading="lazy" />
+                  <figcaption>
+                    {{ photo.label }}
+                    @if (photo.venueId) {
+                      <a [routerLink]="['/sedes', photo.venueId]">Ver sede</a>
+                    }
+                  </figcaption>
+                </figure>
+              } @empty {
+                <p>Aún no hay fotos publicadas.</p>
+              }
+            </div>
+            @if (hasMore()) {
+              <button class="btn outline" type="button" [disabled]="moreBusy()" (click)="more()">
+                Cargar fotos de publicaciones anteriores
+              </button>
+            }
+          </section>
+        } @else if (tab() === 'reseñas') {
+          <section class="panel">
+            <h2>Reseñas de todas sus sedes</h2>
+            <p>{{ p.reviewCount }} opiniones en total. Se muestran las 20 más recientes.</p>
+          </section>
+          @for (review of p.reviews; track $index) {
+            <article class="panel">
+              <div class="review-heading">
+                <strong>{{ review.author }}</strong
+                ><span
+                  ><span class="material-symbols-outlined" aria-hidden="true">star</span
+                  >{{ review.rating }} / 5</span
+                >
+              </div>
+              <a class="review-venue" [routerLink]="['/sedes', review.venueId]">{{
+                review.venueName
+              }}</a>
+              <p class="post-text">{{ review.text }}</p>
+            </article>
+          } @empty {
+            <section class="panel empty">Aún no hay reseñas publicadas en sus sedes.</section>
+          }
+        } @else if (tab() === 'ubicaciones') {
+          <section class="panel">
+            <h2>Ubicaciones de todas sus sedes</h2>
+            <p>Cada complejo conserva su dirección y punto de acceso.</p>
+          </section>
+          @for (venue of p.venues; track venue.id) {
+            <section class="panel">
+              <h3>{{ venue.name }}</h3>
+              <p>{{ venue.district }}, {{ venue.city }}</p>
+              <p>{{ venue.address || 'Dirección pendiente de completar' }}</p>
+              <a class="btn outline" [routerLink]="['/sedes', venue.id]" fragment="ubicacion"
+                ><span class="material-symbols-outlined" aria-hidden="true">location_on</span>Ver
+                ubicación de esta sede</a
+              >
+            </section>
+          } @empty {
+            <section class="panel empty">No hay sedes publicadas.</section>
+          }
+        } @else {
+          <section class="panel">
+            <h2>Información pública</h2>
+            <dl>
+              <div>
+                <dt>Nombre</dt>
+                <dd>{{ p.name }}</dd>
+              </div>
+              <div>
+                <dt>Tipo de perfil</dt>
+                <dd>{{ p.role }}</dd>
+              </div>
+              <div>
+                <dt>Biografía</dt>
+                <dd>{{ p.biography || 'Sin agregar' }}</dd>
+              </div>
+              <div>
+                <dt>WhatsApp público</dt>
+                <dd>{{ p.whatsapp || 'No publicado' }}</dd>
+              </div>
+            </dl>
+            @if (business()) {
+              <p>
+                La ubicación, los servicios y las condiciones de reserva se consultan en cada sede.
+              </p>
+            }
+          </section>
+          @if (isSelf()) {
+            <section class="panel">
+              <h2>Tu cuenta privada</h2>
+              <p>
+                Tu correo, celular privado y dirección personal se mantienen en la edición de tu
+                cuenta.
+              </p>
+              <button class="btn outline" type="button" (click)="editProfile()">
+                Editar datos personales
+              </button>
+            </section>
+            <section class="panel"><app-notification-preferences /></section>
+          }
+        }
+      </section>
+    </div>
+  }
+</main>

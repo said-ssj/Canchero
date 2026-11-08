@@ -168,10 +168,12 @@
 
           <div class="grid two">
             <label class="field">
-              <span>Dirección</span>
+              <span>Dirección (obligatoria)</span>
               <input
                 type="text"
                 #inputVenueAddress
+                required
+                aria-required="true"
                 [value]="liveVenueAddress()"
                 placeholder="Av. Deportiva 123"
                 (input)="

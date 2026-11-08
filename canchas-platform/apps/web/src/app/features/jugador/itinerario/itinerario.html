@@ -124,6 +124,18 @@
 
                 <p style="margin: 4px 0 2px 0">{{ reserva.courtName }}</p>
                 <strong class="small" style="color: var(--ink)">{{ reserva.horario }}</strong>
+                @if (
+                  reserva.fecha >= todayDateStr() &&
+                  reserva.status !== 'CANCELADO' &&
+                  reserva.status !== 'FINALIZADO'
+                ) {
+                  <app-venue-weather
+                    [venueId]="reserva.venueId"
+                    [date]="reserva.fecha"
+                    [hour]="reserva.horario"
+                    [subtle]="true"
+                  />
+                }
 
                 <div
                   class="row"

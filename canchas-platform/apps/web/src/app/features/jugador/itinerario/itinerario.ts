@@ -1,12 +1,13 @@
 import { Component, computed, inject, signal, effect } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { VenueWeather } from '@shared/components/venue-weather/venue-weather';
 import { DatabaseService } from '@core/supabase/database.service';
 import { AuthService } from '@core/auth/auth.service';
 import { ConfirmationService } from '@shared/components/confirmation/confirmation.service';
 import type { Booking, BookingStatus } from '@shared/models/booking.model';
 
 @Component({
-  imports: [RouterLink],
+  imports: [RouterLink, VenueWeather],
   selector: 'app-itinerario',
   styleUrl: './itinerario.css',
   templateUrl: './itinerario.html',

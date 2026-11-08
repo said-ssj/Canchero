@@ -66,3 +66,17 @@ test('local configured backend remains supported', () => {
   assert.equal(result.code, 0);
   assert.match(result.generated, /localhost:8080/);
 });
+
+test('only public frontend Sentry settings enter the browser bundle', () => {
+  const result = run({
+    RESEND_API_KEY: 're_PRIVATE_TEST_VALUE',
+    OPEN_METEO_API_KEY: 'PRIVATE_WEATHER_TEST',
+    SENTRY_BACKEND_DSN: 'PRIVATE_BACKEND_TEST',
+    SENTRY_FRONTEND_DSN: 'https://public@ingest.example.test/123',
+    SENTRY_ENABLED: 'true',
+  });
+  assert.equal(result.code, 0);
+  assert.match(result.generated, /"sentryEnabled": true/);
+  assert.match(result.generated, /public@ingest.example.test/);
+  assert.doesNotMatch(result.generated, /PRIVATE_TEST_VALUE|PRIVATE_WEATHER_TEST|PRIVATE_BACKEND_TEST/);
+});

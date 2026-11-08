@@ -264,3 +264,139 @@
     padding: 18px;
   }
 }
+
+#main {
+  padding-block: 22px 40px;
+}
+.business-actions,
+.business-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.business-meta {
+  gap: 12px 20px;
+}
+.business-meta > span,
+.business-meta > a {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  color: inherit;
+}
+.business-meta .material-symbols-outlined {
+  font-size: 17px;
+  color: var(--color-success-700, #25832a);
+}
+.business-actions .material-symbols-outlined {
+  font-size: 18px;
+}
+.business-tabs {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  border-top: 1px solid var(--line);
+  padding: 0 16px;
+}
+.business-tabs a,
+.business-tabs button {
+  flex-shrink: 0;
+  padding: 14px 12px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--ink);
+  border: 0;
+  background: transparent;
+  text-decoration: none;
+}
+.business-tabs button:disabled {
+  color: var(--disabled-ink);
+  background: var(--disabled);
+  cursor: default;
+}
+.business-tabs a:focus-visible,
+.business-actions a:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -3px;
+}
+.business-weather {
+  margin-block: 16px 22px;
+}
+.business-gallery h2 {
+  margin-bottom: 16px;
+}
+.business-gallery .venue-cover-wrapper {
+  margin-bottom: 8px;
+}
+.business-hours dl {
+  margin: 12px 0 0;
+}
+.business-hours dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-block: 7px;
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
+}
+.business-hours dt {
+  color: var(--muted);
+}
+.business-hours dd {
+  margin: 0;
+  text-align: right;
+}
+.business-hours dd small {
+  display: block;
+  color: var(--muted);
+}
+.business-policies p {
+  margin-top: 12px;
+}
+.map-unavailable {
+  padding: 24px;
+  color: var(--muted);
+  font-size: 13px;
+}
+#canchas,
+#servicios,
+#galeria,
+#resenas,
+#ubicacion {
+  scroll-margin-top: 90px;
+}
+.venue-photo {
+  background: var(--page);
+}
+@media (max-width: 640px) {
+  .business-actions {
+    gap: 6px;
+    justify-content: flex-end;
+  }
+  .business-actions .btn {
+    font-size: 11px;
+    padding: 7px 9px;
+    min-height: 32px;
+  }
+  .business-actions .material-symbols-outlined {
+    display: none;
+  }
+  .business-tabs {
+    padding-inline: 6px;
+  }
+  .business-meta {
+    font-size: 11px;
+    gap: 8px 12px;
+  }
+}
+.empty-photo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 11px;
+  min-height: 150px;
+}

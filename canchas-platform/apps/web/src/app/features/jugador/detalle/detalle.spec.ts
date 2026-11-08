@@ -46,6 +46,14 @@ describe('Detalle Component - Fase 7: Diseño y Verificación Integral', () => {
   };
 
   const mockDatabaseService = {
+    sedes: signal([
+      {
+        id: 'venue-10',
+        imagen_url: 'https://example.com/norte1.jpg',
+        fotos: ['https://example.com/norte2.jpg'],
+      },
+    ]),
+    cargarHorariosSede: vi.fn(async () => []),
     catalogLoading: catalogLoadingSignal,
     getVenueDetalle: vi.fn((id: string) => (id === 'venue-10' ? mockVenue : undefined)),
   };
@@ -67,6 +75,9 @@ describe('Detalle Component - Fase 7: Diseño y Verificación Integral', () => {
   let mockParamMap = convertToParamMap({ id: 'venue-10' });
 
   const mockActivatedRoute = {
+    get paramMap() {
+      return of(mockParamMap);
+    },
     snapshot: {
       paramMap: {
         get: (key: string) => mockParamMap.get(key),
@@ -80,7 +91,9 @@ describe('Detalle Component - Fase 7: Diseño y Verificación Integral', () => {
     mockReviewService.getByVenue.mockReturnValue(of([]));
     catalogLoadingSignal.set(false);
     mockParamMap = convertToParamMap({ id: 'venue-10' });
-    mockDatabaseService.getVenueDetalle.mockImplementation((id: string) => (id === 'venue-10' ? mockVenue : undefined));
+    mockDatabaseService.getVenueDetalle.mockImplementation((id: string) =>
+      id === 'venue-10' ? mockVenue : undefined,
+    );
 
     await TestBed.configureTestingModule({
       imports: [Detalle],
@@ -123,9 +136,10 @@ describe('Detalle Component - Fase 7: Diseño y Verificación Integral', () => {
     expect(text).toContain('Complejo Deportivo Norte');
     expect(text).toContain('Av. Las Palmeras 1234');
     expect(text).toContain('Los Olivos');
-    expect(text).toContain('4.8');
+    expect(text).not.toContain('4.8');
     expect(text).toContain('Grass Sintético');
-    expect(text).toContain('Instalación Verificada');
+    expect(text).not.toContain('Instalación Verificada');
+    expect(text).toContain('Sin reseñas todavía');
     // Nunca debe exhibir FIFA Quality inventado
     expect(text).not.toContain('FIFA Quality');
   });
@@ -150,7 +164,7 @@ describe('Detalle Component - Fase 7: Diseño y Verificación Integral', () => {
     });
   });
 
-  it('Caso 5: Hero carousel utiliza fotos reales y fallbackVenueImg si no hay fotos', () => {
+  it('Caso 5: Hero carousel utiliza fotos realmente registradas', () => {
     createComponent();
     expect(component['currentHero']()).toBe('https://example.com/norte1.jpg');
 
@@ -159,19 +173,22 @@ describe('Detalle Component - Fase 7: Diseño y Verificación Integral', () => {
     expect(component['currentHero']()).toBe('https://example.com/norte2.jpg');
   });
 
-  it('Caso 6: Botón de notificaciones de la cabecera está deshabilitado como función pendiente (disabled real)', () => {
+  it('Caso 6: enlaza al dueño sin un botón para seguir a la sede', () => {
     createComponent();
 
-    const notifBtn = fixture.nativeElement.querySelector('button[aria-label="Notificaciones de horarios próximamente"]');
-    expect(notifBtn).toBeTruthy();
-    expect((notifBtn as HTMLButtonElement).disabled).toBe(true);
-    expect((notifBtn as HTMLButtonElement).title).toContain('próximamente');
+    const notifBtn = [...fixture.nativeElement.querySelectorAll('button')].find((button: any) =>
+      button.textContent.includes('Seguir'),
+    );
+    expect(notifBtn).toBeUndefined();
+    expect(fixture.nativeElement.querySelector('app-owner-identity')).toBeTruthy();
   });
 
   it.each([401, 403, 409, 500])('keeps the opinion draft and modal on HTTP %s', (status) => {
     createComponent();
     mockAuthService.currentUser.mockReturnValue({ id: 'user-1', nombre: 'Jugador' });
-    vi.spyOn(component as any, 'reservasJugadasDe').mockReturnValue([{ id: 101, fecha: '2026-10-01' }]);
+    vi.spyOn(component as any, 'reservasJugadasDe').mockReturnValue([
+      { id: 101, fecha: '2026-10-01' },
+    ]);
     mockReviewService.publish.mockReturnValue(throwError(() => ({ status })));
     component['reviewModalOpen'].set(true);
     component['reviewText'].set('Esta opinion debe mantenerse como borrador');
@@ -186,7 +203,9 @@ describe('Detalle Component - Fase 7: Diseño y Verificación Integral', () => {
   it('ignores a pending publication after logout and blocks double submission', () => {
     createComponent();
     mockAuthService.currentUser.mockReturnValue({ id: 'user-1', nombre: 'Jugador' });
-    vi.spyOn(component as any, 'reservasJugadasDe').mockReturnValue([{ id: 101, fecha: '2026-10-01' }]);
+    vi.spyOn(component as any, 'reservasJugadasDe').mockReturnValue([
+      { id: 101, fecha: '2026-10-01' },
+    ]);
     const pending = new Subject<any>();
     mockReviewService.publish.mockReturnValue(pending);
     component['reviewText'].set('Una opinion para comprobar el cambio de sesion');
@@ -213,12 +232,26 @@ describe('Detalle Component - Fase 7: Diseño y Verificación Integral', () => {
   it('publishes only the confirmed server response', () => {
     createComponent();
     mockAuthService.currentUser.mockReturnValue({ id: 'user-1', nombre: 'Jugador' });
-    vi.spyOn(component as any, 'reservasJugadasDe').mockReturnValue([{ id: 101, fecha: '2026-10-01' }]);
-    mockReviewService.publish.mockReturnValue(of({ id: 'server-id', clienteNombre: 'Autor confirmado', puntuacion: 4, comentario: 'Texto confirmado' }));
+    vi.spyOn(component as any, 'reservasJugadasDe').mockReturnValue([
+      { id: 101, fecha: '2026-10-01' },
+    ]);
+    mockReviewService.publish.mockReturnValue(
+      of({
+        id: 'server-id',
+        clienteNombre: 'Autor confirmado',
+        puntuacion: 4,
+        comentario: 'Texto confirmado',
+      }),
+    );
     component['reviewModalOpen'].set(true);
     component['reviewText'].set('Borrador enviado al servidor');
     component['submitReview']();
-    expect(component['reviews']()[0]).toMatchObject({ id: 'server-id', author: 'Autor confirmado', rating: 4, text: 'Texto confirmado' });
+    expect(component['reviews']()[0]).toMatchObject({
+      id: 'server-id',
+      author: 'Autor confirmado',
+      rating: 4,
+      text: 'Texto confirmado',
+    });
     expect(component['reviewModalOpen']()).toBe(false);
     expect(component['toastText']()).toContain('publicada');
   });
@@ -244,5 +277,29 @@ describe('Detalle Component - Fase 7: Diseño y Verificación Integral', () => {
     const text = fixture.nativeElement.textContent;
     expect(text).toContain('No encontramos esa sede');
     expect(text).toContain('La sede que buscas no existe o ya no se encuentra disponible');
+  });
+
+  it('no inventa un mapa cuando la sede no tiene coordenadas', () => {
+    createComponent();
+    expect(component['coordinates']()).toBeNull();
+    expect(fixture.nativeElement.querySelector('iframe')).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('todavía no ha configurado su punto');
+  });
+
+  it('una cancha en mantenimiento no navega a pago aunque se invoque directamente', () => {
+    createComponent();
+    const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+    component['selectLosa']({ ...mockCourt1, disponible: false });
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('si falla el horario, conserva el acceso a las canchas y permite reintentar', async () => {
+    mockDatabaseService.cargarHorariosSede.mockRejectedValueOnce(new Error('offline'));
+    createComponent();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('No pudimos consultar el horario');
+    expect(fixture.nativeElement.textContent).toContain('Elegir horario');
+    expect(component['hoursLoading']()).toBe(false);
   });
 });

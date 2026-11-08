@@ -294,6 +294,13 @@
           <!-- Columna Lateral Sticky Resumen -->
           <aside class="summary" aria-label="Resumen de selección">
             <h2>Tu reserva</h2>
+            @if (bookingBlock().isValid && selectedSlots().length > 0) {
+              <app-venue-weather
+                [venueId]="resolvedVenue()?.id"
+                [date]="bookingBlock().dateStr"
+                [hour]="bookingBlock().timeStart"
+              />
+            }
             <p>
               {{ resolvedCourt()?.nombre || selectedTipoCancha() }} · {{ selectedComplejo().name }}
             </p>

@@ -1,10 +1,11 @@
 package pe.canchero.backend.web.dto;
 
 import java.util.List;
+import jakarta.validation.constraints.NotBlank;
 
 public record VenueRequest(
         String nombre,
-        String direccion,
+        @NotBlank(message = "La dirección de la sede es obligatoria") String direccion,
         String distrito,
         String ciudad,
         String descripcion,

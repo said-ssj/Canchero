@@ -126,6 +126,10 @@ if (apiUrl) {
 }
 
 const generated = {
+  sentryEnabled: value(process.env.SENTRY_ENABLED, fileValues.SENTRY_ENABLED) === 'true',
+  sentryFrontendDsn: value(process.env.SENTRY_FRONTEND_DSN, fileValues.SENTRY_FRONTEND_DSN) || '',
+  appEnvironment: value(process.env.APP_ENVIRONMENT, fileValues.APP_ENVIRONMENT) || (cloudBuild ? 'production' : 'development'),
+  appRelease: value(process.env.APP_RELEASE, process.env.VERCEL_GIT_COMMIT_SHA, fileValues.APP_RELEASE) || '',
   googleAuthEnabled: value(process.env.GOOGLE_AUTH_ENABLED, fileValues.GOOGLE_AUTH_ENABLED) === 'true',
   url: supabaseUrl.replace(/\/+$/, ''),
   anonKey,
