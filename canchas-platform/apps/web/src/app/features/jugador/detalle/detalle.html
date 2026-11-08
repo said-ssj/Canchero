@@ -64,6 +64,19 @@
             <button
               class="btn icon-only"
               type="button"
+              disabled
+              title="Notificaciones de horarios (próximamente)"
+              aria-label="Notificaciones de horarios próximamente"
+              [style.color]="'#94a3b8'"
+              [style.cursor]="'default'"
+            >
+              <span class="material-symbols-outlined icon-18 icon" aria-hidden="true"
+                >notifications</span
+              >
+            </button>
+            <button
+              class="btn icon-only"
+              type="button"
               aria-label="Reportar incidencia en cancha"
               title="Reportar problema en una cancha de esta sede"
               (click)="abrirModalReporteDesdeSede()"
