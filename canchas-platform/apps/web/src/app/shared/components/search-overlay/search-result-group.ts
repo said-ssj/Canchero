@@ -14,7 +14,7 @@ import { MatIconModule } from '@angular/material/icon';
           <span class="material-symbols-outlined group-icon">{{ icon }}</span>
           <span class="group-title">{{ title }}</span>
         </div>
-        <span class="group-badge">{{ count }}</span>
+        <span class="group-badge">{{ badgeText }}</span>
       </div>
 
       <!-- Contenido de los elementos -->
@@ -26,7 +26,7 @@ import { MatIconModule } from '@angular/material/icon';
       @if (footerLabel) {
         <button type="button" class="group-footer-btn" (click)="footerClick.emit()">
           <span>{{ footerLabel }}</span>
-          <span class="material-symbols-outlined">arrow_forward</span>
+          <span class="material-symbols-outlined icon-arrow">arrow_forward</span>
         </button>
       }
     </div>
@@ -72,7 +72,7 @@ import { MatIconModule } from '@angular/material/icon';
       .group-badge {
         font-size: 0.72rem;
         font-weight: 700;
-        padding: 2px 7px;
+        padding: 2px 8px;
         border-radius: 9999px;
         background: var(--mat-sys-surface-container, #e2e8f0);
         color: var(--mat-sys-on-surface-variant, #475569);
@@ -85,6 +85,8 @@ import { MatIconModule } from '@angular/material/icon';
         display: flex;
         flex-direction: column;
       }
+
+      /* SIN EFECTO HOVER */
       .group-footer-btn {
         display: flex;
         align-items: center;
@@ -98,21 +100,22 @@ import { MatIconModule } from '@angular/material/icon';
         font-size: 0.84rem;
         font-weight: 600;
         cursor: pointer;
-        transition: all 0.15s ease;
+        outline: none;
       }
-      .group-footer-btn:hover {
+      .group-footer-btn:focus-visible {
+        outline: 2px solid #15803d;
+        outline-offset: -1px;
         background: rgba(21, 128, 61, 0.06);
-        border-color: #15803d;
       }
       :host-context([data-theme='dark']) .group-footer-btn {
         color: #4ade80;
         border-color: rgba(255, 255, 255, 0.15);
       }
-      :host-context([data-theme='dark']) .group-footer-btn:hover {
+      :host-context([data-theme='dark']) .group-footer-btn:focus-visible {
+        outline-color: #4ade80;
         background: rgba(74, 222, 128, 0.1);
-        border-color: #4ade80;
       }
-      .group-footer-btn .material-symbols-outlined {
+      .icon-arrow {
         font-size: 16px;
       }
     `,
@@ -121,7 +124,7 @@ import { MatIconModule } from '@angular/material/icon';
 export class SearchResultGroupComponent {
   @Input({ required: true }) title!: string;
   @Input({ required: true }) icon!: string;
-  @Input({ required: true }) count!: number;
+  @Input({ required: true }) badgeText!: string;
   @Input() footerLabel?: string;
   @Output() footerClick = new EventEmitter<void>();
 }

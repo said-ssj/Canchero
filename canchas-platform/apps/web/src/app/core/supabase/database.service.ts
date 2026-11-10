@@ -1709,9 +1709,13 @@ export class DatabaseService {
 
   getVenuesPublicos(): Venue[] {
     const result: Venue[] = [];
+    const seenVenueIds = new Set<string>();
     for (const sede of this.sedes().filter((s) => s.activo)) {
       const venue = this.mapSede(sede, true);
-      if (venue) result.push(venue);
+      if (venue && !seenVenueIds.has(venue.id)) {
+        seenVenueIds.add(venue.id);
+        result.push(venue);
+      }
     }
     return result;
   }
@@ -1734,10 +1738,19 @@ export class DatabaseService {
   }
 
   private mapSede(sede: any, onlyActive: boolean): Venue | undefined {
-    const canchas = this.canchas().filter(
+    const rawCanchas = this.canchas().filter(
       (c) => c.sede_id === sede.id && (!onlyActive || c.activa),
     );
-    if (onlyActive && canchas.length === 0) return undefined;
+    if (onlyActive && rawCanchas.length === 0) return undefined;
+
+    // Deduplicar canchas por id en la sede
+    const seenCourtIds = new Set<string>();
+    const canchas = rawCanchas.filter((c) => {
+      const idKey = String(c.id ?? c.id_cancha);
+      if (seenCourtIds.has(idKey)) return false;
+      seenCourtIds.add(idKey);
+      return true;
+    });
 
     const courts: Court[] = canchas.map((c) => {
       let cobertura =

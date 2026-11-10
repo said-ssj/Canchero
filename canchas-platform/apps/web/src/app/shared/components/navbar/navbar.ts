@@ -91,7 +91,7 @@ export class Navbar {
     const items: UserMenuItem[] = [
       { label: 'Mis reservas', icon: 'event_available', route: '/itinerario' },
       { label: 'Mi perfil', icon: 'person', route: '/perfil' },
-      { label: 'Mi cuenta', icon: 'manage_accounts', route: '/cuenta' },
+      { label: 'Configuración', icon: 'settings', route: '/cuenta' },
     ];
     if (this.isOwner()) {
       items.push({

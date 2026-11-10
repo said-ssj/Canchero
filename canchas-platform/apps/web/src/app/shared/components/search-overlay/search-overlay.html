@@ -1,260 +1,340 @@
 @if (isOpen) {
   <div class="search-overlay-backdrop" (click)="closeOverlay()">
     <div
-      class="search-overlay-card"
+      class="search-overlay-panel"
       (click)="$event.stopPropagation()"
       role="dialog"
       aria-modal="true"
       aria-label="Buscador global de Canchero"
     >
-      <!-- Cabecera del buscador (Combobox) -->
-      <div
-        class="search-box-bar"
-        role="combobox"
-        aria-haspopup="listbox"
-        [attr.aria-expanded]="true"
-        [attr.aria-owns]="'search-results-list'"
-      >
-        <span class="material-symbols-outlined search-leading-icon" aria-hidden="true">search</span>
+      <div class="panel-inner-content">
+        <!-- Cabecera del buscador (Combobox fijo) -->
+        <div
+          class="search-box-bar"
+          role="combobox"
+          aria-haspopup="listbox"
+          [attr.aria-expanded]="true"
+          [attr.aria-owns]="'search-results-list'"
+        >
+          <span class="material-symbols-outlined search-leading-icon" aria-hidden="true"
+            >search</span
+          >
 
-        <input
-          #searchInput
-          type="text"
-          class="search-main-input"
-          placeholder="Buscar sedes, canchas o jugadores..."
-          autocomplete="off"
-          spellcheck="false"
-          [value]="query()"
-          (input)="onInput($event)"
-          (keydown)="onKeydown($event)"
-          [attr.aria-activedescendant]="activeItemId()"
-          aria-autocomplete="list"
-          aria-controls="search-results-list"
-          autofocus
-        />
+          <!-- Chip de modo 'Solo Personas' -->
+          @if (onlyPersonsMode()) {
+            <span class="mode-filter-chip">
+              <span>Personas</span>
+              <button
+                type="button"
+                class="mode-chip-remove"
+                (click)="exitOnlyPersonsMode()"
+                aria-label="Quitar filtro de personas"
+                matTooltip="Buscar en todo Canchero"
+              >
+                <span class="material-symbols-outlined">close</span>
+              </button>
+            </span>
+          }
 
-        @if (isLoading()) {
-          <mat-spinner diameter="20" class="search-inline-spinner"></mat-spinner>
-        } @else if (query().trim()) {
+          <input
+            #searchInput
+            type="text"
+            class="search-main-input"
+            [placeholder]="
+              onlyPersonsMode()
+                ? 'Buscar jugadores o dueños por nombre o @usuario...'
+                : 'Buscar canchas, sedes o personas...'
+            "
+            autocomplete="off"
+            spellcheck="false"
+            [value]="query()"
+            (input)="onInput($event)"
+            (keydown)="onKeydown($event)"
+            [attr.aria-activedescendant]="activeItemId()"
+            aria-autocomplete="list"
+            aria-controls="search-results-list"
+            autofocus
+          />
+
+          @if (query().trim()) {
+            <button
+              type="button"
+              class="search-icon-btn"
+              (click)="clearQuery()"
+              aria-label="Borrar texto de búsqueda"
+              matTooltip="Limpiar"
+            >
+              <span class="material-symbols-outlined">close</span>
+            </button>
+          }
+
           <button
             type="button"
-            class="search-icon-btn"
-            (click)="clearQuery()"
-            aria-label="Borrar texto de búsqueda"
-            matTooltip="Limpiar"
+            class="search-close-btn"
+            (click)="closeOverlay()"
+            aria-label="Cerrar buscador"
           >
-            <span class="material-symbols-outlined">close</span>
+            Cerrar
           </button>
+        </div>
+
+        <!-- Barra sutil de progreso si la búsqueda tarda >150ms -->
+        @if (showProgressBar()) {
+          <mat-progress-bar mode="indeterminate" class="search-progress-bar"></mat-progress-bar>
         }
 
-        <button
-          type="button"
-          class="search-close-btn"
-          (click)="closeOverlay()"
-          aria-label="Cerrar buscador"
+        <!-- Aviso para lectores de pantalla (OCULTO VISUALMENTE) -->
+        <div class="visually-hidden" aria-live="polite">
+          {{ liveAnnouncement() }}
+        </div>
+
+        <!-- Área con scroll interno para resultados, recientes y atajos -->
+        <div
+          id="search-results-list"
+          class="search-scroll-area"
+          role="listbox"
+          aria-label="Resultados de búsqueda"
         >
-          Cerrar
-        </button>
-      </div>
-
-      <!-- Región accesible para anuncios a lectores de pantalla -->
-      <div class="sr-only" aria-live="polite">
-        {{ liveAnnouncement() }}
-      </div>
-
-      <!-- Contenedor con scroll para resultados, recientes y atajos -->
-      <div
-        id="search-results-list"
-        class="search-scroll-area"
-        role="listbox"
-        aria-label="Resultados de búsqueda"
-      >
-        <!-- ESTADO 1: SIN TEXTO O MENOS DE 2 CARACTERES -->
-        @if (query().trim().length < 2) {
-          <!-- Historial de Búsquedas Recientes -->
-          @if (recentSearches().length > 0) {
-            <div class="quick-section">
-              <div class="quick-section-header">
-                <div class="section-title-wrap">
-                  <span class="material-symbols-outlined section-icon">history</span>
-                  <span class="section-title">Búsquedas recientes</span>
-                </div>
-                <button
-                  type="button"
-                  class="clear-all-btn"
-                  (click)="clearAllRecent()"
-                  aria-label="Borrar todo el historial de búsquedas"
-                >
-                  Borrar historial
-                </button>
-              </div>
-
-              <div class="recent-list">
-                @for (term of recentSearches(); track term; let idx = $index) {
-                  <div
-                    class="recent-item"
-                    role="option"
-                    [id]="'opt-recent-' + idx"
-                    [attr.aria-selected]="isItemFocused('opt-recent-' + idx)"
-                    [class.focused]="isItemFocused('opt-recent-' + idx)"
-                    (click)="selectRecent(term)"
-                  >
-                    <div class="recent-content">
-                      <span class="material-symbols-outlined recent-icon">history</span>
-                      <span class="recent-term">{{ term }}</span>
+          <!-- ESTADO 1: SIN TEXTO O MENOS DE 2 CARACTERES -->
+          @if (query().trim().length < 2) {
+            <!-- Si no está en modo solo personas, mostrar recientes y atajos -->
+            @if (!onlyPersonsMode()) {
+              <!-- Historial de Búsquedas Recientes -->
+              @if (recentSearches().length > 0) {
+                <div class="quick-section">
+                  <div class="quick-section-header">
+                    <div class="section-title-wrap">
+                      <span class="material-symbols-outlined section-icon">history</span>
+                      <span class="section-title">Búsquedas recientes</span>
                     </div>
                     <button
                       type="button"
-                      class="remove-recent-btn"
-                      (click)="removeRecent(term, $event)"
-                      aria-label="Eliminar búsqueda"
-                      matTooltip="Eliminar"
+                      class="clear-all-btn"
+                      (click)="clearAllRecent()"
+                      aria-label="Borrar todo el historial de búsquedas"
                     >
-                      <span class="material-symbols-outlined">close</span>
+                      Borrar historial
                     </button>
                   </div>
-                }
-              </div>
-            </div>
-          }
 
-          <!-- Atajos útiles -->
-          <div class="quick-section">
-            <div class="quick-section-header">
-              <div class="section-title-wrap">
-                <span class="material-symbols-outlined section-icon">explore</span>
-                <span class="section-title">Atajos útiles</span>
-              </div>
-            </div>
-
-            <div class="shortcuts-grid">
-              @for (sc of shortcuts; track sc.id; let idx = $index) {
-                <button
-                  type="button"
-                  class="shortcut-card"
-                  role="option"
-                  [id]="'opt-shortcut-' + idx"
-                  [attr.aria-selected]="isItemFocused('opt-shortcut-' + idx)"
-                  [class.focused]="isItemFocused('opt-shortcut-' + idx)"
-                  (click)="selectShortcut(sc)"
-                >
-                  <span class="material-symbols-outlined shortcut-icon">{{ sc.icon }}</span>
-                  <span class="shortcut-label">{{ sc.label }}</span>
-                  <span class="material-symbols-outlined shortcut-arrow">arrow_forward</span>
-                </button>
+                  <div class="recent-list">
+                    @for (term of recentSearches(); track term; let idx = $index) {
+                      <div
+                        class="recent-item"
+                        role="option"
+                        [id]="'opt-recent-' + idx"
+                        [attr.aria-selected]="isItemFocused('opt-recent-' + idx)"
+                        [class.focused]="isItemFocused('opt-recent-' + idx)"
+                        (click)="selectRecent(term)"
+                      >
+                        <div class="recent-content">
+                          <span class="material-symbols-outlined recent-icon">history</span>
+                          <span class="recent-term">{{ term }}</span>
+                        </div>
+                        <button
+                          type="button"
+                          class="remove-recent-btn"
+                          (click)="removeRecent(term, $event)"
+                          aria-label="Eliminar búsqueda"
+                          matTooltip="Eliminar"
+                        >
+                          <span class="material-symbols-outlined">close</span>
+                        </button>
+                      </div>
+                    }
+                  </div>
+                </div>
               }
-            </div>
-          </div>
-        }
 
-        <!-- ESTADO 2: CON QUERY (>= 2 CARACTERES) -->
-        @if (query().trim().length >= 2) {
-          <!-- Loader mientras consulta -->
-          @if (isLoading() && !searchResults()) {
-            <div class="search-skeleton-list" aria-hidden="true">
-              <div class="skeleton-row"></div>
-              <div class="skeleton-row"></div>
-              <div class="skeleton-row"></div>
-            </div>
-          }
+              <!-- Atajos útiles con filtros reales -->
+              <div class="quick-section">
+                <div class="quick-section-header">
+                  <div class="section-title-wrap">
+                    <span class="material-symbols-outlined section-icon">explore</span>
+                    <span class="section-title">Atajos útiles</span>
+                  </div>
+                </div>
 
-          <!-- Error en la búsqueda -->
-          @if (hasError()) {
-            <div class="search-state-box error-state">
-              <span class="material-symbols-outlined state-icon">error</span>
-              <h4>Ocurrió un error al buscar</h4>
-              <p>No se pudo conectar con el catálogo. Intenta nuevamente.</p>
-              <button type="button" class="btn-retry" (click)="retrySearch()">Reintentar</button>
-            </div>
-          }
-
-          <!-- Resultados obtenidos -->
-          @if (!isLoading() && searchResults(); as res) {
-            @if (res.totalCount === 0) {
-              <!-- Estado vacío honesto sin datos inventados -->
-              <div class="search-state-box empty-state">
-                <span class="material-symbols-outlined state-icon">search_off</span>
-                <h4>No encontramos resultados para «{{ query() }}»</h4>
-                <p>
-                  Verifica que no haya errores tipográficos o prueba buscando por ciudad, distrito o
-                  tipo de deporte.
-                </p>
-                <button type="button" class="btn-explore-all" (click)="submitGlobalSearch()">
-                  Ver todas las sedes disponibles
-                </button>
+                <div class="shortcuts-grid">
+                  @for (sc of shortcuts; track sc.id; let idx = $index) {
+                    <button
+                      type="button"
+                      class="shortcut-card"
+                      role="option"
+                      [id]="'opt-shortcut-' + idx"
+                      [attr.aria-selected]="isItemFocused('opt-shortcut-' + idx)"
+                      [class.focused]="isItemFocused('opt-shortcut-' + idx)"
+                      (click)="selectShortcut(sc)"
+                    >
+                      <span class="material-symbols-outlined shortcut-icon">{{ sc.icon }}</span>
+                      <span class="shortcut-label">{{ sc.label }}</span>
+                      <span class="material-symbols-outlined shortcut-arrow">arrow_forward</span>
+                    </button>
+                  }
+                </div>
               </div>
             } @else {
-              <!-- 1. Grupo de Sedes -->
-              @if (res.sedes.length > 0) {
-                <app-search-result-group
-                  title="Sedes"
-                  icon="stadium"
-                  [count]="res.sedes.length"
-                  [footerLabel]="'Ver todas las sedes para «' + query() + '»'"
-                  (footerClick)="viewAllSedesForQuery()"
-                >
-                  @for (sede of res.sedes; track sede.id; let idx = $index) {
-                    <app-search-result-item
-                      type="sede"
-                      [item]="sede"
-                      [query]="query()"
-                      [itemId]="'opt-sede-' + idx"
-                      [isFocused]="isItemFocused('opt-sede-' + idx)"
-                      (selected)="selectSede(sede)"
-                    />
-                  }
-                </app-search-result-group>
-              }
+              <!-- Mensaje guiado en modo personas -->
+              <div class="search-state-box info-state">
+                <span class="material-symbols-outlined state-icon">group</span>
+                <h4>Buscar en la comunidad de Canchero</h4>
+                <p>Escribe el nombre o &#64;usuario de un jugador o dueño de complejo.</p>
+              </div>
+            }
+          }
 
-              <!-- 2. Grupo de Canchas -->
-              @if (res.canchas.length > 0) {
-                <app-search-result-group
-                  title="Canchas"
-                  icon="sports_soccer"
-                  [count]="res.canchas.length"
-                >
-                  @for (cancha of res.canchas; track cancha.id; let idx = $index) {
-                    <app-search-result-item
-                      type="cancha"
-                      [item]="cancha"
-                      [query]="query()"
-                      [itemId]="'opt-cancha-' + idx"
-                      [isFocused]="isItemFocused('opt-cancha-' + idx)"
-                      (selected)="selectCancha(cancha)"
-                    />
-                  }
-                </app-search-result-group>
-              }
+          <!-- ESTADO 2: CON QUERY (>= 2 CARACTERES) -->
+          @if (query().trim().length >= 2) {
+            <!-- Error en la búsqueda -->
+            @if (hasError()) {
+              <div class="search-state-box error-state">
+                <span class="material-symbols-outlined state-icon">error</span>
+                <h4>Ocurrió un error al buscar</h4>
+                <p>No se pudo conectar con el catálogo. Intenta nuevamente.</p>
+                <button type="button" class="btn-retry" (click)="retrySearch()">Reintentar</button>
+              </div>
+            }
 
-              <!-- 3. Grupo de Personas -->
-              @if (res.personas.length > 0) {
-                <app-search-result-group
-                  title="Jugadores y comunidad"
-                  icon="group"
-                  [count]="res.personas.length"
-                >
-                  @for (persona of res.personas; track persona.id; let idx = $index) {
-                    <app-search-result-item
-                      type="persona"
-                      [item]="persona"
-                      [query]="query()"
-                      [itemId]="'opt-persona-' + idx"
-                      [isFocused]="isItemFocused('opt-persona-' + idx)"
-                      (selected)="selectPersona(persona)"
-                    />
+            <!-- Resultados obtenidos (se conservan en pantalla durante el debounce) -->
+            @if (searchResults(); as res) {
+              @if (res.totalCount === 0 || (onlyPersonsMode() && res.totalPersonas === 0)) {
+                <!-- Estado vacío honesto -->
+                <div class="search-state-box empty-state">
+                  <span class="material-symbols-outlined state-icon">search_off</span>
+                  @if (onlyPersonsMode()) {
+                    <h4>No encontramos personas para «{{ query() }}»</h4>
+                    <p>Verifica que el nombre o &#64;usuario esté bien escrito.</p>
+                    <button type="button" class="btn-explore-all" (click)="exitOnlyPersonsMode()">
+                      Buscar en sedes y canchas
+                    </button>
+                  } @else {
+                    <h4>No encontramos resultados para «{{ query() }}»</h4>
+                    <p>Prueba con otro nombre, ciudad, distrito o deporte.</p>
+                    <button type="button" class="btn-explore-all" (click)="submitGlobalSearch()">
+                      Ver todas las sedes disponibles
+                    </button>
                   }
-                </app-search-result-group>
+                </div>
+              } @else {
+                <!-- 1. Grupo de Sedes (si no está en modo personas) -->
+                @if (!onlyPersonsMode() && res.sedes.length > 0) {
+                  <app-search-result-group
+                    title="Sedes"
+                    icon="stadium"
+                    [badgeText]="
+                      res.totalSedes > 5 ? 'Mostrando 5 de ' + res.totalSedes : '' + res.totalSedes
+                    "
+                    [footerLabel]="
+                      res.totalSedes > 5
+                        ? 'Ver todas las sedes para «' + query() + '» (' + res.totalSedes + ')'
+                        : undefined
+                    "
+                    (footerClick)="viewAllSedesForQuery()"
+                  >
+                    @for (sede of res.sedes; track sede.id; let idx = $index) {
+                      <app-search-result-item
+                        type="sede"
+                        [item]="sede"
+                        [query]="query()"
+                        [itemId]="'opt-sede-' + idx"
+                        [isFocused]="isItemFocused('opt-sede-' + idx)"
+                        (selected)="selectSede(sede)"
+                      />
+                    }
+                  </app-search-result-group>
+                }
+
+                <!-- 2. Grupo de Canchas (si no está en modo personas) -->
+                @if (!onlyPersonsMode() && res.canchas.length > 0) {
+                  <app-search-result-group
+                    title="Canchas"
+                    icon="sports_soccer"
+                    [badgeText]="
+                      res.totalCanchas > 5
+                        ? 'Mostrando 5 de ' + res.totalCanchas
+                        : '' + res.totalCanchas
+                    "
+                    [footerLabel]="
+                      res.totalCanchas > 5
+                        ? 'Ver todas las canchas para «' + query() + '» (' + res.totalCanchas + ')'
+                        : undefined
+                    "
+                    (footerClick)="viewAllCanchasForQuery()"
+                  >
+                    @for (cancha of res.canchas; track cancha.id; let idx = $index) {
+                      <app-search-result-item
+                        type="cancha"
+                        [item]="cancha"
+                        [query]="query()"
+                        [itemId]="'opt-cancha-' + idx"
+                        [isFocused]="isItemFocused('opt-cancha-' + idx)"
+                        (selected)="selectCancha(cancha)"
+                      />
+                    }
+                  </app-search-result-group>
+                }
+
+                <!-- 3. Grupo de Personas -->
+                @if (res.personas.length > 0 || !isAuthenticated()) {
+                  <app-search-result-group
+                    title="Personas"
+                    icon="group"
+                    [badgeText]="
+                      !isAuthenticated()
+                        ? 'Acceso'
+                        : res.totalPersonas > 5
+                          ? 'Mostrando 5 de ' + res.totalPersonas
+                          : '' + res.totalPersonas
+                    "
+                    [footerLabel]="
+                      isAuthenticated() && res.totalPersonas > 5
+                        ? 'Ver todos los jugadores para «' +
+                          query() +
+                          '» (' +
+                          res.totalPersonas +
+                          ')'
+                        : undefined
+                    "
+                  >
+                    @if (!isAuthenticated()) {
+                      <!-- Aviso amigable sin sesión -->
+                      <div class="auth-required-box">
+                        <div class="auth-required-info">
+                          <span class="material-symbols-outlined auth-icon">lock</span>
+                          <div>
+                            <strong>Inicia sesión para buscar personas</strong>
+                            <p>Conecta con otros jugadores y reserva partidos en comunidad.</p>
+                          </div>
+                        </div>
+                        <button type="button" class="btn-login-search" (click)="goToLogin()">
+                          Ingresar
+                        </button>
+                      </div>
+                    } @else {
+                      @for (persona of res.personas; track persona.id; let idx = $index) {
+                        <app-search-result-item
+                          type="persona"
+                          [item]="persona"
+                          [query]="query()"
+                          [itemId]="'opt-persona-' + idx"
+                          [isFocused]="isItemFocused('opt-persona-' + idx)"
+                          (selected)="selectPersona(persona)"
+                        />
+                      }
+                    }
+                  </app-search-result-group>
+                }
               }
             }
           }
-        }
-      </div>
+        </div>
 
-      <!-- Pie de ayuda con atajos de teclado -->
-      <div class="search-overlay-footer">
-        <div class="footer-tip"><kbd>↑</kbd> <kbd>↓</kbd> <span>Navegar</span></div>
-        <div class="footer-tip"><kbd>↵</kbd> <span>Seleccionar</span></div>
-        <div class="footer-tip"><kbd>Esc</kbd> <span>Cerrar</span></div>
+        <!-- Pie fijo de ayuda con atajos de teclado -->
+        <div class="search-overlay-footer">
+          <div class="footer-tip"><kbd>↑</kbd> <kbd>↓</kbd> <span>Navegar</span></div>
+          <div class="footer-tip"><kbd>↵</kbd> <span>Seleccionar</span></div>
+          <div class="footer-tip"><kbd>Esc</kbd> <span>Cerrar</span></div>
+        </div>
       </div>
     </div>
   </div>

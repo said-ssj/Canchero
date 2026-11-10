@@ -26,7 +26,9 @@ export interface PersonaResult {
   nombre: string;
   username: string;
   foto?: string;
-  rol?: string;
+  rol?: string; // 'Jugador' | 'Dueño' | 'Superadmin'
+  sedePrincipal?: string; // Para dueños: nombre de su complejo principal
+  isCurrentUser?: boolean; // Etiqueta "Tú"
   isPrivate?: boolean;
 }
 
@@ -35,6 +37,9 @@ export interface SearchResults {
   sedes: SedeResult[];
   canchas: CanchaResult[];
   personas: PersonaResult[];
+  totalSedes: number;
+  totalCanchas: number;
+  totalPersonas: number;
   totalCount: number;
 }
 

@@ -32,6 +32,10 @@
 }
 
 .profile-avatar-btn:hover .user-avatar-badge {
+  outline: none !important;
+}
+
+.profile-avatar-btn:focus-visible .user-avatar-badge {
   outline: 2px solid var(--color-brand-green, #27802d);
   outline-offset: 1px;
 }
@@ -180,13 +184,68 @@ body.dark-theme .role-badge-chip {
   color: var(--color-danger-600, #dc2626) !important;
 }
 
-.menu-item-logout:hover {
-  background-color: var(--color-danger-50, #fef2f2) !important;
+/* Formato y alineación de ítems del menú de usuario: icono 24px fijo, gap 12px, altura min 44px */
+::ng-deep .user-profile-mat-menu .mat-mdc-menu-item {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 12px 16px !important;
+  min-height: 44px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  color: var(--color-ink-800, #1e293b) !important;
 }
 
-:root.dark-theme .menu-item-logout:hover,
-body.dark-theme .menu-item-logout:hover {
-  background-color: rgba(220, 38, 38, 0.15) !important;
+:root.dark-theme ::ng-deep .user-profile-mat-menu .mat-mdc-menu-item,
+body.dark-theme ::ng-deep .user-profile-mat-menu .mat-mdc-menu-item {
+  color: #f1f5f9 !important;
+}
+
+::ng-deep .user-profile-mat-menu .mat-mdc-menu-item .material-symbols-outlined,
+::ng-deep .user-profile-mat-menu .mat-mdc-menu-item .mat-icon {
+  font-size: 24px !important;
+  width: 24px !important;
+  min-width: 24px !important;
+  height: 24px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin-right: 0 !important;
+  color: var(--color-ink-500, #64748b);
+  flex-shrink: 0 !important;
+}
+
+:root.dark-theme ::ng-deep .user-profile-mat-menu .mat-mdc-menu-item .material-symbols-outlined,
+body.dark-theme ::ng-deep .user-profile-mat-menu .mat-mdc-menu-item .material-symbols-outlined {
+  color: #94a3b8;
+}
+
+/* REGLA ESTRICTA: SIN EFECTOS HOVER (Solo foco de teclado y navegación con flechas) */
+::ng-deep .user-profile-mat-menu .mat-mdc-menu-item:hover,
+::ng-deep .user-profile-mat-menu .menu-item-logout:hover {
+  background-color: transparent !important;
+}
+
+::ng-deep .user-profile-mat-menu .mat-mdc-menu-item:focus-visible,
+::ng-deep .user-profile-mat-menu .mat-mdc-menu-item.cdk-focused {
+  background-color: rgba(21, 128, 61, 0.08) !important;
+  outline: 2px solid #15803d !important;
+  outline-offset: -2px !important;
+}
+
+:root.dark-theme ::ng-deep .user-profile-mat-menu .mat-mdc-menu-item:focus-visible,
+body.dark-theme ::ng-deep .user-profile-mat-menu .mat-mdc-menu-item:focus-visible,
+:root.dark-theme ::ng-deep .user-profile-mat-menu .mat-mdc-menu-item.cdk-focused,
+body.dark-theme ::ng-deep .user-profile-mat-menu .mat-mdc-menu-item.cdk-focused {
+  background-color: rgba(74, 222, 128, 0.12) !important;
+  outline-color: #4ade80 !important;
+}
+
+::ng-deep .user-profile-mat-menu .menu-item-logout:focus-visible,
+::ng-deep .user-profile-mat-menu .menu-item-logout.cdk-focused {
+  background-color: rgba(220, 38, 38, 0.08) !important;
+  outline: 2px solid #dc2626 !important;
+  outline-offset: -2px !important;
 }
 
 .profile-dropdown-menu {

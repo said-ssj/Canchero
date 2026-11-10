@@ -18,11 +18,12 @@ import { Router } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { Subject, Subscription } from 'rxjs';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { Subject, Subscription, timer } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 import { SearchService } from '@core/services/search.service';
 import { RecentSearchesService } from '@core/services/recent-searches.service';
+import { AuthService } from '@core/auth/auth.service';
 import { CanchaResult, PersonaResult, SearchResults, SedeResult } from '@core/models/search.model';
 import { SEARCH_SHORTCUTS, SearchShortcut } from './search-shortcuts';
 import { SearchResultItemComponent } from './search-result-item';
@@ -44,7 +45,7 @@ export type SelectableItem =
     MatIconModule,
     MatButtonModule,
     MatTooltipModule,
-    MatProgressSpinnerModule,
+    MatProgressBarModule,
     SearchResultItemComponent,
     SearchResultGroupComponent,
   ],
@@ -54,6 +55,7 @@ export type SelectableItem =
 export class SearchOverlayComponent implements OnInit, OnDestroy {
   private readonly searchService = inject(SearchService);
   private readonly recentSearchesService = inject(RecentSearchesService);
+  private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
 
   @Input() isOpen = false;
@@ -63,41 +65,50 @@ export class SearchOverlayComponent implements OnInit, OnDestroy {
 
   protected query = signal('');
   protected isLoading = signal(false);
+  protected showProgressBar = signal(false);
   protected hasError = signal(false);
   protected searchResults = signal<SearchResults | null>(null);
   protected activeIndex = signal(-1);
+  protected onlyPersonsMode = signal(false);
 
+  protected readonly isAuthenticated = computed(() => !!this.auth.user()?.id);
   protected readonly recentSearches = this.recentSearchesService.recentSearches;
   protected readonly shortcuts = SEARCH_SHORTCUTS;
 
   private readonly searchTerms$ = new Subject<string>();
   private searchSub?: Subscription;
+  private progressTimerSub?: Subscription;
 
-  // Lista plana de elementos actualmente navegables con el teclado
+  // Lista plana de elementos actualmente navegables con teclado
   protected readonly selectableItems = computed<SelectableItem[]>(() => {
     const q = this.query().trim();
     if (q.length >= 2) {
       const res = this.searchResults();
       if (!res) return [];
       const list: SelectableItem[] = [];
-      res.sedes.forEach((s, idx) => list.push({ kind: 'sede', data: s, id: `opt-sede-${idx}` }));
-      res.canchas.forEach((c, idx) =>
-        list.push({ kind: 'cancha', data: c, id: `opt-cancha-${idx}` }),
-      );
+
+      if (!this.onlyPersonsMode()) {
+        res.sedes.forEach((s, idx) => list.push({ kind: 'sede', data: s, id: `opt-sede-${idx}` }));
+        res.canchas.forEach((c, idx) =>
+          list.push({ kind: 'cancha', data: c, id: `opt-cancha-${idx}` }),
+        );
+      }
       res.personas.forEach((p, idx) =>
         list.push({ kind: 'persona', data: p, id: `opt-persona-${idx}` }),
       );
       return list;
     }
 
-    // Sin query: lista de recientes y luego atajos
+    // Sin query: lista de búsquedas recientes y luego atajos
     const list: SelectableItem[] = [];
-    this.recentSearches().forEach((term, idx) =>
-      list.push({ kind: 'recent', term, id: `opt-recent-${idx}` }),
-    );
-    this.shortcuts.forEach((sc, idx) =>
-      list.push({ kind: 'shortcut', shortcut: sc, id: `opt-shortcut-${idx}` }),
-    );
+    if (!this.onlyPersonsMode()) {
+      this.recentSearches().forEach((term, idx) =>
+        list.push({ kind: 'recent', term, id: `opt-recent-${idx}` }),
+      );
+      this.shortcuts.forEach((sc, idx) =>
+        list.push({ kind: 'shortcut', shortcut: sc, id: `opt-shortcut-${idx}` }),
+      );
+    }
     return list;
   });
 
@@ -111,7 +122,7 @@ export class SearchOverlayComponent implements OnInit, OnDestroy {
   });
 
   protected readonly liveAnnouncement = computed<string>(() => {
-    if (this.isLoading()) return 'Buscando sedes, canchas y personas...';
+    if (this.isLoading()) return 'Buscando...';
     if (this.hasError()) return 'Ocurrió un error al realizar la búsqueda.';
     const q = this.query().trim();
     if (q.length >= 2) {
@@ -119,7 +130,7 @@ export class SearchOverlayComponent implements OnInit, OnDestroy {
       if (!res || res.totalCount === 0) {
         return `No se encontraron resultados para «${q}».`;
       }
-      return `${res.totalCount} resultados encontrados para «${q}»: ${res.sedes.length} sedes, ${res.canchas.length} canchas, ${res.personas.length} personas.`;
+      return `${res.totalCount} resultados encontrados para «${q}»: ${res.totalSedes} sedes, ${res.totalCanchas} canchas, ${res.totalPersonas} personas.`;
     }
     return '';
   });
@@ -127,30 +138,43 @@ export class SearchOverlayComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.searchSub = this.searchTerms$
       .pipe(
-        debounceTime(250),
+        debounceTime(300),
         distinctUntilChanged(),
         switchMap((term) => {
           const clean = term.trim();
           if (clean.length < 2) {
             this.isLoading.set(false);
+            this.showProgressBar.set(false);
             this.hasError.set(false);
             this.searchResults.set(null);
             this.activeIndex.set(-1);
             return [];
           }
+
           this.isLoading.set(true);
           this.hasError.set(false);
-          return this.searchService.search(clean);
+
+          // Iniciar indicador sutil si la búsqueda tarda más de 150ms
+          this.progressTimerSub?.unsubscribe();
+          this.progressTimerSub = timer(150).subscribe(() => {
+            if (this.isLoading()) {
+              this.showProgressBar.set(true);
+            }
+          });
+
+          return this.searchService.search(clean, this.onlyPersonsMode());
         }),
       )
       .subscribe({
         next: (results) => {
           this.isLoading.set(false);
+          this.showProgressBar.set(false);
           this.searchResults.set(results);
           this.activeIndex.set(-1);
         },
         error: () => {
           this.isLoading.set(false);
+          this.showProgressBar.set(false);
           this.hasError.set(true);
           this.activeIndex.set(-1);
         },
@@ -159,6 +183,7 @@ export class SearchOverlayComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.searchSub?.unsubscribe();
+    this.progressTimerSub?.unsubscribe();
   }
 
   @HostListener('window:keydown.escape')
@@ -193,7 +218,6 @@ export class SearchOverlayComponent implements OnInit, OnDestroy {
       if (idx >= 0 && idx < items.length) {
         this.selectItem(items[idx]);
       } else {
-        // Si no hay ningún ítem activo seleccionado, buscar en /sedes con el texto ingresado
         this.submitGlobalSearch();
       }
     }
@@ -237,7 +261,11 @@ export class SearchOverlayComponent implements OnInit, OnDestroy {
   protected selectPersona(persona: PersonaResult): void {
     this.recentSearchesService.add(persona.nombre);
     this.closeOverlay();
-    void this.router.navigate(['/perfiles', persona.id]);
+    if (persona.isCurrentUser) {
+      void this.router.navigate(['/perfil']);
+    } else {
+      void this.router.navigate(['/perfiles', persona.id]);
+    }
   }
 
   protected selectRecent(term: string): void {
@@ -259,6 +287,11 @@ export class SearchOverlayComponent implements OnInit, OnDestroy {
   }
 
   protected selectShortcut(shortcut: SearchShortcut): void {
+    if (shortcut.action === 'persons_mode') {
+      this.activateOnlyPersonsMode();
+      return;
+    }
+
     this.closeOverlay();
     if (shortcut.queryParams) {
       void this.router.navigate([shortcut.route], {
@@ -269,8 +302,30 @@ export class SearchOverlayComponent implements OnInit, OnDestroy {
     }
   }
 
+  protected activateOnlyPersonsMode(): void {
+    this.onlyPersonsMode.set(true);
+    setTimeout(() => {
+      this.searchInputRef?.nativeElement.focus();
+    }, 50);
+    const q = this.query().trim();
+    if (q.length >= 2) {
+      this.searchTerms$.next(q);
+    }
+  }
+
+  protected exitOnlyPersonsMode(): void {
+    this.onlyPersonsMode.set(false);
+    const q = this.query().trim();
+    if (q.length >= 2) {
+      this.searchTerms$.next(q);
+    }
+  }
+
   protected submitGlobalSearch(): void {
     const q = this.query().trim();
+    if (this.onlyPersonsMode()) {
+      return;
+    }
     if (!q) {
       this.closeOverlay();
       void this.router.navigate(['/sedes']);
@@ -282,6 +337,10 @@ export class SearchOverlayComponent implements OnInit, OnDestroy {
   }
 
   protected viewAllSedesForQuery(): void {
+    this.submitGlobalSearch();
+  }
+
+  protected viewAllCanchasForQuery(): void {
     this.submitGlobalSearch();
   }
 
@@ -303,6 +362,11 @@ export class SearchOverlayComponent implements OnInit, OnDestroy {
       this.searchInputRef.nativeElement.value = '';
       this.searchInputRef.nativeElement.focus();
     }
+  }
+
+  protected goToLogin(): void {
+    this.closeOverlay();
+    void this.router.navigate(['/login']);
   }
 
   protected closeOverlay(): void {

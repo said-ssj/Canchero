@@ -4,7 +4,7 @@ export interface SearchShortcut {
   icon: string;
   route: string;
   queryParams?: Record<string, string>;
-  action?: 'filter' | 'focus';
+  action?: 'filter' | 'persons_mode';
 }
 
 export const SEARCH_SHORTCUTS: SearchShortcut[] = [
@@ -26,7 +26,7 @@ export const SEARCH_SHORTCUTS: SearchShortcut[] = [
   },
   {
     id: 'sintetico',
-    label: 'Gras sintético y complejos',
+    label: 'Césped sintético',
     icon: 'stadium',
     route: '/sedes',
     queryParams: { superficie: 'sintetico' },
@@ -45,6 +45,6 @@ export const SEARCH_SHORTCUTS: SearchShortcut[] = [
     label: 'Comunidad y otros usuarios',
     icon: 'group',
     route: '/perfil',
-    action: 'focus',
+    action: 'persons_mode',
   },
 ];
