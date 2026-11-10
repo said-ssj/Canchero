@@ -1,5 +1,6 @@
 package pe.canchero.backend.service;
 
+import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -16,44 +17,99 @@ public class VenueAccessService {
 
     public static final String PERSONAL_GESTIONAR = "personal.gestionar";
     public static final String VENTA_CREAR = "venta.crear";
+    public static final String VENTA_VER = "venta.ver";
     public static final String INVENTARIO_INGRESAR = "inventario.ingresar";
     public static final String SEDE_EDITAR = "sede.editar";
+    public static final String SEDE_ELIMINAR = "sede.eliminar";
+    public static final String CANCHA_GESTIONAR = "cancha.gestionar";
     public static final String RESERVA_VER = "reserva.ver";
     public static final String RESERVA_GESTIONAR = "reserva.gestionar";
     public static final String RESERVA_CANCELAR = "reserva.cancelar";
+    public static final String CAJA_OPERAR = "caja.operar";
+    public static final String CAJA_SUPERVISAR = "caja.supervisar";
+    public static final String PRODUCTO_VER = "producto.ver";
+    public static final String PRODUCTO_GESTIONAR = "producto.gestionar";
+    public static final String INVENTARIO_VER = "inventario.ver";
+    public static final String REPORTE_VER = "reporte.ver";
+    public static final String REPORTE_GESTIONAR = "reporte.gestionar";
+
+    /**
+     * Condición sobre la sede con alias {@code s}: propia o asignada con un permiso.
+     * Parámetros en orden: id del usuario (UUID), id del usuario (UUID), código de permiso.
+     */
+    public static final String VISIBLE_VENUE_SQL = """
+            (s.id_dueno = ? or exists (
+                select 1 from asignacion_sede a
+                join miembro_negocio m on m.id_miembro = a.id_miembro and m.id_negocio = a.id_negocio
+                join rol_sede_permiso p on p.rol_codigo = a.rol_codigo
+                where a.id_sede = s.id_sede and a.id_negocio = s.id_negocio
+                  and a.estado = 'A' and m.estado = 'A' and m.id_usuario = ? and p.permiso_codigo = ?))
+            """;
 
     public static boolean isSuperAdmin(AuthUserDto user) {
         return user != null && Roles.isSuperAdmin(user.rol());
     }
 
-    public int requireOwnedVenue(Integer sedeId, AuthUserDto user, String permission) {
-        return requirePermission(sedeId, user, permission);
+    public boolean can(AuthUserDto user, int sedeId, String ownerId, String permiso) {
+        if (user == null) return false;
+        if (isSuperAdmin(user)) return true;
+        if (ownerId != null && user.id().equals(ownerId)) return Roles.isOwner(user.rol());
+        return permiso != null && Roles.isVenueStaff(user.rol()) && hasAssignment(user.id(), sedeId, permiso);
+    }
+
+    public boolean hasAssignment(String userId, int sedeId, String permiso) {
+        UUID uuid;
+        try { uuid = UUID.fromString(userId); } catch (RuntimeException ex) { return false; }
+        Integer n = jdbc.queryForObject("select count(*) from sede s where s.id_sede = ? and "
+                + VISIBLE_VENUE_SQL, Integer.class, sedeId, uuid, uuid, permiso);
+        return n != null && n > 0;
+    }
+
+    private void requireCan(AuthUserDto user, int sedeId, String ownerId, String permiso, String message) {
+        if (!can(user, sedeId, ownerId, permiso)) throw new ResponseStatusException(HttpStatus.FORBIDDEN, message);
     }
 
     public void requireVenuePermission(int sedeId, String ownerId, AuthUserDto user, String permission) {
-        requirePermission(sedeId, user, permission);
+        if (user == null) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Sesión inválida o expirada");
+        requireCan(user, sedeId, ownerId, permission, "La sede no pertenece a tu cuenta");
     }
 
-    public int requirePermission(Integer sedeId, AuthUserDto user, String permission) {
-        return new TenantPermissions(jdbc).require(user, sedeId, permission);
-    }
-
-    public boolean hasPermission(Integer sedeId, AuthUserDto user, String permission) {
-        return sedeId != null && new TenantPermissions(jdbc).has(user, sedeId, permission);
-    }
-
-    public boolean can(AuthUserDto user, int sedeId, String ownerId, String permission) {
-        if (isSuperAdmin(user)) return true;
-        if (user != null && user.id() != null && user.id().equals(ownerId)) return true;
-        return hasPermission(sedeId, user, permission);
+    public int requireOwnedVenue(Integer sedeId, AuthUserDto user, String permission) {
+        if (user == null) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Sesión inválida o expirada");
+        if (sedeId == null || sedeId <= 0) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Selecciona una sede");
+        var owners = jdbc.queryForList("select id_dueno from sede where id_sede = ? and estado = 'A'", String.class, sedeId);
+        if (owners.isEmpty()) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Sede no encontrada");
+        requireCan(user, sedeId, owners.get(0), permission, "La sede no pertenece a tu cuenta");
+        return sedeId;
     }
 
     public int requireOwnedVenue(Integer sedeId, AuthUserDto user) {
-        return requirePermission(sedeId,user,"sede.editar");
+        return requireOwnedVenue(sedeId, user, SEDE_EDITAR);
+    }
+
+    public int requirePermission(Integer sedeId, AuthUserDto user, String permission) {
+        return requireOwnedVenue(sedeId, user, permission);
+    }
+
+    public boolean hasPermission(Integer sedeId, AuthUserDto user, String permission) {
+        if (sedeId == null || user == null) return false;
+        if (isSuperAdmin(user)) return true;
+        UUID uuid;
+        try { uuid = UUID.fromString(user.id()); } catch (RuntimeException ex) { return false; }
+        Integer n = jdbc.queryForObject("select count(*) from sede s where s.id_sede = ? and s.estado = 'A' and " + VISIBLE_VENUE_SQL,
+                Integer.class, sedeId, uuid, uuid, permission);
+        return n != null && n > 0;
     }
 
     public java.util.List<Integer> authorizedVenues(AuthUserDto user, String permission) {
-        return new TenantPermissions(jdbc).venues(user, permission);
+        if (user == null) return java.util.List.of();
+        if (isSuperAdmin(user)) {
+            return jdbc.queryForList("select id_sede from sede where estado = 'A' order by id_sede", Integer.class);
+        }
+        UUID uuid;
+        try { uuid = UUID.fromString(user.id()); } catch (RuntimeException ex) { return java.util.List.of(); }
+        return jdbc.queryForList("select id_sede from sede s where s.estado = 'A' and " + VISIBLE_VENUE_SQL + " order by id_sede",
+                Integer.class, uuid, uuid, permission);
     }
 
     public void validateSameBusiness(int venueId1, int venueId2) {

@@ -274,15 +274,31 @@ export class AuthService {
 
   loadPlayerProfile(): Observable<PlayerProfile> {
     return this.trackProfile(this.http.get<PlayerProfile>(`${this.apiUrl}/auth/profile`)).pipe(
+      map((profile) => {
+        const u = this.user();
+        if (typeof localStorage !== 'undefined' && u?.id) {
+          if (profile.foto) {
+            localStorage.setItem(`canchero_user_avatar_${u.id}`, profile.foto);
+          } else {
+            const saved = localStorage.getItem(`canchero_user_avatar_${u.id}`);
+            if (saved) profile.foto = saved;
+          }
+        }
+        return profile;
+      }),
       catchError(() => {
         const u = this.user();
+        const saved =
+          typeof localStorage !== 'undefined' && u?.id
+            ? localStorage.getItem(`canchero_user_avatar_${u.id}`)
+            : null;
         const fallback: PlayerProfile = {
           nombre: u?.nombre ?? '',
           apellido: '',
           telefono: u?.telefono ?? null,
           direccion: null,
           idDistrito: null,
-          foto: null,
+          foto: saved || null,
           completo: !!u?.nombre,
         };
         if (u?.id) this.profileState.set({ id: u.id, data: fallback });

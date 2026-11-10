@@ -594,9 +594,16 @@
               </div>
               <div class="about-meta-row">
                 <span class="material-symbols-outlined meta-icon fav-icon" aria-hidden="true"
-                  >favorite</span
+                  >stadium</span
                 >
-                <span>Sede favorita: {{ favoriteVenue() }}</span>
+                <span
+                  >Sede más jugada:
+                  {{
+                    isSelf() || isFavoriteVenuePublic()
+                      ? mostPlayedVenue() || 'Sin actividad reciente'
+                      : 'Privado'
+                  }}</span
+                >
               </div>
             </div>
           </section>
@@ -615,7 +622,6 @@
                 <mat-form-field
                   appearance="outline"
                   subscriptSizing="dynamic"
-                  floatLabel="always"
                   class="cn-field cn-field-textarea w-full composer-field"
                 >
                   <mat-label>Escribe una publicación</mat-label>
@@ -623,7 +629,7 @@
                     matInput
                     name="postText"
                     [(ngModel)]="text"
-                    rows="4"
+                    rows="3"
                     maxlength="2000"
                     [disabled]="busy()"
                     [placeholder]="
@@ -1281,7 +1287,36 @@
                 </div>
 
                 <div class="form-grid-2">
-                  <div>
+                  <div class="form-field-group">
+                    <mat-form-field
+                      appearance="outline"
+                      subscriptSizing="dynamic"
+                      class="cn-field w-full"
+                    >
+                      <mat-label>Identificador de usuario (@handle)</mat-label>
+                      <span matTextPrefix class="handle-prefix">@</span>
+                      <input
+                        matInput
+                        type="text"
+                        [(ngModel)]="editHandle"
+                        name="editHandle"
+                        (input)="onHandleInput($event)"
+                        placeholder="tu_usuario"
+                        maxlength="30"
+                      />
+                    </mat-form-field>
+                    @if (handleValidationError()) {
+                      <small class="field-error-text">{{ handleValidationError() }}</small>
+                    } @else {
+                      <small class="field-hint-text"
+                        >Tu identificador único en la comunidad (@{{
+                          editHandle || 'usuario'
+                        }}).</small
+                      >
+                    }
+                  </div>
+
+                  <div class="form-field-group">
                     <mat-form-field
                       appearance="outline"
                       subscriptSizing="dynamic"
@@ -1305,61 +1340,83 @@
                       <span>Hacer público mi celular en el perfil</span>
                     </label>
                   </div>
+                </div>
+
+                <div class="form-grid-2">
+                  <div class="form-field-group">
+                    <mat-form-field
+                      appearance="outline"
+                      subscriptSizing="dynamic"
+                      class="cn-field w-full"
+                    >
+                      <mat-label>Dirección o referencia (opcional)</mat-label>
+                      <input
+                        matInput
+                        type="text"
+                        [(ngModel)]="editDireccion"
+                        name="editDireccion"
+                        placeholder="Distrito, calle o referencia"
+                      />
+                    </mat-form-field>
+                    <label class="checkbox-label">
+                      <input
+                        type="checkbox"
+                        [(ngModel)]="editShowAddressPublic"
+                        name="editShowAddressPublic"
+                      />
+                      <span>Hacer pública mi dirección en el perfil</span>
+                    </label>
+                  </div>
+
+                  <div class="form-field-group">
+                    <mat-form-field
+                      appearance="outline"
+                      subscriptSizing="dynamic"
+                      class="cn-field w-full field-readonly"
+                    >
+                      <mat-label>Sede más jugada</mat-label>
+                      <input
+                        matInput
+                        type="text"
+                        [value]="mostPlayedVenue() || 'Sin actividad reciente'"
+                        readonly
+                        disabled
+                        aria-readonly="true"
+                      />
+                      <span
+                        matSuffix
+                        class="material-symbols-outlined locked-field-icon"
+                        title="Calculada automáticamente según tu historial de reservas"
+                        >lock</span
+                      >
+                    </mat-form-field>
+                    <label class="checkbox-label">
+                      <input
+                        type="checkbox"
+                        [(ngModel)]="editShowFavoriteVenuePublic"
+                        name="editShowFavoriteVenuePublic"
+                      />
+                      <span>Mostrar sede más jugada en mi perfil público</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div class="biography-row-group">
                   <mat-form-field
                     appearance="outline"
                     subscriptSizing="dynamic"
-                    class="cn-field w-full"
+                    class="cn-field cn-field-textarea w-full"
                   >
-                    <mat-label>Sede favorita</mat-label>
-                    <input
+                    <mat-label>Biografía</mat-label>
+                    <textarea
                       matInput
-                      type="text"
-                      [(ngModel)]="editSedeFavorita"
-                      name="editSedeFavorita"
-                      placeholder="Ej. Arena Gol Sur"
-                    />
+                      [(ngModel)]="editBiography"
+                      name="editBiography"
+                      rows="3"
+                      placeholder="Cuéntale a la comunidad sobre ti..."
+                    ></textarea>
                   </mat-form-field>
                 </div>
-
-                <div>
-                  <mat-form-field
-                    appearance="outline"
-                    subscriptSizing="dynamic"
-                    class="cn-field w-full"
-                  >
-                    <mat-label>Dirección o referencia (opcional)</mat-label>
-                    <input
-                      matInput
-                      type="text"
-                      [(ngModel)]="editDireccion"
-                      name="editDireccion"
-                      placeholder="Distrito, calle o referencia"
-                    />
-                  </mat-form-field>
-                  <label class="checkbox-label">
-                    <input
-                      type="checkbox"
-                      [(ngModel)]="editShowAddressPublic"
-                      name="editShowAddressPublic"
-                    />
-                    <span>Hacer pública mi dirección en el perfil</span>
-                  </label>
-                </div>
-
-                <mat-form-field
-                  appearance="outline"
-                  subscriptSizing="dynamic"
-                  class="cn-field cn-field-textarea w-full"
-                >
-                  <mat-label>Biografía</mat-label>
-                  <textarea
-                    matInput
-                    [(ngModel)]="editBiography"
-                    name="editBiography"
-                    rows="3"
-                    placeholder="Cuéntale a la comunidad sobre ti..."
-                  ></textarea>
-                </mat-form-field>
 
                 <div class="editing-actions">
                   <button
@@ -1503,8 +1560,19 @@
                   <dd>{{ matchesPlayed() }} encuentros</dd>
                 </div>
                 <div>
-                  <dt>Sede favorita</dt>
-                  <dd>{{ favoriteVenue() }}</dd>
+                  <dt>Sede más jugada</dt>
+                  <dd>
+                    @if (isSelf() || isFavoriteVenuePublic()) {
+                      {{ mostPlayedVenue() || 'Sin actividad reciente' }}
+                    } @else {
+                      <span class="private-chip">
+                        <span class="material-symbols-outlined lock-icon" aria-hidden="true"
+                          >lock</span
+                        >
+                        Privado
+                      </span>
+                    }
+                  </dd>
                 </div>
               </dl>
             </section>

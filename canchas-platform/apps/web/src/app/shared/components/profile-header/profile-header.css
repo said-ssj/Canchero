@@ -10,7 +10,7 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 .profile-cover {
-  height: clamp(160px, 22vw, 220px);
+  height: clamp(140px, 18vw, 190px);
   background: linear-gradient(112deg, #15803d 0%, #22c55e 55%, #eab308 85%, #f97316 100%);
   position: relative;
   overflow: hidden;
@@ -37,7 +37,7 @@
   pointer-events: none;
 }
 .profile-identity {
-  padding: 0 26px 20px;
+  padding: 0 24px 14px;
 }
 .identity-top {
   display: flex;
@@ -46,8 +46,8 @@
   flex-wrap: wrap;
   gap: 16px;
   position: relative;
-  margin-bottom: 14px;
-  padding-top: 14px;
+  margin-bottom: 10px;
+  padding-top: 10px;
 }
 .profile-avatar {
   margin-top: -66px;

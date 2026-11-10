@@ -48,6 +48,7 @@ export interface CommunityProfile extends CommunitySettings {
   name: string;
   photo: string | null;
   role: string;
+  handle?: string;
   followers: number;
   following: number;
   postCount: number;
@@ -59,6 +60,7 @@ export interface CommunityProfile extends CommunitySettings {
   address?: string;
   isPhonePublic?: boolean;
   isAddressPublic?: boolean;
+  isFavoriteVenuePublic?: boolean;
   verified?: boolean;
   canchasCount?: number;
   ruc?: string;

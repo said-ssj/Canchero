@@ -86,6 +86,16 @@ export class GoogleCallback {
           throw new Error(error?.message || 'No se pudo intercambiar el código por una sesión');
         }
         token = data.session.access_token;
+        const meta = data.session.user?.user_metadata;
+        const photo = meta?.['avatar_url'] || meta?.['picture'] || null;
+        if (photo && typeof localStorage !== 'undefined') {
+          try {
+            localStorage.setItem('canchero_oauth_avatar', photo);
+            if (data.session.user?.id) {
+              localStorage.setItem(`canchero_user_avatar_${data.session.user.id}`, photo);
+            }
+          } catch {}
+        }
       } else {
         // Fallback: verificar fragmento hash (#access_token=... o #error=...)
         const hash = window.location.hash.startsWith('#')
@@ -145,8 +155,14 @@ export class GoogleCallback {
       .exchangeGoogle(this.accessToken, this.remember, password)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: () => {
+        next: (user) => {
           this.endExchange();
+          if (typeof localStorage !== 'undefined') {
+            const pendingAvatar = localStorage.getItem('canchero_oauth_avatar');
+            if (pendingAvatar && user?.id) {
+              localStorage.setItem(`canchero_user_avatar_${user.id}`, pendingAvatar);
+            }
+          }
           if (this.auth.isOwner()) void this.router.navigateByUrl('/admin');
           else
             void this.router.navigate(['/perfil'], {

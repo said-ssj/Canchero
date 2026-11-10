@@ -4,7 +4,7 @@
 }
 .community-page {
   max-width: 1120px;
-  padding-block: 24px 48px;
+  padding-block: 16px 40px;
 }
 .panel {
   padding: 20px;
@@ -391,7 +391,7 @@ small {
 }
 .tabs button {
   flex-shrink: 0;
-  padding: 14px 16px;
+  padding: 10px 16px;
   text-transform: capitalize;
   background: transparent;
   border: 0;
@@ -422,8 +422,8 @@ small {
 .profile-body {
   display: grid;
   grid-template-columns: 280px minmax(0, 1fr);
-  gap: 20px;
-  margin-top: 20px;
+  gap: 16px;
+  margin-top: 14px;
   align-items: start;
 }
 .profile-aside,
@@ -936,11 +936,49 @@ small {
     grid-template-columns: 1fr;
   }
 }
+.form-field-group {
+  display: flex;
+  flex-direction: column;
+}
+.handle-prefix {
+  font-weight: 700;
+  color: var(--muted);
+  margin-right: 2px;
+  font-size: 14px;
+}
+.field-error-text {
+  color: #dc2626;
+  font-size: 11px;
+  margin-top: 4px;
+  display: block;
+}
+.field-hint-text {
+  color: var(--muted);
+  font-size: 11px;
+  margin-top: 4px;
+  display: block;
+}
+.locked-field-icon {
+  font-size: 16px;
+  color: var(--muted);
+}
+.field-readonly {
+  opacity: 0.9;
+}
+.biography-row-group {
+  margin-top: 6px;
+  display: block;
+  clear: both;
+}
+.biography-row-group mat-form-field {
+  width: 100%;
+}
 .checkbox-label {
   display: flex;
   align-items: center;
   gap: 8px;
   margin-top: 6px;
+  margin-bottom: 2px;
   font-size: 12px;
   color: var(--muted);
   cursor: pointer;
@@ -1222,6 +1260,10 @@ small {
 /* ==========================================================================
    COMPOSER ("COMPARTE CON LA COMUNIDAD")
    ========================================================================== */
+.composer h2 {
+  font-size: 15px;
+  margin: 0 0 10px;
+}
 .composer-form {
   display: flex;
   flex-direction: column;
@@ -1232,8 +1274,8 @@ small {
   display: block !important;
 }
 .composer-field textarea {
-  min-height: 92px;
-  line-height: 1.5;
+  min-height: 72px;
+  line-height: 1.4;
   font-size: 14px;
   resize: vertical;
 }
@@ -1275,7 +1317,7 @@ small {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 14px;
+  margin-top: 10px;
 }
 .composer-left-tools {
   display: flex;
@@ -1283,8 +1325,8 @@ small {
   gap: 10px;
 }
 .composer-submit-row {
-  margin-top: 18px;
-  padding-top: 14px;
+  margin-top: 12px;
+  padding-top: 10px;
   border-top: 1px solid var(--line, #e2e8f0);
   display: flex;
   align-items: center;

@@ -79,8 +79,7 @@ public class StaffService extends JdbcSupport {
         if (CUENTAS_JUGADOR.contains(Roles.normalize(targetRol))) {
             // El rol global solo abre el panel; lo que puede hacer en cada sede sale de sus asignaciones.
             int updated = jdbc.update("""
-                    update usuario set id_rol = (select id_rol from rol where lower(nombre) = ? limit 1),
-                           usmod = 'API', pcmod = 'SPRING', fecmod = now()
+                    update usuario set id_rol = (select id_rol from rol where lower(nombre) = ? limit 1)
                     where id_usuario = ? and exists (select 1 from rol where lower(nombre) = ?)
                     """, rol, target, rol);
             if (updated == 0) throw new ResponseStatusException(HttpStatus.CONFLICT, "El rol " + rol + " no existe en la base");

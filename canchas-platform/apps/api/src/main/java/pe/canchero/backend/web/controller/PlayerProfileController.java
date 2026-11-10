@@ -46,14 +46,18 @@ public class PlayerProfileController {
                 """, Boolean.class, districtId))) throw invalid();
         String foto = input.foto();
         if (foto != null && !foto.isEmpty()) {
-            String prefix = "data:image/jpeg;base64,";
-            if (!foto.startsWith(prefix) || foto.length() > 150_000) throw invalid();
-            try {
-                byte[] bytes = Base64.getDecoder().decode(foto.substring(prefix.length()));
-                if (bytes.length < 4 || bytes[0] != (byte) 0xff || bytes[1] != (byte) 0xd8
-                        || bytes[2] != (byte) 0xff) throw invalid();
-            } catch (IllegalArgumentException ex) {
-                throw invalid();
+            if (foto.startsWith("https://") || foto.startsWith("http://")) {
+                if (foto.length() > 500) throw invalid();
+            } else {
+                String prefix = "data:image/jpeg;base64,";
+                if (!foto.startsWith(prefix) || foto.length() > 150_000) throw invalid();
+                try {
+                    byte[] bytes = Base64.getDecoder().decode(foto.substring(prefix.length()));
+                    if (bytes.length < 4 || bytes[0] != (byte) 0xff || bytes[1] != (byte) 0xd8
+                            || bytes[2] != (byte) 0xff) throw invalid();
+                } catch (IllegalArgumentException ex) {
+                    throw invalid();
+                }
             }
         }
         if (!telefono.isEmpty() && !telefono.matches("[+0-9 ()-]{7,20}")) throw invalid();

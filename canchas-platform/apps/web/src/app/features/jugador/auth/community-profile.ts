@@ -79,13 +79,22 @@ export class CommunityProfilePage {
   protected readonly editingInfo = signal(false);
   protected editNombre = '';
   protected editApellido = '';
+  protected editHandle = '';
   protected editTelefono = '';
   protected editDireccion = '';
   protected editDistrito: number | null = null;
   protected editBiography = '';
   protected editShowPhonePublic = false;
   protected editShowAddressPublic = false;
-  protected editSedeFavorita = 'Arena Gol Sur';
+  protected editShowFavoriteVenuePublic = true;
+  protected readonly customHandle = signal<string>('');
+  protected readonly handleValidationError = signal<string>('');
+  protected readonly isFavoriteVenuePublic = signal<boolean>(
+    typeof localStorage !== 'undefined'
+      ? localStorage.getItem('canchero_show_venue_public') !== 'false'
+      : true,
+  );
+  protected readonly myBookings = signal<any[]>([]);
 
   /* Emoji Picker */
   protected readonly emojiPickerOpen = signal(false);
@@ -235,9 +244,14 @@ export class CommunityProfilePage {
   protected readonly avatarUrl = computed<string | null>(() => {
     const p = this.profile();
     if (this.isSelf()) {
+      const u = this.auth.user();
       const player =
         typeof this.auth.playerProfile === 'function' ? this.auth.playerProfile() : null;
-      return player?.foto || p?.photo || null;
+      const stored =
+        u?.id && typeof localStorage !== 'undefined'
+          ? localStorage.getItem(`canchero_user_avatar_${u.id}`)
+          : null;
+      return player?.foto || stored || p?.photo || null;
     }
     return p?.photo || null;
   });
@@ -264,6 +278,14 @@ export class CommunityProfilePage {
     const p = this.profile();
     if (!p) return 'jugadorcanchero';
     if (this.business()) return 'labombonera';
+    const u = this.auth.user();
+    const stored =
+      u?.id && typeof localStorage !== 'undefined'
+        ? localStorage.getItem(`canchero_custom_handle_${u.id}`)
+        : null;
+    if (stored) return stored;
+    if (this.customHandle()) return this.customHandle();
+    if (p.handle) return p.handle;
     return p.name.toLowerCase().replace(/[^a-z0-9]/g, '') || 'jugadorcanchero';
   });
 
@@ -285,9 +307,57 @@ export class CommunityProfilePage {
   });
 
   protected readonly memberSince = computed(() => 'Octubre 2026');
-  protected readonly matchesPlayed = computed(() => this.profile()?.matchesPlayed ?? 24);
+  protected readonly matchesPlayed = computed(() => {
+    if (this.isSelf()) {
+      const bookings = this.myBookings();
+      if (bookings.length > 0) return bookings.length;
+      const u = this.auth.user();
+      if (u?.id) {
+        const dbReservas = this.db.getReservasPorJugador(u.id);
+        if (dbReservas.length > 0) return dbReservas.length;
+      }
+    }
+    return this.profile()?.matchesPlayed ?? 0;
+  });
+
+  protected readonly mostPlayedVenue = computed(() => {
+    if (this.isSelf()) {
+      const all = [...this.myBookings()];
+      const u = this.auth.user();
+      if (u?.id) {
+        const dbReservas = this.db.getReservasPorJugador(u.id);
+        for (const r of dbReservas) {
+          if (!all.some((b) => b.id === r.id)) all.push(r);
+        }
+      }
+      if (all.length > 0) {
+        const counts = new Map<string, number>();
+        for (const b of all) {
+          const vName =
+            b.venueName ||
+            b.sede ||
+            b.nombre_sede ||
+            (b.cancha_id ? this.db.canchaById(b.cancha_id)?.nombre : null);
+          if (vName) {
+            counts.set(vName, (counts.get(vName) || 0) + 1);
+          }
+        }
+        let topVenue = '';
+        let maxCount = 0;
+        for (const [name, count] of counts.entries()) {
+          if (count > maxCount) {
+            maxCount = count;
+            topVenue = name;
+          }
+        }
+        if (topVenue) return topVenue;
+      }
+    }
+    return this.profile()?.favoriteVenue || null;
+  });
+
   protected readonly favoriteVenue = computed(
-    () => this.profile()?.favoriteVenue ?? 'Arena Gol Sur',
+    () => this.mostPlayedVenue() || 'Sin actividad reciente',
   );
 
   protected readonly currentUrl = computed(() => {
@@ -438,6 +508,15 @@ export class CommunityProfilePage {
     this.editingInfo.set(false);
     this.hasMore.set(false);
 
+    if (this.isSelf()) {
+      void this.db
+        .fetchMyBookings()
+        .then((b) => {
+          if (Array.isArray(b)) this.myBookings.set(b);
+        })
+        .catch(() => {});
+    }
+
     // Verificar si el usuario está bloqueado
     if (this.isUserBlocked(id)) {
       this.isBlocked.set(true);
@@ -469,14 +548,14 @@ export class CommunityProfilePage {
               cover: null,
               biography: '',
               whatsapp: player?.telefono || '',
-              followers: isOwner ? 214 : 18,
-              following: isOwner ? 45 : 12,
+              followers: isOwner ? 214 : 0,
+              following: isOwner ? 45 : 0,
               postCount: 0,
               rating: null,
               reviewCount: 0,
               reviews: [],
-              matchesPlayed: 24,
-              favoriteVenue: 'Arena Gol Sur',
+              matchesPlayed: 0,
+              favoriteVenue: undefined,
               venues: sedes.map((s) => ({
                 id: s.id,
                 name: s.nombre,
@@ -581,11 +660,11 @@ export class CommunityProfilePage {
             address: '',
             isPhonePublic: false,
             isAddressPublic: false,
-            followers: 18,
-            following: 12,
+            followers: 0,
+            following: 0,
             postCount: 0,
-            matchesPlayed: 24,
-            favoriteVenue: 'Arena Gol Sur',
+            matchesPlayed: 0,
+            favoriteVenue: undefined,
             rating: null,
             reviewCount: 0,
             reviews: [],
@@ -713,37 +792,88 @@ export class CommunityProfilePage {
     this.startEditingInfo();
   }
 
+  protected onHandleInput(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    let val = target.value.trim().toLowerCase().replace(/\s+/g, '');
+    if (val.startsWith('@')) val = val.substring(1);
+    this.editHandle = val;
+    this.validateHandle(val);
+  }
+
+  protected validateHandle(val: string): boolean {
+    if (!val) {
+      this.handleValidationError.set('');
+      return true;
+    }
+    if (val.length < 3 || val.length > 30) {
+      this.handleValidationError.set('El @username debe tener entre 3 y 30 caracteres.');
+      return false;
+    }
+    if (!/^[a-zA-Z0-9_.-]+$/.test(val)) {
+      this.handleValidationError.set(
+        'Solo se permiten letras, números, puntos, guiones y guion bajo.',
+      );
+      return false;
+    }
+    const u = this.auth.user();
+    const existing = this.db.usuarios().find((other: any) => {
+      const otherId = String(other.id_usuario || other.id);
+      if (u?.id && String(u.id) === otherId) return false;
+      const otherHandle = (other.username || other.handle || '').toLowerCase();
+      return otherHandle === val;
+    });
+    if (existing) {
+      this.handleValidationError.set('Este @username ya está en uso.');
+      return false;
+    }
+    this.handleValidationError.set('');
+    return true;
+  }
+
   protected startEditingInfo(): void {
     const p = this.profile();
     const player = typeof this.auth.playerProfile === 'function' ? this.auth.playerProfile() : null;
+    const u = this.auth.user();
     this.editNombre = player?.nombre || p?.name?.split(' ')[0] || '';
     this.editApellido = player?.apellido || p?.name?.split(' ').slice(1).join(' ') || '';
+    const storedHandle =
+      u?.id && typeof localStorage !== 'undefined'
+        ? localStorage.getItem(`canchero_custom_handle_${u.id}`)
+        : null;
+    this.editHandle = storedHandle || p?.handle || this.handle();
+    this.handleValidationError.set('');
     this.editTelefono = player?.telefono || p?.whatsapp || '';
     this.editDireccion = player?.direccion || '';
     this.editDistrito = player?.idDistrito || null;
     this.editBiography = p?.biography || '';
-    this.editSedeFavorita = p?.favoriteVenue || 'Arena Gol Sur';
     this.editShowPhonePublic = p?.isPhonePublic || false;
     this.editShowAddressPublic = p?.isAddressPublic || false;
+    this.editShowFavoriteVenuePublic = this.isFavoriteVenuePublic();
     this.tab.set('información');
     this.editingInfo.set(true);
   }
 
   protected cancelEditingInfo(): void {
     this.editingInfo.set(false);
+    this.handleValidationError.set('');
   }
 
   protected async saveEditingInfo(): Promise<void> {
     if (this.busy()) return;
+    if (this.editHandle && !this.validateHandle(this.editHandle)) {
+      this.actionError.set(this.handleValidationError() || 'Revisa el @username.');
+      return;
+    }
     this.busy.set(true);
     try {
       const full = `${this.editNombre} ${this.editApellido}`.trim();
+      const currentPhoto = this.avatarUrl() || this.profile()?.photo || null;
       const updatedProfile = {
         nombre: this.editNombre,
         apellido: this.editApellido,
         telefono: this.editTelefono || null,
         direccion: this.editDireccion || null,
-        foto: this.profile()?.photo || null,
+        foto: currentPhoto,
         completo: !!(this.editNombre && this.editApellido),
         idDistrito: this.editDistrito,
       };
@@ -759,18 +889,33 @@ export class CommunityProfilePage {
         );
       }
 
+      const u = this.auth.user();
+      if (this.editHandle && u?.id && typeof localStorage !== 'undefined') {
+        localStorage.setItem(`canchero_custom_handle_${u.id}`, this.editHandle);
+        this.customHandle.set(this.editHandle);
+      }
+      this.isFavoriteVenuePublic.set(this.editShowFavoriteVenuePublic);
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(
+          'canchero_show_venue_public',
+          String(this.editShowFavoriteVenuePublic),
+        );
+      }
+
       this.profile.update((current) =>
         current
           ? {
               ...current,
               name: full || current.name,
+              handle: this.editHandle || current.handle,
               biography: this.editBiography,
               whatsapp: this.editTelefono,
               phone: this.editTelefono,
               address: this.editDireccion,
               isPhonePublic: this.editShowPhonePublic,
               isAddressPublic: this.editShowAddressPublic,
-              favoriteVenue: this.editSedeFavorita,
+              isFavoriteVenuePublic: this.editShowFavoriteVenuePublic,
+              favoriteVenue: this.mostPlayedVenue() || undefined,
             }
           : current,
       );

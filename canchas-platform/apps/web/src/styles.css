@@ -3983,8 +3983,10 @@ body.dark-theme .mat-datepicker-content {
   border-radius: 4px;
 }
 
-.composer-field .mdc-notched-outline__notch,
-.cn-field-textarea .mdc-notched-outline__notch {
+.mdc-notched-outline--notched .composer-field .mdc-notched-outline__notch,
+.mdc-notched-outline--notched .cn-field-textarea .mdc-notched-outline__notch,
+.composer-field.mat-form-field-should-float .mdc-notched-outline__notch,
+.cn-field-textarea.mat-form-field-should-float .mdc-notched-outline__notch {
   border-top: none !important;
 }
 
