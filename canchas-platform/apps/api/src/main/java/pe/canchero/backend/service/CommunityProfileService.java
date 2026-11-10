@@ -23,6 +23,7 @@ public class CommunityProfileService {
     public record PostPage(List<Post> items, boolean hasMore) {}
     public record Settings(String biography, String whatsapp, String cover) {}
     public record Owner(String id, String name, String photo) {}
+    public record MutualFollower(String id, String name, String photo) {}
     public Owner venueOwner(int venueId) {
         return jdbc.query("""
             select u.id_usuario, trim(concat_ws(' ',u.nombre,u.apellido)), p.foto
@@ -123,6 +124,23 @@ public class CommunityProfileService {
     public boolean following(AuthUserDto user,UUID target) {
         requireSchema(); requireUser(target);
         return Boolean.TRUE.equals(jdbc.queryForObject("select exists(select 1 from seguimiento_perfil where id_seguidor=? and id_seguido=?)",Boolean.class,UUID.fromString(user.id()),target));
+    }
+    public List<MutualFollower> mutualFollowers(AuthUserDto user, UUID target) {
+        requireSchema(); requireUser(target);
+        UUID viewer;
+        try { viewer = UUID.fromString(user.id()); } catch (Exception e) { return List.of(); }
+        if (viewer.equals(target)) return List.of();
+        return jdbc.query("""
+            select u.id_usuario,
+                   trim(concat_ws(' ', nullif(u.nombre,''), nullif(u.apellido,''))) as nombre,
+                   p.foto
+            from seguimiento_perfil f_target
+            join seguimiento_perfil f_viewer on f_viewer.id_seguido = f_target.id_seguidor
+            join usuario u on u.id_usuario = f_target.id_seguidor
+            left join perfil_jugador p on p.id_usuario = u.id_usuario
+            where f_target.id_seguido = ? and f_viewer.id_seguidor = ? and u.estado = 'A'
+            order by u.nombre limit 10
+            """, (rs, row) -> new MutualFollower(rs.getString(1), Objects.toString(rs.getString(2), "Usuario"), rs.getString(3)), target, viewer);
     }
     @Transactional
     public void follow(AuthUserDto user,UUID target,boolean follow) {

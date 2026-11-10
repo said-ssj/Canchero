@@ -133,8 +133,29 @@ small {
 }
 
 /* ==========================================================================
-   HOVER ROJO EN "SIGUIENDO" PARA DEJAR DE SEGUIR
+   BOTÓN SEGUIR / SIGUIENDO (ESTADOS Y HOVER)
    ========================================================================== */
+.btn-follow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.18s ease;
+}
+.btn-follow:not(.btn-following) {
+  background: #15803d !important;
+  color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+.btn-follow:not(.btn-following):hover:not(:disabled) {
+  background: #166534 !important;
+}
+.follow-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
 .btn-following {
   background: var(--surface) !important;
   color: #15803d !important;
@@ -340,6 +361,29 @@ small {
   display: flex;
   align-items: center;
 }
+.mutual-avatar-img,
+.mutual-avatar-initials {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid var(--surface);
+  margin-left: -6px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.mutual-avatar-img:first-child,
+.mutual-avatar-initials:first-child {
+  margin-left: 0;
+}
+.mutual-avatar-initials {
+  background: #15803d;
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+}
 .mini-avatar-circle {
   width: 22px;
   height: 22px;
@@ -431,6 +475,13 @@ small {
   display: grid;
   gap: 16px;
   min-width: 0;
+}
+@media (min-width: 992px) {
+  .profile-aside {
+    position: sticky;
+    top: 84px;
+    align-self: start;
+  }
 }
 
 /* Sidebar Cards */
@@ -826,6 +877,100 @@ small {
 /* ==========================================================================
    PUBLICACIONES & COMPOSER
    ========================================================================== */
+.post {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.post-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.post-identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.post-avatar-img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid var(--line);
+}
+.post-avatar-initials {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #dcfce7;
+  color: #15803d;
+  font-weight: 700;
+  font-size: 15px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+:host-context([data-theme='dark']) .post-avatar-initials {
+  background: #14532d;
+  color: #86efac;
+}
+.post-author-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.post-author-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.post-date {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.2;
+  cursor: default;
+}
+.post-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.post-type-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 9999px;
+  background: var(--soft);
+  color: var(--ink);
+}
+.post-menu-btn {
+  color: var(--muted);
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.post-text {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink);
+  margin: 0;
+  word-break: break-word;
+  white-space: pre-line;
+}
 .badge-promo {
   background: #ffedd5 !important;
   color: #ea580c !important;
@@ -843,11 +988,11 @@ small {
   gap: 6px;
   background: transparent;
   border: none;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--muted);
   cursor: pointer;
-  padding: 6px 8px;
+  padding: 6px 10px;
   border-radius: 6px;
   transition: all 0.15s ease;
 }
@@ -856,6 +1001,10 @@ small {
   color: var(--ink);
 }
 .post-action-btn.liked {
+  color: #ef4444;
+}
+.post-action-btn.liked .material-symbols-outlined {
+  font-variation-settings: 'FILL' 1;
   color: #ef4444;
 }
 .business-mini-avatar {
@@ -1396,7 +1545,10 @@ small {
     padding: 16px;
   }
   .header-actions {
-    gap: 6px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    width: 100%;
   }
   .btn-cover {
     height: 34px;

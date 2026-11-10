@@ -37,6 +37,12 @@ export interface CommunityPost {
   commentCount?: number;
 }
 
+export interface MutualFollower {
+  id: string;
+  name: string;
+  photo: string | null;
+}
+
 export interface CommunitySettings {
   biography: string;
   whatsapp: string;
@@ -61,6 +67,11 @@ export interface CommunityProfile extends CommunitySettings {
   isPhonePublic?: boolean;
   isAddressPublic?: boolean;
   isFavoriteVenuePublic?: boolean;
+  isPrivate?: boolean;
+  posicion?: string;
+  nivel?: string;
+  pieDominante?: string;
+  disponibilidad?: string;
   verified?: boolean;
   canchasCount?: number;
   ruc?: string;
@@ -93,7 +104,7 @@ export class CommunityProfileService {
     return this.http.put<CommunitySettings>(this.url + '/me/settings', settings);
   }
   relationship(id: string) {
-    return this.http.get<{ following: boolean }>(
+    return this.http.get<{ following: boolean; mutualFollowers?: MutualFollower[] }>(
       this.url + '/profiles/' + encodeURIComponent(id) + '/relationship',
     );
   }

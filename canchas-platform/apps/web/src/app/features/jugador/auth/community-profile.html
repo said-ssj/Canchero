@@ -141,38 +141,29 @@
         } @else {
           <!-- VISTA DE OTRO JUGADOR / VISITANTE -->
           <button
-            mat-stroked-button
-            class="btn-cover"
-            [class.btn-cover-primary]="!following()"
+            mat-flat-button
+            class="btn-cover btn-follow"
             [class.btn-following]="following()"
             type="button"
             [disabled]="relationshipBusy()"
             (click)="handleFollowClick()"
+            [attr.aria-label]="following() ? 'Dejar de seguir a ' + p.name : 'Seguir a ' + p.name"
           >
             @if (following()) {
-              <span>
+              <span class="follow-state following">
                 <span class="material-symbols-outlined default-icon" aria-hidden="true">check</span>
+                <span class="default-text">Siguiendo</span>
                 <span class="material-symbols-outlined hover-icon" aria-hidden="true"
                   >person_remove</span
                 >
-                <span class="default-text">Siguiendo</span>
                 <span class="hover-text">Dejar de seguir</span>
               </span>
             } @else {
-              <span>
-                <span class="material-symbols-outlined" aria-hidden="true">add</span>
+              <span class="follow-state not-following">
+                <span class="material-symbols-outlined" aria-hidden="true">person_add</span>
                 <span>Seguir</span>
               </span>
             }
-          </button>
-          <button
-            mat-stroked-button
-            class="btn-cover btn-cover-secondary"
-            type="button"
-            (click)="handleMessageClick(p)"
-          >
-            <span class="material-symbols-outlined" aria-hidden="true">chat_bubble</span>
-            <span>Mensaje</span>
           </button>
         }
 
@@ -181,78 +172,72 @@
           mat-icon-button
           class="btn-cover btn-cover-icon"
           type="button"
-          title="Compartir enlace del perfil"
-          aria-label="Compartir enlace del perfil"
+          matTooltip="Copiar enlace del perfil"
+          aria-label="Copiar enlace del perfil"
           (click)="compartirPerfil()"
         >
           <span class="material-symbols-outlined" aria-hidden="true">link</span>
         </button>
 
-        <!-- Menú ⋯ (Reportar perfil y Bloquear usuario) -->
-        <div class="more-options-wrap">
-          <button
-            mat-icon-button
-            class="btn-cover btn-cover-icon"
-            type="button"
-            title="Más opciones"
-            aria-label="Más opciones"
-            (click)="moreMenuOpen.set(!moreMenuOpen())"
-          >
-            <span class="material-symbols-outlined" aria-hidden="true">more_horiz</span>
+        <!-- Menú ⋯ con MatMenu -->
+        <button
+          mat-icon-button
+          class="btn-cover btn-cover-icon"
+          type="button"
+          [matMenuTriggerFor]="profileMoreMenu"
+          matTooltip="Más opciones"
+          aria-label="Más opciones del perfil"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">more_horiz</span>
+        </button>
+        <mat-menu #profileMoreMenu="matMenu" xPosition="before">
+          <button mat-menu-item type="button" (click)="compartirPerfil()">
+            <span class="material-symbols-outlined" aria-hidden="true">share</span>
+            <span>Compartir perfil</span>
           </button>
-          @if (moreMenuOpen()) {
-            <div class="more-options-menu" role="menu">
-              @if (!isSelf()) {
-                <button mat-button type="button" class="more-menu-item" (click)="openReportModal()">
-                  <span class="material-symbols-outlined" aria-hidden="true">flag</span>
-                  Reportar perfil
-                </button>
-                <button
-                  mat-button
-                  type="button"
-                  class="more-menu-item text-danger"
-                  (click)="bloquearUsuario()"
-                >
-                  <span class="material-symbols-outlined" aria-hidden="true">block</span>
-                  Bloquear usuario
-                </button>
-              }
-              <button
-                mat-button
-                type="button"
-                class="more-menu-item"
-                (click)="compartirPerfil(); moreMenuOpen.set(false)"
-              >
-                <span class="material-symbols-outlined" aria-hidden="true">share</span>
-                Compartir perfil
-              </button>
-            </div>
+          @if (!isSelf()) {
+            <button mat-menu-item type="button" (click)="openReportModal()">
+              <span class="material-symbols-outlined" aria-hidden="true">flag</span>
+              <span>Reportar perfil</span>
+            </button>
+            <mat-divider></mat-divider>
+            <button
+              mat-menu-item
+              type="button"
+              class="text-danger"
+              (click)="confirmarBloqueoUsuario()"
+            >
+              <span class="material-symbols-outlined text-danger" aria-hidden="true">block</span>
+              <span class="text-danger">Bloquear usuario</span>
+            </button>
           }
-        </div>
+        </mat-menu>
       </div>
 
-      <button
-        mat-icon-button
-        profileIdentityEnd
-        type="button"
-        class="btn-perspective-eye"
-        [class.visitor-mode]="isVisitorPerspective()"
-        (click)="togglePerspective()"
-        [title]="
-          isOwnerPerspective()
-            ? 'Cambiar a perspectiva de visitante'
-            : 'Cambiar a perspectiva del dueño'
-        "
-        [attr.aria-label]="
-          isOwnerPerspective()
-            ? 'Cambiar a perspectiva de visitante'
-            : 'Cambiar a perspectiva del dueño'
-        "
-      >
-        <span class="material-symbols-outlined" aria-hidden="true">
-          {{ isOwnerPerspective() ? 'visibility' : 'visibility_off' }}
-        </span>
-      </button>
+      @if (isSelf()) {
+        <button
+          mat-icon-button
+          profileIdentityEnd
+          type="button"
+          class="btn-perspective-eye"
+          [class.visitor-mode]="isVisitorPerspective()"
+          (click)="togglePerspective()"
+          [matTooltip]="
+            isOwnerPerspective()
+              ? 'Cambiar a perspectiva de visitante'
+              : 'Cambiar a perspectiva del dueño'
+          "
+          [attr.aria-label]="
+            isOwnerPerspective()
+              ? 'Cambiar a perspectiva de visitante'
+              : 'Cambiar a perspectiva del dueño'
+          "
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">
+            {{ isOwnerPerspective() ? 'visibility' : 'visibility_off' }}
+          </span>
+        </button>
+      }
 
       <div profileMeta class="profile-meta-content">
         <p class="profile-handle">
@@ -299,37 +284,62 @@
               ><strong>{{ p.canchasCount || courts().length || 4 }}</strong> canchas</span
             >
             <span
-              ><strong>{{ p.postCount }}</strong> publicaciones</span
+              ><strong>{{ p.postCount }}</strong>
+              {{ p.postCount === 1 ? 'publicación' : 'publicaciones' }}</span
             >
             <span
               ><strong>{{ p.reviewCount }}</strong> reseñas</span
             >
             <span
-              ><strong>{{ p.followers }}</strong> seguidores</span
+              ><strong>{{ p.followers }}</strong>
+              {{ p.followers === 1 ? 'seguidor' : 'seguidores' }}</span
             >
           } @else {
             <span
-              ><strong>{{ p.postCount }}</strong> publicaciones</span
+              ><strong>{{ p.postCount }}</strong>
+              {{ p.postCount === 1 ? 'publicación' : 'publicaciones' }}</span
             >
             <span
-              ><strong>{{ p.followers }}</strong> seguidores</span
+              ><strong>{{ p.followers }}</strong>
+              {{ p.followers === 1 ? 'seguidor' : 'seguidores' }}</span
             >
             <span
-              ><strong>{{ p.following }}</strong> siguiendo</span
+              ><strong>{{ p.following }}</strong>
+              {{ p.following === 1 ? 'seguido' : 'seguidos' }}</span
             >
           }
         </div>
 
-        @if (signedIn() && !isSelf() && !business()) {
-          <!-- SEGUIDORES EN COMÚN (SOLO CON SESIÓN Y VIENDO A OTRO USUARIO) -->
+        @if (signedIn() && !isSelf() && !business() && mutualFollowers().length > 0) {
+          <!-- SEGUIDORES EN COMÚN (SOLO SI EXISTEN REALES) -->
           <div class="mutual-followers">
             <div class="mutual-avatars" aria-hidden="true">
-              <span class="mini-avatar-circle av-1">LR</span>
-              <span class="mini-avatar-circle av-2">AT</span>
-              <span class="mini-avatar-circle av-3">DP</span>
+              @for (m of mutualFollowers().slice(0, 3); track m.id) {
+                @if (m.photo) {
+                  <img
+                    [src]="m.photo"
+                    [alt]="m.name"
+                    class="mini-avatar-circle"
+                    [matTooltip]="m.name"
+                  />
+                } @else {
+                  <span class="mini-avatar-circle" [matTooltip]="m.name">{{
+                    getInitials(m.name)
+                  }}</span>
+                }
+              }
             </div>
             <span class="mutual-text">
-              Seguido por <strong>Luis</strong>, <strong>Ana</strong> y 1 más que sigues
+              @if (mutualFollowers().length === 1) {
+                Seguido por <strong>{{ mutualFollowers()[0].name }}</strong> que sigues
+              } @else if (mutualFollowers().length === 2) {
+                Seguido por <strong>{{ mutualFollowers()[0].name }}</strong> y
+                <strong>{{ mutualFollowers()[1].name }}</strong> que sigues
+              } @else {
+                Seguido por <strong>{{ mutualFollowers()[0].name }}</strong
+                >, <strong>{{ mutualFollowers()[1].name }}</strong> y
+                {{ mutualFollowers().length - 2 }} más que sigues
+              }
             </span>
           </div>
         }
@@ -355,7 +365,7 @@
             type="button"
             [class.active]="tab() === item"
             [attr.aria-current]="tab() === item ? 'page' : null"
-            (click)="tab.set(item)"
+            (click)="setTab(item)"
           >
             {{ item }}
           </button>
@@ -564,11 +574,19 @@
             </div>
           </section>
         } @else {
-          <!-- SIDEBAR PERFIL DE JUGADOR (DATOS REALES Y SIN ENLACE ABRIR PERFIL) -->
+          <!-- SIDEBAR PERFIL DE JUGADOR (DATOS REALES Y ESTADOS LIMPIOS) -->
           <section class="panel about-card">
             <h2>Sobre {{ p.name }}</h2>
             <p class="about-bio" [class.empty-bio]="!p.biography">
-              {{ p.biography || 'Aún no ha agregado una biografía.' }}
+              @if (p.biography) {
+                {{ p.biography }}
+              } @else {
+                {{
+                  isSelf()
+                    ? 'Aún no has agregado una biografía.'
+                    : 'Este jugador aún no ha agregado una biografía.'
+                }}
+              }
             </p>
 
             <div class="about-meta-list">
@@ -586,25 +604,46 @@
                 >
                 <span>Miembro desde {{ memberSince() }}</span>
               </div>
-              <div class="about-meta-row">
-                <span class="material-symbols-outlined meta-icon soccer-icon" aria-hidden="true"
-                  >sports_soccer</span
-                >
-                <span>{{ matchesPlayed() }} partidos jugados</span>
-              </div>
-              <div class="about-meta-row">
-                <span class="material-symbols-outlined meta-icon fav-icon" aria-hidden="true"
-                  >stadium</span
-                >
-                <span
-                  >Sede más jugada:
-                  {{
-                    isSelf() || isFavoriteVenuePublic()
-                      ? mostPlayedVenue() || 'Sin actividad reciente'
-                      : 'Privado'
-                  }}</span
-                >
-              </div>
+              @if (matchesPlayed() > 0) {
+                <div class="about-meta-row">
+                  <span class="material-symbols-outlined meta-icon soccer-icon" aria-hidden="true"
+                    >sports_soccer</span
+                  >
+                  <span
+                    >{{ matchesPlayed() }}
+                    {{ matchesPlayed() === 1 ? 'partido jugado' : 'partidos jugados' }}</span
+                  >
+                </div>
+              } @else if (isSelf()) {
+                <div class="about-meta-row text-muted">
+                  <span class="material-symbols-outlined meta-icon soccer-icon" aria-hidden="true"
+                    >sports_soccer</span
+                  >
+                  <span>Aún no has jugado partidos</span>
+                </div>
+              }
+              @if (mostPlayedVenue() && (isSelf() || isFavoriteVenuePublic())) {
+                <div class="about-meta-row">
+                  <span class="material-symbols-outlined meta-icon fav-icon" aria-hidden="true"
+                    >stadium</span
+                  >
+                  <span>Sede más jugada: {{ mostPlayedVenue() }}</span>
+                </div>
+              }
+              @if (p.posicion) {
+                <div class="about-meta-row">
+                  <span class="material-symbols-outlined meta-icon" aria-hidden="true">sports</span>
+                  <span>Posición: {{ p.posicion }}</span>
+                </div>
+              }
+              @if (p.nivel) {
+                <div class="about-meta-row">
+                  <span class="material-symbols-outlined meta-icon" aria-hidden="true"
+                    >trending_up</span
+                  >
+                  <span>Nivel: {{ p.nivel }}</span>
+                </div>
+              }
             </div>
           </section>
         }
@@ -756,38 +795,58 @@
               <div class="post-heading">
                 <div class="post-identity">
                   @if (avatarUrl()) {
-                    <img [src]="avatarUrl()" alt="" />
+                    <img [src]="avatarUrl()" alt="" class="post-avatar-img" />
                   } @else if (business()) {
-                    <span class="mini-avatar business-mini-avatar">
+                    <span class="post-avatar-initials business-mini-avatar">
                       <span class="material-symbols-outlined">stadium</span>
                     </span>
                   } @else {
-                    <span class="mini-avatar">{{ initials() }}</span>
+                    <span class="post-avatar-initials">{{ initials() }}</span>
                   }
-                  <div>
-                    <strong>{{ p.name }}</strong>
-                    <time>{{ post.createdAt | date: 'mediumDate' }}</time>
+                  <div class="post-author-meta">
+                    <strong class="post-author-name">{{ p.name }}</strong>
+                    <time
+                      class="post-date"
+                      [attr.title]="formatFullDate(post.createdAt)"
+                      [attr.datetime]="post.createdAt"
+                    >
+                      {{ formatRelativeDate(post.createdAt) }}
+                    </time>
                   </div>
                 </div>
                 <div class="post-actions">
-                  <span
-                    class="role-badge post-type-badge"
-                    [class.badge-promo]="post.badge === 'Promoción'"
-                  >
-                    {{ post.badge || 'Partido' }}
-                  </span>
-                  @if (isOwnerPerspective() || isSelf()) {
+                  @if (post.badge) {
+                    <span
+                      class="role-badge post-type-badge"
+                      [class.badge-promo]="post.badge === 'Promoción'"
+                    >
+                      {{ post.badge }}
+                    </span>
+                  }
+                  @if (isSelf()) {
                     <button
                       mat-icon-button
                       type="button"
-                      class="btn icon-only"
-                      [disabled]="busy()"
-                      (click)="deletePost(post)"
-                      title="Eliminar publicación"
-                      aria-label="Eliminar publicación"
+                      class="post-menu-btn"
+                      [matMenuTriggerFor]="postActionMenu"
+                      aria-label="Opciones de publicación"
+                      matTooltip="Opciones"
                     >
-                      <span class="material-symbols-outlined" aria-hidden="true">delete</span>
+                      <span class="material-symbols-outlined" aria-hidden="true">more_vert</span>
                     </button>
+                    <mat-menu #postActionMenu="matMenu" xPosition="before">
+                      <button
+                        mat-menu-item
+                        type="button"
+                        class="text-danger"
+                        (click)="deletePost(post)"
+                      >
+                        <span class="material-symbols-outlined text-danger" aria-hidden="true"
+                          >delete</span
+                        >
+                        <span class="text-danger">Eliminar publicación</span>
+                      </button>
+                    </mat-menu>
                   }
                 </div>
               </div>
@@ -802,23 +861,48 @@
               <!-- BOTONES DE INTERACCIÓN (ME GUSTA, COMENTAR, COMPARTIR) -->
               <div class="post-interactions">
                 <button
+                  mat-button
                   type="button"
                   class="post-action-btn"
                   [class.liked]="post.liked"
                   (click)="toggleLike(post)"
+                  aria-label="Me gusta"
                 >
                   <span class="material-symbols-outlined" aria-hidden="true">{{
                     post.liked ? 'favorite' : 'favorite_border'
                   }}</span>
-                  <span>{{ post.likes || 0 }} Me gusta</span>
+                  <span>
+                    @if ((post.likes || 0) > 0) {
+                      {{ post.likes }} {{ post.likes === 1 ? 'me gusta' : 'me gustas' }}
+                    } @else {
+                      Me gusta
+                    }
+                  </span>
                 </button>
-                <button type="button" class="post-action-btn" (click)="handleCommentClick(post)">
-                  <span class="material-symbols-outlined" aria-hidden="true"
-                    >chat_bubble_outline</span
-                  >
-                  <span>{{ post.commentCount || 0 }} Comentarios</span>
+                <button
+                  mat-button
+                  type="button"
+                  class="post-action-btn"
+                  (click)="handleCommentClick(post)"
+                  aria-label="Comentar"
+                >
+                  <span class="material-symbols-outlined" aria-hidden="true">mode_comment</span>
+                  <span>
+                    @if ((post.commentCount || 0) > 0) {
+                      {{ post.commentCount }}
+                      {{ post.commentCount === 1 ? 'comentario' : 'comentarios' }}
+                    } @else {
+                      Comentar
+                    }
+                  </span>
                 </button>
-                <button type="button" class="post-action-btn" (click)="compartirPost(post)">
+                <button
+                  mat-button
+                  type="button"
+                  class="post-action-btn"
+                  (click)="compartirPost(post)"
+                  aria-label="Compartir publicación"
+                >
                   <span class="material-symbols-outlined" aria-hidden="true">share</span>
                   <span>Compartir</span>
                 </button>
@@ -829,15 +913,15 @@
               <section class="panel empty-profile-panel">
                 <div class="empty-camera-circle">
                   <span class="material-symbols-outlined empty-icon" aria-hidden="true"
-                    >photo_camera</span
+                    >article</span
                   >
                 </div>
                 <h2>Aún no hay publicaciones</h2>
                 <p>
                   {{
-                    isOwnerPerspective() || isSelf()
+                    isSelf()
                       ? 'Todavía no has compartido publicaciones. ¡Comparte tus partidos o novedades!'
-                      : p.name + ' todavía no ha compartido nada. ¡Vuelve pronto!'
+                      : p.name + ' todavía no ha compartido ninguna publicación.'
                   }}
                 </p>
               </section>
@@ -1021,7 +1105,13 @@
                       >
                     </div>
                     <h2>Aún no hay fotos en la galería</h2>
-                    <p>Las fotografías compartidas en publicaciones o sedes aparecerán aquí.</p>
+                    <p>
+                      {{
+                        isSelf()
+                          ? 'Las fotografías que compartas en tus publicaciones aparecerán aquí.'
+                          : p.name + ' todavía no ha compartido fotos en su galería.'
+                      }}
+                    </p>
                   </div>
                 }
               }
@@ -1518,62 +1608,67 @@
                   <dd>{{ p.role }}</dd>
                 </div>
                 <div>
-                  <dt>Ubicación</dt>
-                  <dd>{{ pLocation() || 'Ubicación no especificada' }}</dd>
+                  <dt>Distrito / Ubicación</dt>
+                  <dd>{{ pLocation() || 'No especificado' }}</dd>
                 </div>
-                <div>
-                  <dt>Celular</dt>
-                  <dd>
-                    @if (isSelf() || p.isPhonePublic) {
-                      {{ p.whatsapp || p.phone || 'No registrado' }}
-                    } @else {
-                      <span class="private-chip">
-                        <span class="material-symbols-outlined lock-icon" aria-hidden="true"
-                          >lock</span
-                        >
-                        Privado
-                      </span>
-                    }
-                  </dd>
-                </div>
-                <div>
-                  <dt>Dirección</dt>
-                  <dd>
-                    @if (isSelf() || p.isAddressPublic) {
-                      {{ p.address || 'No registrada' }}
-                    } @else {
-                      <span class="private-chip">
-                        <span class="material-symbols-outlined lock-icon" aria-hidden="true"
-                          >lock</span
-                        >
-                        Privado
-                      </span>
-                    }
-                  </dd>
-                </div>
+                @if (p.posicion) {
+                  <div>
+                    <dt>Posición preferida</dt>
+                    <dd>{{ p.posicion }}</dd>
+                  </div>
+                }
+                @if (p.nivel) {
+                  <div>
+                    <dt>Nivel de juego</dt>
+                    <dd>{{ p.nivel }}</dd>
+                  </div>
+                }
+                @if (p.pieDominante) {
+                  <div>
+                    <dt>Pie dominante</dt>
+                    <dd>{{ p.pieDominante }}</dd>
+                  </div>
+                }
+                @if (p.disponibilidad) {
+                  <div>
+                    <dt>Disponibilidad</dt>
+                    <dd>{{ p.disponibilidad }}</dd>
+                  </div>
+                }
+                @if (isSelf() || p.isPhonePublic) {
+                  @if (p.whatsapp || p.phone) {
+                    <div>
+                      <dt>Celular / WhatsApp</dt>
+                      <dd>{{ p.whatsapp || p.phone }}</dd>
+                    </div>
+                  }
+                }
+                @if (isSelf() || p.isAddressPublic) {
+                  @if (p.address) {
+                    <div>
+                      <dt>Dirección</dt>
+                      <dd>{{ p.address }}</dd>
+                    </div>
+                  }
+                }
                 <div>
                   <dt>Miembro desde</dt>
                   <dd>{{ memberSince() }}</dd>
                 </div>
-                <div>
-                  <dt>Partidos jugados</dt>
-                  <dd>{{ matchesPlayed() }} encuentros</dd>
-                </div>
-                <div>
-                  <dt>Sede más jugada</dt>
-                  <dd>
-                    @if (isSelf() || isFavoriteVenuePublic()) {
-                      {{ mostPlayedVenue() || 'Sin actividad reciente' }}
-                    } @else {
-                      <span class="private-chip">
-                        <span class="material-symbols-outlined lock-icon" aria-hidden="true"
-                          >lock</span
-                        >
-                        Privado
-                      </span>
-                    }
-                  </dd>
-                </div>
+                @if (matchesPlayed() > 0) {
+                  <div>
+                    <dt>Partidos jugados</dt>
+                    <dd>
+                      {{ matchesPlayed() }} {{ matchesPlayed() === 1 ? 'partido' : 'partidos' }}
+                    </dd>
+                  </div>
+                }
+                @if (mostPlayedVenue() && (isSelf() || isFavoriteVenuePublic())) {
+                  <div>
+                    <dt>Sede más jugada</dt>
+                    <dd>{{ mostPlayedVenue() }}</dd>
+                  </div>
+                }
               </dl>
             </section>
 

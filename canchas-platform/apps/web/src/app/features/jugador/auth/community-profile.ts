@@ -1,5 +1,4 @@
 import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
-import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -12,6 +11,7 @@ import {
   CommunityProfile as Profile,
   CommunityPost,
   CommunityReview,
+  MutualFollower,
 } from '@core/services/community-profile.service';
 import { ProfileHeader } from '@shared/components/profile-header/profile-header';
 import { NotificationPreferences } from '@shared/components/notification-preferences/notification-preferences';
@@ -21,13 +21,17 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatDividerModule } from '@angular/material/divider';
 
 @Component({
   selector: 'app-community-profile',
   imports: [
     FormsModule,
     RouterLink,
-    DatePipe,
     ProfileHeader,
     NotificationPreferences,
     MatFormFieldModule,
@@ -36,6 +40,11 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
     MatButtonModule,
     MatProgressSpinnerModule,
     MatProgressBarModule,
+    MatMenuModule,
+    MatTooltipModule,
+    MatChipsModule,
+    MatSnackBarModule,
+    MatDividerModule,
   ],
   templateUrl: './community-profile.html',
   styleUrl: './community-profile.css',
@@ -51,6 +60,7 @@ export class CommunityProfilePage {
   private readonly courtReportService = inject(CourtReportService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly snackBar = inject(MatSnackBar);
 
   private readonly params = toSignal(this.route.paramMap, {
     initialValue: this.route.snapshot.paramMap,
@@ -153,10 +163,11 @@ export class CommunityProfilePage {
   protected readonly busy = signal(false);
   protected readonly reading = signal(false);
   protected readonly tab = signal('publicaciones');
-  protected readonly previewRole = signal<'auto' | 'owner' | 'visitor'>('owner');
+  protected readonly previewRole = signal<'auto' | 'owner' | 'visitor'>('auto');
   protected readonly settingsOpen = signal(false);
   protected readonly draftPhotos = signal<string[]>([]);
   protected readonly following = signal<boolean | null>(null);
+  protected readonly mutualFollowers = signal<MutualFollower[]>([]);
   protected readonly relationshipBusy = signal(false);
   protected readonly hasMore = signal(false);
   protected readonly moreBusy = signal(false);
@@ -306,7 +317,24 @@ export class CommunityProfilePage {
     return '';
   });
 
-  protected readonly memberSince = computed(() => 'Octubre 2026');
+  protected readonly memberSince = computed(() => {
+    const u = this.auth.user() as Record<string, unknown> | null;
+    const dateStr = this.isSelf()
+      ? ((u?.['createdAt'] || u?.['fecmod'] || u?.['created_at']) as string | undefined)
+      : null;
+    if (dateStr) {
+      try {
+        const d = new Date(dateStr);
+        if (!isNaN(d.getTime())) {
+          const m = d.toLocaleString('es-PE', { month: 'long' });
+          return `${m.charAt(0).toUpperCase() + m.slice(1)} ${d.getFullYear()}`;
+        }
+      } catch {}
+    }
+    const now = new Date();
+    const m = now.toLocaleString('es-PE', { month: 'long' });
+    return `${m.charAt(0).toUpperCase() + m.slice(1)} ${now.getFullYear()}`;
+  });
   protected readonly matchesPlayed = computed(() => {
     if (this.isSelf()) {
       const bookings = this.myBookings();
@@ -489,7 +517,22 @@ export class CommunityProfilePage {
       const p = this.profile(),
         user = this.auth.user();
       this.following.set(null);
+      this.mutualFollowers.set([]);
       if (p && user && p.id !== user.id) void this.loadRelationship(p.id, user.id);
+    });
+    const initialTab = this.route.snapshot.queryParamMap.get('tab');
+    if (initialTab) {
+      this.tab.set(initialTab);
+    }
+  }
+
+  protected setTab(newTab: string): void {
+    this.tab.set(newTab);
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { tab: newTab },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
     });
   }
 
@@ -1046,7 +1089,6 @@ export class CommunityProfilePage {
       this.openAuthPrompt('reportar este perfil');
       return;
     }
-    this.moreMenuOpen.set(false);
     this.reportModalOpen.set(true);
   }
 
@@ -1066,27 +1108,28 @@ export class CommunityProfilePage {
         });
     }
     this.reportModalOpen.set(false);
-    this.shareToast.set(
-      'Reporte enviado. Nuestro equipo revisará el caso en la sección Calidad → Reportes.',
-    );
-    setTimeout(() => this.shareToast.set(''), 4000);
+    this.snackBar.open('Reporte enviado para revisión.', 'Cerrar', { duration: 3500 });
   }
 
-  protected bloquearUsuario(): void {
+  protected confirmarBloqueoUsuario(): void {
     if (!this.signedIn()) {
       this.openAuthPrompt('bloquear a este usuario');
       return;
     }
-    this.moreMenuOpen.set(false);
     const p = this.profile();
     if (!p) return;
     if (
-      !window.confirm(
-        `¿Seguro que deseas bloquear a ${p.name}? Ya no podrás interactuar con este perfil.`,
+      window.confirm(
+        `¿Seguro que deseas bloquear a ${p.name}? Ya no podrás interactuar con este perfil ni ver sus publicaciones.`,
       )
-    )
-      return;
+    ) {
+      this.bloquearUsuario();
+    }
+  }
 
+  protected bloquearUsuario(): void {
+    const p = this.profile();
+    if (!p) return;
     try {
       const blocked = JSON.parse(localStorage.getItem('canchero_blocked_users') || '[]');
       if (!blocked.includes(p.id)) {
@@ -1094,8 +1137,7 @@ export class CommunityProfilePage {
         localStorage.setItem('canchero_blocked_users', JSON.stringify(blocked));
       }
       this.isBlocked.set(true);
-      this.shareToast.set('Has bloqueado a este usuario.');
-      setTimeout(() => this.shareToast.set(''), 3000);
+      this.snackBar.open(`Has bloqueado a ${p.name}.`, 'Cerrar', { duration: 3500 });
     } catch {
       this.actionError.set('No se pudo procesar el bloqueo.');
     }
@@ -1109,34 +1151,21 @@ export class CommunityProfilePage {
       const updated = blocked.filter((id: string) => id !== p.id);
       localStorage.setItem('canchero_blocked_users', JSON.stringify(updated));
       this.isBlocked.set(false);
-      this.shareToast.set('Usuario desbloqueado.');
-      setTimeout(() => this.shareToast.set(''), 3000);
+      this.snackBar.open('Usuario desbloqueado.', 'Cerrar', { duration: 3000 });
     } catch {}
   }
 
   /* ================= COMPARTIR PERFIL ================= */
   protected async compartirPerfil(): Promise<void> {
     const url = typeof window !== 'undefined' ? window.location.href : '';
-    const name = this.profile()?.name || 'Perfil';
-    if (typeof navigator !== 'undefined' && navigator.share) {
-      try {
-        await navigator.share({
-          title: `Perfil de ${name} en Canchero`,
-          text: `Mira el perfil de ${name} en Canchero`,
-          url,
-        });
-        return;
-      } catch {}
-    }
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
       try {
         await navigator.clipboard.writeText(url);
-        this.shareToast.set('¡Enlace del perfil copiado al portapapeles!');
-        setTimeout(() => this.shareToast.set(''), 3000);
-      } catch {
-        this.actionError.set('No se pudo copiar el enlace.');
-      }
+        this.snackBar.open('Enlace copiado', 'Cerrar', { duration: 3000 });
+        return;
+      } catch {}
     }
+    this.snackBar.open('Enlace copiado', 'Cerrar', { duration: 3000 });
   }
 
   /* ================= FOTOS Y SELECTOR DE EMOJIS ================= */
@@ -1288,11 +1317,69 @@ export class CommunityProfilePage {
   private async loadRelationship(id: string, user: string) {
     try {
       const result = await firstValueFrom(this.api.relationship(id));
-      if (id === this.profile()?.id && user === this.auth.user()?.id)
+      if (id === this.profile()?.id && user === this.auth.user()?.id) {
         this.following.set(result.following);
+        this.mutualFollowers.set(result.mutualFollowers || []);
+      }
     } catch {
-      if (id === this.profile()?.id) this.following.set(null);
+      if (id === this.profile()?.id) {
+        this.following.set(null);
+        this.mutualFollowers.set([]);
+      }
     }
+  }
+
+  protected formatRelativeDate(dateStr: string | null | undefined): string {
+    if (!dateStr) return '';
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return '';
+      const now = new Date();
+      const diffMs = now.getTime() - d.getTime();
+      if (diffMs < 0) return 'hace un momento';
+      const diffSec = Math.floor(diffMs / 1000);
+      if (diffSec < 60) return 'hace un momento';
+      const diffMin = Math.floor(diffSec / 60);
+      if (diffMin < 60) return `hace ${diffMin} min`;
+      const diffHours = Math.floor(diffMin / 60);
+      if (diffHours < 24) return `hace ${diffHours} h`;
+      const diffDays = Math.floor(diffHours / 24);
+      if (diffDays === 1) return 'ayer';
+      if (diffDays < 7) return `hace ${diffDays} d`;
+      return d.toLocaleDateString('es-PE', { day: 'numeric', month: 'short', year: 'numeric' });
+    } catch {
+      return '';
+    }
+  }
+
+  protected formatFullDate(dateStr: string | null | undefined): string {
+    if (!dateStr) return '';
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return '';
+      return d.toLocaleString('es-PE', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch {
+      return '';
+    }
+  }
+
+  protected getInitials(name: string | null | undefined): string {
+    if (!name) return 'JU';
+    return (
+      name
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((p) => p[0])
+        .join('')
+        .toUpperCase() || 'JU'
+    );
   }
 
   protected async follow() {
