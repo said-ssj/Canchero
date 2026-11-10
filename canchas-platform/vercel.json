@@ -4,7 +4,6 @@
   "installCommand": "npm ci",
   "buildCommand": "npm run build:web",
   "outputDirectory": "apps/web/dist/canchero/browser",
-  "cleanUrls": true,
   "headers": [
     {
       "source": "/images/(.*)",
@@ -21,7 +20,7 @@
   ],
   "rewrites": [
     {
-      "source": "/((?!api/|.*\\..*).*)",
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ]

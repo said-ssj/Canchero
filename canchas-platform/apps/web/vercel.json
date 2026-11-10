@@ -1,7 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "angular",
-  "cleanUrls": true,
   "headers": [
     {
       "source": "/images/(.*)",
@@ -18,7 +17,7 @@
   ],
   "rewrites": [
     {
-      "source": "/((?!api/|.*\\..*).*)",
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ]
