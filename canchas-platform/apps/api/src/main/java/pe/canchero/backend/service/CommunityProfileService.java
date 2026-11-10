@@ -24,6 +24,7 @@ public class CommunityProfileService {
     public record Settings(String biography, String whatsapp, String cover) {}
     public record Owner(String id, String name, String photo) {}
     public record MutualFollower(String id, String name, String photo) {}
+    public record ProfileSearchResult(String id, String name, String photo, String role) {}
     public Owner venueOwner(int venueId) {
         return jdbc.query("""
             select u.id_usuario, trim(concat_ws(' ',u.nombre,u.apellido)), p.foto
@@ -141,6 +142,30 @@ public class CommunityProfileService {
             where f_target.id_seguido = ? and f_viewer.id_seguidor = ? and u.estado = 'A'
             order by u.nombre limit 10
             """, (rs, row) -> new MutualFollower(rs.getString(1), Objects.toString(rs.getString(2), "Usuario"), rs.getString(3)), target, viewer);
+    }
+    public List<ProfileSearchResult> searchProfiles(String query) {
+        if (query == null || query.trim().length() < 2) return List.of();
+        requireSchema();
+        String pattern = "%" + query.trim().toLowerCase() + "%";
+        return jdbc.query("""
+            select u.id_usuario,
+                   trim(concat_ws(' ', nullif(u.nombre,''), nullif(u.apellido,''))) as nombre,
+                   p.foto,
+                   coalesce(r.nombre, 'Jugador') as rol
+            from usuario u
+            left join rol r on r.id_rol = u.id_rol
+            left join perfil_jugador p on p.id_usuario = u.id_usuario
+            where u.estado = 'A'
+              and (lower(trim(concat_ws(' ', nullif(u.nombre,''), nullif(u.apellido,'')))) like ?
+                   or lower(u.nombre) like ?
+                   or lower(u.apellido) like ?)
+            order by u.nombre limit 10
+            """, (rs, row) -> new ProfileSearchResult(
+                rs.getString(1),
+                Objects.toString(rs.getString(2), "Jugador"),
+                rs.getString(3),
+                rs.getString(4)
+            ), pattern, pattern, pattern);
     }
     @Transactional
     public void follow(AuthUserDto user,UUID target,boolean follow) {

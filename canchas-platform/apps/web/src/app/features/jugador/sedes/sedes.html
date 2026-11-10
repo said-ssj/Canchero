@@ -21,6 +21,19 @@
           [value]="busqueda()"
           (input)="onSearch($event)"
         />
+        @if (busqueda().trim()) {
+          <button
+            mat-icon-button
+            matSuffix
+            type="button"
+            class="input-clear-btn"
+            (click)="clearSearchTerm()"
+            aria-label="Limpiar búsqueda"
+            matTooltip="Limpiar"
+          >
+            <mat-icon>close</mat-icon>
+          </button>
+        }
       </mat-form-field>
 
       <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
@@ -163,9 +176,27 @@
               <mat-progress-bar mode="indeterminate"></mat-progress-bar>
             }
           } @else if (!catalogError() || venues().length) {
-            <p class="results-count-text">
-              <strong data-results-count>{{ filteredVenues().length }}</strong> sedes encontradas
-            </p>
+            <div class="results-count-container">
+              <p class="results-count-text">
+                <strong data-results-count>{{ filteredVenues().length }}</strong>
+                {{ filteredVenues().length === 1 ? 'sede encontrada' : 'sedes encontradas' }}
+                @if (busqueda().trim(); as term) {
+                  para <span class="search-term-highlight">«{{ term }}»</span>
+                }
+              </p>
+              @if (busqueda().trim(); as term) {
+                <button
+                  type="button"
+                  class="search-term-chip"
+                  (click)="clearSearchTerm()"
+                  matTooltip="Quitar término de búsqueda"
+                  aria-label="Quitar término de búsqueda"
+                >
+                  <span>{{ term }}</span>
+                  <span class="material-symbols-outlined icon-chip-close">close</span>
+                </button>
+              }
+            </div>
           }
         </div>
 
@@ -401,15 +432,25 @@
           <div class="results-empty">
             <article class="card state">
               <span class="material-symbols-outlined icon-32" aria-hidden="true">search_off</span>
-              <h3>No encontramos sedes con ese criterio</h3>
-              <p>
-                Intenta buscando en otro distrito o seleccionando "Todas las opciones" en el tipo de
-                cancha.
-              </p>
+              @if (busqueda().trim(); as term) {
+                <h3>No encontramos sedes para «{{ term }}»</h3>
+                <p>
+                  Verifica que no haya errores de ortografía o prueba eliminando los filtros para
+                  ver más opciones disponibles.
+                </p>
+              } @else {
+                <h3>No encontramos sedes con ese criterio</h3>
+                <p>
+                  Intenta buscando en otro distrito o seleccionando "Todos los formatos" en los
+                  filtros.
+                </p>
+              }
               <div class="row" style="justify-content: center; margin-top: 12px">
                 <button type="button" class="btn primary" (click)="resetFilters()">
-                  <span class="material-symbols-outlined icon-18" aria-hidden="true">refresh</span>
-                  Restablecer Filtros
+                  <span class="material-symbols-outlined icon-18" aria-hidden="true"
+                    >filter_alt_off</span
+                  >
+                  Limpiar filtros
                 </button>
               </div>
             </article>

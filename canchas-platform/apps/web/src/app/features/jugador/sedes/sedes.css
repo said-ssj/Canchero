@@ -621,3 +621,66 @@ body.dark-theme .view-mode-btn.is-active {
     min-height: 160px;
   }
 }
+
+/* Indicador dinámico de búsqueda y chip para remover término */
+.results-count-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.search-term-highlight {
+  color: var(--primary, #15803d);
+  font-weight: 700;
+}
+
+.search-term-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  background: rgba(21, 128, 61, 0.1);
+  color: #15803d;
+  border: 1px solid rgba(21, 128, 61, 0.25);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.search-term-chip:hover {
+  background: rgba(21, 128, 61, 0.18);
+  border-color: #15803d;
+}
+
+:host-context([data-theme='dark']) .search-term-chip {
+  background: rgba(74, 222, 128, 0.15);
+  color: #4ade80;
+  border-color: rgba(74, 222, 128, 0.3);
+}
+
+:host-context([data-theme='dark']) .search-term-chip:hover {
+  background: rgba(74, 222, 128, 0.25);
+  border-color: #4ade80;
+}
+
+.icon-chip-close {
+  font-size: 14px !important;
+  width: 14px !important;
+  height: 14px !important;
+}
+
+.input-clear-btn {
+  width: 28px !important;
+  height: 28px !important;
+  line-height: 28px !important;
+  color: var(--mat-sys-on-surface-variant, #94a3b8) !important;
+}
+
+.input-clear-btn mat-icon {
+  font-size: 16px !important;
+  width: 16px !important;
+  height: 16px !important;
+}

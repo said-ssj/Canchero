@@ -1,4 +1,5 @@
 import { Component, computed, effect, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -58,9 +59,10 @@ export class AccountSettingsPage {
   protected readonly profile = this.auth.playerProfile;
   protected readonly themeMode = this.theme.mode;
 
-  // Sincronización de pestaña activa mediante queryParam ?tab=...
+  // Sincronización reactiva de pestaña activa mediante queryParam ?tab=...
+  private readonly queryParams = toSignal(this.route.queryParamMap);
   protected readonly activeTab = computed<'perfil' | 'notificaciones' | 'seguridad'>(() => {
-    const t = this.route.snapshot.queryParamMap.get('tab');
+    const t = this.queryParams()?.get('tab');
     if (t === 'notificaciones' || t === 'seguridad') return t;
     return 'perfil';
   });

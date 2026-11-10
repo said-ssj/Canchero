@@ -1,0 +1,261 @@
+@if (isOpen) {
+  <div class="search-overlay-backdrop" (click)="closeOverlay()">
+    <div
+      class="search-overlay-card"
+      (click)="$event.stopPropagation()"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Buscador global de Canchero"
+    >
+      <!-- Cabecera del buscador (Combobox) -->
+      <div
+        class="search-box-bar"
+        role="combobox"
+        aria-haspopup="listbox"
+        [attr.aria-expanded]="true"
+        [attr.aria-owns]="'search-results-list'"
+      >
+        <span class="material-symbols-outlined search-leading-icon" aria-hidden="true">search</span>
+
+        <input
+          #searchInput
+          type="text"
+          class="search-main-input"
+          placeholder="Buscar sedes, canchas o jugadores..."
+          autocomplete="off"
+          spellcheck="false"
+          [value]="query()"
+          (input)="onInput($event)"
+          (keydown)="onKeydown($event)"
+          [attr.aria-activedescendant]="activeItemId()"
+          aria-autocomplete="list"
+          aria-controls="search-results-list"
+          autofocus
+        />
+
+        @if (isLoading()) {
+          <mat-spinner diameter="20" class="search-inline-spinner"></mat-spinner>
+        } @else if (query().trim()) {
+          <button
+            type="button"
+            class="search-icon-btn"
+            (click)="clearQuery()"
+            aria-label="Borrar texto de búsqueda"
+            matTooltip="Limpiar"
+          >
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        }
+
+        <button
+          type="button"
+          class="search-close-btn"
+          (click)="closeOverlay()"
+          aria-label="Cerrar buscador"
+        >
+          Cerrar
+        </button>
+      </div>
+
+      <!-- Región accesible para anuncios a lectores de pantalla -->
+      <div class="sr-only" aria-live="polite">
+        {{ liveAnnouncement() }}
+      </div>
+
+      <!-- Contenedor con scroll para resultados, recientes y atajos -->
+      <div
+        id="search-results-list"
+        class="search-scroll-area"
+        role="listbox"
+        aria-label="Resultados de búsqueda"
+      >
+        <!-- ESTADO 1: SIN TEXTO O MENOS DE 2 CARACTERES -->
+        @if (query().trim().length < 2) {
+          <!-- Historial de Búsquedas Recientes -->
+          @if (recentSearches().length > 0) {
+            <div class="quick-section">
+              <div class="quick-section-header">
+                <div class="section-title-wrap">
+                  <span class="material-symbols-outlined section-icon">history</span>
+                  <span class="section-title">Búsquedas recientes</span>
+                </div>
+                <button
+                  type="button"
+                  class="clear-all-btn"
+                  (click)="clearAllRecent()"
+                  aria-label="Borrar todo el historial de búsquedas"
+                >
+                  Borrar historial
+                </button>
+              </div>
+
+              <div class="recent-list">
+                @for (term of recentSearches(); track term; let idx = $index) {
+                  <div
+                    class="recent-item"
+                    role="option"
+                    [id]="'opt-recent-' + idx"
+                    [attr.aria-selected]="isItemFocused('opt-recent-' + idx)"
+                    [class.focused]="isItemFocused('opt-recent-' + idx)"
+                    (click)="selectRecent(term)"
+                  >
+                    <div class="recent-content">
+                      <span class="material-symbols-outlined recent-icon">history</span>
+                      <span class="recent-term">{{ term }}</span>
+                    </div>
+                    <button
+                      type="button"
+                      class="remove-recent-btn"
+                      (click)="removeRecent(term, $event)"
+                      aria-label="Eliminar búsqueda"
+                      matTooltip="Eliminar"
+                    >
+                      <span class="material-symbols-outlined">close</span>
+                    </button>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- Atajos útiles -->
+          <div class="quick-section">
+            <div class="quick-section-header">
+              <div class="section-title-wrap">
+                <span class="material-symbols-outlined section-icon">explore</span>
+                <span class="section-title">Atajos útiles</span>
+              </div>
+            </div>
+
+            <div class="shortcuts-grid">
+              @for (sc of shortcuts; track sc.id; let idx = $index) {
+                <button
+                  type="button"
+                  class="shortcut-card"
+                  role="option"
+                  [id]="'opt-shortcut-' + idx"
+                  [attr.aria-selected]="isItemFocused('opt-shortcut-' + idx)"
+                  [class.focused]="isItemFocused('opt-shortcut-' + idx)"
+                  (click)="selectShortcut(sc)"
+                >
+                  <span class="material-symbols-outlined shortcut-icon">{{ sc.icon }}</span>
+                  <span class="shortcut-label">{{ sc.label }}</span>
+                  <span class="material-symbols-outlined shortcut-arrow">arrow_forward</span>
+                </button>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- ESTADO 2: CON QUERY (>= 2 CARACTERES) -->
+        @if (query().trim().length >= 2) {
+          <!-- Loader mientras consulta -->
+          @if (isLoading() && !searchResults()) {
+            <div class="search-skeleton-list" aria-hidden="true">
+              <div class="skeleton-row"></div>
+              <div class="skeleton-row"></div>
+              <div class="skeleton-row"></div>
+            </div>
+          }
+
+          <!-- Error en la búsqueda -->
+          @if (hasError()) {
+            <div class="search-state-box error-state">
+              <span class="material-symbols-outlined state-icon">error</span>
+              <h4>Ocurrió un error al buscar</h4>
+              <p>No se pudo conectar con el catálogo. Intenta nuevamente.</p>
+              <button type="button" class="btn-retry" (click)="retrySearch()">Reintentar</button>
+            </div>
+          }
+
+          <!-- Resultados obtenidos -->
+          @if (!isLoading() && searchResults(); as res) {
+            @if (res.totalCount === 0) {
+              <!-- Estado vacío honesto sin datos inventados -->
+              <div class="search-state-box empty-state">
+                <span class="material-symbols-outlined state-icon">search_off</span>
+                <h4>No encontramos resultados para «{{ query() }}»</h4>
+                <p>
+                  Verifica que no haya errores tipográficos o prueba buscando por ciudad, distrito o
+                  tipo de deporte.
+                </p>
+                <button type="button" class="btn-explore-all" (click)="submitGlobalSearch()">
+                  Ver todas las sedes disponibles
+                </button>
+              </div>
+            } @else {
+              <!-- 1. Grupo de Sedes -->
+              @if (res.sedes.length > 0) {
+                <app-search-result-group
+                  title="Sedes"
+                  icon="stadium"
+                  [count]="res.sedes.length"
+                  [footerLabel]="'Ver todas las sedes para «' + query() + '»'"
+                  (footerClick)="viewAllSedesForQuery()"
+                >
+                  @for (sede of res.sedes; track sede.id; let idx = $index) {
+                    <app-search-result-item
+                      type="sede"
+                      [item]="sede"
+                      [query]="query()"
+                      [itemId]="'opt-sede-' + idx"
+                      [isFocused]="isItemFocused('opt-sede-' + idx)"
+                      (selected)="selectSede(sede)"
+                    />
+                  }
+                </app-search-result-group>
+              }
+
+              <!-- 2. Grupo de Canchas -->
+              @if (res.canchas.length > 0) {
+                <app-search-result-group
+                  title="Canchas"
+                  icon="sports_soccer"
+                  [count]="res.canchas.length"
+                >
+                  @for (cancha of res.canchas; track cancha.id; let idx = $index) {
+                    <app-search-result-item
+                      type="cancha"
+                      [item]="cancha"
+                      [query]="query()"
+                      [itemId]="'opt-cancha-' + idx"
+                      [isFocused]="isItemFocused('opt-cancha-' + idx)"
+                      (selected)="selectCancha(cancha)"
+                    />
+                  }
+                </app-search-result-group>
+              }
+
+              <!-- 3. Grupo de Personas -->
+              @if (res.personas.length > 0) {
+                <app-search-result-group
+                  title="Jugadores y comunidad"
+                  icon="group"
+                  [count]="res.personas.length"
+                >
+                  @for (persona of res.personas; track persona.id; let idx = $index) {
+                    <app-search-result-item
+                      type="persona"
+                      [item]="persona"
+                      [query]="query()"
+                      [itemId]="'opt-persona-' + idx"
+                      [isFocused]="isItemFocused('opt-persona-' + idx)"
+                      (selected)="selectPersona(persona)"
+                    />
+                  }
+                </app-search-result-group>
+              }
+            }
+          }
+        }
+      </div>
+
+      <!-- Pie de ayuda con atajos de teclado -->
+      <div class="search-overlay-footer">
+        <div class="footer-tip"><kbd>↑</kbd> <kbd>↓</kbd> <span>Navegar</span></div>
+        <div class="footer-tip"><kbd>↵</kbd> <span>Seleccionar</span></div>
+        <div class="footer-tip"><kbd>Esc</kbd> <span>Cerrar</span></div>
+      </div>
+    </div>
+  </div>
+}

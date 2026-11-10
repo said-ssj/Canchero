@@ -12,6 +12,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { AuthService } from '@core/auth/auth.service';
+import { SearchOverlayComponent } from '../search-overlay/search-overlay';
 
 export interface UserMenuItem {
   label: string;
@@ -35,6 +36,7 @@ export interface UserMenuItem {
     MatMenuModule,
     MatDividerModule,
     MatTooltipModule,
+    SearchOverlayComponent,
   ],
   selector: 'app-navbar',
   styleUrl: './navbar.css',
@@ -114,44 +116,29 @@ export class Navbar {
     });
   }
 
-  @HostListener('window:keydown.escape')
-  onEscape(): void {
-    if (this.searchOverlayOpen()) {
-      this.closeSearch();
+  @HostListener('window:keydown', ['$event'])
+  handleGlobalShortcuts(event: KeyboardEvent): void {
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+      event.preventDefault();
+      this.openSearch();
+      return;
+    }
+    if (event.key === '/' && !this.searchOverlayOpen()) {
+      const target = event.target as HTMLElement | null;
+      const tag = target?.tagName?.toLowerCase();
+      if (tag !== 'input' && tag !== 'textarea' && tag !== 'select' && !target?.isContentEditable) {
+        event.preventDefault();
+        this.openSearch();
+      }
     }
   }
 
   protected openSearch(): void {
-    this.searchQuery = '';
     this.searchOverlayOpen.set(true);
-    setTimeout(() => {
-      const input = document.querySelector('.search-pill-input') as HTMLInputElement;
-      input?.focus();
-    }, 50);
   }
 
   protected closeSearch(): void {
     this.searchOverlayOpen.set(false);
-    this.searchQuery = '';
-  }
-
-  protected ejecutarBusqueda(query?: string): void {
-    const q = (query !== undefined ? query : this.searchQuery).trim();
-    this.closeSearch();
-    if (q) {
-      void this.router.navigate(['/sedes'], { queryParams: { buscar: q } });
-    } else {
-      void this.router.navigate(['/sedes']);
-    }
-  }
-
-  protected buscarRapido(termino: string): void {
-    this.ejecutarBusqueda(termino);
-  }
-
-  protected irAUsuariosComunidad(): void {
-    this.closeSearch();
-    void this.router.navigate(['/perfil']);
   }
 
   protected logout(): void {
