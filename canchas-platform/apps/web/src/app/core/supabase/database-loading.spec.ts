@@ -69,12 +69,15 @@ describe('DatabaseService catalog lifecycle', () => {
     expect(service.canchas()[0].activa).toBe(false);
   });
 
-  it('un admin no edita "su primera sede" (sería de otro dueño): debe indicar cuál', async () => {
+  it('el superadmin no edita "su primera sede" (sería de otro dueño): debe indicar cuál', async () => {
     vi.spyOn(loader, 'cargarDatosIniciales').mockResolvedValue(undefined);
     const put = vi.fn().mockReturnValue(of({ id: 5, nombre: 'Nueva' }));
     TestBed.configureTestingModule({ providers: [{ provide: HttpClient, useValue: { put } }] });
     const service = TestBed.inject(DatabaseService);
-    vi.spyOn((service as any).auth, 'currentUser').mockReturnValue({ id: 'admin-1', rol: 'admin' });
+    vi.spyOn((service as any).auth, 'currentUser').mockReturnValue({
+      id: 'admin-1',
+      rol: 'superadmin',
+    });
     service.sedes.set([{ id: 5, nombre: 'Ajena', dueno_id: 'owner-b' }] as any);
     await expect(service.saveOrUpdateSede('admin-1', { nombre: 'X' })).rejects.toThrow('qué sede');
     expect(put).not.toHaveBeenCalled();

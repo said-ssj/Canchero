@@ -66,7 +66,7 @@ class PostgresTenantIsolationTest {
                     PostgresTestSupport.PLAYER_2_ID.toString(), PostgresTestSupport.PLAYER_2).get(0).id());
 
             assertForbidden(() -> app.access().requireOwnedVenue(PostgresTestSupport.VENUE_B,
-                    PostgresTestSupport.OWNER_A));
+                    PostgresTestSupport.OWNER_A, pe.canchero.backend.service.VenueAccessService.SEDE_EDITAR));
             assertForbidden(() -> app.access().requireOwnedSession(sessionB, PostgresTestSupport.OWNER_A));
             assertForbidden(() -> app.access().requireOpenOwnedSession(sessionB, PostgresTestSupport.OWNER_A));
 

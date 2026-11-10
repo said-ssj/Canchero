@@ -14,8 +14,24 @@ public class VenueAccessService {
     private final JdbcTemplate jdbc;
     public VenueAccessService(JdbcTemplate jdbc) { this.jdbc = jdbc; }
 
-    private static boolean isSuperAdmin(AuthUserDto user) {
-        return Roles.isSuperAdmin(user.rol());
+    public static final String PERSONAL_GESTIONAR = "personal.gestionar";
+    public static final String VENTA_CREAR = "venta.crear";
+    public static final String INVENTARIO_INGRESAR = "inventario.ingresar";
+    public static final String SEDE_EDITAR = "sede.editar";
+    public static final String RESERVA_VER = "reserva.ver";
+    public static final String RESERVA_GESTIONAR = "reserva.gestionar";
+    public static final String RESERVA_CANCELAR = "reserva.cancelar";
+
+    public static boolean isSuperAdmin(AuthUserDto user) {
+        return user != null && Roles.isSuperAdmin(user.rol());
+    }
+
+    public int requireOwnedVenue(Integer sedeId, AuthUserDto user, String permission) {
+        return requirePermission(sedeId, user, permission);
+    }
+
+    public void requireVenuePermission(int sedeId, String ownerId, AuthUserDto user, String permission) {
+        requirePermission(sedeId, user, permission);
     }
 
     public int requirePermission(Integer sedeId, AuthUserDto user, String permission) {
@@ -24,6 +40,12 @@ public class VenueAccessService {
 
     public boolean hasPermission(Integer sedeId, AuthUserDto user, String permission) {
         return sedeId != null && new TenantPermissions(jdbc).has(user, sedeId, permission);
+    }
+
+    public boolean can(AuthUserDto user, int sedeId, String ownerId, String permission) {
+        if (isSuperAdmin(user)) return true;
+        if (user != null && user.id() != null && user.id().equals(ownerId)) return true;
+        return hasPermission(sedeId, user, permission);
     }
 
     public int requireOwnedVenue(Integer sedeId, AuthUserDto user) {

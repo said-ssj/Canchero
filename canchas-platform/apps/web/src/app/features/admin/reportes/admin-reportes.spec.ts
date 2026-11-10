@@ -130,4 +130,10 @@ describe('AdminReportes', () => {
     });
     expect(component.resolvingReport()).toBeNull();
   });
+
+  it('sin superadmin nunca pide los reportes de todas las sedes, aunque se elija "Todas"', () => {
+    mockCourtReportService.getAll.mockClear();
+    component.onSedeChange('');
+    expect(mockCourtReportService.getAll).toHaveBeenCalledWith({ sedeId: 1, canchaId: undefined });
+  });
 });

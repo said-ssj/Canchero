@@ -14,9 +14,21 @@
 Inventario inicial del codigo al 2026-10-13, no garantia de autorizacion correcta en todos los endpoints.
 Fuente ejecutable: apps/api/src/main/java/pe/canchero/backend/web/controller y web/dto.
 
+### Roles y personal por sede (2026-11-08)
+- `superadmin`: control total de la plataforma (todas las sedes, usuarios y roles, transferir sedes).
+- `dueno`: sus sedes (`sede.id_dueno`), siempre que su rol global siga siendo `dueno`.
+- `admin`, `cajero`, `almacen`, `ayudante`: solo las sedes donde tengan una fila activa en `asignacion_sede` (vía `miembro_negocio` del negocio del dueño), con los permisos de `rol_sede_permiso`. Sin asignación no ven ni operan ninguna sede.
+- `user`, `userPremium`: jugadores (reservan y pagan); `userPremium` aún sin beneficios. `cliente`: cliente presencial sin cuenta propia.
+- Cada endpoint de gestión pide un permiso concreto (`VenueAccessService`): p. ej. `cancha.gestionar`, `reserva.gestionar`, `reserva.cancelar`, `caja.operar` (turno propio), `caja.supervisar` (turnos ajenos, arqueos, crear cajas), `venta.crear`, `producto.gestionar`, `inventario.ingresar`, `reporte.gestionar`, `sede.editar`; `sede.eliminar` solo dueño/superadmin.
+- `GET /api/staff/me`: asignaciones de la persona autenticada `[{id, sedeId, sedeNombre, usuarioId, nombre, email, rol, permisos[]}]`.
+- `GET /api/staff?sedeId=`: personal de la sede (exige `personal.gestionar`).
+- `POST /api/staff` `{sedeId, email, rol}`: asigna `admin|cajero|almacen|ayudante` a una cuenta activa (201). Si la cuenta es de jugador, su rol global pasa al rol asignado; no se puede asignar a dueños ni superadmin (400). Solo el dueño o el superadmin dan el rol `admin` (403). Repetir la asignación no duplica.
+- `DELETE /api/staff/{id}`: desactiva la asignación (204); quitar un `admin` es solo del dueño o superadmin.
+- `PATCH /api/users/{id}/role` acepta `user, userPremium, cliente, dueno, admin, almacen, ayudante, cajero`.
+
 ### Reportes e Incidencias de Canchas (2026-11-07)
 - `POST /api/court-reports`: Permite a un jugador autenticado reportar una cancha específica (`canchaId`, `tipoProblema`, `descripcion`, `prioridad`). El backend resuelve y asigna automáticamente la sede asociada (`cancha.id_sede`). Retorna 201 Created con `CourtReportResponse`.
-- `GET /api/court-reports`: Lista de reportes con filtros opcionales query params `?sedeId=&canchaId=`. Si no se pasan filtros, administradores y superadministradores pueden listar todas las incidencias de la plataforma.
+- `GET /api/court-reports`: Lista de reportes con filtros opcionales query params `?sedeId=&canchaId=`. Si no se pasan filtros, solo el superadministrador puede listar todas las incidencias de la plataforma.
 - `GET /api/court-reports/venue/{sedeId}`: Lista todos los reportes de las canchas pertenecientes a la sede. Exige que el usuario sea el dueño de la sede o administrador global (`VenueAccessService.requireOwnedVenue`).
 - `GET /api/court-reports/court/{canchaId}`: Lista los reportes de una cancha específica. Exige propiedad de la cancha/sede o admin (`VenueAccessService.requireOwnedCourt`).
 - `GET /api/court-reports/mine`: Lista los reportes emitidos por el usuario jugador autenticado.

@@ -213,8 +213,13 @@ export class Detalle {
   ];
 
   protected readonly isLoading = computed(() => this.db.catalogLoading());
-  protected readonly fallbackVenueImg =
-    'https://images.unsplash.com/photo-1529900241929-58a47400d705?q=80&w=1200&auto=format&fit=crop';
+  protected readonly fallbackVenueImg = '/images/venue-placeholder.svg';
+
+  /** Si la foto guardada no carga, muestra el marcador local en vez del ícono roto. */
+  protected onImgError(event: Event): void {
+    const img = event.target as HTMLImageElement;
+    if (img && img.getAttribute('src') !== this.fallbackVenueImg) img.src = this.fallbackVenueImg;
+  }
 
   protected readonly heroImages = computed<string[]>(() => {
     const v = this.venue();

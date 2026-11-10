@@ -31,13 +31,18 @@ class CourtOperationServiceTest {
 
     @Test
     void acceptsDatabaseManagementRolesWithoutAllowingPlayers() {
-        assertTrue(Roles.isOwnerOrAdmin("Due\u00f1o"));
-        assertTrue(Roles.isOwnerOrAdmin(" OWNER "));
-        assertTrue(Roles.isOwnerOrAdmin("Administrador"));
-        assertTrue(Roles.isOwnerOrAdmin("superadmin"));
-        assertFalse(Roles.isOwnerOrAdmin("jugador"));
-        assertFalse(Roles.isOwnerOrAdmin("cliente"));
-        assertFalse(Roles.isOwnerOrAdmin(null));
+        assertTrue(Roles.canEnterPanel("Due\u00f1o"));
+        assertTrue(Roles.canEnterPanel(" OWNER "));
+        assertTrue(Roles.canEnterPanel("Administrador"));
+        assertTrue(Roles.canEnterPanel("superadmin"));
+        assertTrue(Roles.canEnterPanel("Cajero"));
+        assertTrue(Roles.canEnterPanel("almac\u00e9n"));
+        assertTrue(Roles.canEnterPanel("ayudante"));
+        assertFalse(Roles.canEnterPanel("jugador"));
+        assertFalse(Roles.canEnterPanel("cliente"));
+        assertFalse(Roles.canEnterPanel("userPremium"));
+        assertFalse(Roles.canEnterPanel(null));
+        assertFalse(Roles.isSuperAdmin("admin"));
     }
 
     @Test

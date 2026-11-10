@@ -890,4 +890,9 @@ public class PosService extends JdbcSupport {
                 parseLocalDateTime(sale.fecha()),
                 detalles);
     }
+
+    public static String placeholders(int count) {
+        if (count <= 0) return "";
+        return String.join(",", java.util.Collections.nCopies(count, "?"));
+    }
 }

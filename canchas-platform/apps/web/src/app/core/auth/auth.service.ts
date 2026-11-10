@@ -306,9 +306,16 @@ export class AuthService {
     );
   }
 
+  /** Puede entrar al panel: dueño, superadmin o personal de sede (qué sedes y menús ve depende de sus asignaciones). */
   isOwner(): boolean {
     const role = this._user()?.rol;
-    return role === 'dueno' || role === 'admin' || role === 'superadmin' || role === 'OWNER';
+    return role === 'dueno' || role === 'OWNER' || role === 'superadmin' || this.isVenueStaff();
+  }
+
+  /** admin, cajero, almacen o ayudante: solo actúan en las sedes que el dueño les asigna. */
+  isVenueStaff(): boolean {
+    const role = this._user()?.rol;
+    return role === 'admin' || role === 'cajero' || role === 'almacen' || role === 'ayudante';
   }
 
   isSuperAdmin(): boolean {
@@ -334,6 +341,13 @@ export class AuthService {
       case 'admin':
       case 'administrador':
         return 'admin';
+      case 'cajero':
+        return 'cajero';
+      case 'almacen':
+      case 'almacén':
+        return 'almacen';
+      case 'ayudante':
+        return 'ayudante';
       case 'operador':
         return 'operador';
       case 'caja':

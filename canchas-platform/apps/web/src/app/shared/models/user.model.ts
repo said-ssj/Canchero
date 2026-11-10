@@ -1,5 +1,15 @@
 export type UserRole =
-  'PLAYER' | 'OWNER' | 'dueno' | 'cliente' | 'operador' | 'admin' | 'superadmin' | 'caja';
+  | 'PLAYER'
+  | 'OWNER'
+  | 'dueno'
+  | 'cliente'
+  | 'operador'
+  | 'admin'
+  | 'superadmin'
+  | 'caja'
+  | 'cajero'
+  | 'almacen'
+  | 'ayudante';
 
 export interface User {
   id: string;

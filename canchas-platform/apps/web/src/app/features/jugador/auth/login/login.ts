@@ -81,7 +81,7 @@ export class Login {
       }
       this.showError.set(false);
       this.submitting.set(false);
-      if (user.rol === 'OWNER' || user.rol === 'dueno' || user.rol === 'admin') {
+      if (this.auth.isOwner()) {
         void this.router.navigate(['/admin']);
       } else {
         const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');

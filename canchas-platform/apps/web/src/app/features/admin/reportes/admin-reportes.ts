@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, effect, inject, signal, computed, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -165,6 +165,19 @@ export class AdminReportes implements OnInit {
     };
   });
 
+  constructor() {
+    // Las sedes pueden terminar de cargar después de abrir la página: entonces se carga con la sede activa.
+    effect(() => {
+      const venueId = this.adminContext.venue()?.id;
+      if (!venueId || this.isSuperAdmin()) return;
+      untracked(() => {
+        if (this.selectedSedeId() != null) return;
+        this.selectedSedeId.set(Number(venueId));
+        this.loadData();
+      });
+    });
+  }
+
   ngOnInit(): void {
     // Si hay una sede activa en el contexto, inicializar el selector
     const currentVenue = this.adminContext.venue();
@@ -188,6 +201,12 @@ export class AdminReportes implements OnInit {
   }
 
   loadData(): void {
+    // Solo el superadmin puede pedir los reportes de todas las sedes; el resto usa la sede activa.
+    if (this.selectedSedeId() == null && !this.isSuperAdmin()) {
+      const venueId = this.adminContext.venue()?.id;
+      if (!venueId) return; // sedes aún cargando: el effect del constructor vuelve a llamar
+      this.selectedSedeId.set(Number(venueId));
+    }
     this.loading.set(true);
     this.error.set(null);
 

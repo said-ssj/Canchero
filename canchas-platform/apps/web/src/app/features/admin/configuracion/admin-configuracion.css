@@ -585,3 +585,18 @@ button:disabled {
   cursor: pointer;
   color: var(--can-color-ink-secondary, #666666);
 }
+
+/* Teléfono: el enlace del aviso baja a su propia línea en vez de dejar el texto en una columna angosta. */
+@media (max-width: 600px) {
+  .config-callout {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+  .config-callout-content {
+    flex: 1 1 calc(100% - 50px);
+  }
+  .config-callout-action {
+    margin-left: 50px;
+    white-space: normal;
+  }
+}

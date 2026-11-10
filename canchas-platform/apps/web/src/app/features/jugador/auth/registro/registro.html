@@ -19,7 +19,7 @@
         type="button"
         class="role-pill-btn"
         [class.active-green]="rol() === 'jugador'"
-        [class.active-orange]="rol() === 'dueno'"
+        [attr.aria-pressed]="rol() === 'jugador'"
         (click)="selectRol('jugador')"
       >
         <span class="material-symbols-outlined icon-18 icon" aria-hidden="true">sports_soccer</span>
@@ -29,7 +29,7 @@
         type="button"
         class="role-pill-btn"
         [class.active-orange]="rol() === 'dueno'"
-        [class.active-green]="rol() === 'jugador'"
+        [attr.aria-pressed]="rol() === 'dueno'"
         (click)="selectRol('dueno')"
       >
         <span class="material-symbols-outlined icon-18 icon" aria-hidden="true">apartment</span>

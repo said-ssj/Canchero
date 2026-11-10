@@ -96,6 +96,7 @@ class CourtReportServiceTest {
         // Sede 10 tiene 2 canchas (101 y 102); Sede 20 tiene 1 cancha (201)
         jdbc.update("insert into sede values (10, ?, 'Complejo San Isidro', 'A')", ownerAUuid);
         jdbc.update("insert into sede values (20, ?, 'Complejo Miraflores', 'A')", ownerBUuid);
+        StaffTestSchema.create(jdbc);
         jdbc.update("insert into cancha values (101, 10, 'Cancha Sintética 1', 'A')");
         jdbc.update("insert into cancha values (102, 10, 'Cancha Sintética 2', 'A')");
         jdbc.update("insert into cancha values (201, 20, 'Cancha Pádel 1', 'A')");

@@ -100,14 +100,18 @@ export class AdminLayout implements OnInit, OnDestroy {
   readonly isSuperAdmin = computed(() => this.auth.isSuperAdmin());
   readonly canBrowseAllVenues = computed(() => this.auth.currentUser()?.rol === 'superadmin');
   readonly allVenuesMode = computed(() => this.db.managementScope?.() === 'all');
-  readonly accountRoleLabel = computed(() => {
-    const role = this.auth.currentUser()?.rol;
-    if (role === 'superadmin') return 'Superadministrador';
-    if (role === 'admin') return 'Administrador';
-    if (role === 'operador') return 'Operador';
-    if (role === 'caja') return 'Cajero';
-    return 'Dueño de sedes';
-  });
+  private static readonly ROL_ETIQUETAS: Record<string, string> = {
+    superadmin: 'Superadministrador',
+    admin: 'Administrador',
+    cajero: 'Cajero',
+    almacen: 'Almacén',
+    ayudante: 'Ayudante',
+    operador: 'Operador',
+  };
+  readonly accountRoleLabel = computed(
+    () => AdminLayout.ROL_ETIQUETAS[this.auth.currentUser()?.rol ?? ''] ?? 'Dueño de sedes',
+  );
+  readonly rolEtiqueta = this.accountRoleLabel;
   cambiarAlcance(value: string): void {
     this.db.setManagementScope?.(value);
   }

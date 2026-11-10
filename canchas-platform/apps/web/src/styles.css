@@ -1482,6 +1482,14 @@ textarea.form-control {
     display: flex;
   }
 
+  /* "Ingresar" se queda visible: el menú móvil no tiene otro acceso al login. */
+  .nav-actions {
+    gap: 0.5rem;
+  }
+
+  .nav-actions .nav-login {
+    white-space: nowrap;
+  }
   /* Buscador Rápido */
   .search-card {
     flex-direction: column;
@@ -2831,6 +2839,7 @@ body.dark-theme .itinerario-subbar {
   display: none;
 }
 
+<<<<<<< HEAD
 /* ==========================================================================
    CANCHERO GLOBAL DESIGN SYSTEM: BORDES DE 4PX SIN PÍLDORAS
    Alinea todos los grupos de alternancia, chips de filtro y pestañas
@@ -3956,4 +3965,30 @@ body.dark-theme .composer-field .mat-mdc-floating-label,
 :root.dark-theme .cn-field-textarea .mat-mdc-floating-label,
 body.dark-theme .cn-field-textarea .mdc-floating-label {
   background: var(--color-surface-card, #18181b) !important;
+}
+
+/* Mensaje de tabla vacía dentro de un contenedor con scroll horizontal:
+   se queda pegado a la izquierda y con el ancho visible, para que en teléfono no se corte. */
+.table-empty-sticky {
+  position: sticky;
+  left: 0;
+  max-width: calc(100vw - 100px);
+  white-space: normal;
+}
+
+/* Teléfonos angostos (≤400px): la cabecera debe entrar con logo, tema, "Ingresar" y menú. */
+@media (max-width: 400px) {
+  .navbar .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  .brand-logo {
+    gap: 0.4rem;
+  }
+  .brand-name {
+    font-size: 1.1rem;
+  }
+  .brand-badge {
+    display: none;
+  }
 }
