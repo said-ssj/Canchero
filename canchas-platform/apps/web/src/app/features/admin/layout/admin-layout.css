@@ -156,6 +156,40 @@
     transform 0.2s ease;
 }
 
+/* Botón X para cerrar el sidebar en móviles y tablets */
+.sidebar-close-btn {
+  display: none !important;
+}
+
+@media (max-width: 1024px) {
+  .mat-admin-shell .sidebar-close-btn.mat-mdc-icon-button {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: #e2e8f0 !important;
+    width: 38px !important;
+    height: 38px !important;
+    min-width: 38px !important;
+    border-radius: 6px !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    transition:
+      background-color 0.15s ease,
+      color 0.15s ease;
+  }
+
+  .mat-admin-shell .sidebar-close-btn.mat-mdc-icon-button:hover {
+    background: rgba(255, 255, 255, 0.18) !important;
+    color: #ffffff !important;
+  }
+
+  .mat-admin-shell .sidebar-close-btn mat-icon {
+    font-size: 22px !important;
+    width: 22px !important;
+    height: 22px !important;
+    line-height: 22px !important;
+  }
+}
+
 .toast-alert.is-shown {
   transform: translateY(0);
   opacity: 1;

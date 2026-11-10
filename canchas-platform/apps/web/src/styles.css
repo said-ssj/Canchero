@@ -138,6 +138,17 @@ textarea:focus {
   outline: none;
 }
 
+/* Los inputs de Angular Material nunca deben tener borde ni outline interno */
+.mat-mdc-form-field input,
+.mat-mdc-form-field textarea,
+input[matInput],
+textarea[matInput],
+.mat-mdc-input-element {
+  outline: none !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
 input:not([matInput]):focus-visible,
 select:focus-visible,
 textarea:not([matInput]):focus-visible {
@@ -2512,26 +2523,44 @@ body.dark-theme .itinerario-subbar {
 
 @media (max-width: 760px) {
   .management-card {
-    grid-template-columns: 88px minmax(0, 1fr);
+    grid-template-columns: 105px minmax(0, 1fr);
+    touch-action: pan-y;
   }
   .management-card > img,
   .management-card-photo-wrap {
-    width: 88px;
+    width: 105px;
     min-height: 100%;
+    touch-action: pan-y;
   }
   .management-card-body {
-    padding: 14px;
-    gap: 9px;
+    padding: 10px 12px;
+    gap: 6px;
+    touch-action: pan-y;
   }
   .management-card-body h2 {
-    font-size: 16px;
+    font-size: 15px;
+    line-height: 1.25;
+  }
+  .management-card-body p.small,
+  .management-card-body .sede-description {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 11.5px;
+    line-height: 1.35;
+    margin: 0;
   }
   .management-card-body .btn {
     font-size: 11px;
-    padding: 8px;
+    height: 30px;
+    min-height: 30px;
+    padding: 4px 8px;
+    gap: 4px;
   }
   .management-card-body .row {
-    gap: 8px;
+    gap: 6px;
   }
   .management-toolbar > small {
     display: none;

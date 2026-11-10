@@ -622,9 +622,24 @@ body.dark-theme .search-overlay-card {
   font-family: inherit;
 }
 
+/* Cuando se usa dentro de mat-form-field, el contenedor se encarga del contorno */
+.mat-mdc-form-field .search-pill-input,
+.mat-mdc-form-field input.search-pill-input {
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  height: auto !important;
+}
+
 .search-pill-input:focus {
   border-color: var(--color-brand-green, #27802d);
   box-shadow: 0 0 0 3px rgba(39, 128, 45, 0.15);
+}
+
+.mat-mdc-form-field .search-pill-input:focus {
+  box-shadow: none !important;
 }
 
 :root.dark-theme .search-pill-input,
@@ -632,6 +647,12 @@ body.dark-theme .search-pill-input {
   background: #27272a;
   border-color: #3f3f46;
   color: #ffffff;
+}
+
+:root.dark-theme .mat-mdc-form-field .search-pill-input,
+body.dark-theme .mat-mdc-form-field .search-pill-input {
+  background: transparent !important;
+  border: none !important;
 }
 
 .search-clear-btn {

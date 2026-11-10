@@ -752,15 +752,26 @@
     width: 100%;
   }
   .admin-top-actions {
-    justify-content: space-between;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
   }
   .venue-picker-chip {
     flex: 1;
     max-width: none;
   }
   .admin-public-link {
-    flex: 1;
+    margin-right: auto;
+    flex: 0 0 40px;
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
     justify-content: center;
+    border-radius: 6px;
   }
   .admin-main-body {
     padding: 1.25rem 1rem 2.5rem;

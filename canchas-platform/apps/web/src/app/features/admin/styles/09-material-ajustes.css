@@ -53,7 +53,7 @@
 }
 
 .mat-admin-shell .sidebar-nav-item:focus-visible {
-  outline: 2px solid var(--can-color-brand-green, #27802D);
+  outline: 2px solid var(--can-color-brand-green, #27802d);
   outline-offset: 2px;
 }
 
@@ -210,17 +210,17 @@
 .mat-admin-shell .btn-theme-toggle.mat-mdc-icon-button:hover,
 .mat-admin-shell .profile-avatar-btn.mat-mdc-icon-button:hover {
   background: transparent !important;
-  color: var(--color-brand-green, #27802D) !important;
+  color: var(--color-brand-green, #27802d) !important;
   border: none !important;
 }
 
 .mat-admin-shell .btn-bell.mat-mdc-icon-button:hover mat-icon,
 .mat-admin-shell .btn-theme-toggle.mat-mdc-icon-button:hover mat-icon {
-  color: var(--color-brand-green, #27802D) !important;
+  color: var(--color-brand-green, #27802d) !important;
 }
 
 .mat-admin-shell .profile-avatar-btn.mat-mdc-icon-button:hover .user-avatar-badge {
-  outline: 2px solid var(--color-brand-green, #27802D) !important;
+  outline: 2px solid var(--color-brand-green, #27802d) !important;
   outline-offset: 1px !important;
 }
 
@@ -521,8 +521,41 @@
     width: 100%;
   }
 
+  .mat-admin-shell .admin-public-link.mat-mdc-unelevated-button {
+    width: 40px !important;
+    min-width: 40px !important;
+    height: 40px !important;
+    padding: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 6px !important;
+  }
+
   .mat-admin-shell .admin-public-link.mat-mdc-unelevated-button span {
-    display: none;
+    display: none !important;
+  }
+
+  .mat-admin-shell .admin-public-link .mdc-button__label {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .mat-admin-shell .admin-public-link mat-icon {
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 20px !important;
+    width: 20px !important;
+    height: 20px !important;
+    line-height: 20px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
   }
 
   .mat-admin-shell .view-heading,

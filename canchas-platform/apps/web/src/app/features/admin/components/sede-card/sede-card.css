@@ -123,9 +123,69 @@
 }
 
 @media (max-width: 760px) {
+  .management-card {
+    display: grid !important;
+    grid-template-columns: 105px minmax(0, 1fr) !important;
+    align-items: stretch !important;
+    touch-action: pan-y !important;
+  }
+
   .management-card-photo-wrap {
-    width: 88px;
-    min-height: 100%;
+    width: 105px !important;
+    min-height: 100% !important;
+    touch-action: pan-y !important;
+  }
+
+  .management-card-photo-wrap img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+  }
+
+  .management-card-body {
+    padding: 10px 12px !important;
+    gap: 6px !important;
+    touch-action: pan-y !important;
+  }
+
+  .management-card-body h2 {
+    font-size: 15px !important;
+    line-height: 1.25 !important;
+  }
+
+  .management-card-body .muted.small {
+    font-size: 11px !important;
+    line-height: 1.3 !important;
+  }
+
+  .management-card-body .sede-description,
+  .management-card-body p.small {
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    font-size: 11.5px !important;
+    line-height: 1.35 !important;
+    margin: 0 !important;
+  }
+
+  .management-card-body .row.card-actions,
+  .management-card-body .row {
+    gap: 6px !important;
+    margin-top: 2px !important;
+  }
+
+  .management-card-body .btn {
+    height: 30px !important;
+    min-height: 30px !important;
+    font-size: 11px !important;
+    padding: 4px 8px !important;
+    gap: 4px !important;
+  }
+
+  .management-card-body .btn .icon {
+    font-size: 14px !important;
   }
 
   .sede-placeholder {
