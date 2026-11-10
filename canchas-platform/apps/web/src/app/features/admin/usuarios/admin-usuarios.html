@@ -1,7 +1,7 @@
 <main class="usuarios-admin-page">
   <header class="usuarios-header">
     <div class="header-titles">
-            <h1>Gestión Integral de Usuarios & Roles</h1>
+      <h1>Gestión Integral de Usuarios & Roles</h1>
       <p class="subtitle">
         Visualiza a todos los usuarios registrados en Canchero y gestiona los privilegios de
         administración.
@@ -69,43 +69,41 @@
     </div>
 
     <!-- Barra de Filtros -->
-    <div class="filters-toolbar">
-      <div class="search-box">
-        <span class="material-symbols-outlined icon-20 search-icon" aria-hidden="true">search</span>
+    <div class="filters-toolbar cn-filterbar">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field">
+        <mat-label>Buscar</mat-label>
+        <mat-icon matPrefix>search</mat-icon>
         <input
+          matInput
           type="text"
           placeholder="Buscar por nombre, correo o teléfono..."
           [ngModel]="searchFilter()"
           (ngModelChange)="searchFilter.set($event)"
-          class="form-control"
         />
-      </div>
+      </mat-form-field>
 
-      <div class="role-filter-group">
-        <label for="role-select">Filtrar por Rol:</label>
-        <select
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field">
+        <mat-label>Filtrar por Rol</mat-label>
+        <mat-select
           id="role-select"
-          class="form-control"
           [ngModel]="roleFilter()"
           (ngModelChange)="roleFilter.set($event)"
         >
-          <option value="TODOS">Todos los roles</option>
-          <option value="admin">Administradores</option>
-          <option value="dueno">Dueños</option>
-          <option value="cliente">Jugadores / Clientes</option>
-          <option value="superadmin">Superadministradores</option>
-        </select>
-      </div>
+          <mat-option value="TODOS">Todos los roles</mat-option>
+          <mat-option value="admin">Administradores</mat-option>
+          <mat-option value="dueno">Dueños</mat-option>
+          <mat-option value="cliente">Jugadores / Clientes</mat-option>
+          <mat-option value="superadmin">Superadministradores</mat-option>
+        </mat-select>
+      </mat-form-field>
     </div>
 
     <!-- Tabla de Usuarios -->
     <div class="table-container">
       @if (loading()) {
-        <div class="table-state-loading">
-          <span class="material-symbols-outlined icon-24 spin" aria-hidden="true"
-            >progress_activity</span
-          >
-          <span>Cargando usuarios de Canchero...</span>
+        <div class="cn-loader">
+          <mat-spinner diameter="48"></mat-spinner>
+          <span>Cargando información...</span>
         </div>
       } @else if (filteredUsers().length === 0) {
         <div class="table-state-empty">
@@ -115,90 +113,116 @@
           <p>No se encontraron usuarios con los filtros aplicados.</p>
         </div>
       } @else {
-        <table class="users-table">
-          <thead>
-            <tr>
-              <th>Usuario</th>
-              <th>Contacto</th>
-              <th>Rol Actual</th>
-              <th>Estado</th>
-              <th style="text-align: right">Acciones de Rol</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (u of filteredUsers(); track u.id) {
-              <tr [class.is-current-user]="u.id === currentUserId()">
-                <td>
-                  <div class="user-info">
-                    <span
-                      class="user-avatar"
-                      [class.avatar-super]="u.rol.toLowerCase() === 'superadmin'"
-                      [class.avatar-admin]="u.rol.toLowerCase() === 'admin'"
-                    >
-                      {{ u.nombre.charAt(0).toUpperCase() }}
-                    </span>
-                    <div>
-                      <div class="user-name">
-                        {{ u.nombre }}
-                        @if (u.id === currentUserId()) {
-                          <span class="tag tag-self">Tú</span>
-                        }
-                      </div>
-                      <div class="user-id">ID: {{ u.id }}</div>
-                    </div>
+        <table mat-table [dataSource]="paginatedUsers()" class="users-table">
+          <ng-container matColumnDef="usuario">
+            <th mat-header-cell *matHeaderCellDef>Usuario</th>
+            <td mat-cell *matCellDef="let u">
+              <div class="user-info">
+                <span
+                  class="user-avatar"
+                  [class.avatar-super]="u.rol.toLowerCase() === 'superadmin'"
+                  [class.avatar-admin]="u.rol.toLowerCase() === 'admin'"
+                >
+                  {{ u.nombre.charAt(0).toUpperCase() }}
+                </span>
+                <div>
+                  <div class="user-name">
+                    {{ u.nombre }}
+                    @if (u.id === currentUserId()) {
+                      <span class="tag tag-self">Tú</span>
+                    }
                   </div>
-                </td>
-                <td>
-                  <div class="contact-email">{{ u.email }}</div>
-                  <div class="contact-phone">{{ u.telefono || 'Sin teléfono' }}</div>
-                </td>
-                <td>
-                  <span class="badge-role-tag" [attr.data-role]="u.rol.toLowerCase()">
-                    {{ u.rol | uppercase }}
-                  </span>
-                </td>
-                <td>
-                  <span class="status-indicator" [class.active]="u.estado === 'A'">
-                    {{ u.estado === 'A' ? 'Activo' : 'Inactivo' }}
-                  </span>
-                </td>
-                <td style="text-align: right">
-                  @if (u.rol.toLowerCase() === 'superadmin') {
-                    <span class="text-muted small">Superadmin protegido</span>
-                  } @else if (u.id === currentUserId()) {
-                    <span class="text-muted small">Tu cuenta</span>
+                  <div class="user-id">ID: {{ u.id }}</div>
+                </div>
+              </div>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="contacto">
+            <th mat-header-cell *matHeaderCellDef>Contacto</th>
+            <td mat-cell *matCellDef="let u">
+              <div class="contact-email">{{ u.email }}</div>
+              <div class="contact-phone">{{ u.telefono || 'Sin teléfono' }}</div>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="rol">
+            <th mat-header-cell *matHeaderCellDef>Rol Actual</th>
+            <td mat-cell *matCellDef="let u">
+              <span class="badge-role-tag" [attr.data-role]="u.rol.toLowerCase()">
+                {{ u.rol | uppercase }}
+              </span>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="estado">
+            <th mat-header-cell *matHeaderCellDef>Estado</th>
+            <td mat-cell *matCellDef="let u">
+              <span class="status-indicator" [class.active]="u.estado === 'A'">
+                {{ u.estado === 'A' ? 'Activo' : 'Inactivo' }}
+              </span>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="acciones">
+            <th mat-header-cell *matHeaderCellDef style="text-align: right">Acciones de Rol</th>
+            <td mat-cell *matCellDef="let u" style="text-align: right">
+              @if (u.rol.toLowerCase() === 'superadmin') {
+                <span class="text-muted small">Superadmin protegido</span>
+              } @else if (u.id === currentUserId()) {
+                <span class="text-muted small">Tu cuenta</span>
+              } @else {
+                <button
+                  mat-stroked-button
+                  type="button"
+                  class="btn btn-sm"
+                  [class.btn-outline]="u.rol.toLowerCase() !== 'admin'"
+                  [class.btn-danger]="u.rol.toLowerCase() === 'admin'"
+                  (click)="toggleAdminRole(u)"
+                  [disabled]="updatingId() === u.id"
+                >
+                  @if (updatingId() === u.id) {
+                    <span>
+                      <span class="material-symbols-outlined icon-16 spin" aria-hidden="true"
+                        >sync</span
+                      >
+                      Actualizando...
+                    </span>
+                  } @else if (u.rol.toLowerCase() === 'admin') {
+                    <span>
+                      <span class="material-symbols-outlined icon-16" aria-hidden="true"
+                        >person_remove</span
+                      >
+                      Quitar Admin
+                    </span>
                   } @else {
-                    <button
-                      type="button"
-                      class="btn btn-sm"
-                      [class.btn-outline]="u.rol.toLowerCase() !== 'admin'"
-                      [class.btn-danger]="u.rol.toLowerCase() === 'admin'"
-                      (click)="toggleAdminRole(u)"
-                      [disabled]="updatingId() === u.id"
-                    >
-                      @if (updatingId() === u.id) {
-                        <span class="material-symbols-outlined icon-16 spin" aria-hidden="true"
-                          >sync</span
-                        >
-                        Actualizando...
-                      } @else if (u.rol.toLowerCase() === 'admin') {
-                        <span class="material-symbols-outlined icon-16" aria-hidden="true"
-                          >person_remove</span
-                        >
-                        Quitar Admin
-                      } @else {
-                        <span class="material-symbols-outlined icon-16" aria-hidden="true"
-                          >admin_panel_settings</span
-                        >
-                        Hacer Admin
-                      }
-                    </button>
+                    <span>
+                      <span class="material-symbols-outlined icon-16" aria-hidden="true"
+                        >admin_panel_settings</span
+                      >
+                      Hacer Admin
+                    </span>
                   }
-                </td>
-              </tr>
-            }
-          </tbody>
+                </button>
+              }
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumnsUsers"></tr>
+          <tr
+            mat-row
+            *matRowDef="let u; columns: displayedColumnsUsers"
+            [class.is-current-user]="u.id === currentUserId()"
+          ></tr>
         </table>
+        <mat-paginator
+          [length]="filteredUsers().length"
+          [pageIndex]="pageIndex()"
+          [pageSize]="pageSize()"
+          [pageSizeOptions]="[5, 10, 25, 100]"
+          (page)="onUsersPage($event)"
+          aria-label="Seleccionar página de usuarios"
+        ></mat-paginator>
       }
     </div>
   }

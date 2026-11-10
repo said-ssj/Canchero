@@ -6,10 +6,22 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from '@core/auth/auth.service';
 import { ThemeToggle } from '@shared/components/theme-toggle/theme-toggle';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatIconModule } from '@angular/material/icon';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 
 /** "Olvidé mi contraseña": sin token pide el enlace por correo; con ?token= fija la nueva contraseña. */
 @Component({
-  imports: [FormsModule, RouterLink, ThemeToggle],
+  imports: [
+    FormsModule,
+    RouterLink,
+    ThemeToggle,
+    MatFormFieldModule,
+    MatInputModule,
+    MatIconModule,
+    MatProgressBarModule,
+  ],
   selector: 'app-recuperar',
   styleUrl: '../login/login.css',
   templateUrl: './recuperar.html',

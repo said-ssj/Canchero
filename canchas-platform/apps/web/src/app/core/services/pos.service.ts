@@ -1,6 +1,6 @@
 import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { catchError, firstValueFrom, of, throwError, timeout } from 'rxjs';
+import { catchError, firstValueFrom, of, retry, throwError, timeout, timer } from 'rxjs';
 import { supabase } from '@core/supabase/client';
 import { DatabaseService } from '@core/supabase/database.service';
 import { environment } from '@env/environment';
@@ -122,7 +122,8 @@ export class PosService {
     this.setupRealtimeSubscriptions();
     effect(() => {
       const user = this.auth.currentUser();
-      const sede = typeof this.db?.sedeOperativaId === 'function' ? this.db.sedeOperativaId() : null;
+      const sede =
+        typeof this.db?.sedeOperativaId === 'function' ? this.db.sedeOperativaId() : null;
       untracked(() => {
         if (!user?.id || !sede) {
           this.productos.set([]);
@@ -548,26 +549,52 @@ export class PosService {
     }
     this.loading.set(true);
     try {
-      const withTimeout = <T>(obs$: import('rxjs').Observable<T>) =>
+      // Reintenta una vez ante fallos transitorios (red, 5xx o pool de BD saturado) antes de reportar error.
+      const withTimeout = <T>(label: string, obs$: import('rxjs').Observable<T>) =>
         firstValueFrom(
           obs$.pipe(
-            timeout({ each: 4000, with: () => throwError(() => new Error('Tiempo de espera agotado')) }),
+            timeout({
+              each: 12000,
+              with: () => throwError(() => ({ status: 0, message: 'Tiempo de espera agotado' })),
+            }),
+            retry({
+              count: 1,
+              delay: (err) => {
+                const status = (err as { status?: number })?.status;
+                return status === 0 ? timer(300) : throwError(() => err);
+              },
+            }),
           ),
-        );
+        ).catch((err) => {
+          console.error(`[POS] Falló la carga de "${label}":`, err);
+          throw err;
+        });
       const safeGet = <T>(url: string, fallback: T): Promise<T> =>
         firstValueFrom(
-          this.http
-            .get<T>(url)
-            .pipe(
-              timeout({ each: 4000, with: () => of(fallback) }),
-              catchError(() => of(fallback)),
-            ),
+          this.http.get<T>(url).pipe(
+            timeout({ each: 8000, with: () => of(fallback) }),
+            catchError(() => of(fallback)),
+          ),
         );
+      const optional = <T>(label: string, obs$: import('rxjs').Observable<T>, fallback: T) =>
+        withTimeout(label, obs$).catch(() => fallback);
 
+      // El catálogo es imprescindible; kardex y ventas degradan sin bloquear el punto de venta.
       const [productos, kardex, ventas, capabilities, categorias] = await Promise.all([
-        withTimeout(this.http.get<Producto[]>(`${this.apiUrl}/products?sedeId=${sedeId}`)),
-        withTimeout(this.http.get<MovimientoKardex[]>(`${this.apiUrl}/inventory?sedeId=${sedeId}`)),
-        withTimeout(this.http.get<VentaPOS[]>(`${this.apiUrl}/sales?sedeId=${sedeId}`)),
+        withTimeout(
+          'productos',
+          this.http.get<Producto[]>(`${this.apiUrl}/products?sedeId=${sedeId}`),
+        ),
+        optional(
+          'kardex',
+          this.http.get<MovimientoKardex[]>(`${this.apiUrl}/inventory?sedeId=${sedeId}`),
+          [] as MovimientoKardex[],
+        ),
+        optional(
+          'ventas',
+          this.http.get<VentaPOS[]>(`${this.apiUrl}/sales?sedeId=${sedeId}`),
+          [] as VentaPOS[],
+        ),
         safeGet<{ ready: boolean }>(`${this.apiUrl}/payment-capabilities?sedeId=${sedeId}`, {
           ready: true,
         }),
@@ -631,13 +658,21 @@ export class PosService {
       this.kardex.set((kardex ?? []).filter(belongs));
       this.ventas.set((ventas ?? []).filter(belongs));
       this.paymentsReady.set(capabilities?.ready === true);
-    } catch {
+    } catch (err) {
+      console.error('[POS] No se pudo cargar el punto de venta:', err);
       if (request === this.loadRequest) {
         this.productos.set([]);
         this.kardex.set([]);
         this.ventas.set([]);
         this.carrito.set([]);
-        this.loadError.set('No se pudo cargar el inventario de esta sede.');
+        const status = (err as { status?: number })?.status;
+        const detail =
+          status === 401 || status === 403
+            ? ' (sesión sin permiso para esta sede; vuelve a iniciar sesión)'
+            : status === 0 || status === undefined
+              ? ' (el servidor no respondió a tiempo)'
+              : ` (error ${status} del servidor)`;
+        this.loadError.set(`No se pudo cargar el inventario de esta sede${detail}.`);
       }
     } finally {
       if (request === this.loadRequest) this.loading.set(false);

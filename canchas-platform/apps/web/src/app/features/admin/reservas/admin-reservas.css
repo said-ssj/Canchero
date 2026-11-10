@@ -78,18 +78,57 @@ p {
 .filters {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 12px;
   padding-bottom: 20px;
 }
+.filters .mat-mdc-form-field.cn-field,
 mat-form-field {
   width: 220px;
-  max-width: 100%;
+  flex: 1 1 180px;
+  min-width: 150px;
+  max-width: 260px;
 }
 mat-button-toggle-group {
   border-radius: 4px;
-  flex-wrap: wrap;
+  flex-shrink: 0;
   max-width: 100%;
+}
+.toggle-and-reload-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+}
+.reload-reservas-btn {
+  color: var(--color-ink-700);
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  border-radius: 6px;
+  border: 1px solid var(--color-border, #e2e8f0);
+  background: var(--color-surface, #ffffff);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+.reload-reservas-btn:hover:not(:disabled) {
+  color: var(--color-brand-green, #27802d);
+  border-color: var(--color-brand-green, #27802d);
+  background: rgba(39, 128, 45, 0.08);
+}
+:root.dark-theme .reload-reservas-btn,
+body.dark-theme .reload-reservas-btn {
+  background: #18181b;
+  border-color: #27272a;
+  color: #cbd5e1;
+}
+@media (max-width: 960px) {
+  .filters {
+    flex-wrap: wrap;
+  }
 }
 button:not(:disabled) {
   cursor: pointer;

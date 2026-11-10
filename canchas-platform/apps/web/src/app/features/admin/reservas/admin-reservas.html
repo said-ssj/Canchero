@@ -33,7 +33,10 @@
       [disableRipple]="true"
       [disabled]="
         !presentialOperationsAvailable ||
-        loading() || !!error() || venueId() === null || !courts().length
+        loading() ||
+        !!error() ||
+        venueId() === null ||
+        !courts().length
       "
       (click)="openNewBooking()"
     >
@@ -48,22 +51,35 @@
   </div>
 </header>
 
-<div class="filters filterbar">
-  <mat-button-toggle-group
-    aria-label="Periodo de reservas"
-    [value]="filter()"
-    (change)="setFilter($event.value)"
-  >
-    <mat-button-toggle value="pendientes" [disableRipple]="true"
-      >Por verificar ({{ pendingCount() }})</mat-button-toggle
+<div class="filters filterbar cn-filterbar">
+  <div class="toggle-and-reload-row">
+    <mat-button-toggle-group
+      aria-label="Periodo de reservas"
+      [value]="filter()"
+      (change)="setFilter($event.value)"
     >
-    <mat-button-toggle value="hoy" [disableRipple]="true">Hoy</mat-button-toggle>
-    <mat-button-toggle value="semana" [disableRipple]="true">Próximos 7 días</mat-button-toggle>
-    <mat-button-toggle value="todas" [disableRipple]="true">Todas</mat-button-toggle>
-  </mat-button-toggle-group>
-  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-button-toggle value="pendientes" [disableRipple]="true"
+        >Por verificar ({{ pendingCount() }})</mat-button-toggle
+      >
+      <mat-button-toggle value="hoy" [disableRipple]="true">Hoy</mat-button-toggle>
+      <mat-button-toggle value="semana" [disableRipple]="true">Próximos 7 días</mat-button-toggle>
+      <mat-button-toggle value="todas" [disableRipple]="true">Todas</mat-button-toggle>
+    </mat-button-toggle-group>
+    <button
+      mat-icon-button
+      [disableRipple]="true"
+      aria-label="Actualizar reservas"
+      title="Actualizar reservas"
+      [disabled]="loading()"
+      (click)="reload()"
+      class="reload-reservas-btn"
+    >
+      <span class="material-symbols-outlined icon" aria-hidden="true">refresh</span>
+    </button>
+  </div>
+  <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field">
     <mat-label>Buscar reserva</mat-label>
-    <mat-icon matIconPrefix fontSet="material-symbols-outlined" aria-hidden="true">search</mat-icon>
+    <mat-icon matPrefix aria-hidden="true">search</mat-icon>
     <input
       matInput
       #searchInput
@@ -72,7 +88,7 @@
       placeholder="Código, titular o teléfono"
     />
   </mat-form-field>
-  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+  <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field">
     <mat-label>Cancha</mat-label>
     <mat-select [value]="courtId()" (selectionChange)="selectCourt($event.value)">
       <mat-option [value]="null">Todas las canchas</mat-option>
@@ -81,24 +97,12 @@
       }
     </mat-select>
   </mat-form-field>
-  <button
-    mat-icon-button
-    [disableRipple]="true"
-    aria-label="Actualizar reservas"
-    title="Actualizar reservas"
-    [disabled]="loading()"
-    (click)="reload()"
-  >
-    <span class="material-symbols-outlined icon" aria-hidden="true">refresh</span>
-  </button>
 </div>
 
 @if (loading()) {
-  <div class="skeletons" role="status" aria-label="Cargando reservas" aria-busy="true">
-    <span class="skeleton short"></span>
-    <span class="skeleton"></span>
-    <span class="skeleton photo"></span>
-    <span class="skeleton button"></span>
+  <div class="cn-loader" role="status" aria-label="Cargando reservas" aria-busy="true">
+    <mat-spinner diameter="48" color="primary"></mat-spinner>
+    <span>Cargando información...</span>
   </div>
 } @else if (error()) {
   <div class="state notice danger" role="alert">
@@ -122,112 +126,121 @@
   </article>
 } @else {
   <div class="table-scroll" tabindex="0" role="region" aria-label="Reservas de la sede">
-    <table>
-      <thead>
-        <tr>
-          <th>Fecha y horario</th>
-          <th>Cancha</th>
-          <th>Titular</th>
-          <th>Estado</th>
-          <th class="numeric">Pago y saldo</th>
-          <th>Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (row of pageRows(); track row.reserva.id) {
-          <tr>
-            <td>
-              <strong>{{ row.fechaLabel }}</strong>
-              <span>{{ row.horario }}</span>
-              <small>{{ row.codigoPase }}</small>
-            </td>
-            <td>
-              <strong>{{ row.canchaNombre }}</strong>
-              <span>{{ row.canchaTag1 }} · {{ row.canchaTag2 }}</span>
-            </td>
-            <td>
-              <strong>{{ row.jugadorNombre }}</strong>
-              @if (row.esClienteSinCuenta) {
-                <span class="badge-guest">Presencial (sin cuenta)</span>
-              }
-              <span>{{ row.telefono || 'Sin teléfono registrado' }}</span>
-            </td>
-            <td>
-              <span
-                class="status"
-                [class.pending]="row.estado === 'pendiente'"
-                [class.cancelled]="row.estado === 'cancelada'"
-                [class.completed]="row.estado === 'completada'"
+    <table mat-table [dataSource]="pageRows()">
+      <ng-container matColumnDef="fecha">
+        <th mat-header-cell *matHeaderCellDef>Fecha y horario</th>
+        <td mat-cell *matCellDef="let row">
+          <strong>{{ row.fechaLabel }}</strong>
+          <span>{{ row.horario }}</span>
+          <small>{{ row.codigoPase }}</small>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="cancha">
+        <th mat-header-cell *matHeaderCellDef>Cancha</th>
+        <td mat-cell *matCellDef="let row">
+          <strong>{{ row.canchaNombre }}</strong>
+          <span>{{ row.canchaTag1 }} · {{ row.canchaTag2 }}</span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="titular">
+        <th mat-header-cell *matHeaderCellDef>Titular</th>
+        <td mat-cell *matCellDef="let row">
+          <strong>{{ row.jugadorNombre }}</strong>
+          @if (row.esClienteSinCuenta) {
+            <span class="badge-guest">Presencial (sin cuenta)</span>
+          }
+          <span>{{ row.telefono || 'Sin teléfono registrado' }}</span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="estado">
+        <th mat-header-cell *matHeaderCellDef>Estado</th>
+        <td mat-cell *matCellDef="let row">
+          <span
+            class="status"
+            [class.pending]="row.estado === 'pendiente'"
+            [class.cancelled]="row.estado === 'cancelada'"
+            [class.completed]="row.estado === 'completada'"
+          >
+            {{ row.estado }}
+          </span>
+          @if (row.checkInRealizado) {
+            <span class="badge-checkin">✓ En cancha</span>
+          }
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="pago">
+        <th mat-header-cell *matHeaderCellDef class="numeric">Pago y saldo</th>
+        <td mat-cell *matCellDef="let row" class="numeric">
+          <strong>Total: {{ row.montoTotal | currency: 'PEN' : 'S/ ' : '1.2-2' }}</strong>
+          <small
+            >Pagado: {{ row.adelanto | currency: 'PEN' : 'S/ ' : '1.2-2' }} ({{
+              row.metodo
+            }})</small
+          >
+          @if (row.saldo > 0) {
+            <span class="saldo-alert"
+              >Saldo pendiente: {{ row.saldo | currency: 'PEN' : 'S/ ' : '1.2-2' }}</span
+            >
+          } @else {
+            <span class="saldo-zero">Pagado 100%</span>
+          }
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="acciones">
+        <th mat-header-cell *matHeaderCellDef>Acciones</th>
+        <td mat-cell *matCellDef="let row">
+          <div class="row-actions">
+            <button mat-stroked-button [disableRipple]="true" (click)="openDetails(row)">
+              Ver detalle
+            </button>
+            @if (row.saldo > 0 && row.estado !== 'cancelada') {
+              <button
+                [disabled]="!presentialOperationsAvailable"
+                mat-stroked-button
+                color="primary"
+                [disableRipple]="true"
+                (click)="openCollectBalance(row)"
+                title="Cobrar saldo antes de jugar"
               >
-                {{ row.estado }}
-              </span>
-              @if (row.checkInRealizado) {
-                <span class="badge-checkin">✓ En cancha</span>
-              }
-            </td>
-            <td class="numeric">
-              <strong>Total: {{ row.montoTotal | currency: 'PEN' : 'S/ ' : '1.2-2' }}</strong>
-              <small
-                >Pagado: {{ row.adelanto | currency: 'PEN' : 'S/ ' : '1.2-2' }} ({{
-                  row.metodo
-                }})</small
+                Cobrar saldo
+              </button>
+            }
+            @if (row.saldo === 0 && !row.checkInRealizado && row.estado !== 'cancelada') {
+              <button
+                [disabled]="!presentialOperationsAvailable"
+                mat-stroked-button
+                class="btn-checkin"
+                [disableRipple]="true"
+                (click)="confirmCheckIn(row)"
+                title="Registrar llegada del equipo"
               >
-              @if (row.saldo > 0) {
-                <span class="saldo-alert"
-                  >Saldo pendiente: {{ row.saldo | currency: 'PEN' : 'S/ ' : '1.2-2' }}</span
-                >
-              } @else {
-                <span class="saldo-zero">Pagado 100%</span>
-              }
-            </td>
-            <td>
-              <div class="row-actions">
-                <button mat-stroked-button [disableRipple]="true" (click)="openDetails(row)">
-                  Ver detalle
-                </button>
-                @if (row.saldo > 0 && row.estado !== 'cancelada') {
-                  <button
-                    [disabled]="!presentialOperationsAvailable"
-                    mat-stroked-button
-                    color="primary"
-                    [disableRipple]="true"
-                    (click)="openCollectBalance(row)"
-                    title="Cobrar saldo antes de jugar"
-                  >
-                    Cobrar saldo
-                  </button>
-                }
-                @if (row.saldo === 0 && !row.checkInRealizado && row.estado !== 'cancelada') {
-                  <button
-                    [disabled]="!presentialOperationsAvailable"
-                    mat-stroked-button
-                    class="btn-checkin"
-                    [disableRipple]="true"
-                    (click)="confirmCheckIn(row)"
-                    title="Registrar llegada del equipo"
-                  >
-                    Check-in
-                  </button>
-                }
-              </div>
-            </td>
-          </tr>
-        } @empty {
-          <tr>
-            <td colspan="6" class="state">No hay reservas que coincidan con los filtros.</td>
-          </tr>
-        }
-      </tbody>
+                Check-in
+              </button>
+            }
+          </div>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+      <tr class="mat-row" *matNoDataRow>
+        <td class="mat-cell state" colspan="6">No hay reservas que coincidan con los filtros.</td>
+      </tr>
     </table>
   </div>
   <mat-paginator
     [length]="filteredRows().length"
     [pageIndex]="effectivePage()"
     [pageSize]="pageSize()"
-    [pageSizeOptions]="[10, 25, 50]"
+    [pageSizeOptions]="[5, 10, 25, 100]"
     (page)="paginate($event)"
     aria-label="Páginas de reservas"
-  />
+  ></mat-paginator>
 }
 
 <!-- DIALOG: Detalle de Reserva -->
@@ -387,10 +400,16 @@
         <mat-label>Fecha de juego</mat-label>
         <input
           matInput
-          type="date"
-          [value]="bookingDate()"
-          (input)="bookingDate.set($any($event.target).value)"
+          [matDatepicker]="pickerBookingDate"
+          [value]="bookingDateObj()"
+          placeholder="DD/MM/YYYY"
+          maxlength="10"
+          (input)="onBookingDateMaskInput($event)"
+          (dateChange)="onBookingDateChange($event.value)"
         />
+        <mat-datepicker-toggle matIconSuffix [for]="pickerBookingDate"></mat-datepicker-toggle>
+        <mat-datepicker #pickerBookingDate></mat-datepicker>
+        <mat-hint>DD/MM/YYYY</mat-hint>
       </mat-form-field>
 
       <!-- Hora Inicio -->

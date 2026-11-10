@@ -1,4 +1,13 @@
-import { Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
+import {
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  output,
+  signal,
+  untracked,
+} from '@angular/core';
 import { AdminContext } from '../admin-context.service';
 import { AdminVenueRequired } from '../components/venue-required/venue-required';
 import { CommonModule } from '@angular/common';
@@ -10,6 +19,12 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatTableModule } from '@angular/material/table';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatNativeDateModule } from '@angular/material/core';
+import { applyDateMaskToInput, isoToLocalDate, localDateToIso } from '@shared/utils/date-mask.util';
 import { DatabaseService } from '@core/supabase/database.service';
 import { AuthService } from '@core/auth/auth.service';
 import { PosService } from '@core/services/pos.service';
@@ -40,6 +55,11 @@ import type {
     MatSelectModule,
     MatFormFieldModule,
     MatInputModule,
+    MatProgressSpinnerModule,
+    MatTableModule,
+    MatPaginatorModule,
+    MatDatepickerModule,
+    MatNativeDateModule,
   ],
   templateUrl: './admin-finanzas.html',
   styleUrl: './admin-finanzas.css',
@@ -62,18 +82,36 @@ export class AdminFinanzas {
   }
 
   // Inputs del componente contenedor
-  readonly duenoIdInput = input<string | number | null | undefined>(undefined, { alias: 'duenoId' });
-  readonly duenoId = computed(() => this.duenoIdInput() !== undefined ? this.duenoIdInput()! : this.context.ownerId());
+  readonly duenoIdInput = input<string | number | null | undefined>(undefined, {
+    alias: 'duenoId',
+  });
+  readonly duenoId = computed(() =>
+    this.duenoIdInput() !== undefined ? this.duenoIdInput()! : this.context.ownerId(),
+  );
   readonly venueIdInput = input<number | null | undefined>(undefined, { alias: 'venueId' });
-  readonly venueId = computed(() => this.venueIdInput() !== undefined ? this.venueIdInput()! : this.context.venue()?.id ?? null);
+  readonly venueId = computed(() =>
+    this.venueIdInput() !== undefined ? this.venueIdInput()! : (this.context.venue()?.id ?? null),
+  );
   readonly venueNameInput = input<string | undefined>(undefined, { alias: 'venueName' });
-  readonly venueName = computed(() => this.venueNameInput() !== undefined ? this.venueNameInput()! : this.context.venue()?.nombre ?? 'Sin sede seleccionada');
+  readonly venueName = computed(() =>
+    this.venueNameInput() !== undefined
+      ? this.venueNameInput()!
+      : (this.context.venue()?.nombre ?? 'Sin sede seleccionada'),
+  );
   readonly adminNameInput = input<string | undefined>(undefined, { alias: 'adminName' });
-  readonly adminName = computed(() => this.adminNameInput() !== undefined ? this.adminNameInput()! : this.auth.currentUser()?.nombre ?? '');
+  readonly adminName = computed(() =>
+    this.adminNameInput() !== undefined
+      ? this.adminNameInput()!
+      : (this.auth.currentUser()?.nombre ?? ''),
+  );
   readonly loadingInput = input<boolean | undefined>(undefined, { alias: 'loading' });
-  readonly loading = computed(() => this.loadingInput() !== undefined ? this.loadingInput()! : this.context.loading());
+  readonly loading = computed(() =>
+    this.loadingInput() !== undefined ? this.loadingInput()! : this.context.loading(),
+  );
   readonly errorInput = input<string | undefined>(undefined, { alias: 'error' });
-  readonly error = computed(() => this.errorInput() !== undefined ? this.errorInput()! : this.context.error());
+  readonly error = computed(() =>
+    this.errorInput() !== undefined ? this.errorInput()! : this.context.error(),
+  );
 
   // Outputs hacia el contenedor
   readonly notice = output<string>();
@@ -87,7 +125,9 @@ export class AdminFinanzas {
   });
 
   // Sedes y Canchas del propietario
-  protected readonly sedes = computed<Venue[]>(() => this.db.getSedesPorDueno(this.currentDuenoId()));
+  protected readonly sedes = computed<Venue[]>(() =>
+    this.db.getSedesPorDueno(this.currentDuenoId()),
+  );
   protected readonly canchas = computed(() => this.db.getCanchasPorDueno(this.currentDuenoId()));
   protected readonly canchasFiltradasPorSede = computed(() => {
     const vId = this.venueId();
@@ -121,6 +161,7 @@ export class AdminFinanzas {
   protected readonly selectedCanchaFilter = signal<string>('all');
   protected readonly paginaActualFacturables = signal<number>(1);
   protected readonly pageSizeFacturables = 10;
+  protected readonly pageSizeFacturablesSignal = signal<number>(10);
 
   // Estado de modales y periodos (finanzas.html)
   protected readonly detalleModalOpen = signal<boolean>(false);
@@ -133,6 +174,18 @@ export class AdminFinanzas {
   protected readonly desgloseGeneralModalOpen = signal<boolean>(false);
   protected readonly fechaDesde = signal<string>('2026-10-01');
   protected readonly fechaHasta = signal<string>('2026-10-16');
+  protected readonly fechaDesdeDate = computed(() => isoToLocalDate(this.fechaDesde()));
+  protected readonly fechaHastaDate = computed(() => isoToLocalDate(this.fechaHasta()));
+
+  protected onDateInputMask(event: Event, targetSignal: typeof this.fechaDesde): void {
+    const { iso } = applyDateMaskToInput(event);
+    if (iso) targetSignal.set(iso);
+  }
+
+  protected onDatePicked(date: Date | null, targetSignal: typeof this.fechaDesde): void {
+    const iso = localDateToIso(date);
+    if (iso) targetSignal.set(iso);
+  }
 
   constructor() {
     effect(() => {
@@ -162,6 +215,20 @@ export class AdminFinanzas {
     comision: true,
     neto: true,
     liquidado: true,
+  });
+
+  protected readonly displayedColumnsFacturables = computed<string[]>(() => {
+    const cols = this.columnas();
+    const list: string[] = [];
+    if (cols.codigo) list.push('codigo');
+    if (cols.cancha) list.push('cancha');
+    if (cols.metodo) list.push('metodo');
+    if (cols.monto) list.push('monto');
+    if (cols.comision) list.push('comision');
+    if (cols.neto) list.push('neto');
+    if (cols.liquidado) list.push('liquidado');
+    list.push('acciones');
+    return list;
   });
 
   // Lista unificada de cobros/facturables
@@ -206,8 +273,8 @@ export class AdminFinanzas {
             metodo.toLowerCase().includes('yape') || metodo.toLowerCase().includes('plin')
               ? 'phone_android'
               : metodo.toLowerCase().includes('efectivo')
-              ? 'payments'
-              : 'credit_card',
+                ? 'payments'
+                : 'credit_card',
           monto,
           comision,
           neto,
@@ -223,7 +290,8 @@ export class AdminFinanzas {
     const ingresoBruto = Math.round(rows.reduce((acc, f) => acc + f.monto, 0) * 100) / 100;
     const comisionApp = Math.round(rows.reduce((acc, f) => acc + f.comision, 0) * 100) / 100;
     const ingresoNeto = Math.round(rows.reduce((acc, f) => acc + f.neto, 0) * 100) / 100;
-    const totalLiquidado = Math.round(rows.filter((f) => f.liquidado).reduce((acc, f) => acc + f.neto, 0) * 100) / 100;
+    const totalLiquidado =
+      Math.round(rows.filter((f) => f.liquidado).reduce((acc, f) => acc + f.neto, 0) * 100) / 100;
     const liquidacionesPendientes = rows.filter((f) => !f.liquidado).length;
 
     return {
@@ -253,7 +321,8 @@ export class AdminFinanzas {
   // Compras de Mercadería a Proveedores
   protected readonly comprasMercaderia = computed(() => {
     const vId = this.venueId();
-    const compras = typeof this.purchaseService?.purchases === 'function' ? this.purchaseService.purchases() : [];
+    const compras =
+      typeof this.purchaseService?.purchases === 'function' ? this.purchaseService.purchases() : [];
     if (!vId) return compras.filter((c) => c.estado === 'RECIBIDA');
     return compras.filter(
       (c) => c.estado === 'RECIBIDA' && (c.sedeId ? Number(c.sedeId) === Number(vId) : true),
@@ -267,7 +336,8 @@ export class AdminFinanzas {
 
   // Egresos Operativos de Caja
   protected readonly egresosOperativosCaja = computed(() => {
-    const movs = typeof this.cashService?.movimientos === 'function' ? this.cashService.movimientos() : [];
+    const movs =
+      typeof this.cashService?.movimientos === 'function' ? this.cashService.movimientos() : [];
     const sum = movs
       .filter((m) => String(m.tipo).toLowerCase() === 'egreso' || (m as any).tipo === 2)
       .reduce((acc, m) => acc + (m.monto || 0), 0);
@@ -276,7 +346,8 @@ export class AdminFinanzas {
 
   // Total Abonos de Créditos y Fiados
   protected readonly totalAbonosCreditos = computed(() => {
-    const resumen = typeof this.creditService?.resumen === 'function' ? this.creditService.resumen() : null;
+    const resumen =
+      typeof this.creditService?.resumen === 'function' ? this.creditService.resumen() : null;
     return Math.round((resumen?.totalCobradoMes ?? 0) * 100) / 100;
   });
 
@@ -290,8 +361,10 @@ export class AdminFinanzas {
     const compras = this.totalComprasMercaderia();
     const egresosCaja = this.egresosOperativosCaja();
 
-    const ingresosTotales = Math.round((alquileresBruto + cantinaBruto + abonosCredito) * 100) / 100;
-    const costosGastosTotales = Math.round((compras + egresosCaja + comisionAlquileres) * 100) / 100;
+    const ingresosTotales =
+      Math.round((alquileresBruto + cantinaBruto + abonosCredito) * 100) / 100;
+    const costosGastosTotales =
+      Math.round((compras + egresosCaja + comisionAlquileres) * 100) / 100;
     const utilidadNeta = Math.round((ingresosTotales - costosGastosTotales) * 100) / 100;
     const margenPorcentaje =
       ingresosTotales > 0 ? Math.round((utilidadNeta / ingresosTotales) * 1000) / 10 : 0;
@@ -312,8 +385,8 @@ export class AdminFinanzas {
   });
 
   // Proyección de cierre y cálculo de metas
-  protected readonly proyeccionMensual = computed(() =>
-    Math.round(this.metricas().ingresoBruto * 1.2 * 100) / 100
+  protected readonly proyeccionMensual = computed(
+    () => Math.round(this.metricas().ingresoBruto * 1.2 * 100) / 100,
   );
 
   protected readonly metaMensual = computed(() => {
@@ -327,7 +400,7 @@ export class AdminFinanzas {
   // Próxima fecha de corte y liquidación (siguiente lunes)
   protected readonly proximaLiquidacionLabel = computed(() => {
     const hoy = new Date();
-    const diasHastaLunes = ((1 + 7 - hoy.getDay()) % 7) || 7;
+    const diasHastaLunes = (1 + 7 - hoy.getDay()) % 7 || 7;
     const prox = new Date(hoy);
     prox.setDate(hoy.getDate() + diasHastaLunes);
     const fecha = prox.toLocaleDateString('es-PE', {
@@ -345,8 +418,18 @@ export class AdminFinanzas {
     const total = rows.reduce((acc, f) => acc + f.monto, 0);
     if (total === 0) {
       return [
-        { nombre: 'Billeteras Móviles (Yape / Plin)', porcentaje: 68, color: 'var(--color-brand-green, #3cb043)', monto: 0 },
-        { nombre: 'Tarjetas Débito / Crédito', porcentaje: 24, color: 'var(--color-brand-orange, #f5821f)', monto: 0 },
+        {
+          nombre: 'Billeteras Móviles (Yape / Plin)',
+          porcentaje: 68,
+          color: 'var(--color-brand-green, #3cb043)',
+          monto: 0,
+        },
+        {
+          nombre: 'Tarjetas Débito / Crédito',
+          porcentaje: 24,
+          color: 'var(--color-brand-orange, #f5821f)',
+          monto: 0,
+        },
         { nombre: 'Efectivo en Recepción', porcentaje: 8, color: '#1a1a1a', monto: 0 },
       ];
     }
@@ -371,9 +454,24 @@ export class AdminFinanzas {
     const pctEfectivo = Math.max(0, 100 - pctYape - pctTarjeta);
 
     return [
-      { nombre: 'Billeteras Móviles (Yape / Plin)', porcentaje: pctYape, color: 'var(--color-brand-green, #3cb043)', monto: yapePlin },
-      { nombre: 'Tarjetas Débito / Crédito', porcentaje: pctTarjeta, color: 'var(--color-brand-orange, #f5821f)', monto: tarjeta },
-      { nombre: 'Efectivo en Recepción', porcentaje: pctEfectivo, color: '#1a1a1a', monto: efectivo },
+      {
+        nombre: 'Billeteras Móviles (Yape / Plin)',
+        porcentaje: pctYape,
+        color: 'var(--color-brand-green, #3cb043)',
+        monto: yapePlin,
+      },
+      {
+        nombre: 'Tarjetas Débito / Crédito',
+        porcentaje: pctTarjeta,
+        color: 'var(--color-brand-orange, #f5821f)',
+        monto: tarjeta,
+      },
+      {
+        nombre: 'Efectivo en Recepción',
+        porcentaje: pctEfectivo,
+        color: '#1a1a1a',
+        monto: efectivo,
+      },
     ];
   });
 
@@ -401,26 +499,32 @@ export class AdminFinanzas {
 
   // Conteos para tabs
   protected readonly facturablesPendientesCount = computed(
-    () => this.facturables().filter((f) => !f.liquidado).length
+    () => this.facturables().filter((f) => !f.liquidado).length,
   );
   protected readonly facturablesLiquidadosCount = computed(
-    () => this.facturables().filter((f) => f.liquidado).length
+    () => this.facturables().filter((f) => f.liquidado).length,
   );
 
   // Paginación
   protected readonly totalPaginasFacturables = computed(() =>
-    Math.max(1, Math.ceil(this.facturablesFiltrados().length / this.pageSizeFacturables))
+    Math.max(1, Math.ceil(this.facturablesFiltrados().length / this.pageSizeFacturablesSignal())),
   );
 
   protected readonly paginasFacturablesArray = computed(() =>
-    Array.from({ length: this.totalPaginasFacturables() }, (_, i) => i + 1)
+    Array.from({ length: this.totalPaginasFacturables() }, (_, i) => i + 1),
   );
 
   protected readonly paginatedFacturables = computed(() => {
     const page = this.paginaActualFacturables();
-    const start = (page - 1) * this.pageSizeFacturables;
-    return this.facturablesFiltrados().slice(start, start + this.pageSizeFacturables);
+    const size = this.pageSizeFacturablesSignal();
+    const start = (page - 1) * size;
+    return this.facturablesFiltrados().slice(start, start + size);
   });
+
+  protected onFacturablesPage(event: PageEvent): void {
+    this.pageSizeFacturablesSignal.set(event.pageSize);
+    this.paginaActualFacturables.set(event.pageIndex + 1);
+  }
 
   // Historial de liquidaciones bancarias
   protected readonly liquidacionesHistorial = computed<LiquidacionHistorialItem[]>(() => {

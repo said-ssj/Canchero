@@ -260,7 +260,13 @@
           <span>{{ accountRoleLabel() }}</span>
         </div>
       </div>
-      <button type="button" class="btn-logout-sidebar" (click)="cerrarSesionAdmin()" matRipple>
+      <button
+        mat-button
+        type="button"
+        class="btn-logout-sidebar"
+        (click)="cerrarSesionAdmin()"
+        matRipple
+      >
         <mat-icon class="icon-16" aria-hidden="true">logout</mat-icon>
         <span>Cerrar Sesión</span>
       </button>
@@ -286,85 +292,54 @@
 
         <!-- Selector de Sede con mat-select -->
         @if (canBrowseAllVenues()) {
-          <label class="management-scope"
-            >Vista
-            <select
+          <mat-form-field
+            appearance="outline"
+            subscriptSizing="dynamic"
+            class="cn-field management-scope-field"
+          >
+            <mat-label>Vista</mat-label>
+            <mat-select
               aria-label="Alcance de administración"
               [value]="allVenuesMode() ? 'all' : 'owned'"
-              (change)="cambiarAlcance($any($event.target).value)"
+              (selectionChange)="cambiarAlcance($event.value)"
             >
-              <option value="owned">Mis sedes</option>
-              <option value="all">Administración global</option>
-            </select>
-          </label>
+              <mat-option value="owned">Mis sedes</mat-option>
+              <mat-option value="all">Administración global</mat-option>
+            </mat-select>
+          </mat-form-field>
         }
-        <!-- Buscador en vivo de Sedes -->
-        @if (!isSedesRoute()) {
-          <div class="venue-live-search-wrapper" (click)="$event.stopPropagation()">
-            <div class="venue-search-input-box" [class.is-focused]="sedeSearchOpen()">
-              <mat-icon class="venue-search-icon" aria-hidden="true">location_on</mat-icon>
-              <input
-                type="text"
-                class="venue-search-input"
-                [placeholder]="sedeDelDueno()?.nombre || 'Buscar sede...'"
-                [value]="sedeSearchQuery() || (sedeSearchOpen() ? '' : (sedeDelDueno()?.nombre || ''))"
-                (focus)="onSedeSearchFocus()"
-                (input)="onSedeSearchInput($any($event.target).value)"
-                (keydown.escape)="cerrarSedeSearch()"
-                aria-label="Buscar sede en vivo"
-                aria-autocomplete="list"
-              />
-              @if (sedeSearchQuery()) {
-                <button
-                  type="button"
-                  class="btn-clear-search"
-                  (click)="limpiarSedeSearch($event)"
-                  title="Limpiar búsqueda"
-                  aria-label="Limpiar búsqueda"
-                >
-                  <mat-icon aria-hidden="true">close</mat-icon>
-                </button>
-              } @else {
-                <mat-icon class="venue-search-arrow" aria-hidden="true">{{
-                  sedeSearchOpen() ? 'arrow_drop_up' : 'arrow_drop_down'
-                }}</mat-icon>
+        <!-- Buscador de Sedes con Display Autocomplete en el Header -->
+        <div class="venue-live-search-wrapper" (click)="$event.stopPropagation()">
+          <mat-form-field
+            appearance="outline"
+            subscriptSizing="dynamic"
+            class="cn-field venue-header-search-field w-full max-w-xs"
+          >
+            <mat-label>Sede actual</mat-label>
+            <mat-icon matPrefix class="venue-search-icon" aria-hidden="true">location_on</mat-icon>
+            <input
+              type="text"
+              matInput
+              class="venue-search-input"
+              [formControl]="sedeControl"
+              [matAutocomplete]="autoSedes"
+              [placeholder]="sedeDelDueno()?.nombre || 'Buscar sede...'"
+              aria-label="Sede actual"
+            />
+            <mat-icon matSuffix class="venue-search-arrow" aria-hidden="true"
+              >arrow_drop_down</mat-icon
+            >
+            <mat-autocomplete
+              #autoSedes="matAutocomplete"
+              [displayWith]="displaySedeFn"
+              (optionSelected)="onSedeSelected($event.option.value)"
+            >
+              @for (sede of filteredSedes | async; track sede.id) {
+                <mat-option [value]="sede">{{ sede.nombre }}</mat-option>
               }
-            </div>
-
-            @if (sedeSearchOpen()) {
-              <div class="venue-live-dropdown" role="listbox">
-                @if (sedesFiltradas().length === 0) {
-                  <div class="venue-dropdown-empty">
-                    <mat-icon aria-hidden="true">search_off</mat-icon>
-                    <span>Sin coincidencias para "{{ sedeSearchQuery() }}"</span>
-                  </div>
-                } @else {
-                  @for (s of sedesFiltradas(); track s.id) {
-                    <button
-                      type="button"
-                      class="venue-dropdown-item"
-                      [class.is-selected]="s.id === sedeDelDueno()?.id"
-                      (click)="seleccionarSede(s.id)"
-                      role="option"
-                      [attr.aria-selected]="s.id === sedeDelDueno()?.id"
-                    >
-                      <mat-icon class="venue-item-icon" aria-hidden="true">stadium</mat-icon>
-                      <div class="venue-item-info">
-                        <strong class="venue-item-name">{{ s.nombre }}</strong>
-                        @if (s.direccion) {
-                          <span class="venue-item-address">{{ s.direccion }}</span>
-                        }
-                      </div>
-                      @if (s.id === sedeDelDueno()?.id) {
-                        <mat-icon class="venue-item-check" aria-hidden="true">check</mat-icon>
-                      }
-                    </button>
-                  }
-                }
-              </div>
-            }
-          </div>
-        }
+            </mat-autocomplete>
+          </mat-form-field>
+        </div>
 
         <!-- Estado de las canchas -->
         <div class="status-live-chip">
@@ -389,16 +364,8 @@
           <span>Ver mi página pública</span>
         </button>
 
-        <!-- Botón de Modo Oscuro (Icono toggle idéntico al navbar público) -->
-        <button
-          mat-icon-button
-          class="btn-theme-toggle"
-          (click)="toggleDarkMode()"
-          [matTooltip]="isDarkMode() ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
-          aria-label="Cambiar tema visual"
-        >
-          <mat-icon aria-hidden="true">{{ isDarkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
-        </button>
+        <!-- Botón de Modo Oscuro / Claro / Sistema (idéntico al navbar público) -->
+        <app-theme-toggle />
 
         <!-- Notificaciones estilo Facebook con popover -->
         <div class="bell-notifications-wrapper">
@@ -418,14 +385,13 @@
           </button>
 
           @if (notificationsOpen()) {
-            <!-- Backdrop para cerrar al hacer clic fuera -->
-            <div class="fb-notif-backdrop" (click)="notificationsOpen.set(false)"></div>
-
+            <!-- El cierre por clic exterior lo gestiona @HostListener('document:click') en el componente -->
             <div class="fb-notifications-popover" role="dialog" aria-label="Notificaciones">
               <div class="fb-notif-header">
                 <div class="fb-notif-title-row">
                   <h3 class="fb-notif-title">Notificaciones</h3>
                   <button
+                    mat-icon-button
                     type="button"
                     class="fb-notif-action-icon"
                     (click)="marcarTodasLeidas()"
@@ -437,6 +403,7 @@
                 </div>
                 <div class="fb-notif-tabs">
                   <button
+                    mat-button
                     type="button"
                     class="fb-notif-tab"
                     [class.active]="notifFilter() === 'todas'"
@@ -445,6 +412,7 @@
                     Todas
                   </button>
                   <button
+                    mat-button
                     type="button"
                     class="fb-notif-tab"
                     [class.active]="notifFilter() === 'no_leidas'"
@@ -457,7 +425,12 @@
 
               <div class="fb-notif-section-row">
                 <span class="fb-notif-section-title">Anteriores</span>
-                <button type="button" class="fb-notif-link-btn" (click)="marcarTodasLeidas()">
+                <button
+                  mat-button
+                  type="button"
+                  class="fb-notif-link-btn"
+                  (click)="marcarTodasLeidas()"
+                >
                   Marcar todo leído
                 </button>
               </div>
@@ -482,7 +455,8 @@
 
                     <div class="fb-notif-content">
                       <p class="fb-notif-desc">
-                        <strong class="fb-notif-module">{{ item.modulo }}:</strong> {{ item.detalle }}
+                        <strong class="fb-notif-module">{{ item.modulo }}:</strong>
+                        {{ item.detalle }}
                       </p>
                       <span class="fb-notif-time">{{ item.tiempo }}</span>
                     </div>
@@ -501,6 +475,7 @@
 
               <div class="fb-notif-footer">
                 <button
+                  mat-button
                   type="button"
                   class="fb-notif-footer-btn"
                   (click)="marcarTodasLeidas(); notificationsOpen.set(false)"

@@ -78,45 +78,50 @@
           </div>
         }
 
+        @if (submitting() || googlePending()) {
+          <mat-progress-bar
+            mode="indeterminate"
+            color="primary"
+            style="margin-bottom: 12px"
+          ></mat-progress-bar>
+        }
+
         <form novalidate (ngSubmit)="onSubmit()" class="auth-form">
           <!-- Campo Correo -->
           <div class="form-group">
-            <label class="form-label" for="email">Correo electrónico</label>
-            <div class="input-wrap">
-              <span class="input-icon">
-                <span class="material-symbols-outlined icon-20" aria-hidden="true">mail</span>
-              </span>
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+              <mat-label>Correo electrónico</mat-label>
+              <mat-icon matPrefix>mail</mat-icon>
               <input
+                matInput
                 type="email"
                 id="email"
                 name="email"
-                class="form-input"
                 placeholder="tu@correo.com"
                 [(ngModel)]="email"
                 autocomplete="username"
                 required
               />
-            </div>
+            </mat-form-field>
           </div>
 
           <!-- Campo Contraseña -->
           <div class="form-group">
-            <label class="form-label" for="password">Contraseña</label>
-            <div class="input-wrap">
-              <span class="input-icon">
-                <span class="material-symbols-outlined icon-20" aria-hidden="true">lock</span>
-              </span>
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+              <mat-label>Contraseña</mat-label>
+              <mat-icon matPrefix>lock</mat-icon>
               <input
+                matInput
                 [type]="showPassword() ? 'text' : 'password'"
                 id="password"
                 name="password"
-                class="form-input has-toggle"
                 placeholder="Tu contraseña"
                 [(ngModel)]="password"
                 autocomplete="current-password"
                 required
               />
               <button
+                matSuffix
                 type="button"
                 class="pwd-toggle-btn"
                 (click)="showPassword.set(!showPassword())"
@@ -126,7 +131,7 @@
                   {{ showPassword() ? 'visibility_off' : 'visibility' }}
                 </span>
               </button>
-            </div>
+            </mat-form-field>
           </div>
 
           <!-- Opciones debajo de la contraseña: Recordarme y ¿Olvidaste tu contraseña? -->
@@ -178,7 +183,6 @@
             <p id="google-login-status">El acceso con Google está pendiente de activación.</p>
           }
         </div>
-        <a routerLink="/registro" class="btn-login-secondary"> Registrarse </a>
 
         <!-- Botón Continuar como Invitado (Terciario) con bordes más resaltados -->
         <a routerLink="/sedes" class="btn-login-guest"> Continuar como invitado </a>

@@ -1,6 +1,9 @@
 <main class="container community-page">
   @if (loading() && !profile()) {
-    <section class="panel skeleton-profile" role="status">Cargando perfil…</section>
+    <section class="panel skeleton-profile cn-loader" role="status">
+      <mat-spinner diameter="48" color="primary"></mat-spinner>
+      <span>Cargando perfil…</span>
+    </section>
   }
   @if (isBlocked()) {
     <section class="panel empty-profile-panel blocked-panel" role="alert">
@@ -9,17 +12,21 @@
       </div>
       <h2>Perfil no disponible</h2>
       <p>Este perfil no está disponible o la cuenta ha sido restringida.</p>
-      <div style="margin-top: 16px; display: flex; gap: 10px; justify-content: center;">
-        <button type="button" class="btn outline" (click)="desbloquearUsuario()">Desbloquear usuario</button>
-        <a routerLink="/" class="btn primary">Volver al inicio</a>
+      <div style="margin-top: 16px; display: flex; gap: 10px; justify-content: center">
+        <button mat-stroked-button type="button" class="btn outline" (click)="desbloquearUsuario()">
+          Desbloquear usuario
+        </button>
+        <a mat-flat-button routerLink="/" class="btn primary">Volver al inicio</a>
       </div>
     </section>
   } @else if (error() && !profile()) {
     <section class="panel" role="alert">
       <p>{{ error() }}</p>
-      <button class="btn outline" type="button" (click)="load()">Reintentar</button>
+      <button mat-stroked-button class="btn outline" type="button" (click)="load()">
+        Reintentar
+      </button>
       @if (isSelf()) {
-        <button class="btn outline" type="button" (click)="startEditingInfo()">
+        <button mat-stroked-button class="btn outline" type="button" (click)="startEditingInfo()">
           Editar datos personales
         </button>
       }
@@ -28,7 +35,7 @@
   @if (!isBlocked() && profile(); as p) {
     <app-profile-header
       [name]="p.name"
-      [photo]="p.photo"
+      [photo]="avatarUrl()"
       [cover]="p.cover"
       [initials]="initials()"
       [badge]="p.role"
@@ -39,25 +46,46 @@
       <div profileActions class="header-actions">
         @if (isOwnerPerspective()) {
           <!-- VISTA DEL DUEÑO ADMINISTRANDO SU PERFIL (IMAGEN 1) -->
-          <button class="btn-cover btn-cover-primary" type="button" (click)="startEditingInfo()">
+          <button
+            mat-flat-button
+            class="btn-cover btn-cover-primary"
+            type="button"
+            (click)="startEditingInfo()"
+          >
             <span class="material-symbols-outlined" aria-hidden="true">edit</span>
             <span>Editar perfil</span>
           </button>
-          <button class="btn-cover btn-cover-secondary" type="button" (click)="openSettings()">
+          <button
+            mat-stroked-button
+            class="btn-cover btn-cover-secondary"
+            type="button"
+            (click)="openSettings()"
+          >
             <span class="material-symbols-outlined" aria-hidden="true">palette</span>
             <span>Presentación y portada</span>
           </button>
         } @else if (business()) {
           <!-- VISTA DE CUALQUIER PERSONA / VISITANTE VIENDO LA SEDE (IMAGEN 3) -->
-          <button class="btn-cover btn-cover-reserve" type="button" (click)="handleReservarClick()">
+          <button
+            mat-flat-button
+            class="btn-cover btn-cover-reserve"
+            type="button"
+            (click)="handleReservarClick()"
+          >
             <span class="material-symbols-outlined" aria-hidden="true">calendar_month</span>
             <span>Reservar</span>
           </button>
-          <button class="btn-cover btn-cover-whatsapp" type="button" (click)="handleWhatsAppClick(p)">
+          <button
+            mat-flat-button
+            class="btn-cover btn-cover-whatsapp"
+            type="button"
+            (click)="handleWhatsAppClick(p)"
+          >
             <span class="material-symbols-outlined" aria-hidden="true">chat</span>
             <span>WhatsApp</span>
           </button>
           <button
+            mat-stroked-button
             class="btn-cover"
             [class.btn-cover-secondary]="!following()"
             [class.btn-following]="following()"
@@ -66,16 +94,23 @@
             (click)="handleFollowClick()"
           >
             @if (following()) {
-              <span class="material-symbols-outlined default-icon" aria-hidden="true">check</span>
-              <span class="material-symbols-outlined hover-icon" aria-hidden="true">person_remove</span>
-              <span class="default-text">Siguiendo</span>
-              <span class="hover-text">Dejar de seguir</span>
+              <span>
+                <span class="material-symbols-outlined default-icon" aria-hidden="true">check</span>
+                <span class="material-symbols-outlined hover-icon" aria-hidden="true"
+                  >person_remove</span
+                >
+                <span class="default-text">Siguiendo</span>
+                <span class="hover-text">Dejar de seguir</span>
+              </span>
             } @else {
-              <span class="material-symbols-outlined" aria-hidden="true">add</span>
-              <span>Seguir</span>
+              <span>
+                <span class="material-symbols-outlined" aria-hidden="true">add</span>
+                <span>Seguir</span>
+              </span>
             }
           </button>
           <button
+            mat-stroked-button
             class="btn-cover btn-cover-secondary"
             type="button"
             (click)="handleMessageClick(p)"
@@ -85,17 +120,28 @@
           </button>
         } @else if (isSelf()) {
           <!-- VISTA DEL PROPIO JUGADOR -->
-          <button class="btn-cover btn-cover-primary" type="button" (click)="startEditingInfo()">
+          <button
+            mat-flat-button
+            class="btn-cover btn-cover-primary"
+            type="button"
+            (click)="startEditingInfo()"
+          >
             <span class="material-symbols-outlined" aria-hidden="true">edit</span>
             <span>Editar perfil</span>
           </button>
-          <button class="btn-cover btn-cover-secondary" type="button" (click)="openSettings()">
+          <button
+            mat-stroked-button
+            class="btn-cover btn-cover-secondary"
+            type="button"
+            (click)="openSettings()"
+          >
             <span class="material-symbols-outlined" aria-hidden="true">palette</span>
             <span>Presentación</span>
           </button>
         } @else {
           <!-- VISTA DE OTRO JUGADOR / VISITANTE -->
           <button
+            mat-stroked-button
             class="btn-cover"
             [class.btn-cover-primary]="!following()"
             [class.btn-following]="following()"
@@ -104,16 +150,23 @@
             (click)="handleFollowClick()"
           >
             @if (following()) {
-              <span class="material-symbols-outlined default-icon" aria-hidden="true">check</span>
-              <span class="material-symbols-outlined hover-icon" aria-hidden="true">person_remove</span>
-              <span class="default-text">Siguiendo</span>
-              <span class="hover-text">Dejar de seguir</span>
+              <span>
+                <span class="material-symbols-outlined default-icon" aria-hidden="true">check</span>
+                <span class="material-symbols-outlined hover-icon" aria-hidden="true"
+                  >person_remove</span
+                >
+                <span class="default-text">Siguiendo</span>
+                <span class="hover-text">Dejar de seguir</span>
+              </span>
             } @else {
-              <span class="material-symbols-outlined" aria-hidden="true">add</span>
-              <span>Seguir</span>
+              <span>
+                <span class="material-symbols-outlined" aria-hidden="true">add</span>
+                <span>Seguir</span>
+              </span>
             }
           </button>
           <button
+            mat-stroked-button
             class="btn-cover btn-cover-secondary"
             type="button"
             (click)="handleMessageClick(p)"
@@ -125,6 +178,7 @@
 
         <!-- Botón Compartir Enlace -->
         <button
+          mat-icon-button
           class="btn-cover btn-cover-icon"
           type="button"
           title="Compartir enlace del perfil"
@@ -137,6 +191,7 @@
         <!-- Menú ⋯ (Reportar perfil y Bloquear usuario) -->
         <div class="more-options-wrap">
           <button
+            mat-icon-button
             class="btn-cover btn-cover-icon"
             type="button"
             title="Más opciones"
@@ -148,16 +203,26 @@
           @if (moreMenuOpen()) {
             <div class="more-options-menu" role="menu">
               @if (!isSelf()) {
-                <button type="button" class="more-menu-item" (click)="openReportModal()">
+                <button mat-button type="button" class="more-menu-item" (click)="openReportModal()">
                   <span class="material-symbols-outlined" aria-hidden="true">flag</span>
                   Reportar perfil
                 </button>
-                <button type="button" class="more-menu-item text-danger" (click)="bloquearUsuario()">
+                <button
+                  mat-button
+                  type="button"
+                  class="more-menu-item text-danger"
+                  (click)="bloquearUsuario()"
+                >
                   <span class="material-symbols-outlined" aria-hidden="true">block</span>
                   Bloquear usuario
                 </button>
               }
-              <button type="button" class="more-menu-item" (click)="compartirPerfil(); moreMenuOpen.set(false)">
+              <button
+                mat-button
+                type="button"
+                class="more-menu-item"
+                (click)="compartirPerfil(); moreMenuOpen.set(false)"
+              >
                 <span class="material-symbols-outlined" aria-hidden="true">share</span>
                 Compartir perfil
               </button>
@@ -166,38 +231,92 @@
         </div>
       </div>
 
+      <button
+        mat-icon-button
+        profileIdentityEnd
+        type="button"
+        class="btn-perspective-eye"
+        [class.visitor-mode]="isVisitorPerspective()"
+        (click)="togglePerspective()"
+        [title]="
+          isOwnerPerspective()
+            ? 'Cambiar a perspectiva de visitante'
+            : 'Cambiar a perspectiva del dueño'
+        "
+        [attr.aria-label]="
+          isOwnerPerspective()
+            ? 'Cambiar a perspectiva de visitante'
+            : 'Cambiar a perspectiva del dueño'
+        "
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">
+          {{ isOwnerPerspective() ? 'visibility' : 'visibility_off' }}
+        </span>
+      </button>
+
       <div profileMeta class="profile-meta-content">
         <p class="profile-handle">
-          &#64;{{ handle() }}@if (pLocation()) { · {{ pLocation() }} }
+          &#64;{{ handle() }}
+          @if (pLocation()) {
+            · {{ pLocation() }}
+          }
         </p>
 
-        @if (business() && p.rating !== null) {
+        @if (business() && ownerRating() > 0 && (p.reviewCount || p.reviews?.length)) {
           <div class="owner-rating-row">
-            <span class="star-rating">
-              <span class="material-symbols-outlined filled-star" aria-hidden="true">star</span>
-              <span class="material-symbols-outlined filled-star" aria-hidden="true">star</span>
-              <span class="material-symbols-outlined filled-star" aria-hidden="true">star</span>
-              <span class="material-symbols-outlined filled-star" aria-hidden="true">star</span>
-              <span class="material-symbols-outlined filled-star" aria-hidden="true">star</span>
+            <span
+              class="star-rating"
+              [attr.aria-label]="'Calificación ' + ownerRating().toFixed(1) + ' de 5'"
+            >
+              @for (star of [1, 2, 3, 4, 5]; track star) {
+                <span
+                  class="material-symbols-outlined"
+                  [class.filled-star]="star <= filledStarsCount()"
+                  [class.empty-star]="star > filledStarsCount()"
+                  aria-hidden="true"
+                  >star</span
+                >
+              }
             </span>
-            <strong>{{ p.rating.toFixed(1) }}</strong>
-            <span class="reviews-count">({{ p.reviewCount }} reseñas · {{ p.reviewCount }} opiniones)</span>
+            <strong>{{ ownerRating().toFixed(1) }}</strong>
+            <span class="reviews-count">
+              · Calificación total ({{ p.venues.length || 1 }}
+              {{ (p.venues.length || 1) === 1 ? 'sede' : 'sedes' }} ·
+              {{ p.canchasCount || courts().length || 4 }} canchas · {{ p.reviewCount }} reseñas)
+            </span>
           </div>
         }
 
         <div class="profile-stats">
           @if (business()) {
             @if (p.venues?.length) {
-              <span><strong>{{ p.venues.length }}</strong> {{ p.venues.length === 1 ? 'sede' : 'sedes' }}</span>
+              <span
+                ><strong>{{ p.venues.length }}</strong>
+                {{ p.venues.length === 1 ? 'sede' : 'sedes' }}</span
+              >
             }
-            <span><strong>{{ p.canchasCount || courts().length || 4 }}</strong> canchas</span>
-            <span><strong>{{ p.postCount }}</strong> publicaciones</span>
-            <span><strong>{{ p.reviewCount }}</strong> reseñas</span>
-            <span><strong>{{ p.followers }}</strong> seguidores</span>
+            <span
+              ><strong>{{ p.canchasCount || courts().length || 4 }}</strong> canchas</span
+            >
+            <span
+              ><strong>{{ p.postCount }}</strong> publicaciones</span
+            >
+            <span
+              ><strong>{{ p.reviewCount }}</strong> reseñas</span
+            >
+            <span
+              ><strong>{{ p.followers }}</strong> seguidores</span
+            >
           } @else {
-            <span><strong>{{ p.postCount }}</strong> publicaciones</span>
-            <span><strong>{{ p.followers }}</strong> seguidores</span>
-            <span><strong>{{ p.following }}</strong> siguiendo</span>
+            <span
+              ><strong>{{ p.postCount }}</strong> publicaciones</span
+            >
+            <span
+              ><strong>{{ p.followers }}</strong> seguidores</span
+            >
+            <span
+              ><strong>{{ p.following }}</strong> siguiendo</span
+            >
           }
         </div>
 
@@ -254,28 +373,43 @@
         <h2 id="presentation-title">Tu presentación pública</h2>
         <form #settingsForm="ngForm" (ngSubmit)="saveSettings()">
           <fieldset [disabled]="busy() || reading()">
-            <label>
-              Biografía
+            <mat-form-field
+              appearance="outline"
+              subscriptSizing="dynamic"
+              class="cn-field cn-field-textarea w-full"
+            >
+              <mat-label>Biografía</mat-label>
               <textarea
+                matInput
                 name="biography"
                 maxlength="500"
                 rows="3"
                 [(ngModel)]="biography"
                 placeholder="Cuéntale a la comunidad sobre ti y tus actividades deportivas"
               ></textarea>
-            </label>
-            <label>
-              WhatsApp público (opcional)
-              <input
-                name="whatsapp"
-                type="tel"
-                maxlength="20"
-                pattern="[+0-9 ()\-]{10,20}"
-                [(ngModel)]="whatsapp"
-                placeholder="Código de país y número"
-              />
-              <small>Solo este número será visible. Tu celular privado no se publica automáticamente.</small>
-            </label>
+            </mat-form-field>
+            <div>
+              <mat-form-field
+                appearance="outline"
+                subscriptSizing="dynamic"
+                class="cn-field w-full"
+              >
+                <mat-label>WhatsApp público (opcional)</mat-label>
+                <input
+                  matInput
+                  name="whatsapp"
+                  type="tel"
+                  maxlength="20"
+                  pattern="[+0-9 ()\-]{10,20}"
+                  [(ngModel)]="whatsapp"
+                  placeholder="Código de país y número"
+                />
+              </mat-form-field>
+              <small style="display: block; margin-top: 4px"
+                >Solo este número será visible. Tu celular privado no se publica
+                automáticamente.</small
+              >
+            </div>
             <div class="cover-edit">
               <label>
                 Portada personal (opcional)
@@ -288,7 +422,7 @@
               </label>
               @if (cover) {
                 <img [src]="cover" alt="Vista previa de tu portada" />
-                <button type="button" class="btn outline" (click)="cover = null">
+                <button mat-stroked-button type="button" class="btn outline" (click)="cover = null">
                   Quitar portada
                 </button>
               }
@@ -296,6 +430,7 @@
           </fieldset>
           <div class="actions">
             <button
+              mat-stroked-button
               type="button"
               class="btn outline"
               [disabled]="busy() || reading()"
@@ -304,6 +439,7 @@
               Cancelar
             </button>
             <button
+              mat-flat-button
               class="btn primary"
               type="submit"
               [disabled]="settingsForm.invalid || busy() || reading()"
@@ -331,28 +467,49 @@
 
             <div class="about-meta-list">
               <div class="about-meta-row">
-                <span class="material-symbols-outlined meta-icon location-icon" aria-hidden="true">location_on</span>
+                <span class="material-symbols-outlined meta-icon location-icon" aria-hidden="true"
+                  >location_on</span
+                >
                 <span>{{ pLocation() || 'Ica, Perú' }}</span>
               </div>
               <div class="about-meta-row">
-                <span class="material-symbols-outlined meta-icon calendar-icon" aria-hidden="true">calendar_today</span>
+                <span class="material-symbols-outlined meta-icon calendar-icon" aria-hidden="true"
+                  >calendar_today</span
+                >
                 <span>Miembro desde {{ memberSince() }}</span>
               </div>
               <div class="about-meta-row">
-                <span class="material-symbols-outlined meta-icon soccer-icon" aria-hidden="true">sports_soccer</span>
-                <span>Gestiona {{ p.venues.length || 1 }} {{ p.venues.length === 1 ? 'sede activa' : 'sedes activas' }} con {{ p.canchasCount || courts().length || 14 }} canchas para reservar en línea</span>
+                <span class="material-symbols-outlined meta-icon soccer-icon" aria-hidden="true"
+                  >sports_soccer</span
+                >
+                <span
+                  >Gestiona {{ p.venues.length || 1 }}
+                  {{ p.venues.length === 1 ? 'sede activa' : 'sedes activas' }} con
+                  {{ p.canchasCount || courts().length || 14 }} canchas para reservar en línea</span
+                >
               </div>
             </div>
 
-            <div style="margin-top: 16px; display: flex; flex-direction: column; gap: 8px;">
-              <button type="button" class="btn outline btn-block" (click)="tab.set('canchas')">
+            <div style="margin-top: 16px; display: flex; flex-direction: column; gap: 8px">
+              <button
+                mat-stroked-button
+                type="button"
+                class="btn outline btn-block"
+                (click)="tab.set('canchas')"
+              >
                 <span class="material-symbols-outlined" aria-hidden="true">sports_soccer</span>
                 Ver todas las canchas
               </button>
               @if (isOwnerPerspective() || isSelf()) {
-                <a routerLink="/admin/canchas" class="account-link" style="justify-content: center; font-size: 12px; margin-top: 4px;">
+                <a
+                  routerLink="/admin/canchas"
+                  class="account-link"
+                  style="justify-content: center; font-size: 12px; margin-top: 4px"
+                >
                   Administrar mis canchas
-                  <span class="material-symbols-outlined" aria-hidden="true" style="font-size: 14px;">arrow_forward</span>
+                  <span class="material-symbols-outlined" aria-hidden="true" style="font-size: 14px"
+                    >arrow_forward</span
+                  >
                 </a>
               }
             </div>
@@ -362,19 +519,46 @@
             <h2>Resumen operativo</h2>
             <div class="about-meta-list">
               <div class="about-meta-row">
-                <span class="material-symbols-outlined meta-icon" style="color: #16a34a;" aria-hidden="true">check_circle</span>
-                <span>{{ p.venues.length || 1 }} {{ p.venues.length === 1 ? 'sede con reservas activas' : 'sedes con reservas activas' }}</span>
+                <span
+                  class="material-symbols-outlined meta-icon"
+                  style="color: #16a34a"
+                  aria-hidden="true"
+                  >check_circle</span
+                >
+                <span
+                  >{{ p.venues.length || 1 }}
+                  {{
+                    p.venues.length === 1
+                      ? 'sede con reservas activas'
+                      : 'sedes con reservas activas'
+                  }}</span
+                >
               </div>
               <div class="about-meta-row">
-                <span class="material-symbols-outlined meta-icon" style="color: #16a34a;" aria-hidden="true">schedule</span>
+                <span
+                  class="material-symbols-outlined meta-icon"
+                  style="color: #16a34a"
+                  aria-hidden="true"
+                  >schedule</span
+                >
                 <span>Atendiendo hoy en horario habitual</span>
               </div>
               <div class="about-meta-row">
-                <span class="material-symbols-outlined meta-icon" style="color: #16a34a;" aria-hidden="true">payments</span>
+                <span
+                  class="material-symbols-outlined meta-icon"
+                  style="color: #16a34a"
+                  aria-hidden="true"
+                  >payments</span
+                >
                 <span>Acepta reservas con pago en línea</span>
               </div>
               <div class="about-meta-row">
-                <span class="material-symbols-outlined meta-icon" style="color: var(--muted);" aria-hidden="true">timer</span>
+                <span
+                  class="material-symbols-outlined meta-icon"
+                  style="color: var(--muted)"
+                  aria-hidden="true"
+                  >timer</span
+                >
                 <span>Horario habitual: Lun-Dom 07:00 – 23:00</span>
               </div>
             </div>
@@ -390,20 +574,28 @@
             <div class="about-meta-list">
               @if (pLocation()) {
                 <div class="about-meta-row">
-                  <span class="material-symbols-outlined meta-icon location-icon" aria-hidden="true">location_on</span>
+                  <span class="material-symbols-outlined meta-icon location-icon" aria-hidden="true"
+                    >location_on</span
+                  >
                   <span>{{ pLocation() }}</span>
                 </div>
               }
               <div class="about-meta-row">
-                <span class="material-symbols-outlined meta-icon calendar-icon" aria-hidden="true">calendar_today</span>
+                <span class="material-symbols-outlined meta-icon calendar-icon" aria-hidden="true"
+                  >calendar_today</span
+                >
                 <span>Miembro desde {{ memberSince() }}</span>
               </div>
               <div class="about-meta-row">
-                <span class="material-symbols-outlined meta-icon soccer-icon" aria-hidden="true">sports_soccer</span>
+                <span class="material-symbols-outlined meta-icon soccer-icon" aria-hidden="true"
+                  >sports_soccer</span
+                >
                 <span>{{ matchesPlayed() }} partidos jugados</span>
               </div>
               <div class="about-meta-row">
-                <span class="material-symbols-outlined meta-icon fav-icon" aria-hidden="true">favorite</span>
+                <span class="material-symbols-outlined meta-icon fav-icon" aria-hidden="true"
+                  >favorite</span
+                >
                 <span>Sede favorita: {{ favoriteVenue() }}</span>
               </div>
             </div>
@@ -419,80 +611,119 @@
           @if (isOwnerPerspective() || isSelf()) {
             <section class="panel composer" aria-labelledby="composer-title">
               <h2 id="composer-title">Comparte con la comunidad</h2>
-              <form (ngSubmit)="publish()">
-                <textarea
-                  name="postText"
-                  [(ngModel)]="text"
-                  rows="3"
-                  maxlength="2000"
-                  [disabled]="busy()"
-                  [placeholder]="
-                    business()
-                      ? 'Comparte novedades, promociones o fotos de tus canchas…'
-                      : '¿Cómo te fue en tu último partido?'
-                  "
-                  aria-label="Texto de tu publicación"
-                ></textarea>
-                <div class="draft-photos">
-                  @for (photo of draftPhotos(); track $index) {
-                    <div>
-                      <img [src]="photo" alt="Foto que adjuntarás a la publicación" />
-                      <button
-                        type="button"
-                        [disabled]="busy() || reading()"
-                        (click)="removePhoto($index)"
-                        aria-label="Quitar foto"
-                      >
-                        <span class="material-symbols-outlined" aria-hidden="true">close</span>
-                      </button>
-                    </div>
-                  }
-                </div>
-                <div class="actions spread">
-                  <input
-                    #postPhotoInput
-                    type="file"
-                    hidden
-                    multiple
-                    accept="image/jpeg,image/png,image/webp"
-                    (change)="selectPhotos(postPhotoInput)"
-                  />
+              <form class="composer-form" (ngSubmit)="publish()">
+                <mat-form-field
+                  appearance="outline"
+                  subscriptSizing="dynamic"
+                  floatLabel="always"
+                  class="cn-field cn-field-textarea w-full composer-field"
+                >
+                  <mat-label>Escribe una publicación</mat-label>
+                  <textarea
+                    matInput
+                    name="postText"
+                    [(ngModel)]="text"
+                    rows="4"
+                    maxlength="2000"
+                    [disabled]="busy()"
+                    [placeholder]="
+                      business()
+                        ? 'Comparte novedades, promociones o fotos de tus canchas…'
+                        : '¿Cómo te fue en tu último partido?'
+                    "
+                    aria-label="Texto de tu publicación"
+                  ></textarea>
+                </mat-form-field>
+                @if (draftPhotos().length) {
+                  <div class="draft-photos">
+                    @for (photo of draftPhotos(); track $index) {
+                      <div class="draft-photo-item">
+                        <img [src]="photo" alt="Foto que adjuntarás a la publicación" />
+                        <button
+                          mat-icon-button
+                          type="button"
+                          [disabled]="busy() || reading()"
+                          (click)="removePhoto($index)"
+                          aria-label="Quitar foto"
+                        >
+                          <span class="material-symbols-outlined" aria-hidden="true">close</span>
+                        </button>
+                      </div>
+                    }
+                  </div>
+                }
+                <input
+                  #postPhotoInput
+                  type="file"
+                  hidden
+                  multiple
+                  accept="image/jpeg,image/png,image/webp"
+                  (change)="selectPhotos(postPhotoInput)"
+                />
+                <div class="composer-tools-row">
                   <div class="composer-left-tools">
                     <div class="emoji-picker-wrap">
                       <button
+                        mat-icon-button
                         class="btn icon-only emoji-btn"
                         type="button"
                         title="Agregar emoji"
                         aria-label="Agregar emoji"
                         (click)="toggleEmojiPicker()"
                       >
-                        <span class="material-symbols-outlined" aria-hidden="true">sentiment_satisfied</span>
+                        <span class="material-symbols-outlined" aria-hidden="true"
+                          >sentiment_satisfied</span
+                        >
                       </button>
                       @if (emojiPickerOpen()) {
-                        <div class="emoji-picker-dropdown" role="dialog" aria-label="Selector de emojis">
+                        <div
+                          class="emoji-picker-dropdown"
+                          role="dialog"
+                          aria-label="Selector de emojis"
+                        >
                           <div class="emoji-picker-header">
                             <span class="emoji-picker-title">Elige un emoji</span>
-                            <button type="button" class="btn icon-only emoji-close" (click)="emojiPickerOpen.set(false)" aria-label="Cerrar">✕</button>
+                            <button
+                              mat-icon-button
+                              type="button"
+                              class="btn icon-only emoji-close"
+                              (click)="emojiPickerOpen.set(false)"
+                              aria-label="Cerrar"
+                            >
+                              ✕
+                            </button>
                           </div>
                           <div class="emoji-picker-grid">
                             @for (em of emojis(); track $index) {
-                              <button type="button" class="emoji-char-btn" (click)="insertEmoji(em)">{{ em }}</button>
+                              <button
+                                type="button"
+                                class="emoji-char-btn"
+                                (click)="insertEmoji(em)"
+                              >
+                                {{ em }}
+                              </button>
                             }
                           </div>
                         </div>
                       }
                     </div>
                     <button
+                      mat-stroked-button
                       class="btn outline composer-gallery-btn"
                       type="button"
                       [disabled]="reading() || busy() || draftPhotos().length >= 4"
                       (click)="postPhotoInput.click()"
                     >
-                      <span class="material-symbols-outlined" aria-hidden="true">photo_library</span>
+                      <span class="material-symbols-outlined" aria-hidden="true"
+                        >photo_library</span
+                      >
                       {{ reading() ? 'Preparando…' : 'Galería' }}
                     </button>
                   </div>
+                </div>
+                <div class="composer-submit-row">
                   <button
+                    mat-flat-button
                     class="btn primary composer-submit-btn"
                     type="submit"
                     [disabled]="busy() || reading() || (!text.trim() && !draftPhotos().length)"
@@ -501,9 +732,6 @@
                     {{ busy() ? 'Publicando…' : 'Publicar' }}
                   </button>
                 </div>
-                <small class="composer-hint">
-                  Esta publicación será pública. Hasta 4 fotos JPG, PNG o WebP de 5 MB cada una; se optimizan antes de guardarse.
-                </small>
               </form>
             </section>
           }
@@ -511,7 +739,9 @@
           @if (postsError()) {
             <section class="panel" role="alert">
               <p>{{ postsError() }}</p>
-              <button type="button" class="btn outline" (click)="retryPosts()">Reintentar</button>
+              <button mat-stroked-button type="button" class="btn outline" (click)="retryPosts()">
+                Reintentar
+              </button>
             </section>
           }
 
@@ -519,8 +749,8 @@
             <article class="panel post">
               <div class="post-heading">
                 <div class="post-identity">
-                  @if (p.photo) {
-                    <img [src]="p.photo" alt="" />
+                  @if (avatarUrl()) {
+                    <img [src]="avatarUrl()" alt="" />
                   } @else if (business()) {
                     <span class="mini-avatar business-mini-avatar">
                       <span class="material-symbols-outlined">stadium</span>
@@ -534,11 +764,15 @@
                   </div>
                 </div>
                 <div class="post-actions">
-                  <span class="role-badge post-type-badge" [class.badge-promo]="post.badge === 'Promoción'">
+                  <span
+                    class="role-badge post-type-badge"
+                    [class.badge-promo]="post.badge === 'Promoción'"
+                  >
                     {{ post.badge || 'Partido' }}
                   </span>
                   @if (isOwnerPerspective() || isSelf()) {
                     <button
+                      mat-icon-button
                       type="button"
                       class="btn icon-only"
                       [disabled]="busy()"
@@ -567,11 +801,15 @@
                   [class.liked]="post.liked"
                   (click)="toggleLike(post)"
                 >
-                  <span class="material-symbols-outlined" aria-hidden="true">{{ post.liked ? 'favorite' : 'favorite_border' }}</span>
+                  <span class="material-symbols-outlined" aria-hidden="true">{{
+                    post.liked ? 'favorite' : 'favorite_border'
+                  }}</span>
                   <span>{{ post.likes || 0 }} Me gusta</span>
                 </button>
                 <button type="button" class="post-action-btn" (click)="handleCommentClick(post)">
-                  <span class="material-symbols-outlined" aria-hidden="true">chat_bubble_outline</span>
+                  <span class="material-symbols-outlined" aria-hidden="true"
+                    >chat_bubble_outline</span
+                  >
                   <span>{{ post.commentCount || 0 }} Comentarios</span>
                 </button>
                 <button type="button" class="post-action-btn" (click)="compartirPost(post)">
@@ -584,7 +822,9 @@
             @if (!postsError() && !loading()) {
               <section class="panel empty-profile-panel">
                 <div class="empty-camera-circle">
-                  <span class="material-symbols-outlined empty-icon" aria-hidden="true">photo_camera</span>
+                  <span class="material-symbols-outlined empty-icon" aria-hidden="true"
+                    >photo_camera</span
+                  >
                 </div>
                 <h2>Aún no hay publicaciones</h2>
                 <p>
@@ -610,29 +850,47 @@
           <section class="panel">
             <h2>Sedes que administra</h2>
             <p>
-              Elige el complejo donde quieres jugar. Gestiona {{ p.venues.length }} {{ p.venues.length === 1 ? 'sede' : 'sedes' }} con {{ p.reviewCount || 4 }} opiniones en total.
+              Elige el complejo donde quieres jugar. Gestiona {{ p.venues.length }}
+              {{ p.venues.length === 1 ? 'sede' : 'sedes' }} con {{ p.reviewCount || 0 }} opiniones
+              en total.
             </p>
           </section>
           @for (venue of p.venues; track venue.id) {
             <article class="panel venue-card">
-              <header class="venue-heading">
-                <h3>{{ venue.name }}</h3>
-                @if (venue.rating) {
-                  <span>
-                    <span class="material-symbols-outlined" aria-hidden="true">star</span>
-                    {{ venue.rating.toFixed(1) }}
-                  </span>
-                }
-              </header>
               @if (venue.photo) {
-                <img [src]="venue.photo" [alt]="'Foto de ' + venue.name" />
+                <img
+                  [src]="venue.photo"
+                  [alt]="'Foto de ' + venue.name"
+                  class="court-card-photo"
+                  loading="lazy"
+                />
+              } @else {
+                <div class="court-img-placeholder">
+                  <span class="material-symbols-outlined">location_city</span>
+                </div>
               }
-              <p>{{ venue.district || 'Distrito pendiente' }}, {{ venue.city || 'Ciudad pendiente' }}</p>
-              <p>{{ venue.address || 'Dirección pendiente de completar' }}</p>
-              <a class="btn primary" [routerLink]="['/sedes', venue.id]">
-                Ver sede y reservar
-                <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
-              </a>
+              <div class="court-info-body">
+                <header class="venue-heading">
+                  <h3>{{ venue.name }}</h3>
+                  @if (venue.rating) {
+                    <span>
+                      <span class="material-symbols-outlined" aria-hidden="true">star</span>
+                      {{ venue.rating.toFixed(1) }}
+                    </span>
+                  }
+                </header>
+                <p>
+                  {{ venue.district || 'Distrito pendiente' }},
+                  {{ venue.city || 'Ciudad pendiente' }}
+                </p>
+                <p>{{ venue.address || 'Dirección pendiente de completar' }}</p>
+                <div class="court-cta-row" style="margin-top: 10px">
+                  <a class="btn primary" [routerLink]="['/sedes', venue.id]">
+                    Ver sede y reservar
+                    <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
+                  </a>
+                </div>
+              </div>
             </article>
           } @empty {
             <section class="panel empty">Este perfil aún no tiene sedes registradas.</section>
@@ -657,11 +915,17 @@
               <div class="court-info-body">
                 <p class="eyebrow">{{ court.venueName }}</p>
                 <h3>{{ court.nombre }}</h3>
-                <p class="court-specs">{{ court.tipo }} · {{ court.superficie }} · {{ court.cobertura }}</p>
+                <p class="court-specs">
+                  {{ court.tipo }} · {{ court.superficie }} · {{ court.cobertura }}
+                </p>
                 <strong class="court-price">S/ {{ court.precioHora.toFixed(2) }} / hora</strong>
                 <div class="court-cta-row">
                   @if (court.disponible) {
-                    <a class="btn primary" routerLink="/checkout" [queryParams]="{ courtId: court.id }">
+                    <a
+                      class="btn primary"
+                      routerLink="/checkout"
+                      [queryParams]="{ courtId: court.id }"
+                    >
                       Reservar cancha
                     </a>
                   } @else {
@@ -692,7 +956,7 @@
                   </span>
                 }
               </div>
-              <div style="margin-top: 16px;">
+              <div style="margin-top: 16px">
                 <a class="btn primary" [routerLink]="['/sedes', group.venue.id]">
                   Consultar esta sede y reservar
                   <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
@@ -744,9 +1008,11 @@
                     <span>Cafetería y Graderías</span>
                   </div>
                 } @else {
-                  <div class="empty-profile-panel" style="grid-column: 1 / -1;">
+                  <div class="empty-profile-panel" style="grid-column: 1 / -1">
                     <div class="empty-camera-circle">
-                      <span class="material-symbols-outlined empty-icon" aria-hidden="true">photo_library</span>
+                      <span class="material-symbols-outlined empty-icon" aria-hidden="true"
+                        >photo_library</span
+                      >
                     </div>
                     <h2>Aún no hay fotos en la galería</h2>
                     <p>Las fotografías compartidas en publicaciones o sedes aparecerán aquí.</p>
@@ -766,20 +1032,31 @@
         @else if (tab() === 'reseñas') {
           <div class="reviews-summary-panel panel">
             <div class="rating-large-box">
-              <span class="rating-score">4.7</span>
+              <span class="rating-score">{{
+                ownerRating() > 0 ? ownerRating().toFixed(1) : '0.0'
+              }}</span>
               <div class="rating-stars-gold">
-                <span class="material-symbols-outlined">star</span>
-                <span class="material-symbols-outlined">star</span>
-                <span class="material-symbols-outlined">star</span>
-                <span class="material-symbols-outlined">star</span>
-                <span class="material-symbols-outlined">star</span>
+                @for (star of [1, 2, 3, 4, 5]; track star) {
+                  <span
+                    class="material-symbols-outlined"
+                    [class.filled-star]="ownerRating() > 0 && star <= filledStarsCount()"
+                    [class.empty-star]="ownerRating() === 0 || star > filledStarsCount()"
+                    >star</span
+                  >
+                }
               </div>
-              <span class="rating-total-reviews">{{ p.reviewCount || 86 }} reseñas</span>
+              <span class="rating-total-reviews"
+                >{{ p.reviews?.length || p.reviewCount || 0 }} reseñas</span
+              >
 
               <!-- BOTÓN ESCRIBIR RESEÑA (SOLO PERSPECTIVA DE VISITANTE: IMAGEN 3) -->
               @if (isVisitorPerspective()) {
-                <div class="write-review-cta" style="margin-top: 14px;">
-                  <button type="button" class="btn primary btn-write-review" (click)="abrirEscribirResena()">
+                <div class="write-review-cta" style="margin-top: 14px">
+                  <button
+                    type="button"
+                    class="btn primary btn-write-review"
+                    (click)="abrirEscribirResena()"
+                  >
                     <span class="material-symbols-outlined" aria-hidden="true">edit_note</span>
                     Escribir reseña
                   </button>
@@ -821,12 +1098,14 @@
                     </div>
                     <div class="review-stars-date">
                       <span class="star-rating">
-                        @for (s of [1,2,3,4,5]; track s) {
+                        @for (s of [1, 2, 3, 4, 5]; track s) {
                           <span
                             class="material-symbols-outlined star-icon"
-                            [style.color]="s <= rev.rating ? '#f59e0b' : '#cbd5e1'"
+                            [class.filled-star]="s <= rev.rating"
+                            [class.empty-star]="s > rev.rating"
                             aria-hidden="true"
-                          >star</span>
+                            >star</span
+                          >
                         }
                       </span>
                       <span class="review-date">· {{ rev.date }}</span>
@@ -845,26 +1124,61 @@
                 <!-- BOTÓN RESPONDER (SOLO PERSPECTIVA DEL DUEÑO: IMAGEN 2) -->
                 @if (!rev.response && isOwnerPerspective()) {
                   @if (replyingReviewIndex() === $index) {
-                    <div class="inline-reply-form" style="margin-top: 10px; background: var(--soft); padding: 12px; border-radius: 8px;">
-                      <textarea
-                        [(ngModel)]="replyText"
-                        placeholder="Escribe tu respuesta a {{ rev.author }}…"
-                        rows="2"
-                        style="width: 100%; border: 1px solid var(--line); border-radius: 6px; padding: 8px; font-size: 12px; font-family: inherit;"
-                      ></textarea>
-                      <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px;">
-                        <button type="button" class="btn outline btn-sm" (click)="cancelarRespuesta()">
+                    <div
+                      class="inline-reply-form"
+                      style="
+                        margin-top: 10px;
+                        background: var(--soft);
+                        padding: 12px;
+                        border-radius: 8px;
+                      "
+                    >
+                      <mat-form-field
+                        appearance="outline"
+                        subscriptSizing="dynamic"
+                        class="cn-field cn-field-textarea w-full"
+                      >
+                        <mat-label>Tu respuesta</mat-label>
+                        <textarea
+                          matInput
+                          [(ngModel)]="replyText"
+                          placeholder="Escribe tu respuesta a {{ rev.author }}…"
+                          rows="2"
+                        ></textarea>
+                      </mat-form-field>
+                      <div
+                        style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px"
+                      >
+                        <button
+                          type="button"
+                          class="btn outline btn-sm"
+                          (click)="cancelarRespuesta()"
+                        >
                           Cancelar
                         </button>
-                        <button type="button" class="btn primary btn-sm" [disabled]="!replyText.trim()" (click)="enviarRespuesta($index)">
+                        <button
+                          type="button"
+                          class="btn primary btn-sm"
+                          [disabled]="!replyText.trim()"
+                          (click)="enviarRespuesta($index)"
+                        >
                           Enviar respuesta
                         </button>
                       </div>
                     </div>
                   } @else {
-                    <div style="margin-top: 8px;">
-                      <button type="button" class="btn outline btn-sm" (click)="iniciarRespuesta($index)">
-                        <span class="material-symbols-outlined" aria-hidden="true" style="font-size: 14px;">reply</span>
+                    <div style="margin-top: 8px">
+                      <button
+                        type="button"
+                        class="btn outline btn-sm"
+                        (click)="iniciarRespuesta($index)"
+                      >
+                        <span
+                          class="material-symbols-outlined"
+                          aria-hidden="true"
+                          style="font-size: 14px"
+                          >reply</span
+                        >
                         Responder
                       </button>
                     </div>
@@ -874,7 +1188,9 @@
             } @empty {
               <div class="empty-profile-panel">
                 <div class="empty-camera-circle">
-                  <span class="material-symbols-outlined empty-icon" aria-hidden="true">reviews</span>
+                  <span class="material-symbols-outlined empty-icon" aria-hidden="true"
+                    >reviews</span
+                  >
                 </div>
                 <h2>Aún no hay reseñas publicadas</h2>
                 <p>Las opiniones de jugadores con reservas completadas aparecerán aquí.</p>
@@ -892,24 +1208,26 @@
           @for (venue of p.venues; track venue.id) {
             <article class="panel venue-location-card">
               <div class="location-card-header">
-                <span class="material-symbols-outlined location-main-icon" aria-hidden="true">location_on</span>
+                <span class="material-symbols-outlined location-main-icon" aria-hidden="true"
+                  >location_on</span
+                >
                 <div>
                   <h3>{{ venue.name }}</h3>
                   <p class="location-city-district">{{ venue.district }}, {{ venue.city }}</p>
                 </div>
               </div>
               <p class="location-address">
-                <strong>Dirección:</strong> {{ venue.address || 'Av. Los Libertadores Nº 394, Mariscal Nieto, Moquegua' }}
+                <strong>Dirección:</strong>
+                {{ venue.address || 'Av. Los Libertadores Nº 394, Mariscal Nieto, Moquegua' }}
               </p>
               @if (venue.phone) {
-                <p class="location-phone">
-                  <strong>Contacto:</strong> {{ venue.phone }}
-                </p>
+                <p class="location-phone"><strong>Contacto:</strong> {{ venue.phone }}</p>
               }
-              <div class="location-actions" style="display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap;">
-                <a class="btn primary" [routerLink]="['/sedes', venue.id]">
-                  Ver sede y canchas
-                </a>
+              <div
+                class="location-actions"
+                style="display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap"
+              >
+                <a class="btn primary" [routerLink]="['/sedes', venue.id]"> Ver sede y canchas </a>
                 <a class="btn outline" [routerLink]="['/sedes', venue.id]" fragment="ubicacion">
                   <span class="material-symbols-outlined" aria-hidden="true">map</span>
                   Ver mapa interactivo
@@ -932,50 +1250,131 @@
               </div>
               <form (ngSubmit)="saveEditingInfo()">
                 <div class="form-grid-2">
-                  <label>
-                    Nombres *
-                    <input type="text" [(ngModel)]="editNombre" name="editNombre" required />
-                  </label>
-                  <label>
-                    Apellidos *
-                    <input type="text" [(ngModel)]="editApellido" name="editApellido" required />
-                  </label>
+                  <mat-form-field
+                    appearance="outline"
+                    subscriptSizing="dynamic"
+                    class="cn-field w-full"
+                  >
+                    <mat-label>Nombres *</mat-label>
+                    <input
+                      matInput
+                      type="text"
+                      [(ngModel)]="editNombre"
+                      name="editNombre"
+                      required
+                    />
+                  </mat-form-field>
+                  <mat-form-field
+                    appearance="outline"
+                    subscriptSizing="dynamic"
+                    class="cn-field w-full"
+                  >
+                    <mat-label>Apellidos *</mat-label>
+                    <input
+                      matInput
+                      type="text"
+                      [(ngModel)]="editApellido"
+                      name="editApellido"
+                      required
+                    />
+                  </mat-form-field>
                 </div>
 
                 <div class="form-grid-2">
-                  <label>
-                    Celular (opcional)
-                    <input type="tel" [(ngModel)]="editTelefono" name="editTelefono" placeholder="987 654 321" />
+                  <div>
+                    <mat-form-field
+                      appearance="outline"
+                      subscriptSizing="dynamic"
+                      class="cn-field w-full"
+                    >
+                      <mat-label>Celular (opcional)</mat-label>
+                      <input
+                        matInput
+                        type="tel"
+                        [(ngModel)]="editTelefono"
+                        name="editTelefono"
+                        placeholder="987 654 321"
+                      />
+                    </mat-form-field>
                     <label class="checkbox-label">
-                      <input type="checkbox" [(ngModel)]="editShowPhonePublic" name="editShowPhonePublic" />
+                      <input
+                        type="checkbox"
+                        [(ngModel)]="editShowPhonePublic"
+                        name="editShowPhonePublic"
+                      />
                       <span>Hacer público mi celular en el perfil</span>
                     </label>
-                  </label>
-                  <label>
-                    Sede favorita
-                    <input type="text" [(ngModel)]="editSedeFavorita" name="editSedeFavorita" placeholder="Ej. Arena Gol Sur" />
+                  </div>
+                  <mat-form-field
+                    appearance="outline"
+                    subscriptSizing="dynamic"
+                    class="cn-field w-full"
+                  >
+                    <mat-label>Sede favorita</mat-label>
+                    <input
+                      matInput
+                      type="text"
+                      [(ngModel)]="editSedeFavorita"
+                      name="editSedeFavorita"
+                      placeholder="Ej. Arena Gol Sur"
+                    />
+                  </mat-form-field>
+                </div>
+
+                <div>
+                  <mat-form-field
+                    appearance="outline"
+                    subscriptSizing="dynamic"
+                    class="cn-field w-full"
+                  >
+                    <mat-label>Dirección o referencia (opcional)</mat-label>
+                    <input
+                      matInput
+                      type="text"
+                      [(ngModel)]="editDireccion"
+                      name="editDireccion"
+                      placeholder="Distrito, calle o referencia"
+                    />
+                  </mat-form-field>
+                  <label class="checkbox-label">
+                    <input
+                      type="checkbox"
+                      [(ngModel)]="editShowAddressPublic"
+                      name="editShowAddressPublic"
+                    />
+                    <span>Hacer pública mi dirección en el perfil</span>
                   </label>
                 </div>
 
-                <label>
-                  Dirección o referencia (opcional)
-                  <input type="text" [(ngModel)]="editDireccion" name="editDireccion" placeholder="Distrito, calle o referencia" />
-                  <label class="checkbox-label">
-                    <input type="checkbox" [(ngModel)]="editShowAddressPublic" name="editShowAddressPublic" />
-                    <span>Hacer pública mi dirección en el perfil</span>
-                  </label>
-                </label>
-
-                <label>
-                  Biografía
-                  <textarea [(ngModel)]="editBiography" name="editBiography" rows="3" placeholder="Cuéntale a la comunidad sobre ti..."></textarea>
-                </label>
+                <mat-form-field
+                  appearance="outline"
+                  subscriptSizing="dynamic"
+                  class="cn-field cn-field-textarea w-full"
+                >
+                  <mat-label>Biografía</mat-label>
+                  <textarea
+                    matInput
+                    [(ngModel)]="editBiography"
+                    name="editBiography"
+                    rows="3"
+                    placeholder="Cuéntale a la comunidad sobre ti..."
+                  ></textarea>
+                </mat-form-field>
 
                 <div class="editing-actions">
-                  <button type="button" class="btn outline" [disabled]="busy()" (click)="cancelEditingInfo()">
+                  <button
+                    type="button"
+                    class="btn outline"
+                    [disabled]="busy()"
+                    (click)="cancelEditingInfo()"
+                  >
                     Cancelar
                   </button>
-                  <button type="submit" class="btn primary" [disabled]="busy() || !editNombre.trim() || !editApellido.trim()">
+                  <button
+                    type="submit"
+                    class="btn primary"
+                    [disabled]="busy() || !editNombre.trim() || !editApellido.trim()"
+                  >
                     {{ busy() ? 'Guardando…' : 'Guardar cambios' }}
                   </button>
                 </div>
@@ -1004,7 +1403,12 @@
                 </div>
                 <div>
                   <dt>Dirección</dt>
-                  <dd>{{ p.venues[0]?.address || 'Av. Los Libertadores Nº 394, Mariscal Nieto, Moquegua' }}</dd>
+                  <dd>
+                    {{
+                      p.venues[0]?.address ||
+                        'Av. Los Libertadores Nº 394, Mariscal Nieto, Moquegua'
+                    }}
+                  </dd>
                 </div>
                 <div>
                   <dt>Teléfono</dt>
@@ -1016,7 +1420,9 @@
                     <span class="ruc-box">
                       20•••••••81
                       <span class="verified-badge">
-                        <span class="material-symbols-outlined verified-icon" aria-hidden="true">check</span>
+                        <span class="material-symbols-outlined verified-icon" aria-hidden="true"
+                          >check</span
+                        >
                         Validado
                       </span>
                     </span>
@@ -1065,7 +1471,9 @@
                       {{ p.whatsapp || p.phone || 'No registrado' }}
                     } @else {
                       <span class="private-chip">
-                        <span class="material-symbols-outlined lock-icon" aria-hidden="true">lock</span>
+                        <span class="material-symbols-outlined lock-icon" aria-hidden="true"
+                          >lock</span
+                        >
                         Privado
                       </span>
                     }
@@ -1078,7 +1486,9 @@
                       {{ p.address || 'No registrada' }}
                     } @else {
                       <span class="private-chip">
-                        <span class="material-symbols-outlined lock-icon" aria-hidden="true">lock</span>
+                        <span class="material-symbols-outlined lock-icon" aria-hidden="true"
+                          >lock</span
+                        >
                         Privado
                       </span>
                     }
@@ -1110,35 +1520,56 @@
 
   <!-- ================= MODAL ESCRIBIR RESEÑA (VISITANTE) ================= -->
   @if (reviewModalOpen()) {
-    <div class="auth-prompt-backdrop" (click)="reviewModalOpen.set(false)" role="dialog" aria-modal="true">
+    <div
+      class="auth-prompt-backdrop"
+      (click)="reviewModalOpen.set(false)"
+      role="dialog"
+      aria-modal="true"
+    >
       <div class="auth-prompt-card" (click)="$event.stopPropagation()">
         <div class="auth-prompt-icon-wrap">
           <span class="material-symbols-outlined" aria-hidden="true">rate_review</span>
         </div>
         <h3>Escribir reseña</h3>
         <p>Califica tu experiencia jugando en esta sede deportiva.</p>
-        <div class="stars-picker" style="display: flex; gap: 8px; justify-content: center; margin: 14px 0;">
+        <div
+          class="stars-picker"
+          style="display: flex; gap: 8px; justify-content: center; margin: 14px 0"
+        >
           @for (s of [1, 2, 3, 4, 5]; track s) {
             <button
               type="button"
               class="btn-star-select"
-              style="background: none; border: none; cursor: pointer; color: #f59e0b;"
+              style="background: none; border: none; cursor: pointer; color: #f59e0b"
               (click)="newReviewRating.set(s)"
             >
-              <span class="material-symbols-outlined" style="font-size: 28px;">
+              <span class="material-symbols-outlined" style="font-size: 28px">
                 {{ s <= newReviewRating() ? 'star' : 'star_border' }}
               </span>
             </button>
           }
         </div>
-        <textarea
-          [(ngModel)]="newReviewText"
-          placeholder="Escribe tu opinión sobre el estado del grass, la atención y las instalaciones…"
-          rows="3"
-          style="width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 10px; font-family: inherit; font-size: 13px; margin-bottom: 12px;"
-        ></textarea>
+        <mat-form-field
+          appearance="outline"
+          subscriptSizing="dynamic"
+          class="cn-field cn-field-textarea w-full"
+          style="margin-bottom: 12px"
+        >
+          <mat-label>Tu reseña</mat-label>
+          <textarea
+            matInput
+            [(ngModel)]="newReviewText"
+            placeholder="Escribe tu opinión sobre el estado del grass, la atención y las instalaciones…"
+            rows="3"
+          ></textarea>
+        </mat-form-field>
         <div class="auth-prompt-actions">
-          <button type="button" class="btn primary btn-block" [disabled]="!newReviewText.trim()" (click)="enviarNuevaResena()">
+          <button
+            type="button"
+            class="btn primary btn-block"
+            [disabled]="!newReviewText.trim()"
+            (click)="enviarNuevaResena()"
+          >
             Publicar reseña
           </button>
           <button type="button" class="btn outline btn-block" (click)="reviewModalOpen.set(false)">
@@ -1151,21 +1582,28 @@
 
   <!-- ================= MODAL DE INICIO DE SESIÓN PARA VISITANTES ================= -->
   @if (authPromptOpen()) {
-    <div class="auth-prompt-backdrop" (click)="authPromptOpen.set(false)" role="dialog" aria-modal="true">
+    <div
+      class="auth-prompt-backdrop"
+      (click)="authPromptOpen.set(false)"
+      role="dialog"
+      aria-modal="true"
+    >
       <div class="auth-prompt-card" (click)="$event.stopPropagation()">
         <div class="auth-prompt-icon-wrap">
           <span class="material-symbols-outlined" aria-hidden="true">lock</span>
         </div>
         <h3>Inicia sesión en Canchero</h3>
         <p>
-          Para {{ authPromptReason() || 'interactuar con este perfil' }}, seguir jugadores y reservar canchas, necesitas una cuenta activa.
+          Para {{ authPromptReason() || 'interactuar con este perfil' }}, seguir jugadores y
+          reservar canchas, necesitas una cuenta activa.
         </p>
         <div class="auth-prompt-actions">
-          <a class="btn primary btn-block" [routerLink]="['/login']" [queryParams]="{ returnUrl: currentUrl() }">
+          <a
+            class="btn primary btn-block"
+            [routerLink]="['/login']"
+            [queryParams]="{ returnUrl: currentUrl() }"
+          >
             Iniciar sesión
-          </a>
-          <a class="btn outline btn-block" [routerLink]="['/registro']">
-            Crear cuenta gratis
           </a>
         </div>
         <button type="button" class="btn-prompt-dismiss" (click)="authPromptOpen.set(false)">
@@ -1177,28 +1615,56 @@
 
   <!-- ================= MODAL DE REPORTE DE PERFIL ================= -->
   @if (reportModalOpen()) {
-    <div class="auth-prompt-backdrop" (click)="reportModalOpen.set(false)" role="dialog" aria-modal="true">
+    <div
+      class="auth-prompt-backdrop"
+      (click)="reportModalOpen.set(false)"
+      role="dialog"
+      aria-modal="true"
+    >
       <div class="auth-prompt-card" (click)="$event.stopPropagation()">
         <div class="auth-prompt-icon-wrap flag-wrap">
           <span class="material-symbols-outlined" aria-hidden="true">flag</span>
         </div>
         <h3>Reportar perfil</h3>
-        <p>Selecciona el motivo por el cual deseas reportar este perfil. La administración revisará el caso.</p>
+        <p>
+          Selecciona el motivo por el cual deseas reportar este perfil. La administración revisará
+          el caso.
+        </p>
         <div class="report-options">
           <label class="radio-label">
-            <input type="radio" name="reportReason" [(ngModel)]="reportReason" value="Contenido inapropiado o spam" />
+            <input
+              type="radio"
+              name="reportReason"
+              [(ngModel)]="reportReason"
+              value="Contenido inapropiado o spam"
+            />
             <span>Contenido inapropiado o spam</span>
           </label>
           <label class="radio-label">
-            <input type="radio" name="reportReason" [(ngModel)]="reportReason" value="Perfil falso o suplantación de identidad" />
+            <input
+              type="radio"
+              name="reportReason"
+              [(ngModel)]="reportReason"
+              value="Perfil falso o suplantación de identidad"
+            />
             <span>Perfil falso o suplantación de identidad</span>
           </label>
           <label class="radio-label">
-            <input type="radio" name="reportReason" [(ngModel)]="reportReason" value="Conducta antideportiva o agresión" />
+            <input
+              type="radio"
+              name="reportReason"
+              [(ngModel)]="reportReason"
+              value="Conducta antideportiva o agresión"
+            />
             <span>Conducta antideportiva o agresión</span>
           </label>
           <label class="radio-label">
-            <input type="radio" name="reportReason" [(ngModel)]="reportReason" value="Información engañosa sobre sedes" />
+            <input
+              type="radio"
+              name="reportReason"
+              [(ngModel)]="reportReason"
+              value="Información engañosa sobre sedes"
+            />
             <span>Información engañosa sobre sedes</span>
           </label>
         </div>
@@ -1213,31 +1679,6 @@
       </div>
     </div>
   }
-
-  <!-- SELECTOR FLOTANTE DE PERSPECTIVA (DEMO: DUEÑO / VISITANTE) -->
-  <aside class="demo-perspective-bar" aria-label="Selector de perspectiva">
-    <span class="demo-label">Perspectiva:</span>
-    <button
-      type="button"
-      class="demo-chip"
-      [class.active]="isOwnerPerspective()"
-      (click)="previewRole.set('owner')"
-      title="Ver como dueño (responder reseñas, publicar, gestionar)"
-    >
-      <span class="material-symbols-outlined" aria-hidden="true">storefront</span>
-      Vista del dueño
-    </button>
-    <button
-      type="button"
-      class="demo-chip"
-      [class.active]="isVisitorPerspective()"
-      (click)="previewRole.set('visitor')"
-      title="Ver como visitante (reservar, escribir reseña, seguir)"
-    >
-      <span class="material-symbols-outlined" aria-hidden="true">visibility</span>
-      Vista de visitante
-    </button>
-  </aside>
 
   <!-- TOAST DE CONFIRMACIÓN -->
   @if (shareToast()) {

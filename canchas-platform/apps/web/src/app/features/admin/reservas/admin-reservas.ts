@@ -19,8 +19,13 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
+import { MatTableModule } from '@angular/material/table';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatNativeDateModule } from '@angular/material/core';
 import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { applyDateMaskToInput, isoToLocalDate, localDateToIso } from '@shared/utils/date-mask.util';
 import { DatabaseService } from '@core/supabase/database.service';
 import { AdminContext } from '../admin-context.service';
 import { AuthService } from '@core/auth/auth.service';
@@ -85,8 +90,12 @@ export const METODOS_PAGO_PRESENCIAL = ['Efectivo', 'Tarjeta', 'Yape', 'Plin'] a
     MatSelectModule,
     MatButtonToggleModule,
     MatPaginatorModule,
+    MatTableModule,
+    MatDatepickerModule,
+    MatNativeDateModule,
     MatDialogModule,
     MatTooltipModule,
+    MatProgressSpinnerModule,
   ],
   templateUrl: './admin-reservas.html',
   styleUrl: './admin-reservas.css',
@@ -131,7 +140,9 @@ export class AdminReservas {
     return 'Sin sede seleccionada';
   });
 
-  readonly minimumDepositPercentInput = input<number>(undefined, { alias: 'minimumDepositPercent' });
+  readonly minimumDepositPercentInput = input<number>(undefined, {
+    alias: 'minimumDepositPercent',
+  });
   readonly minimumDepositPercent = computed<number>(() => {
     const custom = this.minimumDepositPercentInput();
     if (custom !== undefined) return custom;
@@ -180,10 +191,10 @@ export class AdminReservas {
         const metodo = pago ? pago.metodo_pago : 'Sin pago registrado';
         const esClienteSinCuenta = !!reserva.es_cliente_sin_cuenta;
         const jugadorNombre = esClienteSinCuenta
-          ? (reserva.nombre_cliente || 'Cliente sin cuenta')
+          ? reserva.nombre_cliente || 'Cliente sin cuenta'
           : (jugador?.nombre ?? (reserva.usuario_id ? reserva.usuario_id.toString() : 'Jugador'));
         const telefono = esClienteSinCuenta
-          ? (reserva.telefono_cliente || '')
+          ? reserva.telefono_cliente || ''
           : (jugador?.telefono ?? '');
         const montoTotal = Number(reserva.monto_total ?? pago?.monto ?? 0);
         const adelanto = Number(reserva.adelanto ?? pago?.monto ?? 0);
@@ -236,8 +247,20 @@ export class AdminReservas {
   readonly selected = signal<AdminReservationRow | null>(null);
 
   // Form state for Nueva Reserva Presencial
+  readonly displayedColumns = ['fecha', 'cancha', 'titular', 'estado', 'pago', 'acciones'] as const;
   readonly bookingCourtId = signal<number | null>(null);
   readonly bookingDate = signal<string>(limaDate());
+  readonly bookingDateObj = computed(() => isoToLocalDate(this.bookingDate()));
+
+  onBookingDateChange(date: Date | null): void {
+    const iso = localDateToIso(date);
+    if (iso) this.bookingDate.set(iso);
+  }
+
+  onBookingDateMaskInput(event: Event): void {
+    const { iso } = applyDateMaskToInput(event);
+    if (iso) this.bookingDate.set(iso);
+  }
   readonly bookingStartHour = signal<string>('18:00');
   readonly bookingDuration = signal<number>(1);
   readonly bookingEsClienteSinCuenta = signal<boolean>(true);
@@ -271,7 +294,8 @@ export class AdminReservas {
   private readonly balanceTemplate = viewChild.required<TemplateRef<unknown>>('balanceDialog');
   private readonly passTemplate = viewChild.required<TemplateRef<unknown>>('passDialog');
   private readonly cancelTemplate = viewChild.required<TemplateRef<unknown>>('cancelDialog');
-  private readonly depositConfigTemplate = viewChild.required<TemplateRef<unknown>>('depositConfigDialog');
+  private readonly depositConfigTemplate =
+    viewChild.required<TemplateRef<unknown>>('depositConfigDialog');
   private dialogRef?: MatDialogRef<unknown>;
 
   // Scoped rows by selected venue
@@ -281,7 +305,9 @@ export class AdminReservas {
     return this.rows().filter((row) => ids.has(row.reserva.cancha_id));
   });
 
-  readonly pendingCount = computed(() => this.scopedRows().filter((row) => row.estado === 'pendiente').length);
+  readonly pendingCount = computed(
+    () => this.scopedRows().filter((row) => row.estado === 'pendiente').length,
+  );
 
   readonly filteredRows = computed(() => {
     const from = this.today();
@@ -290,14 +316,20 @@ export class AdminReservas {
     return this.scopedRows().filter((row) => {
       if (this.filter() === 'pendientes' && row.estado !== 'pendiente') return false;
       if (this.filter() === 'hoy' && row.reserva.fecha !== from) return false;
-      if (this.filter() === 'semana' && (row.reserva.fecha < from || row.reserva.fecha > until)) return false;
+      if (this.filter() === 'semana' && (row.reserva.fecha < from || row.reserva.fecha > until))
+        return false;
       if (this.courtId() !== null && row.reserva.cancha_id !== this.courtId()) return false;
-      return `${row.codigoPase} ${row.jugadorNombre} ${row.telefono}`.toLocaleLowerCase('es-PE').includes(query);
+      return `${row.codigoPase} ${row.jugadorNombre} ${row.telefono}`
+        .toLocaleLowerCase('es-PE')
+        .includes(query);
     });
   });
 
   readonly effectivePage = computed(() =>
-    Math.min(this.pageIndex(), Math.max(0, Math.ceil(this.filteredRows().length / this.pageSize()) - 1)),
+    Math.min(
+      this.pageIndex(),
+      Math.max(0, Math.ceil(this.filteredRows().length / this.pageSize()) - 1),
+    ),
   );
 
   readonly pageRows = computed(() =>
@@ -318,7 +350,11 @@ export class AdminReservas {
   });
 
   readonly pricingCalculation = computed(() => {
-    return calculateBookingPrice(this.selectedCourt(), this.bookingStartHour(), this.bookingDuration());
+    return calculateBookingPrice(
+      this.selectedCourt(),
+      this.bookingStartHour(),
+      this.bookingDuration(),
+    );
   });
 
   readonly bookingTotal = computed(() => this.pricingCalculation().total);
@@ -334,7 +370,9 @@ export class AdminReservas {
     return Math.max(this.bookingMinDeposit(), Math.min(this.bookingTotal(), manual));
   });
 
-  readonly bookingSaldo = computed(() => Math.max(0, this.bookingTotal() - this.effectiveDeposit()));
+  readonly bookingSaldo = computed(() =>
+    Math.max(0, this.bookingTotal() - this.effectiveDeposit()),
+  );
 
   readonly bookingConflict = computed(() => {
     const courtId = this.bookingCourtId();
@@ -356,7 +394,8 @@ export class AdminReservas {
 
   readonly canSubmitBooking = computed(() => {
     if (!this.presentialOperationsAvailable) return false;
-    if (this.venueId() === null || this.bookingCourtId() === null || !this.bookingDate()) return false;
+    if (this.venueId() === null || this.bookingCourtId() === null || !this.bookingDate())
+      return false;
     if (this.bookingConflict() !== null) return false;
     if (this.bookingEsClienteSinCuenta()) {
       if (this.bookingNombreCliente().trim().length < 3) return false;
@@ -422,7 +461,14 @@ export class AdminReservas {
   }
 
   async requestAction(kind: 'approve' | 'reject', row: AdminReservationRow): Promise<void> {
-    if (this.guardando() || this.loading() || this.error() || row.estado !== 'pendiente' || !this.scopedRows().includes(row)) return;
+    if (
+      this.guardando() ||
+      this.loading() ||
+      this.error() ||
+      row.estado !== 'pendiente' ||
+      !this.scopedRows().includes(row)
+    )
+      return;
     this.guardando.set(true);
     try {
       if (kind === 'approve') {
@@ -443,7 +489,8 @@ export class AdminReservas {
 
   openNewBooking(): void {
     if (!this.presentialOperationsAvailable) return;
-    if (this.loading() || !!this.error() || this.venueId() === null || !this.courts().length) return;
+    if (this.loading() || !!this.error() || this.venueId() === null || !this.courts().length)
+      return;
     this.bookingCourtId.set(this.courts()[0].id);
     this.bookingDate.set(limaDate());
     this.bookingStartHour.set('18:00');
@@ -512,7 +559,12 @@ export class AdminReservas {
     const row = this.selected();
     if (!row || row.saldo <= 0) return;
     try {
-      this.db.cobrarSaldoReserva?.(row.reserva.id, row.saldo, this.saldoMetodoPago(), this.saldoOperacion().trim() || undefined);
+      this.db.cobrarSaldoReserva?.(
+        row.reserva.id,
+        row.saldo,
+        this.saldoMetodoPago(),
+        this.saldoOperacion().trim() || undefined,
+      );
     } catch {
       // ignore
     }

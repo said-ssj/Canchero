@@ -54,6 +54,14 @@
           </div>
         }
 
+        @if (submitting()) {
+          <mat-progress-bar
+            mode="indeterminate"
+            color="primary"
+            style="margin-bottom: 12px"
+          ></mat-progress-bar>
+        }
+
         @if (done()) {
           <div class="auth-success-alert" role="status">
             <span class="material-symbols-outlined icon-18" aria-hidden="true">check_circle</span>
@@ -67,22 +75,25 @@
         } @else if (token) {
           <form novalidate (ngSubmit)="cambiarClave()" class="auth-form">
             <div class="form-group">
-              <label class="form-label" for="password">Nueva contraseña</label>
-              <div class="input-wrap">
-                <span class="input-icon">
-                  <span class="material-symbols-outlined icon-20" aria-hidden="true">lock</span>
-                </span>
+              <mat-form-field
+                appearance="outline"
+                subscriptSizing="dynamic"
+                class="cn-field w-full"
+              >
+                <mat-label>Nueva contraseña</mat-label>
+                <mat-icon matPrefix>lock</mat-icon>
                 <input
+                  matInput
                   [type]="showPassword() ? 'text' : 'password'"
                   id="password"
                   name="password"
-                  class="form-input has-toggle"
                   placeholder="Mínimo 8 caracteres"
                   [(ngModel)]="password"
                   autocomplete="new-password"
                   required
                 />
                 <button
+                  matSuffix
                   type="button"
                   class="pwd-toggle-btn"
                   (click)="showPassword.set(!showPassword())"
@@ -92,25 +103,27 @@
                     {{ showPassword() ? 'visibility_off' : 'visibility' }}
                   </span>
                 </button>
-              </div>
+              </mat-form-field>
             </div>
             <div class="form-group">
-              <label class="form-label" for="confirm">Repite la contraseña</label>
-              <div class="input-wrap">
-                <span class="input-icon">
-                  <span class="material-symbols-outlined icon-20" aria-hidden="true">lock</span>
-                </span>
+              <mat-form-field
+                appearance="outline"
+                subscriptSizing="dynamic"
+                class="cn-field w-full"
+              >
+                <mat-label>Repite la contraseña</mat-label>
+                <mat-icon matPrefix>lock</mat-icon>
                 <input
+                  matInput
                   [type]="showPassword() ? 'text' : 'password'"
                   id="confirm"
                   name="confirm"
-                  class="form-input"
                   placeholder="Repite la contraseña"
                   [(ngModel)]="confirm"
                   autocomplete="new-password"
                   required
                 />
-              </div>
+              </mat-form-field>
             </div>
             <button type="submit" class="btn-login-primary" [disabled]="submitting()">
               {{ submitting() ? 'Guardando...' : 'Guardar contraseña' }}
@@ -119,22 +132,24 @@
         } @else {
           <form novalidate (ngSubmit)="pedirEnlace()" class="auth-form">
             <div class="form-group">
-              <label class="form-label" for="email">Correo electrónico</label>
-              <div class="input-wrap">
-                <span class="input-icon">
-                  <span class="material-symbols-outlined icon-20" aria-hidden="true">mail</span>
-                </span>
+              <mat-form-field
+                appearance="outline"
+                subscriptSizing="dynamic"
+                class="cn-field w-full"
+              >
+                <mat-label>Correo electrónico</mat-label>
+                <mat-icon matPrefix>mail</mat-icon>
                 <input
+                  matInput
                   type="email"
                   id="email"
                   name="email"
-                  class="form-input"
                   placeholder="tu@correo.com"
                   [(ngModel)]="email"
                   autocomplete="username"
                   required
                 />
-              </div>
+              </mat-form-field>
             </div>
             <button type="submit" class="btn-login-primary" [disabled]="submitting()">
               {{ submitting() ? 'Enviando...' : 'Enviarme el enlace' }}

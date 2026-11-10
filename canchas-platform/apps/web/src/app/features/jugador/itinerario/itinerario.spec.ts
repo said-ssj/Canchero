@@ -1,10 +1,12 @@
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { of } from 'rxjs';
 import { describe, expect, it, beforeEach, vi } from 'vitest';
 import { Itinerario } from './itinerario';
 import { DatabaseService } from '@core/supabase/database.service';
 import { AuthService } from '@core/auth/auth.service';
+import { WeatherService } from '@core/services/weather.service';
 import { ConfirmationService } from '@shared/components/confirmation/confirmation.service';
 import type { User } from '@shared/models/user.model';
 import type { Booking } from '@shared/models/booking.model';
@@ -95,6 +97,7 @@ describe('Itinerario Component - Fase 6: Mi Itinerario Privado', () => {
         provideRouter([]),
         { provide: DatabaseService, useValue: mockDatabaseService },
         { provide: AuthService, useValue: mockAuthService },
+        { provide: WeatherService, useValue: { forecast: () => of(null) } },
         { provide: ConfirmationService, useValue: { confirm } },
       ],
     }).compileComponents();

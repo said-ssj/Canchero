@@ -1,6 +1,12 @@
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { VenueWeather } from '@shared/components/venue-weather/venue-weather';
 import { DatabaseService } from '@core/supabase/database.service';
 import { AuthService } from '@core/auth/auth.service';
@@ -59,7 +65,17 @@ interface Complejo {
 }
 
 @Component({
-  imports: [FormsModule, RouterLink, VenueWeather],
+  imports: [
+    FormsModule,
+    RouterLink,
+    VenueWeather,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    MatIconModule,
+    MatProgressSpinnerModule,
+    MatProgressBarModule,
+  ],
   selector: 'app-checkout',
   styleUrl: './checkout.css',
   templateUrl: './checkout.html',

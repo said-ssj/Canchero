@@ -170,7 +170,8 @@ describe('AdminCanchas', () => {
     catalogLoading.set(false);
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('[aria-label="Cargando canchas"]')).toBeNull();
-    expect(fixture.nativeElement.querySelector('app-admin-add-action')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('article.state')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('app-admin-add-action')).toBeNull();
     loadErrors.set(['cancha']);
     fixture.detectChanges();
     const alert = fixture.nativeElement.querySelector('[role="alert"]');
@@ -220,10 +221,11 @@ describe('AdminCanchas', () => {
     expect(component['nuevaCanchaFormato']()).toBe('Fútbol 7 (14 jugadores)');
     fixture.detectChanges();
     const selects = fixture.nativeElement.querySelectorAll(
-      '.management-editor select',
-    ) as NodeListOf<HTMLSelectElement>;
-    expect(selects[1].value).toBe('Fútbol 7 (14 jugadores)');
-    expect(selects[3].value).toBe(component['nuevaCanchaCobertura']());
+      '.management-editor mat-select',
+    ) as NodeListOf<HTMLElement>;
+    expect(selects.length).toBe(4);
+    expect(selects[1].textContent).toContain('Fútbol 7 (14 jugadores)');
+    expect(selects[3].textContent).toContain(component['nuevaCanchaCobertura']());
   });
 
   it('disables unsupported individual schedule saves instead of simulating persistence', () => {

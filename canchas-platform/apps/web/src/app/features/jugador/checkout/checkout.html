@@ -1,15 +1,8 @@
 @if (isLoadingCatalog()) {
   <div class="container" style="padding: 48px 0" aria-busy="true">
-    <div class="card" style="padding: 24px; margin-bottom: 24px">
-      <div class="skeleton-card" style="height: 20px; width: 240px; margin-bottom: 12px"></div>
-      <div class="skeleton-card" style="height: 14px; width: 360px"></div>
-    </div>
-    <div class="card" style="padding: 24px">
-      <div class="skeleton-card" style="height: 18px; width: 180px; margin-bottom: 16px"></div>
-      <div class="skeleton-card" style="height: 200px"></div>
-      <p class="muted small" style="margin-top: 16px">
-        Cargando información de la cancha y disponibilidad oficial...
-      </p>
+    <div class="cn-loader">
+      <mat-spinner diameter="48" color="primary"></mat-spinner>
+      <span>Cargando información...</span>
     </div>
   </div>
 } @else if (contextError(); as errorMsg) {
@@ -139,7 +132,10 @@
                   [class.active]="timeFilter() === option.key"
                   (click)="setTimeFilter(option.key)"
                 >
-                  {{ option.label }}
+                  <span>{{ option.label }}</span>
+                  @if (timeFilter() === option.key) {
+                    <mat-icon class="active-check" aria-hidden="true">check</mat-icon>
+                  }
                 </button>
               }
             </div>
@@ -168,13 +164,16 @@
             }
 
             @if (isLoadingAvailability()) {
-              <div class="notice" style="margin-bottom: 16px" aria-busy="true">
-                <span class="material-symbols-outlined icon" aria-hidden="true"
-                  >hourglass_empty</span
-                >
-                <div>
-                  <strong>Actualizando turnos...</strong>
-                  <p>Comprobando disponibilidad en tiempo real con el servidor.</p>
+              <div style="margin-bottom: 16px" aria-busy="true">
+                <mat-progress-bar mode="indeterminate" color="primary"></mat-progress-bar>
+                <div class="notice" style="margin-top: 8px">
+                  <span class="material-symbols-outlined icon" aria-hidden="true"
+                    >hourglass_empty</span
+                  >
+                  <div>
+                    <strong>Actualizando turnos...</strong>
+                    <p>Comprobando disponibilidad en tiempo real con el servidor.</p>
+                  </div>
                 </div>
               </div>
             }
@@ -409,51 +408,63 @@
                     border: 1px solid var(--line);
                   "
                 >
-                  <div class="field">
-                    <label for="card-num" style="font-size: 12px; font-weight: 600"
-                      >Número de tarjeta</label
-                    >
+                  <mat-form-field
+                    appearance="outline"
+                    subscriptSizing="dynamic"
+                    class="cn-field w-full"
+                  >
+                    <mat-label>Número de tarjeta</mat-label>
                     <input
+                      matInput
                       id="card-num"
                       type="text"
-                      class="control"
                       inputmode="numeric"
                       maxlength="19"
                       [(ngModel)]="cardNumber"
                     />
-                  </div>
+                  </mat-form-field>
                   <div class="row" style="gap: 12px">
-                    <div class="field" style="flex: 1">
-                      <label for="card-exp" style="font-size: 12px; font-weight: 600"
-                        >Vencimiento</label
-                      >
+                    <mat-form-field
+                      appearance="outline"
+                      subscriptSizing="dynamic"
+                      class="cn-field"
+                      style="flex: 1"
+                    >
+                      <mat-label>Vencimiento</mat-label>
                       <input
+                        matInput
                         id="card-exp"
                         type="text"
-                        class="control"
                         placeholder="MM / AA"
                         maxlength="5"
                         [(ngModel)]="cardExpiry"
                       />
-                    </div>
-                    <div class="field" style="flex: 1">
-                      <label for="card-cvv" style="font-size: 12px; font-weight: 600">CVV</label>
+                    </mat-form-field>
+                    <mat-form-field
+                      appearance="outline"
+                      subscriptSizing="dynamic"
+                      class="cn-field"
+                      style="flex: 1"
+                    >
+                      <mat-label>CVV</mat-label>
                       <input
+                        matInput
                         id="card-cvv"
                         type="password"
-                        class="control"
                         inputmode="numeric"
                         maxlength="4"
                         [(ngModel)]="cardCvv"
                       />
-                    </div>
+                    </mat-form-field>
                   </div>
-                  <div class="field">
-                    <label for="card-holder" style="font-size: 12px; font-weight: 600"
-                      >Titular de la tarjeta</label
-                    >
-                    <input id="card-holder" type="text" class="control" [(ngModel)]="cardHolder" />
-                  </div>
+                  <mat-form-field
+                    appearance="outline"
+                    subscriptSizing="dynamic"
+                    class="cn-field w-full"
+                  >
+                    <mat-label>Titular de la tarjeta</mat-label>
+                    <input matInput id="card-holder" type="text" [(ngModel)]="cardHolder" />
+                  </mat-form-field>
                 </div>
               </div>
             } @else {
@@ -467,26 +478,51 @@
                   compartes el código por WhatsApp.
                 </p>
 
-                <div class="row" style="gap: 8px; margin-bottom: 16px; flex-wrap: wrap">
-                  <input
-                    type="tel"
-                    class="control"
-                    style="width: 130px"
-                    placeholder="Celular"
-                    [(ngModel)]="newPlayerPhone"
-                    maxlength="9"
-                  />
-                  <input
-                    type="text"
-                    class="control"
-                    style="flex: 1; min-width: 150px"
-                    placeholder="Nombre del jugador..."
-                    [(ngModel)]="newPlayerName"
-                  />
-                  <select class="control" style="width: 120px" [(ngModel)]="newPlayerTipo">
-                    <option value="Registrado">Registrado</option>
-                    <option value="Invitado">Invitado</option>
-                  </select>
+                <div
+                  class="row cn-filterbar"
+                  style="gap: 8px; margin-bottom: 16px; flex-wrap: wrap"
+                >
+                  <mat-form-field
+                    appearance="outline"
+                    subscriptSizing="dynamic"
+                    class="cn-field"
+                    style="width: 150px"
+                  >
+                    <mat-label>Celular</mat-label>
+                    <input
+                      matInput
+                      type="tel"
+                      placeholder="Celular"
+                      [(ngModel)]="newPlayerPhone"
+                      maxlength="9"
+                    />
+                  </mat-form-field>
+                  <mat-form-field
+                    appearance="outline"
+                    subscriptSizing="dynamic"
+                    class="cn-field"
+                    style="flex: 1; min-width: 180px"
+                  >
+                    <mat-label>Nombre del jugador</mat-label>
+                    <input
+                      matInput
+                      type="text"
+                      placeholder="Nombre del jugador..."
+                      [(ngModel)]="newPlayerName"
+                    />
+                  </mat-form-field>
+                  <mat-form-field
+                    appearance="outline"
+                    subscriptSizing="dynamic"
+                    class="cn-field"
+                    style="width: 140px"
+                  >
+                    <mat-label>Tipo</mat-label>
+                    <mat-select [(ngModel)]="newPlayerTipo">
+                      <mat-option value="Registrado">Registrado</mat-option>
+                      <mat-option value="Invitado">Invitado</mat-option>
+                    </mat-select>
+                  </mat-form-field>
                   <button type="button" class="btn" (click)="addPlayer()">
                     <span class="material-symbols-outlined icon" aria-hidden="true"
                       >person_add</span
@@ -659,14 +695,21 @@
                 <small class="muted" style="display: block; margin-bottom: 6px; font-weight: 600"
                   >¿Tienes un cupón?</small
                 >
-                <div class="row" style="gap: 6px">
-                  <input
-                    type="text"
-                    class="control"
-                    placeholder="Ej: PROMO10"
-                    [(ngModel)]="couponCodeInput"
+                <div class="row cn-filterbar" style="gap: 6px">
+                  <mat-form-field
+                    appearance="outline"
+                    subscriptSizing="dynamic"
+                    class="cn-field"
                     style="flex: 1"
-                  />
+                  >
+                    <mat-label>Código de cupón</mat-label>
+                    <input
+                      matInput
+                      type="text"
+                      placeholder="Ej: PROMO10"
+                      [(ngModel)]="couponCodeInput"
+                    />
+                  </mat-form-field>
                   <button type="button" class="btn" (click)="applyCoupon()">Aplicar</button>
                 </div>
                 @if (couponMessage()) {

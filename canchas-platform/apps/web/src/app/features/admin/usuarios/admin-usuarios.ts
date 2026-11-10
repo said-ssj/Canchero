@@ -3,14 +3,32 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatTableModule } from '@angular/material/table';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { AuthService } from '@core/auth/auth.service';
 import { UserService, AdminUserItem } from '@core/services/user.service';
 
 @Component({
   standalone: true,
   selector: 'app-admin-usuarios',
-  imports: [CommonModule, FormsModule, MatButtonModule, MatIconModule, MatTooltipModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatButtonModule,
+    MatIconModule,
+    MatTooltipModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    MatProgressSpinnerModule,
+    MatTableModule,
+    MatPaginatorModule,
+  ],
   templateUrl: './admin-usuarios.html',
   styleUrl: './admin-usuarios.css',
 })
@@ -47,6 +65,19 @@ export class AdminUsuarios implements OnInit {
       return matchQuery && matchRole;
     });
   });
+
+  readonly displayedColumnsUsers = ['usuario', 'contacto', 'rol', 'estado', 'acciones'];
+  readonly pageIndex = signal(0);
+  readonly pageSize = signal(10);
+  readonly paginatedUsers = computed(() => {
+    const start = this.pageIndex() * this.pageSize();
+    return this.filteredUsers().slice(start, start + this.pageSize());
+  });
+
+  onUsersPage(event: PageEvent): void {
+    this.pageIndex.set(event.pageIndex);
+    this.pageSize.set(event.pageSize);
+  }
 
   readonly stats = computed(() => {
     const all = this.users();

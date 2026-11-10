@@ -5,6 +5,13 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatTableModule } from '@angular/material/table';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { AuthService } from '@core/auth/auth.service';
 import { DatabaseService } from '@core/supabase/database.service';
 import {
@@ -25,6 +32,13 @@ import { AdminContext } from '../admin-context.service';
     MatIconModule,
     MatChipsModule,
     MatTooltipModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    MatProgressSpinnerModule,
+    MatProgressBarModule,
+    MatTableModule,
+    MatPaginatorModule,
   ],
   templateUrl: './admin-reportes.html',
   styleUrl: './admin-reportes.css',
@@ -91,6 +105,29 @@ export class AdminReportes implements OnInit {
     }
     return list;
   });
+
+  readonly displayedColumnsReports = [
+    'id',
+    'canchaSede',
+    'tipoProblema',
+    'descripcion',
+    'reportadoPor',
+    'prioridad',
+    'estado',
+    'fecha',
+    'accion',
+  ];
+  readonly reportsPageIndex = signal(0);
+  readonly reportsPageSize = signal(10);
+  readonly paginatedReports = computed(() => {
+    const start = this.reportsPageIndex() * this.reportsPageSize();
+    return this.filteredReports().slice(start, start + this.reportsPageSize());
+  });
+
+  onReportsPage(event: PageEvent): void {
+    this.reportsPageIndex.set(event.pageIndex);
+    this.reportsPageSize.set(event.pageSize);
+  }
 
   readonly filteredReviews = computed(() => {
     let list = this.reviews();

@@ -38,6 +38,19 @@ if ($env:SPRING_PROFILES_ACTIVE -match '(^|,)dev(,|$)') {
 $env:SPRING_JPA_HIBERNATE_DDL_AUTO = 'none'
 if ($ValidateOnly) { Write-Output 'Configuracion API validada sin mostrar secretos ni conectar a la base.'; return }
 
+$apiPort = if ($env:SERVER_PORT) { [int]$env:SERVER_PORT } else { 8090 }
+$existingConns = Get-NetTCPConnection -LocalPort $apiPort -State Listen -ErrorAction SilentlyContinue
+if ($existingConns) {
+    $pids = $existingConns | Select-Object -ExpandProperty OwningProcess -Unique
+    foreach ($procId in $pids) {
+        if ($procId -gt 0) {
+            Write-Host "Liberando puerto $apiPort (deteniendo proceso anterior PID $procId)..."
+            Stop-Process -Id $procId -Force -ErrorAction SilentlyContinue
+        }
+    }
+    Start-Sleep -Milliseconds 800
+}
+
 Push-Location (Join-Path $root 'apps/api')
 try {
     & .\mvnw.cmd spring-boot:run

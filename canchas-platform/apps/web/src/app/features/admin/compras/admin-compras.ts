@@ -11,7 +11,11 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatTableModule } from '@angular/material/table';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { AdminContext } from '../admin-context.service';
 import { PurchaseService } from '@core/services/purchase.service';
 import { CatalogService } from '@core/services/catalog.service';
@@ -44,7 +48,11 @@ import {
     MatSelectModule,
     MatButtonToggleModule,
     MatCheckboxModule,
+    MatTableModule,
+    MatPaginatorModule,
     MatTooltipModule,
+    MatProgressSpinnerModule,
+    MatProgressBarModule,
   ],
   templateUrl: './admin-compras.html',
   styleUrl: './admin-compras.css',
@@ -56,7 +64,9 @@ export class AdminCompras {
   readonly toast = inject(ToastService);
 
   readonly currentSedeId = computed(() => this.context.venue()?.id ?? null);
-  readonly currentSedeName = computed(() => this.context.venue()?.nombre ?? 'Sin sede seleccionada');
+  readonly currentSedeName = computed(
+    () => this.context.venue()?.nombre ?? 'Sin sede seleccionada',
+  );
 
   // Pestañas
   readonly activeTab = signal<'compras' | 'proveedores'>('compras');
@@ -144,6 +154,50 @@ export class AdminCompras {
       return matchStatus && matchQuery;
     });
   });
+
+  readonly displayedColumnsPurchases = [
+    'fechaEmision',
+    'comprobante',
+    'proveedor',
+    'partidas',
+    'subtotal',
+    'total',
+    'estado',
+    'acciones',
+  ];
+  readonly displayedColumnsSuppliers = [
+    'ruc',
+    'razonSocial',
+    'contacto',
+    'telefonoCorreo',
+    'direccion',
+    'estado',
+    'acciones',
+  ];
+  readonly purchasesPageIndex = signal(0);
+  readonly purchasesPageSize = signal(10);
+  readonly suppliersPageIndex = signal(0);
+  readonly suppliersPageSize = signal(10);
+
+  readonly paginatedPurchases = computed(() => {
+    const start = this.purchasesPageIndex() * this.purchasesPageSize();
+    return this.filteredPurchases().slice(start, start + this.purchasesPageSize());
+  });
+
+  readonly paginatedSuppliers = computed(() => {
+    const start = this.suppliersPageIndex() * this.suppliersPageSize();
+    return this.filteredSuppliers().slice(start, start + this.suppliersPageSize());
+  });
+
+  onPurchasesPage(event: PageEvent): void {
+    this.purchasesPageIndex.set(event.pageIndex);
+    this.purchasesPageSize.set(event.pageSize);
+  }
+
+  onSuppliersPage(event: PageEvent): void {
+    this.suppliersPageIndex.set(event.pageIndex);
+    this.suppliersPageSize.set(event.pageSize);
+  }
 
   // KPIs
   readonly totalCompras = computed(() => {
@@ -240,7 +294,9 @@ export class AdminCompras {
     const razonSocial = this.supRazonSocial().trim();
 
     if (!ruc.match(/^(10|20)\d{9}$/)) {
-      this.supError.set('El RUC debe tener exactamente 11 dígitos numéricos válidos (comenzando con 10 o 20).');
+      this.supError.set(
+        'El RUC debe tener exactamente 11 dígitos numéricos válidos (comenzando con 10 o 20).',
+      );
       return;
     }
     if (!razonSocial) {
@@ -331,7 +387,9 @@ export class AdminCompras {
     const cost = this.itemUnitCost();
 
     if (!prodId || qty <= 0 || cost <= 0) {
-      this.purchaseError.set('Selecciona un producto, cantidad mayor a 0 y costo unitario mayor a 0.');
+      this.purchaseError.set(
+        'Selecciona un producto, cantidad mayor a 0 y costo unitario mayor a 0.',
+      );
       return;
     }
 
@@ -445,7 +503,11 @@ export class AdminCompras {
 
     this.saving.set(true);
     try {
-      const updated = await this.purchaseService.cancelPurchase(p.id, sedeId, 'Anulado desde panel administrativo');
+      const updated = await this.purchaseService.cancelPurchase(
+        p.id,
+        sedeId,
+        'Anulado desde panel administrativo',
+      );
       this.selectedPurchase.set(updated);
       this.toast.show('Orden de compra anulada.');
       this.showDetailModal.set(false);

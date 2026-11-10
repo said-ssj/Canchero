@@ -1,28 +1,8 @@
 @if (isLoading()) {
   <main class="container" style="padding: 2rem 0" aria-busy="true">
-    <div class="crumb" aria-label="Ruta">
-      <span class="skeleton" style="width: 120px; height: 32px"></span>
-    </div>
-    <div class="page-title">
-      <span class="skeleton" style="width: 280px; height: 32px"></span>
-      <span class="skeleton" style="width: 200px; height: 16px; margin-top: 6px"></span>
-    </div>
-    <div class="details-layout">
-      <div>
-        <div
-          class="skeleton"
-          style="height: 276px; width: 100%; border-radius: 8px; margin-bottom: 16px"
-        ></div>
-        <div class="stack">
-          <div class="skeleton" style="height: 160px; border-radius: 8px"></div>
-          <div class="skeleton" style="height: 160px; border-radius: 8px"></div>
-        </div>
-      </div>
-      <aside class="summary">
-        <div class="skeleton" style="height: 24px; width: 60%"></div>
-        <div class="skeleton" style="height: 48px; width: 100%"></div>
-        <div class="skeleton" style="height: 40px; width: 100%"></div>
-      </aside>
+    <div class="cn-loader">
+      <mat-spinner diameter="48" color="primary"></mat-spinner>
+      <span>Cargando información...</span>
     </div>
   </main>
 } @else if (venue(); as v) {
@@ -175,25 +155,39 @@
 
           <!-- Filtros de Cancha sincronizados -->
           @if (v.canchas.length > 1) {
-            <div class="row" style="gap: 8px; margin: 12px 0 16px">
-              <select
-                class="field-select-sm"
-                [value]="courtFilters.formato()"
-                (change)="courtFilters.setFormato($any($event.target).value)"
+            <div class="row cn-filterbar" style="gap: 8px; margin: 12px 0 16px">
+              <mat-form-field
+                appearance="outline"
+                subscriptSizing="dynamic"
+                class="cn-field"
+                style="min-width: 180px"
               >
-                @for (opt of courtFilters.optionsFor('formato', v.canchas); track opt.value) {
-                  <option [value]="opt.value">{{ opt.label }}</option>
-                }
-              </select>
-              <select
-                class="field-select-sm"
-                [value]="courtFilters.superficie()"
-                (change)="courtFilters.setSuperficie($any($event.target).value)"
+                <mat-label>Formato</mat-label>
+                <mat-select
+                  [value]="courtFilters.formato()"
+                  (selectionChange)="courtFilters.setFormato($event.value)"
+                >
+                  @for (opt of courtFilters.optionsFor('formato', v.canchas); track opt.value) {
+                    <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+              <mat-form-field
+                appearance="outline"
+                subscriptSizing="dynamic"
+                class="cn-field"
+                style="min-width: 180px"
               >
-                @for (opt of courtFilters.optionsFor('superficie', v.canchas); track opt.value) {
-                  <option [value]="opt.value">{{ opt.label }}</option>
-                }
-              </select>
+                <mat-label>Superficie</mat-label>
+                <mat-select
+                  [value]="courtFilters.superficie()"
+                  (selectionChange)="courtFilters.setSuperficie($event.value)"
+                >
+                  @for (opt of courtFilters.optionsFor('superficie', v.canchas); track opt.value) {
+                    <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
               @if (courtFilters.hasActiveCourtFilters()) {
                 <button
                   type="button"
@@ -217,9 +211,15 @@
                     [alt]="cancha.nombre"
                   />
                 } @else {
-                  <div class="venue-photo empty-photo">
-                    <span class="material-symbols-outlined" aria-hidden="true">sports_soccer</span
-                    ><span>Sin fotografía</span>
+                  <div
+                    class="venue-photo empty-photo flex flex-col items-center justify-center text-center"
+                  >
+                    <span
+                      class="material-symbols-outlined text-3xl text-slate-400 mb-1"
+                      aria-hidden="true"
+                      >sports_soccer</span
+                    >
+                    <span class="text-xs text-slate-500 font-medium">Sin fotografía</span>
                   </div>
                 }
                 <div class="venue-body">
@@ -260,7 +260,9 @@
                       title="Reportar problema en esta cancha"
                       aria-label="Reportar problema en esta cancha"
                     >
-                      <span class="material-symbols-outlined" aria-hidden="true">report_problem</span>
+                      <span class="material-symbols-outlined" aria-hidden="true"
+                        >report_problem</span
+                      >
                     </button>
                     <button
                       type="button"
@@ -312,7 +314,10 @@
           </div>
 
           @if (reviewsLoading()) {
-            <p role="status" aria-busy="true">Cargando opiniones...</p>
+            <div role="status" aria-busy="true" style="margin-top: 12px">
+              <mat-progress-bar mode="indeterminate" color="primary"></mat-progress-bar>
+              <p class="small muted" style="margin-top: 6px">Cargando opiniones...</p>
+            </div>
           } @else if (reviewsLoadError()) {
             <div role="alert">
               <p>{{ reviewsLoadError() }}</p>
@@ -383,13 +388,8 @@
               margin-top: 12px;
             "
           >
-            @if (coordinates()) {
-              <iframe
-                [src]="safeMapUrl()"
-                style="width: 100%; height: 260px; border: 0; display: block"
-                loading="lazy"
-                title="Ubicación de la sede"
-              ></iframe>
+            @if (coordinates(); as coords) {
+              <app-venue-map [lat]="coords.lat" [lng]="coords.lng" height="260px" />
             } @else {
               <p class="map-unavailable">
                 La sede todavía no ha configurado su punto de acceso en el mapa.
@@ -403,7 +403,10 @@
         <section class="business-hours">
           <h2>Horario de atención</h2>
           @if (hoursLoading()) {
-            <p class="small muted" role="status">Consultando horario…</p>
+            <div role="status" style="margin-top: 8px">
+              <mat-progress-bar mode="indeterminate" color="primary"></mat-progress-bar>
+              <p class="small muted" style="margin-top: 6px">Consultando horario…</p>
+            </div>
           } @else if (hoursError()) {
             <p class="small muted">No pudimos consultar el horario.</p>
             <button type="button" class="btn outline btn-sm" (click)="loadHours(v.id)">
@@ -516,21 +519,19 @@
               </button>
             }
           </div>
-          <textarea
-            class="field"
-            rows="4"
-            style="
-              width: 100%;
-              resize: vertical;
-              border: 1px solid var(--line);
-              border-radius: var(--radius);
-              padding: 8px 12px;
-              font-family: inherit;
-              font-size: 13px;
-            "
-            placeholder="Cuéntale a la comunidad cómo estuvo el grass, la iluminación y la atención..."
-            (input)="onReviewInput($event)"
-          ></textarea>
+          <mat-form-field
+            appearance="outline"
+            subscriptSizing="dynamic"
+            class="cn-field cn-field-textarea w-full"
+          >
+            <mat-label>Tu opinión</mat-label>
+            <textarea
+              matInput
+              rows="4"
+              placeholder="Cuéntale a la comunidad cómo estuvo el grass, la iluminación y la atención..."
+              (input)="onReviewInput($event)"
+            ></textarea>
+          </mat-form-field>
           <div class="row" style="margin-top: 16px; justify-content: flex-end">
             <button
               type="button"
@@ -650,33 +651,27 @@
                 "
               >
                 <div class="field" style="margin-bottom: 6px">
-                  <label
-                    for="report-cancha-select"
-                    style="display: block; font-weight: 700; margin-bottom: 4px; font-size: 0.88rem"
-                    >Cancha a reportar:</label
-                  >
                   @if (v.canchas.length > 1) {
-                    <select
-                      id="report-cancha-select"
-                      class="field-select"
-                      style="
-                        width: 100%;
-                        padding: 0.4rem;
-                        border-radius: 6px;
-                        border: 1px solid var(--color-border, #cbd5e1);
-                        font-weight: 600;
-                      "
-                      [value]="reportCancha()?.id || ''"
-                      (change)="cambiarCanchaReporte($any($event.target).value)"
+                    <mat-form-field
+                      appearance="outline"
+                      subscriptSizing="dynamic"
+                      class="cn-field w-full"
                     >
-                      @for (c of v.canchas; track c.id) {
-                        <option [value]="c.id" [selected]="c.id === reportCancha()?.id">
-                          {{ c.nombre }} ({{ c.superficie || c.tipo }})
-                        </option>
-                      }
-                    </select>
+                      <mat-label>Cancha a reportar</mat-label>
+                      <mat-select
+                        id="report-cancha-select"
+                        [value]="reportCancha()?.id || ''"
+                        (selectionChange)="cambiarCanchaReporte($event.value)"
+                      >
+                        @for (c of v.canchas; track c.id) {
+                          <mat-option [value]="c.id">
+                            {{ c.nombre }} ({{ c.superficie || c.tipo }})
+                          </mat-option>
+                        }
+                      </mat-select>
+                    </mat-form-field>
                   } @else {
-                    <strong>{{ reportCancha()?.nombre }}</strong>
+                    <strong>Cancha a reportar: {{ reportCancha()?.nombre }}</strong>
                   }
                 </div>
                 <p class="muted small" style="margin: 2px 0 0">
@@ -698,83 +693,69 @@
                 </div>
               }
 
-              <div class="field">
-                <label
-                  for="report-issue-type"
-                  style="display: block; font-weight: 600; margin-bottom: 4px; font-size: 0.88rem"
-                  >Tipo de problema</label
-                >
-                <select
+              <mat-form-field
+                appearance="outline"
+                subscriptSizing="dynamic"
+                class="cn-field w-full"
+              >
+                <mat-label>Tipo de problema</mat-label>
+                <mat-select
                   id="report-issue-type"
-                  class="field-select"
-                  style="
-                    width: 100%;
-                    padding: 0.5rem;
-                    border-radius: 6px;
-                    border: 1px solid var(--color-border, #cbd5e1);
-                  "
                   [value]="reportTipo()"
-                  (change)="reportTipo.set($any($event.target).value)"
+                  (selectionChange)="reportTipo.set($event.value)"
                 >
-                  <option value="ILUMINACION">
+                  <mat-option value="ILUMINACION">
                     💡 Iluminación deficiente / reflectores fundidos
-                  </option>
-                  <option value="ESTADO_CESPED">🌱 Césped sintético dañado / baches</option>
-                  <option value="REDES_ARCOS">🥅 Redes rotas o arcos inestables</option>
-                  <option value="LIMPIEZA">🧹 Limpieza o suciedad en el campo</option>
-                  <option value="HORARIO_CONFLICTO">
+                  </mat-option>
+                  <mat-option value="ESTADO_CESPED">🌱 Césped sintético dañado / baches</mat-option>
+                  <mat-option value="REDES_ARCOS">🥅 Redes rotas o arcos inestables</mat-option>
+                  <mat-option value="LIMPIEZA">🧹 Limpieza o suciedad en el campo</mat-option>
+                  <mat-option value="HORARIO_CONFLICTO">
                     ⏰ Conflicto de turno / cancha ocupada indebidamente
-                  </option>
-                  <option value="OTRO">⚠️ Otro problema</option>
-                </select>
-              </div>
+                  </mat-option>
+                  <mat-option value="OTRO">⚠️ Otro problema</mat-option>
+                </mat-select>
+              </mat-form-field>
 
-              <div class="field">
-                <label
-                  for="report-priority"
-                  style="display: block; font-weight: 600; margin-bottom: 4px; font-size: 0.88rem"
-                  >Nivel de urgencia</label
-                >
-                <select
+              <mat-form-field
+                appearance="outline"
+                subscriptSizing="dynamic"
+                class="cn-field w-full"
+              >
+                <mat-label>Nivel de urgencia</mat-label>
+                <mat-select
                   id="report-priority"
-                  class="field-select"
-                  style="
-                    width: 100%;
-                    padding: 0.5rem;
-                    border-radius: 6px;
-                    border: 1px solid var(--color-border, #cbd5e1);
-                  "
                   [value]="reportPrioridad()"
-                  (change)="reportPrioridad.set($any($event.target).value)"
+                  (selectionChange)="reportPrioridad.set($event.value)"
                 >
-                  <option value="BAJA">Baja (Sugerencia de mantenimiento)</option>
-                  <option value="MEDIA">Media (Afecta parcialmente el juego)</option>
-                  <option value="ALTA">Alta (Impide jugar adecuadamente)</option>
-                  <option value="URGENTE">Urgente (Riesgo físico / emergencia inmediata)</option>
-                </select>
-              </div>
+                  <mat-option value="BAJA">Baja (Sugerencia de mantenimiento)</mat-option>
+                  <mat-option value="MEDIA">Media (Afecta parcialmente el juego)</mat-option>
+                  <mat-option value="ALTA">Alta (Impide jugar adecuadamente)</mat-option>
+                  <mat-option value="URGENTE"
+                    >Urgente (Riesgo físico / emergencia inmediata)</mat-option
+                  >
+                </mat-select>
+              </mat-form-field>
 
-              <div class="field">
-                <label
-                  for="report-desc"
-                  style="display: block; font-weight: 600; margin-bottom: 4px; font-size: 0.88rem"
-                  >Detalle del problema *</label
+              <div>
+                <mat-form-field
+                  appearance="outline"
+                  subscriptSizing="dynamic"
+                  class="cn-field cn-field-textarea w-full"
                 >
-                <textarea
-                  id="report-desc"
-                  rows="3"
-                  style="
-                    width: 100%;
-                    padding: 0.5rem;
-                    border-radius: 6px;
-                    border: 1px solid var(--color-border, #cbd5e1);
-                  "
-                  [value]="reportDescripcion()"
-                  (input)="reportDescripcion.set($any($event.target).value)"
-                  placeholder="Describe qué ocurrió o qué parte de la cancha necesita reparación..."
+                  <mat-label>Detalle del problema *</mat-label>
+                  <textarea
+                    matInput
+                    id="report-desc"
+                    rows="3"
+                    [value]="reportDescripcion()"
+                    (input)="reportDescripcion.set($any($event.target).value)"
+                    placeholder="Describe qué ocurrió o qué parte de la cancha necesita reparación..."
+                  ></textarea>
+                </mat-form-field>
+                <small class="muted" style="font-size: 0.75rem; display: block; margin-top: 4px"
+                  >Mínimo 5 caracteres.</small
                 >
-                </textarea>
-                <small class="muted" style="font-size: 0.75rem">Mínimo 5 caracteres.</small>
               </div>
 
               <div class="row" style="gap: 8px; justify-content: flex-end; margin-top: 8px">

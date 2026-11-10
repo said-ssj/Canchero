@@ -4,7 +4,8 @@
     <div class="catalogo-header-info">
       <h1 class="catalogo-title">Catálogo & Productos</h1>
       <p class="catalogo-subtitle">
-        {{ currentSedeName() || 'Sede seleccionada' }} · Administración de productos de cantina, bebidas, snacks e indumentaria deportiva.
+        {{ currentSedeName() || 'Sede seleccionada' }} · Administración de productos de cantina,
+        bebidas, snacks e indumentaria deportiva.
       </p>
     </div>
 
@@ -45,12 +46,14 @@
     </div>
     <div>
       <span>Stock Crítico</span>
-      <strong [style.color]="lowStockCount() > 0 ? 'var(--color-danger, #dc2626)' : 'inherit'">{{ lowStockCount() }}</strong>
+      <strong [style.color]="lowStockCount() > 0 ? 'var(--color-danger, #dc2626)' : 'inherit'">{{
+        lowStockCount()
+      }}</strong>
       <small class="stat-sub">Por debajo del stock mínimo</small>
     </div>
     <div>
       <span>Margen Promedio</span>
-      <strong style="color: var(--color-brand-green, #27802D)">+{{ averageMargin() }}%</strong>
+      <strong style="color: var(--color-brand-green, #27802d)">+{{ averageMargin() }}%</strong>
       <small class="stat-sub">Rentabilidad comercial estimada</small>
     </div>
     <div>
@@ -66,44 +69,52 @@
   @if (activeTab() === 'productos') {
     <section class="catalogo-content-card">
       <!-- Barra de Filtros y Acciones -->
-      <div class="catalogo-toolbar">
-        <div class="toolbar-search">
-          <span class="material-symbols-outlined search-icon">search</span>
+      <div class="catalogo-toolbar cn-filterbar">
+        <mat-form-field
+          appearance="outline"
+          subscriptSizing="dynamic"
+          class="cn-field toolbar-search"
+        >
+          <mat-label>Buscar producto</mat-label>
+          <mat-icon matPrefix>search</mat-icon>
           <input
+            matInput
             type="text"
-            class="search-input"
             placeholder="Buscar por nombre, código o categoría..."
             [ngModel]="searchQuery()"
             (ngModelChange)="searchQuery.set($event)"
           />
           @if (searchQuery()) {
-            <button class="clear-search" (click)="searchQuery.set('')">✕</button>
+            <button matSuffix type="button" class="clear-search" (click)="searchQuery.set('')">
+              ✕
+            </button>
           }
-        </div>
+        </mat-form-field>
 
         <div class="toolbar-filters">
           <!-- Filtro de Categoría -->
-          <select
-            class="filter-select"
-            [ngModel]="selectedCategory()"
-            (ngModelChange)="selectedCategory.set(+$event)"
-          >
-            <option [value]="0">Todas las categorías</option>
-            @for (cat of catalog.categories(); track cat.id) {
-              <option [value]="cat.id">{{ cat.nombre }}</option>
-            }
-          </select>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field">
+            <mat-label>Categoría</mat-label>
+            <mat-select
+              [ngModel]="selectedCategory()"
+              (ngModelChange)="selectedCategory.set(+$event)"
+            >
+              <mat-option [value]="0">Todas las categorías</mat-option>
+              @for (cat of catalog.categories(); track cat.id) {
+                <mat-option [value]="cat.id">{{ cat.nombre }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
 
           <!-- Filtro de Estado -->
-          <select
-            class="filter-select"
-            [ngModel]="statusFilter()"
-            (ngModelChange)="statusFilter.set($event)"
-          >
-            <option value="TODOS">Todos los estados</option>
-            <option value="A">Solo activos</option>
-            <option value="I">Solo inactivos</option>
-          </select>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field">
+            <mat-label>Estado</mat-label>
+            <mat-select [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)">
+              <mat-option value="TODOS">Todos los estados</mat-option>
+              <mat-option value="A">Solo activos</mat-option>
+              <mat-option value="I">Solo inactivos</mat-option>
+            </mat-select>
+          </mat-form-field>
 
           <!-- Botón toggle Stock Bajo -->
           <button
@@ -113,7 +124,10 @@
             (click)="onlyLowStock.set(!onlyLowStock())"
           >
             <span class="material-symbols-outlined chip-icon">warning</span>
-            Stock bajo
+            <span>Stock bajo</span>
+            @if (onlyLowStock()) {
+              <mat-icon class="active-check" aria-hidden="true">check</mat-icon>
+            }
           </button>
 
           <!-- Toggle vista: Tarjetas / Tabla -->
@@ -146,9 +160,9 @@
 
       <!-- Estado de Carga -->
       @if (catalog.loading()) {
-        <div class="loading-state">
-          <span class="material-symbols-outlined spin-icon">progress_activity</span>
-          <p>Cargando catálogo de productos...</p>
+        <div class="cn-loader" role="status">
+          <mat-spinner diameter="48" color="primary"></mat-spinner>
+          <span>Cargando información...</span>
         </div>
       } @else if (filteredProducts().length === 0) {
         <div class="empty-state">
@@ -210,11 +224,11 @@
                   <div class="product-pricing">
                     <div class="price-block">
                       <span class="price-label">Precio Venta</span>
-                      <span class="price-value">S/ {{ p.precioVenta | number:'1.2-2' }}</span>
+                      <span class="price-value">S/ {{ p.precioVenta | number: '1.2-2' }}</span>
                     </div>
                     <div class="price-block">
                       <span class="price-label">Costo</span>
-                      <span class="cost-value">S/ {{ p.precioCompra | number:'1.2-2' }}</span>
+                      <span class="cost-value">S/ {{ p.precioCompra | number: '1.2-2' }}</span>
                     </div>
                     @if (p.margenPorcentaje !== undefined) {
                       <div class="margin-pill" [class.is-good]="p.margenPorcentaje >= 30">
@@ -264,91 +278,139 @@
         <!-- Vista Tabla Detallada -->
         @if (viewMode() === 'tabla') {
           <div class="table-responsive">
-            <table class="catalogo-table">
-              <thead>
-                <tr>
-                  <th>Producto</th>
-                  <th>Categoría</th>
-                  <th>Código</th>
-                  <th>Presentación</th>
-                  <th class="text-right">Costo</th>
-                  <th class="text-right">P. Venta</th>
-                  <th class="text-center">Margen</th>
-                  <th class="text-center">Stock</th>
-                  <th class="text-center">Estado</th>
-                  <th class="text-right">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (p of filteredProducts(); track p.id) {
-                  <tr [class.row-inactive]="p.estado === 'I'">
-                    <td>
-                      <div class="table-prod-info">
-                        <div class="table-thumb">
-                          @if (p.fotoUrl) {
-                            <img [src]="p.fotoUrl" [alt]="p.nombre" />
-                          } @else {
-                            <span class="material-symbols-outlined">sports_bar</span>
-                          }
-                        </div>
-                        <span class="table-prod-name">{{ p.nombre }}</span>
-                      </div>
-                    </td>
-                    <td>
-                      <span class="cat-pill">{{ p.categoriaNombre }}</span>
-                    </td>
-                    <td>
-                      <span class="text-muted">{{ p.codigoBarras || '-' }}</span>
-                    </td>
-                    <td>{{ p.contenido }} {{ p.unidadMedida || 'und' }}</td>
-                    <td class="text-right">S/ {{ p.precioCompra | number:'1.2-2' }}</td>
-                    <td class="text-right font-semibold">S/ {{ p.precioVenta | number:'1.2-2' }}</td>
-                    <td class="text-center">
-                      <span class="margin-badge">+{{ p.margenPorcentaje ?? 0 }}%</span>
-                    </td>
-                    <td class="text-center">
-                      <span
-                        class="stock-pill"
-                        [class.is-warning]="p.stock <= p.stockMinimo"
-                      >
-                        {{ p.stock }} (mín. {{ p.stockMinimo }})
+            <table mat-table [dataSource]="paginatedProducts()" class="catalogo-table">
+              <ng-container matColumnDef="producto">
+                <th mat-header-cell *matHeaderCellDef>Producto</th>
+                <td mat-cell *matCellDef="let p">
+                  <div class="table-prod-info">
+                    <div class="table-thumb">
+                      @if (p.fotoUrl) {
+                        <img [src]="p.fotoUrl" [alt]="p.nombre" />
+                      } @else {
+                        <span class="material-symbols-outlined">sports_bar</span>
+                      }
+                    </div>
+                    <span class="table-prod-name">{{ p.nombre }}</span>
+                  </div>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="categoria">
+                <th mat-header-cell *matHeaderCellDef>Categoría</th>
+                <td mat-cell *matCellDef="let p">
+                  <span class="cat-pill">{{ p.categoriaNombre }}</span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="codigo">
+                <th mat-header-cell *matHeaderCellDef>Código</th>
+                <td mat-cell *matCellDef="let p">
+                  <span class="text-muted">{{ p.codigoBarras || '-' }}</span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="presentacion">
+                <th mat-header-cell *matHeaderCellDef>Presentación</th>
+                <td mat-cell *matCellDef="let p">
+                  {{ p.contenido }} {{ p.unidadMedida || 'und' }}
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="costo">
+                <th mat-header-cell *matHeaderCellDef class="text-right">Costo</th>
+                <td mat-cell *matCellDef="let p" class="text-right">
+                  S/ {{ p.precioCompra | number: '1.2-2' }}
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="precioVenta">
+                <th mat-header-cell *matHeaderCellDef class="text-right">P. Venta</th>
+                <td mat-cell *matCellDef="let p" class="text-right font-semibold">
+                  S/ {{ p.precioVenta | number: '1.2-2' }}
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="margen">
+                <th mat-header-cell *matHeaderCellDef class="text-center">Margen</th>
+                <td mat-cell *matCellDef="let p" class="text-center">
+                  <span class="margin-badge">+{{ p.margenPorcentaje ?? 0 }}%</span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="stock">
+                <th mat-header-cell *matHeaderCellDef class="text-center">Stock</th>
+                <td mat-cell *matCellDef="let p" class="text-center">
+                  <span class="stock-pill" [class.is-warning]="p.stock <= p.stockMinimo">
+                    {{ p.stock }} (mín. {{ p.stockMinimo }})
+                  </span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="estado">
+                <th mat-header-cell *matHeaderCellDef class="text-center">Estado</th>
+                <td mat-cell *matCellDef="let p" class="text-center">
+                  <span
+                    class="status-pill"
+                    [class.is-active]="p.estado !== 'I'"
+                    [class.is-inactive]="p.estado === 'I'"
+                  >
+                    {{ p.estado === 'I' ? 'Inactivo' : 'Activo' }}
+                  </span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="acciones">
+                <th mat-header-cell *matHeaderCellDef class="text-right">Acciones</th>
+                <td mat-cell *matCellDef="let p" class="text-right">
+                  <div class="table-action-group">
+                    <button
+                      mat-icon-button
+                      class="tbl-btn"
+                      (click)="openEditProductModal(p)"
+                      title="Editar"
+                    >
+                      <span class="material-symbols-outlined">edit</span>
+                    </button>
+                    <button
+                      mat-icon-button
+                      class="tbl-btn"
+                      (click)="openStockModal(p)"
+                      title="Ajustar Stock"
+                    >
+                      <span class="material-symbols-outlined">add_box</span>
+                    </button>
+                    <button
+                      mat-icon-button
+                      class="tbl-btn"
+                      [class.text-success]="p.estado === 'I'"
+                      [class.text-danger]="p.estado !== 'I'"
+                      (click)="toggleProduct(p)"
+                      [title]="p.estado === 'I' ? 'Activar' : 'Desactivar'"
+                    >
+                      <span class="material-symbols-outlined">
+                        {{ p.estado === 'I' ? 'check_circle' : 'block' }}
                       </span>
-                    </td>
-                    <td class="text-center">
-                      <span
-                        class="status-pill"
-                        [class.is-active]="p.estado !== 'I'"
-                        [class.is-inactive]="p.estado === 'I'"
-                      >
-                        {{ p.estado === 'I' ? 'Inactivo' : 'Activo' }}
-                      </span>
-                    </td>
-                    <td class="text-right">
-                      <div class="table-action-group">
-                        <button class="tbl-btn" (click)="openEditProductModal(p)" title="Editar">
-                          <span class="material-symbols-outlined">edit</span>
-                        </button>
-                        <button class="tbl-btn" (click)="openStockModal(p)" title="Ajustar Stock">
-                          <span class="material-symbols-outlined">add_box</span>
-                        </button>
-                        <button
-                          class="tbl-btn"
-                          [class.text-success]="p.estado === 'I'"
-                          [class.text-danger]="p.estado !== 'I'"
-                          (click)="toggleProduct(p)"
-                          [title]="p.estado === 'I' ? 'Activar' : 'Desactivar'"
-                        >
-                          <span class="material-symbols-outlined">
-                            {{ p.estado === 'I' ? 'check_circle' : 'block' }}
-                          </span>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                }
-              </tbody>
+                    </button>
+                  </div>
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="displayedColumnsProductos"></tr>
+              <tr
+                mat-row
+                *matRowDef="let p; columns: displayedColumnsProductos"
+                [class.row-inactive]="p.estado === 'I'"
+              ></tr>
             </table>
           </div>
+          <mat-paginator
+            [length]="filteredProducts().length"
+            [pageIndex]="pageIndex()"
+            [pageSize]="pageSize()"
+            [pageSizeOptions]="[5, 10, 25, 100]"
+            (page)="onProductsPage($event)"
+            aria-label="Seleccionar página de productos"
+          ></mat-paginator>
         }
       }
     </section>
@@ -359,17 +421,22 @@
        ========================================================================= -->
   @if (activeTab() === 'categorias') {
     <section class="catalogo-content-card">
-      <div class="catalogo-toolbar">
-        <div class="toolbar-search">
-          <span class="material-symbols-outlined search-icon">search</span>
+      <div class="catalogo-toolbar cn-filterbar">
+        <mat-form-field
+          appearance="outline"
+          subscriptSizing="dynamic"
+          class="cn-field toolbar-search"
+        >
+          <mat-label>Filtrar categorías</mat-label>
+          <mat-icon matPrefix>search</mat-icon>
           <input
+            matInput
             type="text"
-            class="search-input"
             placeholder="Filtrar categorías..."
             [ngModel]="categorySearch()"
             (ngModelChange)="categorySearch.set($event)"
           />
-        </div>
+        </mat-form-field>
 
         <button class="btn-primary" (click)="openNewCategoryModal()">
           <span class="material-symbols-outlined">add</span>
@@ -397,9 +464,7 @@
             <p class="cat-desc">{{ c.descripcion || 'Sin descripción adicional' }}</p>
 
             <footer class="cat-card-footer">
-              <span class="cat-count">
-                {{ c.totalProductos ?? 0 }} productos vinculados
-              </span>
+              <span class="cat-count"> {{ c.totalProductos ?? 0 }} productos vinculados </span>
               <div class="cat-actions">
                 <button class="tbl-btn" (click)="openEditCategoryModal(c)" title="Editar categoría">
                   <span class="material-symbols-outlined">edit</span>
@@ -445,84 +510,84 @@
         </div>
       }
 
+      @if (saving()) {
+        <mat-progress-bar mode="indeterminate" color="primary"></mat-progress-bar>
+      }
+
       <div class="modal-body">
         <div class="form-grid">
           <!-- Nombre -->
           <div class="form-field full-width">
-            <label class="form-label">Nombre del producto *</label>
-            <input
-              type="text"
-              class="form-input"
-              placeholder="Ej. Gatorade Cool Blue 500ml"
-              [(ngModel)]="prodNombre"
-            />
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+              <mat-label>Nombre del producto *</mat-label>
+              <input
+                matInput
+                type="text"
+                placeholder="Ej. Gatorade Cool Blue 500ml"
+                [(ngModel)]="prodNombre"
+              />
+            </mat-form-field>
           </div>
 
           <!-- Categoría -->
           <div class="form-field">
-            <label class="form-label">Categoría *</label>
-            <select class="form-input" [(ngModel)]="prodCategoriaId">
-              <option [ngValue]="null">Selecciona una categoría</option>
-              @for (cat of catalog.categories(); track cat.id) {
-                <option [ngValue]="cat.id">{{ cat.nombre }}</option>
-              }
-            </select>
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+              <mat-label>Categoría *</mat-label>
+              <mat-select [(ngModel)]="prodCategoriaId">
+                <mat-option [value]="null">Selecciona una categoría</mat-option>
+                @for (cat of catalog.categories(); track cat.id) {
+                  <mat-option [value]="cat.id">{{ cat.nombre }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
           </div>
 
           <!-- Código de Barras -->
           <div class="form-field">
-            <label class="form-label">Código de barras (opcional)</label>
-            <input
-              type="text"
-              class="form-input"
-              placeholder="Ej. 775012345678"
-              [(ngModel)]="prodCodigoBarras"
-            />
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+              <mat-label>Código de barras (opcional)</mat-label>
+              <input
+                matInput
+                type="text"
+                placeholder="Ej. 775012345678"
+                [(ngModel)]="prodCodigoBarras"
+              />
+            </mat-form-field>
           </div>
 
           <!-- Unidad de Medida -->
           <div class="form-field">
-            <label class="form-label">Unidad de venta</label>
-            <select class="form-input" [(ngModel)]="prodUnidadMedida">
-              @for (u of unidades; track u.id) {
-                <option [value]="u.id">{{ u.nombre }}</option>
-              }
-            </select>
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+              <mat-label>Unidad de venta</mat-label>
+              <mat-select [(ngModel)]="prodUnidadMedida">
+                @for (u of unidades; track u.id) {
+                  <mat-option [value]="u.id">{{ u.nombre }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
           </div>
 
           <!-- Contenido -->
           <div class="form-field">
-            <label class="form-label">Contenido</label>
-            <input
-              type="number"
-              class="form-input"
-              step="0.01"
-              min="0.01"
-              [(ngModel)]="prodContenido"
-            />
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+              <mat-label>Contenido</mat-label>
+              <input matInput type="number" step="0.01" min="0.01" [(ngModel)]="prodContenido" />
+            </mat-form-field>
           </div>
 
           <!-- Precios -->
           <div class="form-field">
-            <label class="form-label">Precio de compra / costo (S/)</label>
-            <input
-              type="number"
-              class="form-input"
-              step="0.10"
-              min="0"
-              [(ngModel)]="prodPrecioCompra"
-            />
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+              <mat-label>Precio de compra / costo (S/)</mat-label>
+              <input matInput type="number" step="0.10" min="0" [(ngModel)]="prodPrecioCompra" />
+            </mat-form-field>
           </div>
 
           <div class="form-field">
-            <label class="form-label">Precio de venta público (S/) *</label>
-            <input
-              type="number"
-              class="form-input"
-              step="0.50"
-              min="0.10"
-              [(ngModel)]="prodPrecioVenta"
-            />
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+              <mat-label>Precio de venta público (S/) *</mat-label>
+              <input matInput type="number" step="0.50" min="0.10" [(ngModel)]="prodPrecioVenta" />
+            </mat-form-field>
           </div>
 
           <!-- Preview de Margen -->
@@ -531,7 +596,8 @@
               <span>Margen estimado:</span>
               <strong class="margin-preview-val">+{{ marginPreview() }}%</strong>
               <span class="margin-preview-gain">
-                (Ganancia: S/ {{ ((prodPrecioVenta || 0) - (prodPrecioCompra || 0)) | number:'1.2-2' }} por unidad)
+                (Ganancia: S/
+                {{ (prodPrecioVenta || 0) - (prodPrecioCompra || 0) | number: '1.2-2' }} por unidad)
               </span>
             </div>
           </div>
@@ -539,47 +605,53 @@
           <!-- Stock Inicial (solo nuevo) -->
           @if (!editingProduct()) {
             <div class="form-field">
-              <label class="form-label">Stock inicial en almacén</label>
-              <input
-                type="number"
-                class="form-input"
-                min="0"
-                [(ngModel)]="prodStockInicial"
-              />
+              <mat-form-field
+                appearance="outline"
+                subscriptSizing="dynamic"
+                class="cn-field w-full"
+              >
+                <mat-label>Stock inicial en almacén</mat-label>
+                <input matInput type="number" min="0" [(ngModel)]="prodStockInicial" />
+              </mat-form-field>
             </div>
           }
 
           <!-- Stock Mínimo -->
           <div class="form-field">
-            <label class="form-label">Stock mínimo (Alerta preventiva)</label>
-            <input
-              type="number"
-              class="form-input"
-              min="0"
-              [(ngModel)]="prodStockMinimo"
-            />
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+              <mat-label>Stock mínimo (Alerta preventiva)</mat-label>
+              <input matInput type="number" min="0" [(ngModel)]="prodStockMinimo" />
+            </mat-form-field>
           </div>
 
           <!-- URL de Foto -->
           <div class="form-field full-width">
-            <label class="form-label">URL de foto del producto (HTTPS)</label>
-            <input
-              type="url"
-              class="form-input"
-              placeholder="https://ejemplo.com/fotos/producto.jpg"
-              [(ngModel)]="prodFotoUrl"
-            />
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+              <mat-label>URL de foto del producto (HTTPS)</mat-label>
+              <input
+                matInput
+                type="url"
+                placeholder="https://ejemplo.com/fotos/producto.jpg"
+                [(ngModel)]="prodFotoUrl"
+              />
+            </mat-form-field>
           </div>
 
           <!-- Descripción -->
           <div class="form-field full-width">
-            <label class="form-label">Descripción o notas</label>
-            <textarea
-              class="form-input form-textarea"
-              rows="2"
-              placeholder="Notas internas o detalle de sabor/marca..."
-              [(ngModel)]="prodDescripcion"
-            ></textarea>
+            <mat-form-field
+              appearance="outline"
+              subscriptSizing="dynamic"
+              class="cn-field-textarea w-full"
+            >
+              <mat-label>Descripción o notas</mat-label>
+              <textarea
+                matInput
+                rows="2"
+                placeholder="Notas internas o detalle de sabor/marca..."
+                [(ngModel)]="prodDescripcion"
+              ></textarea>
+            </mat-form-field>
           </div>
         </div>
       </div>
@@ -613,7 +685,9 @@
           <span class="material-symbols-outlined modal-icon">category</span>
           <h2>{{ editingCategory() ? 'Editar Categoría' : 'Nueva Categoría' }}</h2>
         </div>
-        <button class="modal-close-btn" (click)="closeCategoryModal()" aria-label="Cerrar">✕</button>
+        <button class="modal-close-btn" (click)="closeCategoryModal()" aria-label="Cerrar">
+          ✕
+        </button>
       </header>
 
       @if (formError()) {
@@ -623,21 +697,27 @@
         </div>
       }
 
+      @if (saving()) {
+        <mat-progress-bar mode="indeterminate" color="primary"></mat-progress-bar>
+      }
+
       <div class="modal-body">
         <div class="form-grid">
           <div class="form-field full-width">
-            <label class="form-label">Nombre de categoría *</label>
-            <input
-              type="text"
-              class="form-input"
-              placeholder="Ej. Bebidas Rehidratantes, Cervezas, Pelotas"
-              [(ngModel)]="catNombre"
-            />
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+              <mat-label>Nombre de categoría *</mat-label>
+              <input
+                matInput
+                type="text"
+                placeholder="Ej. Bebidas Rehidratantes, Cervezas, Pelotas"
+                [(ngModel)]="catNombre"
+              />
+            </mat-form-field>
           </div>
 
           <!-- Selector de Iconos para la Categoría con Nube de Diálogo Recta (Sin emojis) -->
           <div class="form-field full-width icon-picker-field">
-            <label class="form-label">Icono representativo de la categoría *</label>
+            <span class="form-label">Icono representativo de la categoría *</span>
             <div class="category-icon-popover-wrapper">
               <button
                 type="button"
@@ -646,19 +726,34 @@
                 aria-haspopup="dialog"
                 [attr.aria-expanded]="iconPopoverOpen()"
               >
-                <span class="material-symbols-outlined current-icon" aria-hidden="true">{{ catIcono }}</span>
-                <span class="preview-text">Icono seleccionado (se mostrará en filtros y productos sin foto)</span>
+                <span class="material-symbols-outlined current-icon" aria-hidden="true">{{
+                  catIcono
+                }}</span>
+                <span class="preview-text"
+                  >Icono seleccionado (se mostrará en filtros y productos sin foto)</span
+                >
                 <span class="material-symbols-outlined trigger-chevron" aria-hidden="true">{{
                   iconPopoverOpen() ? 'expand_less' : 'expand_more'
                 }}</span>
               </button>
 
               @if (iconPopoverOpen()) {
-                <div class="icon-cloud-dialog" role="dialog" aria-label="Seleccionar icono de categoría">
+                <div
+                  class="icon-cloud-dialog"
+                  role="dialog"
+                  aria-label="Seleccionar icono de categoría"
+                >
                   <div class="cloud-arrow"></div>
                   <div class="cloud-header">
                     <span class="cloud-title">Elige un icono para la categoría</span>
-                    <button type="button" class="cloud-close-btn" (click)="iconPopoverOpen.set(false)" aria-label="Cerrar">✕</button>
+                    <button
+                      type="button"
+                      class="cloud-close-btn"
+                      (click)="iconPopoverOpen.set(false)"
+                      aria-label="Cerrar"
+                    >
+                      ✕
+                    </button>
                   </div>
                   <div class="icon-selector-grid">
                     @for (opt of iconOptions; track opt.icon) {
@@ -679,13 +774,19 @@
           </div>
 
           <div class="form-field full-width">
-            <label class="form-label">Descripción (opcional)</label>
-            <textarea
-              class="form-input form-textarea"
-              rows="3"
-              placeholder="Breve detalle de la categoría..."
-              [(ngModel)]="catDescripcion"
-            ></textarea>
+            <mat-form-field
+              appearance="outline"
+              subscriptSizing="dynamic"
+              class="cn-field-textarea w-full"
+            >
+              <mat-label>Descripción (opcional)</mat-label>
+              <textarea
+                matInput
+                rows="3"
+                placeholder="Breve detalle de la categoría..."
+                [(ngModel)]="catDescripcion"
+              ></textarea>
+            </mat-form-field>
           </div>
         </div>
       </div>
@@ -734,42 +835,45 @@
           <div class="stock-info-box">
             <div class="stock-info-title">{{ p.nombre }}</div>
             <div class="stock-info-meta">
-              <span>Stock actual: <strong>{{ p.stock }} {{ p.unidadMedida || 'und' }}</strong></span>
-              <span>Stock mínimo: <strong>{{ p.stockMinimo }}</strong></span>
+              <span
+                >Stock actual: <strong>{{ p.stock }} {{ p.unidadMedida || 'und' }}</strong></span
+              >
+              <span
+                >Stock mínimo: <strong>{{ p.stockMinimo }}</strong></span
+              >
             </div>
           </div>
         }
 
+        @if (saving()) {
+          <mat-progress-bar mode="indeterminate" color="primary"></mat-progress-bar>
+        }
+
         <div class="form-grid">
           <div class="form-field">
-            <label class="form-label">Cantidad a ingresar *</label>
-            <input
-              type="number"
-              class="form-input"
-              min="1"
-              [(ngModel)]="stockCantidad"
-            />
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+              <mat-label>Cantidad a ingresar *</mat-label>
+              <input matInput type="number" min="1" [(ngModel)]="stockCantidad" />
+            </mat-form-field>
           </div>
 
           <div class="form-field">
-            <label class="form-label">Costo unitario de compra (S/)</label>
-            <input
-              type="number"
-              class="form-input"
-              step="0.10"
-              min="0"
-              [(ngModel)]="stockPrecioCompra"
-            />
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+              <mat-label>Costo unitario de compra (S/)</mat-label>
+              <input matInput type="number" step="0.10" min="0" [(ngModel)]="stockPrecioCompra" />
+            </mat-form-field>
           </div>
 
           <div class="form-field full-width">
-            <label class="form-label">Motivo del ingreso</label>
-            <input
-              type="text"
-              class="form-input"
-              placeholder="Ej. Compra proveedor Backus, reposición semanal"
-              [(ngModel)]="stockMotivo"
-            />
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+              <mat-label>Motivo del ingreso</mat-label>
+              <input
+                matInput
+                type="text"
+                placeholder="Ej. Compra proveedor Backus, reposición semanal"
+                [(ngModel)]="stockMotivo"
+              />
+            </mat-form-field>
           </div>
         </div>
       </div>

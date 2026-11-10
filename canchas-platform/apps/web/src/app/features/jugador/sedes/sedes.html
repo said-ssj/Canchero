@@ -5,12 +5,15 @@
   </div>
 
   <div class="catalog-layout">
+    <!-- FILTROS A LA IZQUIERDA -->
     <aside class="filters" aria-label="Filtros">
       <h2>Encuentra tu sede</h2>
 
-      <label class="field">
-        <span>Nombre o ubicación</span>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+        <mat-label>Nombre o ubicación</mat-label>
+        <mat-icon matPrefix aria-hidden="true">search</mat-icon>
         <input
+          matInput
           type="text"
           id="searchInput"
           placeholder="Sede, distrito o dirección"
@@ -18,75 +21,91 @@
           [value]="busqueda()"
           (input)="onSearch($event)"
         />
-      </label>
+      </mat-form-field>
 
-      <label class="field">
-        <span>Ciudad</span>
-        <select id="citySelect" [value]="ciudad()" (change)="onCityChange($event)">
-          <option value="all">Todas las ciudades</option>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+        <mat-label>Ciudad</mat-label>
+        <mat-select
+          id="citySelect"
+          [value]="ciudad()"
+          (selectionChange)="onCityChange($event.value)"
+        >
+          <mat-option value="all">Todas las ciudades</mat-option>
           @for (city of cities(); track city) {
-            <option [value]="city">{{ capitalize(city) }}</option>
+            <mat-option [value]="city">{{ capitalize(city) }}</mat-option>
           }
-        </select>
-      </label>
+        </mat-select>
+      </mat-form-field>
 
-      <label class="field">
-        <span>Distrito</span>
-        <select id="districtSelect" [value]="distrito()" (change)="onDistritoChange($event)">
-          <option value="all">{{ distritoOptions().topLabel }}</option>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+        <mat-label>Distrito</mat-label>
+        <mat-select
+          id="districtSelect"
+          [value]="distrito()"
+          (selectionChange)="onDistritoChange($event.value)"
+        >
+          <mat-option value="all">{{ distritoOptions().topLabel }}</mat-option>
           @for (group of distritoOptions().groups; track group.label) {
-            <optgroup [attr.label]="group.label">
+            <mat-optgroup [label]="group.label">
               @for (dist of group.districts; track dist) {
-                <option [value]="dist">{{ capitalize(dist) }}</option>
+                <mat-option [value]="dist">{{ capitalize(dist) }}</mat-option>
               }
-            </optgroup>
+            </mat-optgroup>
           }
-        </select>
-      </label>
+        </mat-select>
+      </mat-form-field>
 
-      <label class="field">
-        <span>Formato</span>
-        <select id="formatoSelect" (change)="changeCourtFilter('formato', $event)">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+        <mat-label>Formato</mat-label>
+        <mat-select
+          id="formatoSelect"
+          [value]="courtFilters.formato()"
+          (selectionChange)="changeCourtFilter('formato', $event.value)"
+        >
           @for (opt of courtOptions().formato; track opt.value) {
-            <option [value]="opt.value" [selected]="opt.value === courtFilters.formato()">
-              {{ opt.label }}
-            </option>
+            <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
           }
-        </select>
-      </label>
+        </mat-select>
+      </mat-form-field>
 
-      <label class="field">
-        <span>Superficie</span>
-        <select id="superficieSelect" (change)="changeCourtFilter('superficie', $event)">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+        <mat-label>Superficie</mat-label>
+        <mat-select
+          id="superficieSelect"
+          [value]="courtFilters.superficie()"
+          (selectionChange)="changeCourtFilter('superficie', $event.value)"
+        >
           @for (opt of courtOptions().superficie; track opt.value) {
-            <option [value]="opt.value" [selected]="opt.value === courtFilters.superficie()">
-              {{ opt.label }}
-            </option>
+            <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
           }
-        </select>
-      </label>
+        </mat-select>
+      </mat-form-field>
 
-      <label class="field">
-        <span>Cobertura</span>
-        <select id="coberturaSelect" (change)="changeCourtFilter('cobertura', $event)">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+        <mat-label>Cobertura</mat-label>
+        <mat-select
+          id="coberturaSelect"
+          [value]="courtFilters.cobertura()"
+          (selectionChange)="changeCourtFilter('cobertura', $event.value)"
+        >
           @for (opt of courtOptions().cobertura; track opt.value) {
-            <option [value]="opt.value" [selected]="opt.value === courtFilters.cobertura()">
-              {{ opt.label }}
-            </option>
+            <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
           }
-        </select>
-      </label>
+        </mat-select>
+      </mat-form-field>
 
-      <label class="field">
-        <span>Equipamiento</span>
-        <select id="equipamientoSelect" (change)="changeCourtFilter('equipamiento', $event)">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+        <mat-label>Equipamiento</mat-label>
+        <mat-select
+          id="equipamientoSelect"
+          [value]="courtFilters.equipamiento()"
+          (selectionChange)="changeCourtFilter('equipamiento', $event.value)"
+        >
           @for (opt of courtOptions().equipamiento; track opt.value) {
-            <option [value]="opt.value" [selected]="opt.value === courtFilters.equipamiento()">
-              {{ opt.label }}
-            </option>
+            <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
           }
-        </select>
-      </label>
+        </mat-select>
+      </mat-form-field>
 
       <!-- Píldoras de filtro rápido: Todas / Favoritas -->
       <div class="filter-group">
@@ -96,10 +115,14 @@
             type="button"
             class="btn btn-sm"
             [class.primary]="pills().all"
+            [attr.aria-pressed]="pills().all"
             (click)="selectView('all')"
           >
             <span class="material-symbols-outlined icon-16" aria-hidden="true">grid_view</span>
             Todas las Sedes
+            @if (pills().all) {
+              <mat-icon class="active-check" aria-hidden="true">check</mat-icon>
+            }
           </button>
           <button
             type="button"
@@ -125,18 +148,63 @@
       </button>
     </aside>
 
+    <!-- RESULTADOS A LA DERECHA -->
     <section class="catalog-results" aria-label="Resultados" [attr.aria-busy]="isLoading()">
       <div class="results-head">
-        @if (isLoading()) {
-          <p role="status">{{ showSkeleton() ? 'Cargando sedes…' : 'Actualizando sedes…' }}</p>
-        } @else if (!catalogError() || venues().length) {
-          <p>
-            <strong data-results-count>{{ filteredVenues().length }}</strong> sedes encontradas
-          </p>
-        }
-        <span class="muted small">{{
-          ciudad() === 'all' ? 'Todas las ciudades' : capitalize(ciudad())
-        }}</span>
+        <div class="results-head-left">
+          @if (isLoading()) {
+            @if (showSkeleton()) {
+              <div class="cn-loader" role="status">
+                <mat-spinner diameter="48"></mat-spinner>
+                <span>Cargando información...</span>
+              </div>
+            } @else {
+              <p role="status">Actualizando sedes…</p>
+              <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+            }
+          } @else if (!catalogError() || venues().length) {
+            <p class="results-count-text">
+              <strong data-results-count>{{ filteredVenues().length }}</strong> sedes encontradas
+            </p>
+          }
+        </div>
+
+        <div class="results-head-controls">
+          <div class="sort-control-group">
+            <label for="sortVenuesSelect" class="sort-label">Ordenar:</label>
+            <select
+              id="sortVenuesSelect"
+              class="sort-select"
+              [value]="sortBy()"
+              (change)="onSortChange($event)"
+              aria-label="Ordenar sedes"
+            >
+              <option value="recomendados">Recomendados</option>
+              <option value="precio_asc">Menor precio</option>
+              <option value="rating_desc">Mayor calificación</option>
+            </select>
+          </div>
+
+          <div class="view-mode-switcher" role="group" aria-label="Modo de visualización">
+            <button
+              type="button"
+              class="view-mode-btn"
+              [class.is-active]="layoutMode() === 'list'"
+              (click)="layoutMode.set('list')"
+            >
+              Lista
+            </button>
+            <button
+              type="button"
+              class="view-mode-btn"
+              [class.is-active]="layoutMode() === 'grid'"
+              (click)="layoutMode.set('grid')"
+            >
+              <span class="material-symbols-outlined icon-16" aria-hidden="true">grid_view</span>
+              Cuadrícula
+            </button>
+          </div>
+        </div>
       </div>
 
       @if (catalogError() && !isLoading()) {
@@ -147,7 +215,7 @@
       }
 
       @if (showSkeleton()) {
-        <div class="stack" aria-hidden="true">
+        <div class="venues-showcase" [class.is-list]="layoutMode() === 'list'" aria-hidden="true">
           @for (i of [1, 2, 3]; track i) {
             <article class="card public-venue venue-skeleton">
               <div class="photo-wrapper"></div>
@@ -169,16 +237,28 @@
           }
         </div>
       } @else {
-        <div class="stack" id="venuesContainer">
+        <div class="venues-showcase" [class.is-list]="layoutMode() === 'list'" id="venuesContainer">
           @for (venue of filteredVenues(); track venue.id) {
-            <article class="card public-venue">
-              <div class="photo-wrapper">
-                <img
-                  class="venue-photo"
-                  [src]="venue.fotos[0] || fallbackVenueImg"
-                  (error)="onImgError($event)"
-                  [alt]="venue.nombre"
-                />
+            <article
+              class="card public-venue"
+              [class.is-list]="layoutMode() === 'list'"
+              [class.is-grid]="layoutMode() === 'grid'"
+            >
+              <div class="photo-wrapper" [class.has-custom-photo]="hasCustomPhoto(venue)">
+                @if (hasCustomPhoto(venue)) {
+                  <img
+                    class="venue-photo"
+                    [src]="venue.fotos[0] || fallbackVenueImg"
+                    (error)="onImgError($event, venue.id)"
+                    [alt]="venue.nombre"
+                  />
+                } @else {
+                  <div class="photo-empty-fallback canchero-brand-fallback">
+                    <span class="brand-fallback-word">Canchero</span>
+                  </div>
+                }
+
+                <!-- Botones auxiliares en esquina superior derecha de la foto (Imagen 1) -->
                 <button
                   type="button"
                   class="btn icon-only fav-btn"
@@ -207,8 +287,8 @@
               </div>
 
               <div class="venue-body">
-                <div class="row spread">
-                  <h3>{{ venue.nombre }}</h3>
+                <div class="row spread venue-title-row">
+                  <h3 class="venue-title">{{ venue.nombre }}</h3>
                   <span class="badge success">Sede activa</span>
                 </div>
 
@@ -219,15 +299,17 @@
                   {{ venue.distrito ? venue.distrito + ', ' + venue.ciudad : venue.direccion }}
                 </p>
 
-                <div class="row" style="gap: 6px">
-                  @for (amenidad of venue.amenidades.slice(0, 4); track amenidad) {
-                    <span class="badge">{{ amenidad }}</span>
+                <!-- Tags / badges de formato, superficie, cobertura y equipamiento (Imagen 1) -->
+                <div class="row venue-badges-row" style="gap: 6px; flex-wrap: wrap">
+                  @for (badge of getVenueBadges(venue).slice(0, 4); track badge) {
+                    <span class="badge">{{ badge }}</span>
                   }
-                  @if (venue.amenidades.length > 4) {
-                    <span class="badge muted">+{{ venue.amenidades.length - 4 }}</span>
+                  @if (getVenueBadges(venue).length > 4) {
+                    <span class="badge muted">+{{ getVenueBadges(venue).length - 4 }}</span>
                   }
                 </div>
 
+                <!-- Dirección y canchas libres (Imagen 1) -->
                 <p class="venue-description">
                   {{ venue.direccion }} ·
                   <span class="live-status">
@@ -236,39 +318,53 @@
                   </span>
                 </p>
 
-                <div class="row spread" style="align-items: center; margin-top: 8px">
+                <!-- Fila inferior: Precio a la izquierda, botones Ruta y Ver canchas a la derecha (Imagen 1) -->
+                <div
+                  class="row spread venue-card-bottom"
+                  style="align-items: center; margin-top: 8px"
+                >
                   <span class="price">
-                    S/ {{ venue.precioBase }}.00 <small>/ hora · desde</small>
+                    S/ {{ venue.precioBase.toFixed(2) }} <small>/ hora · desde</small>
                   </span>
-                  <div class="row" style="gap: 8px">
+
+                  <div class="row venue-actions" style="gap: 8px">
                     @if (hasVenueCoordinates(venue)) {
                       <a
                         [href]="getDirectionsUrl(venue)"
                         target="_blank"
                         rel="noopener noreferrer"
-                        class="btn btn-outline btn-sm"
+                        class="btn btn-outline btn-sm btn-ruta"
+                        [class.btn-square-icon]="layoutMode() === 'grid'"
                         title="¿Cómo llegar? Abrir ruta en Google Maps"
+                        aria-label="Abrir ruta en Google Maps"
                       >
-                        <span class="material-symbols-outlined icon-14" aria-hidden="true"
+                        <span class="material-symbols-outlined icon-18" aria-hidden="true"
                           >explore</span
                         >
-                        Ruta
+                        @if (layoutMode() === 'list') {
+                          <span>Ruta</span>
+                        }
                       </a>
                     } @else {
                       <button
                         type="button"
-                        class="btn btn-outline btn-sm"
+                        class="btn btn-outline btn-sm btn-ruta"
+                        [class.btn-square-icon]="layoutMode() === 'grid'"
                         disabled
                         title="La sede no tiene una ubicación registrada"
+                        aria-label="La sede no tiene una ubicación registrada"
                       >
-                        <span class="material-symbols-outlined icon-14" aria-hidden="true"
+                        <span class="material-symbols-outlined icon-18" aria-hidden="true"
                           >explore</span
-                        >Ruta
+                        >
+                        @if (layoutMode() === 'list') {
+                          <span>Ruta</span>
+                        }
                       </button>
                     }
                     <a
                       [routerLink]="['/sedes', venue.id]"
-                      class="btn primary btn-sm"
+                      class="btn primary btn-sm btn-ver-canchas"
                       (click)="stop($event)"
                     >
                       <span class="material-symbols-outlined icon-16" aria-hidden="true"
@@ -292,17 +388,12 @@
                 >sports_soccer</span
               >
               <h3>Actualmente no hay canchas disponibles. Vuelve pronto.</h3>
-              <p>
-                ¿Eres dueño o administrador de un complejo deportivo? Forma parte de la red de
-                Canchero y empieza a llenar tus horarios libres con jugadores cercanos.
-              </p>
+              <p>Estamos actualizando el catálogo de complejos deportivos disponibles.</p>
               <div class="row" style="justify-content: center; margin-top: 12px">
-                <a routerLink="/registro" [queryParams]="{ rol: 'dueno' }" class="btn primary">
-                  <span class="material-symbols-outlined icon-18" aria-hidden="true"
-                    >storefront</span
-                  >
-                  Publica tu cancha aquí
-                </a>
+                <button type="button" class="btn primary" (click)="retryCatalog()">
+                  <span class="material-symbols-outlined icon-18" aria-hidden="true">refresh</span>
+                  Actualizar sedes
+                </button>
               </div>
             </article>
           </div>

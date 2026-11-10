@@ -2,12 +2,24 @@ import { ThemeToggle } from '@shared/components/theme-toggle/theme-toggle';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatIconModule } from '@angular/material/icon';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { AuthService } from '@core/auth/auth.service';
 import { googleOAuthClient } from '@core/supabase/client';
 import { environment } from '@env/environment';
 
 @Component({
-  imports: [FormsModule, RouterLink, ThemeToggle],
+  imports: [
+    FormsModule,
+    RouterLink,
+    ThemeToggle,
+    MatFormFieldModule,
+    MatInputModule,
+    MatIconModule,
+    MatProgressBarModule,
+  ],
   selector: 'app-login',
   styleUrl: './login.css',
   templateUrl: './login.html',

@@ -7,8 +7,8 @@ spring:
     password: ${SPRING_DATASOURCE_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
     hikari:
-      connection-timeout: 2000
-      validation-timeout: 1000
+      connection-timeout: ${DB_CONNECTION_TIMEOUT_MS:8000}
+      validation-timeout: ${DB_VALIDATION_TIMEOUT_MS:3000}
       maximum-pool-size: ${DB_POOL_MAX_SIZE:5}
       minimum-idle: ${DB_POOL_MIN_IDLE:1}
   jpa:

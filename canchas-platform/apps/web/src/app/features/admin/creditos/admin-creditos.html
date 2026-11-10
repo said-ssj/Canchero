@@ -3,12 +3,20 @@
   <header class="section-header page-title">
     <div>
       <h1>Créditos y cuentas por cobrar</h1>
-      <p>{{ venueName() || 'Sede seleccionada' }} · Control de consumos a crédito, fiados y registro de abonos.</p>
+      <p>
+        {{ venueName() || 'Sede seleccionada' }} · Control de consumos a crédito, fiados y registro
+        de abonos.
+      </p>
     </div>
 
     <div class="actions">
       <button mat-flat-button [disableRipple]="true" (click)="abrirModalNuevaCuenta()">
-        <span class="material-symbols-outlined icon" aria-hidden="true" style="font-size: 18px; margin-right: 6px">add</span>
+        <span
+          class="material-symbols-outlined icon"
+          aria-hidden="true"
+          style="font-size: 18px; margin-right: 6px"
+          >add</span
+        >
         <span>Nuevo fiado / cuenta</span>
       </button>
     </div>
@@ -18,15 +26,28 @@
   <div class="management-stats credit-stats">
     <div>
       <span>Total por cobrar</span>
-      <strong id="kpiTotalPorCobrar">S/ {{ (creditService.resumen()?.totalPorCobrar ?? 0).toFixed(2) }}</strong>
-      <small class="stat-sub">{{ creditService.resumen()?.clientesDeudores ?? 0 }} deudor(es) con saldo</small>
+      <strong id="kpiTotalPorCobrar"
+        >S/ {{ (creditService.resumen()?.totalPorCobrar ?? 0).toFixed(2) }}</strong
+      >
+      <small class="stat-sub"
+        >{{ creditService.resumen()?.clientesDeudores ?? 0 }} deudor(es) con saldo</small
+      >
     </div>
     <div>
       <span>Deuda vencida</span>
-      <strong id="kpiDeudaVencida" [style.color]="(creditService.resumen()?.totalVencido ?? 0) > 0 ? 'var(--color-danger, #dc2626)' : 'inherit'">
+      <strong
+        id="kpiDeudaVencida"
+        [style.color]="
+          (creditService.resumen()?.totalVencido ?? 0) > 0
+            ? 'var(--color-danger, #dc2626)'
+            : 'inherit'
+        "
+      >
         S/ {{ (creditService.resumen()?.totalVencido ?? 0).toFixed(2) }}
       </strong>
-      <small class="stat-sub">{{ creditService.resumen()?.cuentasVencidas ?? 0 }} cuenta(s) superaron fecha</small>
+      <small class="stat-sub"
+        >{{ creditService.resumen()?.cuentasVencidas ?? 0 }} cuenta(s) superaron fecha</small
+      >
     </div>
     <div>
       <span>Cobrado este mes</span>
@@ -43,21 +64,27 @@
   </div>
 
   <!-- Barra de Filtros y Búsqueda (Angular Material Nativo) -->
-  <div class="filters filterbar">
+  <div class="filters filterbar cn-filterbar">
     <mat-button-toggle-group
       aria-label="Filtro de cuentas"
       [value]="creditService.filtroEstado()"
       (change)="setFiltro($event.value)"
     >
-      <mat-button-toggle value="TODOS" [disableRipple]="true">Todas ({{ creditService.cuentas().length }})</mat-button-toggle>
+      <mat-button-toggle value="TODOS" [disableRipple]="true"
+        >Todas ({{ creditService.cuentas().length }})</mat-button-toggle
+      >
       <mat-button-toggle value="PENDIENTE" [disableRipple]="true">Pendientes</mat-button-toggle>
       <mat-button-toggle value="VENCIDA" [disableRipple]="true">Vencidas</mat-button-toggle>
       <mat-button-toggle value="CANCELADA" [disableRipple]="true">Canceladas</mat-button-toggle>
     </mat-button-toggle-group>
 
-    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="search-form-field">
+    <mat-form-field
+      appearance="outline"
+      subscriptSizing="dynamic"
+      class="search-form-field cn-field"
+    >
       <mat-label>Buscar cuenta o cliente</mat-label>
-      <mat-icon matIconPrefix fontSet="material-symbols-outlined" aria-hidden="true">search</mat-icon>
+      <mat-icon matPrefix fontSet="material-symbols-outlined" aria-hidden="true">search</mat-icon>
       <input
         matInput
         placeholder="Cliente, documento o concepto..."
@@ -69,20 +96,37 @@
 
   <!-- Contenido: Loading, Empty State o Tabla Oficial -->
   @if (creditService.loading()) {
-    <div class="skeletons" role="status" aria-label="Cargando cuentas por cobrar" aria-busy="true">
-      <span class="skeleton short"></span>
-      <span class="skeleton"></span>
-      <span class="skeleton photo"></span>
+    <div class="cn-loader" role="status" aria-label="Cargando cuentas por cobrar" aria-busy="true">
+      <mat-spinner diameter="48" color="primary"></mat-spinner>
+      <span>Cargando información...</span>
     </div>
   } @else if (creditService.cuentas().length === 0) {
     <!-- Estado Vacío Inicial: Sin datos inventados -->
     <div class="op-table-wrap">
       <div class="table-state-empty">
-        <span class="material-symbols-outlined icon" aria-hidden="true" style="font-size: 44px; color: var(--color-ink-300, #94a3b8)">receipt_long</span>
+        <span
+          class="material-symbols-outlined icon"
+          aria-hidden="true"
+          style="font-size: 44px; color: var(--color-ink-300, #94a3b8)"
+          >receipt_long</span
+        >
         <h3>No hay cuentas por cobrar registradas</h3>
-        <p>Registra consumos a crédito, alquileres pendientes o fiados para llevar el control de abonos de esta sede.</p>
-        <button mat-flat-button [disableRipple]="true" (click)="abrirModalNuevaCuenta()" style="margin-top: 12px">
-          <span class="material-symbols-outlined icon" aria-hidden="true" style="font-size: 18px; margin-right: 6px">add</span>
+        <p>
+          Registra consumos a crédito, alquileres pendientes o fiados para llevar el control de
+          abonos de esta sede.
+        </p>
+        <button
+          mat-flat-button
+          [disableRipple]="true"
+          (click)="abrirModalNuevaCuenta()"
+          style="margin-top: 12px"
+        >
+          <span
+            class="material-symbols-outlined icon"
+            aria-hidden="true"
+            style="font-size: 18px; margin-right: 6px"
+            >add</span
+          >
           <span>Registrar primer fiado</span>
         </button>
       </div>
@@ -91,96 +135,150 @@
     <!-- Estado Vacío con Filtro -->
     <div class="op-table-wrap">
       <div class="table-state-empty">
-        <span class="material-symbols-outlined icon" aria-hidden="true" style="font-size: 40px; color: var(--color-ink-300, #94a3b8)">filter_alt_off</span>
+        <span
+          class="material-symbols-outlined icon"
+          aria-hidden="true"
+          style="font-size: 40px; color: var(--color-ink-300, #94a3b8)"
+          >filter_alt_off</span
+        >
         <h3>Sin resultados</h3>
         <p>No se encontraron cuentas que coincidan con los filtros o la búsqueda aplicada.</p>
       </div>
     </div>
   } @else {
-    <!-- Tabla Oficial Canchero (op-table) -->
+    <!-- Tabla Oficial Canchero (op-table con mat-table y mat-paginator) -->
     <div class="op-table-wrap">
-      <table class="op-table">
-        <thead>
-          <tr>
-            <th scope="col">Cliente / Equipo</th>
-            <th scope="col">Concepto</th>
-            <th scope="col">Deuda original</th>
-            <th scope="col">Abonado</th>
-            <th scope="col">Saldo pendiente</th>
-            <th scope="col">Vencimiento</th>
-            <th scope="col">Estado</th>
-            <th scope="col" style="text-align: right">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (cuenta of creditService.cuentasFiltradas(); track cuenta.id) {
-            <tr [class.row-overdue]="cuenta.estado === 'VENCIDA'">
-              <td>
-                <div class="client-cell">
-                  <strong>{{ cuenta.clienteNombre }}</strong>
-                  @if (cuenta.equipo) {
-                    <span class="client-team">
-                      <span class="material-symbols-outlined icon" aria-hidden="true" style="font-size: 14px">groups</span>
-                      {{ cuenta.equipo }}
-                    </span>
-                  }
-                  @if (cuenta.telefono) {
-                    <small class="text-muted">Tel: {{ cuenta.telefono }}</small>
-                  }
-                </div>
-              </td>
-              <td>
-                <span class="concept-cell" [matTooltip]="cuenta.concepto">{{ cuenta.concepto }}</span>
-              </td>
-              <td>S/ {{ cuenta.montoOriginal.toFixed(2) }}</td>
-              <td style="color: var(--color-brand-green, #15803d); font-weight: 600">S/ {{ cuenta.totalAbonado.toFixed(2) }}</td>
-              <td>
-                <strong [style.color]="cuenta.saldo > 0 ? 'var(--color-danger, #dc2626)' : 'var(--color-brand-green, #15803d)'">
-                  S/ {{ cuenta.saldo.toFixed(2) }}
-                </strong>
-              </td>
-              <td>
-                <span [style.color]="cuenta.estado === 'VENCIDA' ? 'var(--color-danger, #dc2626)' : 'inherit'">
-                  {{ cuenta.fechaVencimiento | date: 'dd/MM/yyyy' }}
-                </span>
-              </td>
-              <td>
-                @if (cuenta.estado === 'PENDIENTE') {
-                  <span class="status-indicator status-pendiente">Pendiente</span>
-                } @else if (cuenta.estado === 'VENCIDA') {
-                  <span class="status-indicator status-vencida">Vencida</span>
-                } @else {
-                  <span class="status-indicator status-cancelada">Cancelada</span>
-                }
-              </td>
-              <td style="text-align: right">
-                <div class="row-actions">
-                  @if (cuenta.saldo > 0) {
-                    <button
-                      mat-flat-button
-                      class="btn-row-action btn-abonar"
-                      [disableRipple]="true"
-                      (click)="abrirModalAbono(cuenta)"
-                    >
-                      <mat-icon fontSet="material-symbols-outlined">payments</mat-icon>
-                      <span>Abonar</span>
-                    </button>
-                  }
-                  <button
-                    mat-stroked-button
-                    class="btn-row-action btn-historial"
-                    [disableRipple]="true"
-                    (click)="verDetalle(cuenta)"
+      <table mat-table [dataSource]="cuentasPaginadas()" class="op-table">
+        <ng-container matColumnDef="cliente">
+          <th mat-header-cell *matHeaderCellDef scope="col">Cliente / Equipo</th>
+          <td mat-cell *matCellDef="let cuenta">
+            <div class="client-cell">
+              <strong>{{ cuenta.clienteNombre }}</strong>
+              @if (cuenta.equipo) {
+                <span class="client-team">
+                  <span
+                    class="material-symbols-outlined icon"
+                    aria-hidden="true"
+                    style="font-size: 14px"
+                    >groups</span
                   >
-                    <mat-icon fontSet="material-symbols-outlined">history</mat-icon>
-                    <span>Historial ({{ cuenta.abonos.length }})</span>
-                  </button>
-                </div>
-              </td>
-            </tr>
-          }
-        </tbody>
+                  {{ cuenta.equipo }}
+                </span>
+              }
+              @if (cuenta.telefono) {
+                <small class="text-muted">Tel: {{ cuenta.telefono }}</small>
+              }
+            </div>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="concepto">
+          <th mat-header-cell *matHeaderCellDef scope="col">Concepto</th>
+          <td mat-cell *matCellDef="let cuenta">
+            <span class="concept-cell" [matTooltip]="cuenta.concepto">{{ cuenta.concepto }}</span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="original">
+          <th mat-header-cell *matHeaderCellDef scope="col">Deuda original</th>
+          <td mat-cell *matCellDef="let cuenta">S/ {{ cuenta.montoOriginal.toFixed(2) }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="abonado">
+          <th mat-header-cell *matHeaderCellDef scope="col">Abonado</th>
+          <td
+            mat-cell
+            *matCellDef="let cuenta"
+            style="color: var(--color-brand-green, #15803d); font-weight: 600"
+          >
+            S/ {{ cuenta.totalAbonado.toFixed(2) }}
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="saldo">
+          <th mat-header-cell *matHeaderCellDef scope="col">Saldo pendiente</th>
+          <td mat-cell *matCellDef="let cuenta">
+            <strong
+              [style.color]="
+                cuenta.saldo > 0
+                  ? 'var(--color-danger, #dc2626)'
+                  : 'var(--color-brand-green, #15803d)'
+              "
+            >
+              S/ {{ cuenta.saldo.toFixed(2) }}
+            </strong>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="vencimiento">
+          <th mat-header-cell *matHeaderCellDef scope="col">Vencimiento</th>
+          <td mat-cell *matCellDef="let cuenta">
+            <span
+              [style.color]="
+                cuenta.estado === 'VENCIDA' ? 'var(--color-danger, #dc2626)' : 'inherit'
+              "
+            >
+              {{ cuenta.fechaVencimiento | date: 'dd/MM/yyyy' }}
+            </span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="estado">
+          <th mat-header-cell *matHeaderCellDef scope="col">Estado</th>
+          <td mat-cell *matCellDef="let cuenta">
+            @if (cuenta.estado === 'PENDIENTE') {
+              <span class="status-indicator status-pendiente">Pendiente</span>
+            } @else if (cuenta.estado === 'VENCIDA') {
+              <span class="status-indicator status-vencida">Vencida</span>
+            } @else {
+              <span class="status-indicator status-cancelada">Cancelada</span>
+            }
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="acciones">
+          <th mat-header-cell *matHeaderCellDef scope="col" style="text-align: right">Acciones</th>
+          <td mat-cell *matCellDef="let cuenta" style="text-align: right">
+            <div class="row-actions">
+              @if (cuenta.saldo > 0) {
+                <button
+                  mat-flat-button
+                  class="btn-row-action btn-abonar"
+                  [disableRipple]="true"
+                  (click)="abrirModalAbono(cuenta)"
+                >
+                  <mat-icon fontSet="material-symbols-outlined">payments</mat-icon>
+                  <span>Abonar</span>
+                </button>
+              }
+              <button
+                mat-stroked-button
+                class="btn-row-action btn-historial"
+                [disableRipple]="true"
+                (click)="verDetalle(cuenta)"
+              >
+                <mat-icon fontSet="material-symbols-outlined">history</mat-icon>
+                <span>Historial ({{ cuenta.abonos.length }})</span>
+              </button>
+            </div>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="cuentasColumns"></tr>
+        <tr
+          mat-row
+          *matRowDef="let cuenta; columns: cuentasColumns"
+          [class.row-overdue]="cuenta.estado === 'VENCIDA'"
+        ></tr>
       </table>
+      <mat-paginator
+        [length]="creditService.cuentasFiltradas().length"
+        [pageIndex]="pageIndex()"
+        [pageSize]="pageSize()"
+        [pageSizeOptions]="[5, 10, 25, 100]"
+        (page)="onPageChange($event)"
+        aria-label="Paginación de cuentas por cobrar"
+      ></mat-paginator>
     </div>
   }
 
@@ -192,13 +290,25 @@
       <div class="dialog" (click)="$event.stopPropagation()">
         <div class="modal-header">
           <div class="modal-title-box">
-            <span class="material-symbols-outlined icon text-brand" aria-hidden="true" style="font-size: 24px">payments</span>
+            <span
+              class="material-symbols-outlined icon text-brand"
+              aria-hidden="true"
+              style="font-size: 24px"
+              >payments</span
+            >
             <div>
               <h3 class="modal-title">Registrar abono a cuenta</h3>
-              <p class="modal-sub">{{ cuenta.clienteNombre }} {{ cuenta.equipo ? '(' + cuenta.equipo + ')' : '' }}</p>
+              <p class="modal-sub">
+                {{ cuenta.clienteNombre }} {{ cuenta.equipo ? '(' + cuenta.equipo + ')' : '' }}
+              </p>
             </div>
           </div>
-          <button type="button" mat-icon-button (click)="cerrarModalAbono()" aria-label="Cerrar modal">
+          <button
+            type="button"
+            mat-icon-button
+            (click)="cerrarModalAbono()"
+            aria-label="Cerrar modal"
+          >
             <span class="material-symbols-outlined icon" aria-hidden="true">close</span>
           </button>
         </div>
@@ -222,40 +332,62 @@
 
           <!-- Monto del Abono -->
           <div class="form-group">
-            <label class="form-label">Monto del abono (S/):</label>
-            <input
-              type="number"
-              min="0.1"
-              [max]="cuenta.saldo"
-              step="0.5"
-              class="input-admin font-bold text-lg"
-              [value]="abonoMonto()"
-              (input)="abonoMonto.set(+($any($event.target).value))"
-            />
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+              <mat-label>Monto del abono (S/)</mat-label>
+              <input
+                matInput
+                type="number"
+                min="0.1"
+                [max]="cuenta.saldo"
+                step="0.5"
+                [value]="abonoMonto()"
+                (input)="abonoMonto.set(+$any($event.target).value)"
+              />
+            </mat-form-field>
           </div>
 
           <!-- Método de Pago -->
           <div class="form-group">
-            <label class="form-label">Medio de pago:</label>
+            <span class="form-label">Medio de pago:</span>
             <mat-button-toggle-group
               class="payment-toggle-group"
               [value]="abonoMedio()"
               (change)="abonoMedio.set($event.value)"
             >
               <mat-button-toggle value="yape" [disableRipple]="true">
-                <span class="material-symbols-outlined icon" aria-hidden="true" style="font-size: 16px; margin-right: 4px">phone_iphone</span>
+                <span
+                  class="material-symbols-outlined icon"
+                  aria-hidden="true"
+                  style="font-size: 16px; margin-right: 4px"
+                  >phone_iphone</span
+                >
                 <span>Yape</span>
               </mat-button-toggle>
               <mat-button-toggle value="efectivo" [disableRipple]="true">
-                <span class="material-symbols-outlined icon" aria-hidden="true" style="font-size: 16px; margin-right: 4px">payments</span>
+                <span
+                  class="material-symbols-outlined icon"
+                  aria-hidden="true"
+                  style="font-size: 16px; margin-right: 4px"
+                  >payments</span
+                >
                 <span>Efectivo</span>
               </mat-button-toggle>
               <mat-button-toggle value="plin" [disableRipple]="true">
-                <span class="material-symbols-outlined icon" aria-hidden="true" style="font-size: 16px; margin-right: 4px">contactless</span>
+                <span
+                  class="material-symbols-outlined icon"
+                  aria-hidden="true"
+                  style="font-size: 16px; margin-right: 4px"
+                  >contactless</span
+                >
                 <span>Plin</span>
               </mat-button-toggle>
               <mat-button-toggle value="tarjeta" [disableRipple]="true">
-                <span class="material-symbols-outlined icon" aria-hidden="true" style="font-size: 16px; margin-right: 4px">credit_card</span>
+                <span
+                  class="material-symbols-outlined icon"
+                  aria-hidden="true"
+                  style="font-size: 16px; margin-right: 4px"
+                  >credit_card</span
+                >
                 <span>Tarjeta</span>
               </mat-button-toggle>
             </mat-button-toggle-group>
@@ -264,45 +396,77 @@
           <!-- Nro de Operación -->
           @if (abonoMedio() !== 'efectivo') {
             <div class="form-group">
-              <label class="form-label">N° de operación o referencia:</label>
-              <input
-                type="text"
-                class="input-admin"
-                placeholder="Ej. 198234"
-                [value]="abonoOperacion()"
-                (input)="abonoOperacion.set($any($event.target).value)"
-              />
+              <mat-form-field
+                appearance="outline"
+                subscriptSizing="dynamic"
+                class="cn-field w-full"
+              >
+                <mat-label>N° de operación o referencia</mat-label>
+                <input
+                  matInput
+                  type="text"
+                  placeholder="Ej. 198234"
+                  [value]="abonoOperacion()"
+                  (input)="abonoOperacion.set($any($event.target).value)"
+                />
+              </mat-form-field>
             </div>
           }
 
           <!-- Integración con Caja Operativa -->
           @if (cajaService.tieneSesionActiva()) {
             <div class="caja-integration-box">
-              <span class="material-symbols-outlined icon" aria-hidden="true" style="color: #27802D; font-size: 18px">check_circle</span>
-              <span>Se integrará automáticamente al Turno de Caja #{{ cajaService.sesionActiva()?.id }}</span>
+              <span
+                class="material-symbols-outlined icon"
+                aria-hidden="true"
+                style="color: #27802d; font-size: 18px"
+                >check_circle</span
+              >
+              <span
+                >Se integrará automáticamente al Turno de Caja #{{
+                  cajaService.sesionActiva()?.id
+                }}</span
+              >
             </div>
           } @else {
             <div class="caja-integration-box warning-box">
-              <span class="material-symbols-outlined icon" aria-hidden="true" style="color: #d97706; font-size: 18px">warning</span>
-              <span>No hay turno de caja abierto; se registrará como ingreso administrativo directo.</span>
+              <span
+                class="material-symbols-outlined icon"
+                aria-hidden="true"
+                style="color: #d97706; font-size: 18px"
+                >warning</span
+              >
+              <span
+                >No hay turno de caja abierto; se registrará como ingreso administrativo
+                directo.</span
+              >
             </div>
           }
 
           <!-- Observación -->
           <div class="form-group">
-            <label class="form-label">Nota u observación (opcional):</label>
-            <input
-              type="text"
-              class="input-admin"
-              placeholder="Ej. Abono realizado en recepción"
-              [value]="abonoObservacion()"
-              (input)="abonoObservacion.set($any($event.target).value)"
-            />
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+              <mat-label>Nota u observación (opcional)</mat-label>
+              <input
+                matInput
+                type="text"
+                placeholder="Ej. Abono realizado en recepción"
+                [value]="abonoObservacion()"
+                (input)="abonoObservacion.set($any($event.target).value)"
+              />
+            </mat-form-field>
           </div>
         </div>
 
         <div class="modal-footer">
-          <button type="button" mat-stroked-button [disableRipple]="true" (click)="cerrarModalAbono()">Cancelar</button>
+          <button
+            type="button"
+            mat-stroked-button
+            [disableRipple]="true"
+            (click)="cerrarModalAbono()"
+          >
+            Cancelar
+          </button>
           <button type="button" mat-flat-button [disableRipple]="true" (click)="confirmarAbono()">
             Confirmar abono de S/ {{ abonoMonto().toFixed(2) }}
           </button>
@@ -319,13 +483,23 @@
       <div class="dialog" (click)="$event.stopPropagation()">
         <div class="modal-header">
           <div class="modal-title-box">
-            <span class="material-symbols-outlined icon text-brand" aria-hidden="true" style="font-size: 24px">person_add</span>
+            <span
+              class="material-symbols-outlined icon text-brand"
+              aria-hidden="true"
+              style="font-size: 24px"
+              >person_add</span
+            >
             <div>
               <h3 class="modal-title">Nuevo fiado / cuenta corriente</h3>
               <p class="modal-sub">Registra una deuda por consumo deportivo, alquiler o cantina</p>
             </div>
           </div>
-          <button type="button" mat-icon-button (click)="cerrarModalNuevaCuenta()" aria-label="Cerrar modal">
+          <button
+            type="button"
+            mat-icon-button
+            (click)="cerrarModalNuevaCuenta()"
+            aria-label="Cerrar modal"
+          >
             <span class="material-symbols-outlined icon" aria-hidden="true">close</span>
           </button>
         </div>
@@ -333,89 +507,148 @@
         <div class="modal-body">
           <div class="form-grid-2col">
             <div class="form-group">
-              <label class="form-label">Nombre del cliente / responsable *:</label>
-              <input
-                type="text"
-                class="input-admin"
-                placeholder="Ej. Juan Pérez"
-                [value]="nuevoCliente()"
-                (input)="nuevoCliente.set($any($event.target).value)"
-              />
+              <mat-form-field
+                appearance="outline"
+                subscriptSizing="dynamic"
+                class="cn-field w-full"
+              >
+                <mat-label>Nombre del cliente / responsable *</mat-label>
+                <input
+                  matInput
+                  type="text"
+                  placeholder="Ej. Juan Pérez"
+                  [value]="nuevoCliente()"
+                  (input)="nuevoCliente.set($any($event.target).value)"
+                />
+              </mat-form-field>
             </div>
             <div class="form-group">
-              <label class="form-label">Equipo o academia (opcional):</label>
-              <input
-                type="text"
-                class="input-admin"
-                placeholder="Ej. Los Tigres FC"
-                [value]="nuevoEquipo()"
-                (input)="nuevoEquipo.set($any($event.target).value)"
-              />
-            </div>
-          </div>
-
-          <div class="form-grid-2col">
-            <div class="form-group">
-              <label class="form-label">DNI / RUC (opcional):</label>
-              <input
-                type="text"
-                class="input-admin"
-                placeholder="Ej. 45892147"
-                [value]="nuevoDocumento()"
-                (input)="nuevoDocumento.set($any($event.target).value)"
-              />
-            </div>
-            <div class="form-group">
-              <label class="form-label">Teléfono de contacto:</label>
-              <input
-                type="text"
-                class="input-admin"
-                placeholder="Ej. 987654321"
-                [value]="nuevoTelefono()"
-                (input)="nuevoTelefono.set($any($event.target).value)"
-              />
+              <mat-form-field
+                appearance="outline"
+                subscriptSizing="dynamic"
+                class="cn-field w-full"
+              >
+                <mat-label>Equipo o academia (opcional)</mat-label>
+                <input
+                  matInput
+                  type="text"
+                  placeholder="Ej. Los Tigres FC"
+                  [value]="nuevoEquipo()"
+                  (input)="nuevoEquipo.set($any($event.target).value)"
+                />
+              </mat-form-field>
             </div>
           </div>
 
           <div class="form-grid-2col">
             <div class="form-group">
-              <label class="form-label">Monto de la deuda (S/) *:</label>
-              <input
-                type="number"
-                min="1"
-                step="0.5"
-                class="input-admin font-bold"
-                placeholder="0.00"
-                [value]="nuevoMonto()"
-                (input)="nuevoMonto.set(+($any($event.target).value))"
-              />
+              <mat-form-field
+                appearance="outline"
+                subscriptSizing="dynamic"
+                class="cn-field w-full"
+              >
+                <mat-label>DNI / RUC (opcional)</mat-label>
+                <input
+                  matInput
+                  type="text"
+                  placeholder="Ej. 45892147"
+                  [value]="nuevoDocumento()"
+                  (input)="nuevoDocumento.set($any($event.target).value)"
+                />
+              </mat-form-field>
             </div>
             <div class="form-group">
-              <label class="form-label">Fecha de vencimiento:</label>
-              <input
-                type="date"
-                class="input-admin"
-                [value]="nuevoFechaVencimiento()"
-                (input)="nuevoFechaVencimiento.set($any($event.target).value)"
-              />
+              <mat-form-field
+                appearance="outline"
+                subscriptSizing="dynamic"
+                class="cn-field w-full"
+              >
+                <mat-label>Teléfono de contacto</mat-label>
+                <input
+                  matInput
+                  type="text"
+                  placeholder="Ej. 987654321"
+                  [value]="nuevoTelefono()"
+                  (input)="nuevoTelefono.set($any($event.target).value)"
+                />
+              </mat-form-field>
+            </div>
+          </div>
+
+          <div class="form-grid-2col">
+            <div class="form-group">
+              <mat-form-field
+                appearance="outline"
+                subscriptSizing="dynamic"
+                class="cn-field w-full"
+              >
+                <mat-label>Monto de la deuda (S/) *</mat-label>
+                <input
+                  matInput
+                  type="number"
+                  min="1"
+                  step="0.5"
+                  placeholder="0.00"
+                  [value]="nuevoMonto()"
+                  (input)="nuevoMonto.set(+$any($event.target).value)"
+                />
+              </mat-form-field>
+            </div>
+            <div class="form-group">
+              <mat-form-field
+                appearance="outline"
+                subscriptSizing="dynamic"
+                class="cn-field w-full"
+              >
+                <mat-label>Fecha de vencimiento</mat-label>
+                <input
+                  matInput
+                  [matDatepicker]="pickerVencimiento"
+                  [value]="nuevoFechaVencimientoDate()"
+                  placeholder="DD/MM/YYYY"
+                  maxlength="10"
+                  (input)="onVencimientoMaskInput($event)"
+                  (dateChange)="onVencimientoDateChange($event.value)"
+                />
+                <mat-datepicker-toggle
+                  matIconSuffix
+                  [for]="pickerVencimiento"
+                ></mat-datepicker-toggle>
+                <mat-datepicker #pickerVencimiento></mat-datepicker>
+                <mat-hint>DD/MM/YYYY</mat-hint>
+              </mat-form-field>
             </div>
           </div>
 
           <div class="form-group">
-            <label class="form-label">Concepto o detalle del consumo/servicio:</label>
-            <input
-              type="text"
-              class="input-admin"
-              placeholder="Ej. Alquiler de cancha, chalecos o consumo de cantina"
-              [value]="nuevoConcepto()"
-              (input)="nuevoConcepto.set($any($event.target).value)"
-            />
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+              <mat-label>Concepto o detalle del consumo/servicio</mat-label>
+              <input
+                matInput
+                type="text"
+                placeholder="Ej. Alquiler de cancha, chalecos o consumo de cantina"
+                [value]="nuevoConcepto()"
+                (input)="nuevoConcepto.set($any($event.target).value)"
+              />
+            </mat-form-field>
           </div>
         </div>
 
         <div class="modal-footer">
-          <button type="button" mat-stroked-button [disableRipple]="true" (click)="cerrarModalNuevaCuenta()">Cancelar</button>
-          <button type="button" mat-flat-button [disableRipple]="true" (click)="confirmarNuevaCuenta()">
+          <button
+            type="button"
+            mat-stroked-button
+            [disableRipple]="true"
+            (click)="cerrarModalNuevaCuenta()"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            mat-flat-button
+            [disableRipple]="true"
+            (click)="confirmarNuevaCuenta()"
+          >
             Registrar cuenta
           </button>
         </div>
@@ -431,13 +664,23 @@
       <div class="dialog dialog-wide" (click)="$event.stopPropagation()">
         <div class="modal-header">
           <div class="modal-title-box">
-            <span class="material-symbols-outlined icon text-brand" aria-hidden="true" style="font-size: 24px">history</span>
+            <span
+              class="material-symbols-outlined icon text-brand"
+              aria-hidden="true"
+              style="font-size: 24px"
+              >history</span
+            >
             <div>
               <h3 class="modal-title">Historial de abonos — Cuenta #{{ cuenta.id }}</h3>
               <p class="modal-sub">{{ cuenta.clienteNombre }} &bull; {{ cuenta.concepto }}</p>
             </div>
           </div>
-          <button type="button" mat-icon-button (click)="cerrarModalDetalle()" aria-label="Cerrar modal">
+          <button
+            type="button"
+            mat-icon-button
+            (click)="cerrarModalDetalle()"
+            aria-label="Cerrar modal"
+          >
             <span class="material-symbols-outlined icon" aria-hidden="true">close</span>
           </button>
         </div>
@@ -451,11 +694,19 @@
             </div>
             <div>
               <span class="summary-meta-label">Total abonado:</span>
-              <strong style="color: var(--color-brand-green, #15803d)">S/ {{ cuenta.totalAbonado.toFixed(2) }}</strong>
+              <strong style="color: var(--color-brand-green, #15803d)"
+                >S/ {{ cuenta.totalAbonado.toFixed(2) }}</strong
+              >
             </div>
             <div>
               <span class="summary-meta-label">Saldo pendiente:</span>
-              <strong [style.color]="cuenta.saldo > 0 ? 'var(--color-danger, #dc2626)' : 'var(--color-brand-green, #15803d)'">
+              <strong
+                [style.color]="
+                  cuenta.saldo > 0
+                    ? 'var(--color-danger, #dc2626)'
+                    : 'var(--color-brand-green, #15803d)'
+                "
+              >
                 S/ {{ cuenta.saldo.toFixed(2) }}
               </strong>
             </div>
@@ -468,50 +719,76 @@
           <!-- Tabla de Abonos Realizados -->
           <h4 class="detail-section-title">Registro cronológico de pagos</h4>
           @if (cuenta.abonos.length === 0) {
-            <p class="empty-payments-notice">No se han registrado abonos todavía para esta cuenta.</p>
+            <p class="empty-payments-notice">
+              No se han registrado abonos todavía para esta cuenta.
+            </p>
           } @else {
             <div class="op-table-wrap">
-              <table class="op-table">
-                <thead>
-                  <tr>
-                    <th scope="col">Fecha y hora</th>
-                    <th scope="col">Medio de pago</th>
-                    <th scope="col">N° Operación</th>
-                    <th scope="col">Cajero</th>
-                    <th scope="col">Monto abonado</th>
-                    <th scope="col" style="text-align: right">Comprobante</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (abono of cuenta.abonos; track abono.id) {
-                    <tr>
-                      <td>{{ abono.fecha | date: 'dd/MM/yyyy HH:mm' }}</td>
-                      <td style="text-transform: capitalize">{{ abono.medioPago }}</td>
-                      <td>{{ abono.nroOperacion || '—' }}</td>
-                      <td>{{ abono.cajeroNombre }}</td>
-                      <td><strong style="color: var(--color-brand-green, #15803d)">S/ {{ abono.monto.toFixed(2) }}</strong></td>
-                      <td style="text-align: right">
-                        <button
-                          type="button"
-                          mat-stroked-button
-                          class="btn-action-sm"
-                          [disableRipple]="true"
-                          (click)="imprimirVoucherAbono(abono, cuenta)"
-                        >
-                          <span class="material-symbols-outlined icon" aria-hidden="true" style="font-size: 16px; margin-right: 4px">print</span>
-                          <span>Voucher</span>
-                        </button>
-                      </td>
-                    </tr>
-                  }
-                </tbody>
+              <table mat-table [dataSource]="cuenta.abonos" class="op-table">
+                <ng-container matColumnDef="fecha">
+                  <th mat-header-cell *matHeaderCellDef scope="col">Fecha y hora</th>
+                  <td mat-cell *matCellDef="let abono">
+                    {{ abono.fecha | date: 'dd/MM/yyyy HH:mm' }}
+                  </td>
+                </ng-container>
+                <ng-container matColumnDef="medio">
+                  <th mat-header-cell *matHeaderCellDef scope="col">Medio de pago</th>
+                  <td mat-cell *matCellDef="let abono" style="text-transform: capitalize">
+                    {{ abono.medioPago }}
+                  </td>
+                </ng-container>
+                <ng-container matColumnDef="operacion">
+                  <th mat-header-cell *matHeaderCellDef scope="col">N° Operación</th>
+                  <td mat-cell *matCellDef="let abono">{{ abono.nroOperacion || '—' }}</td>
+                </ng-container>
+                <ng-container matColumnDef="cajero">
+                  <th mat-header-cell *matHeaderCellDef scope="col">Cajero</th>
+                  <td mat-cell *matCellDef="let abono">{{ abono.cajeroNombre }}</td>
+                </ng-container>
+                <ng-container matColumnDef="monto">
+                  <th mat-header-cell *matHeaderCellDef scope="col">Monto abonado</th>
+                  <td mat-cell *matCellDef="let abono">
+                    <strong style="color: var(--color-brand-green, #15803d)"
+                      >S/ {{ abono.monto.toFixed(2) }}</strong
+                    >
+                  </td>
+                </ng-container>
+                <ng-container matColumnDef="comprobante">
+                  <th mat-header-cell *matHeaderCellDef scope="col" style="text-align: right">
+                    Comprobante
+                  </th>
+                  <td mat-cell *matCellDef="let abono" style="text-align: right">
+                    <button
+                      type="button"
+                      mat-stroked-button
+                      class="btn-action-sm"
+                      [disableRipple]="true"
+                      (click)="imprimirVoucherAbono(abono, cuenta)"
+                    >
+                      <span
+                        class="material-symbols-outlined icon"
+                        aria-hidden="true"
+                        style="font-size: 16px; margin-right: 4px"
+                        >print</span
+                      >
+                      <span>Voucher</span>
+                    </button>
+                  </td>
+                </ng-container>
+                <tr mat-header-row *matHeaderRowDef="abonosColumns"></tr>
+                <tr mat-row *matRowDef="let abono; columns: abonosColumns"></tr>
               </table>
             </div>
           }
         </div>
 
         <div class="modal-footer">
-          <button type="button" mat-flat-button [disableRipple]="true" (click)="cerrarModalDetalle()">
+          <button
+            type="button"
+            mat-flat-button
+            [disableRipple]="true"
+            (click)="cerrarModalDetalle()"
+          >
             Cerrar
           </button>
         </div>

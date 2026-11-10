@@ -15,9 +15,17 @@ import { Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
+import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatNativeDateModule } from '@angular/material/core';
+import { applyDateMaskToInput, isoToLocalDate, localDateToIso } from '@shared/utils/date-mask.util';
 import { DatabaseService } from '@core/supabase/database.service';
 import { AuthService } from '@core/auth/auth.service';
 import { CourtReportService, type CourtReportResponse } from '@core/services/court-report.service';
@@ -83,9 +91,16 @@ export const DIAS_SEMANA_LABELS = [
     MatButtonModule,
     MatCardModule,
     MatChipsModule,
+    MatFormFieldModule,
     MatIconModule,
+    MatInputModule,
+    MatProgressBarModule,
+    MatProgressSpinnerModule,
+    MatSelectModule,
     MatSlideToggleModule,
     MatTooltipModule,
+    MatDatepickerModule,
+    MatNativeDateModule,
     AdminAddAction,
   ],
   templateUrl: './admin-canchas.html',
@@ -188,6 +203,23 @@ export class AdminCanchas {
   protected readonly isLoading = computed(() => this.db.catalogLoading() || this.recuperando());
   protected readonly hasError = computed(() => this.db.loadErrors().length > 0);
   protected readonly errorMessage = computed(() => this.db.loadErrors().join(', '));
+
+  protected toDate(iso: string | null | undefined): Date | null {
+    return isoToLocalDate(iso);
+  }
+
+  protected onDatePickerSelect(
+    targetSignal: { set: (v: string) => void },
+    date: Date | null,
+  ): void {
+    const iso = localDateToIso(date);
+    if (iso) targetSignal.set(iso);
+  }
+
+  protected onDateMaskInput(targetSignal: { set: (v: string) => void }, event: Event): void {
+    const { iso } = applyDateMaskToInput(event);
+    if (iso) targetSignal.set(iso);
+  }
 
   constructor() {
     effect(() => {

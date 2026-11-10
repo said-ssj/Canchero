@@ -18,6 +18,8 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Router, ActivatedRoute } from '@angular/router';
 import { DatabaseService } from '@core/supabase/database.service';
 import { AuthService } from '@core/auth/auth.service';
@@ -46,6 +48,8 @@ export interface FotoGaleriaItem {
     MatChipsModule,
     MatFormFieldModule,
     MatInputModule,
+    MatProgressBarModule,
+    MatProgressSpinnerModule,
     AdminSedeCard,
     AdminAddAction,
   ],

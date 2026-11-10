@@ -1,18 +1,20 @@
 @if (!firstAccess && profile && account()?.id) {
-  <app-community-profile
-    [userId]="account()!.id"
-    [embedded]="true"
-  />
+  <app-community-profile [userId]="account()!.id" [embedded]="true" />
 } @else {
   <main class="container profile-page">
     @if (loading()) {
-      <section class="card loading-state" role="status">Cargando tu perfil…</section>
+      <section class="card loading-state cn-loader" role="status">
+        <mat-spinner diameter="48" color="primary"></mat-spinner>
+        <span>Cargando tu perfil…</span>
+      </section>
     }
     @if (error()) {
       <p class="error status-message" role="alert">{{ error() }}</p>
     }
     @if (!loading() && !profile && error()) {
-      <button type="button" class="btn primary" (click)="load()">Volver a intentar</button>
+      <button mat-flat-button type="button" class="btn primary" (click)="load()">
+        Volver a intentar
+      </button>
     }
     @if (profile; as p) {
       <app-profile-header
@@ -29,6 +31,7 @@
         <div profileActions class="header-actions">
           @if (!firstAccess && !editing()) {
             <button
+              mat-flat-button
               type="button"
               class="btn-cover btn-cover-primary edit-profile"
               (click)="editing.set(true); saved.set(false)"
@@ -37,6 +40,7 @@
               <span>Editar perfil</span>
             </button>
             <button
+              mat-icon-button
               type="button"
               class="btn-cover btn-cover-icon"
               (click)="compartirPerfil()"
@@ -190,28 +194,45 @@
                     </div>
                   </div>
                   <div class="names">
-                    <label
-                      >Nombre
+                    <mat-form-field
+                      appearance="outline"
+                      subscriptSizing="dynamic"
+                      class="cn-field w-full"
+                    >
+                      <mat-label>Nombre</mat-label>
                       <input
+                        matInput
                         name="nombre"
                         autocomplete="given-name"
                         maxlength="80"
                         required
                         [(ngModel)]="p.nombre"
-                    /></label>
-                    <label
-                      >Apellido
+                      />
+                    </mat-form-field>
+                    <mat-form-field
+                      appearance="outline"
+                      subscriptSizing="dynamic"
+                      class="cn-field w-full"
+                    >
+                      <mat-label>Apellido</mat-label>
                       <input
+                        matInput
                         name="apellido"
                         autocomplete="family-name"
                         maxlength="80"
                         required
                         [(ngModel)]="p.apellido"
-                    /></label>
+                      />
+                    </mat-form-field>
                   </div>
-                  <label
-                    >Celular (opcional)
+                  <mat-form-field
+                    appearance="outline"
+                    subscriptSizing="dynamic"
+                    class="cn-field w-full"
+                  >
+                    <mat-label>Celular (opcional)</mat-label>
                     <input
+                      matInput
                       name="telefono"
                       type="tel"
                       autocomplete="tel"
@@ -219,67 +240,91 @@
                       pattern="[+0-9 ()\-]{7,20}"
                       [(ngModel)]="p.telefono"
                     />
-                  </label>
+                  </mat-form-field>
                   <fieldset class="location">
                     <legend>Ubicación (opcional)</legend>
-                    <label
-                      >Departamento
-                      <select
+                    <mat-form-field
+                      appearance="outline"
+                      subscriptSizing="dynamic"
+                      class="cn-field w-full"
+                    >
+                      <mat-label>Departamento</mat-label>
+                      <mat-select
                         name="departamento"
                         [ngModel]="departmentId"
                         (ngModelChange)="selectDepartment($event)"
                       >
-                        <option [ngValue]="null">Selecciona un departamento</option>
+                        <mat-option [value]="null">Selecciona un departamento</mat-option>
                         @for (department of departments; track department[0]) {
-                          <option [ngValue]="department[0]">{{ department[1] }}</option>
+                          <mat-option [value]="department[0]">{{ department[1] }}</mat-option>
                         }
-                      </select>
-                    </label>
-                    <label
-                      >Ciudad o provincia
-                      <select
+                      </mat-select>
+                    </mat-form-field>
+                    <mat-form-field
+                      appearance="outline"
+                      subscriptSizing="dynamic"
+                      class="cn-field w-full"
+                    >
+                      <mat-label>Ciudad o provincia</mat-label>
+                      <mat-select
                         name="provincia"
                         [ngModel]="provinceId"
                         (ngModelChange)="selectProvince($event)"
                         [disabled]="departmentId === null"
                         [required]="departmentId !== null"
                       >
-                        <option [ngValue]="null">Selecciona una ciudad o provincia</option>
+                        <mat-option [value]="null">Selecciona una ciudad o provincia</mat-option>
                         @for (province of provinces; track province[0]) {
-                          <option [ngValue]="province[0]">{{ province[1] }}</option>
+                          <mat-option [value]="province[0]">{{ province[1] }}</mat-option>
                         }
-                      </select>
-                    </label>
-                    <label
-                      >Distrito
-                      <select
+                      </mat-select>
+                    </mat-form-field>
+                    <mat-form-field
+                      appearance="outline"
+                      subscriptSizing="dynamic"
+                      class="cn-field w-full"
+                    >
+                      <mat-label>Distrito</mat-label>
+                      <mat-select
                         name="distrito"
                         [(ngModel)]="p.idDistrito"
                         [disabled]="provinceId === null"
                         [required]="provinceId !== null"
                       >
-                        <option [ngValue]="null">Selecciona un distrito</option>
+                        <mat-option [value]="null">Selecciona un distrito</mat-option>
                         @for (district of availableDistricts; track district.id_distrito) {
-                          <option [ngValue]="district.id_distrito">{{ district.distrito }}</option>
+                          <mat-option [value]="district.id_distrito">{{
+                            district.distrito
+                          }}</mat-option>
                         }
-                      </select>
-                    </label>
-                    <label
-                      >Dirección (opcional)
-                      <input
-                        name="direccion"
-                        autocomplete="street-address"
-                        maxlength="180"
-                        placeholder="Calle, avenida o referencia"
-                        [(ngModel)]="p.direccion"
-                      />
-                      <small>Con el distrito basta para sugerirte canchas cercanas.</small>
-                    </label>
+                      </mat-select>
+                    </mat-form-field>
+                    <div>
+                      <mat-form-field
+                        appearance="outline"
+                        subscriptSizing="dynamic"
+                        class="cn-field w-full"
+                      >
+                        <mat-label>Dirección (opcional)</mat-label>
+                        <input
+                          matInput
+                          name="direccion"
+                          autocomplete="street-address"
+                          maxlength="180"
+                          placeholder="Calle, avenida o referencia"
+                          [(ngModel)]="p.direccion"
+                        />
+                      </mat-form-field>
+                      <small style="display: block; margin-top: 4px"
+                        >Con el distrito basta para sugerirte canchas cercanas.</small
+                      >
+                    </div>
                   </fieldset>
                 </fieldset>
                 <div class="actions">
                   @if (!firstAccess) {
                     <button
+                      mat-stroked-button
                       type="button"
                       class="btn outline"
                       [disabled]="saving() || readingPhoto()"
@@ -289,6 +334,7 @@
                     </button>
                   }
                   <button
+                    mat-flat-button
                     type="submit"
                     class="btn primary"
                     [disabled]="form.invalid || saving() || readingPhoto()"

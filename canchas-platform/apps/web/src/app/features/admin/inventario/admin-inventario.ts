@@ -10,7 +10,10 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatTableModule } from '@angular/material/table';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { AdminContext } from '../admin-context.service';
 import { InventoryService } from '@core/services/inventory.service';
 import { CatalogService } from '@core/services/catalog.service';
@@ -41,7 +44,10 @@ import {
     MatSelectModule,
     MatButtonToggleModule,
     MatTableModule,
+    MatPaginatorModule,
     MatTooltipModule,
+    MatProgressSpinnerModule,
+    MatProgressBarModule,
   ],
   templateUrl: './admin-inventario.html',
   styleUrl: './admin-inventario.css',
@@ -53,7 +59,9 @@ export class AdminInventario {
   readonly toast = inject(ToastService);
 
   readonly currentSedeId = computed(() => this.context.venue()?.id ?? null);
-  readonly currentSedeName = computed(() => this.context.venue()?.nombre ?? 'Sin sede seleccionada');
+  readonly currentSedeName = computed(
+    () => this.context.venue()?.nombre ?? 'Sin sede seleccionada',
+  );
 
   // Pestañas
   readonly activeTab = signal<'kardex' | 'velocidad'>('kardex');
@@ -121,8 +129,14 @@ export class AdminInventario {
       let matchTipo = true;
       if (tipo === '+') matchTipo = m.tipo === '+';
       else if (tipo === '-') matchTipo = m.tipo === '-';
-      else if (tipo === 'MERMA') matchTipo = (m.motivo || '').toUpperCase().includes('AJUSTE') || (m.motivo || '').toUpperCase().includes('MERMA');
-      else if (tipo === 'TRANSFORMACION') matchTipo = (m.motivo || '').toUpperCase().includes('TRANSFORMACIÓN') || (m.motivo || '').toUpperCase().includes('FRACCIONAMIENTO');
+      else if (tipo === 'MERMA')
+        matchTipo =
+          (m.motivo || '').toUpperCase().includes('AJUSTE') ||
+          (m.motivo || '').toUpperCase().includes('MERMA');
+      else if (tipo === 'TRANSFORMACION')
+        matchTipo =
+          (m.motivo || '').toUpperCase().includes('TRANSFORMACIÓN') ||
+          (m.motivo || '').toUpperCase().includes('FRACCIONAMIENTO');
 
       return matchProd && matchQuery && matchTipo;
     });
@@ -134,6 +148,49 @@ export class AdminInventario {
     if (!query) return list;
     return list.filter((p) => p.nombre.toLowerCase().includes(query));
   });
+
+  readonly displayedColumnsKardex = [
+    'fecha',
+    'producto',
+    'operacion',
+    'cantidad',
+    'precio',
+    'saldo',
+    'motivo',
+  ];
+  readonly displayedColumnsVelocity = [
+    'producto',
+    'stockActual',
+    'stockMinimo',
+    'ritmo',
+    'dias',
+    'nivel',
+    'acciones',
+  ];
+  readonly kardexPageIndex = signal(0);
+  readonly kardexPageSize = signal(10);
+  readonly velocityPageIndex = signal(0);
+  readonly velocityPageSize = signal(10);
+
+  readonly paginatedMovements = computed(() => {
+    const start = this.kardexPageIndex() * this.kardexPageSize();
+    return this.filteredMovements().slice(start, start + this.kardexPageSize());
+  });
+
+  readonly paginatedVelocity = computed(() => {
+    const start = this.velocityPageIndex() * this.velocityPageSize();
+    return this.filteredVelocity().slice(start, start + this.velocityPageSize());
+  });
+
+  onKardexPage(event: PageEvent): void {
+    this.kardexPageIndex.set(event.pageIndex);
+    this.kardexPageSize.set(event.pageSize);
+  }
+
+  onVelocityPage(event: PageEvent): void {
+    this.velocityPageIndex.set(event.pageIndex);
+    this.velocityPageSize.set(event.pageSize);
+  }
 
   readonly originProductDetail = computed(() => {
     const id = this.transOriginProduct();

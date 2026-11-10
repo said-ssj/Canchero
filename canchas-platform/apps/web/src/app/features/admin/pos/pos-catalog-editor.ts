@@ -11,6 +11,11 @@ import {
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatIconModule } from '@angular/material/icon';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { environment } from '@env/environment';
 import {
   CategoriaProducto,
@@ -21,7 +26,14 @@ import {
 @Component({
   selector: 'app-pos-catalog-editor',
   standalone: true,
-  imports: [FormsModule],
+  imports: [
+    FormsModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    MatIconModule,
+    MatProgressBarModule,
+  ],
   templateUrl: './pos-catalog-editor.html',
   styleUrl: './pos-catalog-editor.css',
 })

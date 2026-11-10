@@ -65,9 +65,7 @@ export class DatabaseService {
   private catalogRequest: Promise<void> | null = null;
   readonly sedeOperativaId = signal<number | null>(null);
   readonly managementScope = signal<'owned' | 'all'>('owned');
-  readonly canBrowseAllVenues = computed(() =>
-    this.auth.currentUser()?.rol === 'superadmin',
-  );
+  readonly canBrowseAllVenues = computed(() => this.auth.currentUser()?.rol === 'superadmin');
   private scopeIdentity = '';
   private realtimeReady = false;
 
@@ -218,11 +216,28 @@ export class DatabaseService {
     try {
       const [venues, courts] = await Promise.all([
         firstValueFrom(this.http.get<any[]>(`${this.apiUrl}/venues`).pipe(timeout(12000))),
-        firstValueFrom(this.http.get<any[]>(`${this.apiUrl}/courts`).pipe(timeout(12000))),
+        firstValueFrom(this.http.get<any[]>(`${this.apiUrl}/courts`).pipe(timeout(12000))).catch(
+          () => [],
+        ),
       ]);
 
       const sedes = venues.map((v) => this.mapBackendVenueToSede(v));
-      const canchas = courts.map((c) => this.mapBackendCourtToCancha(c, Number(c.venueId)));
+      const courtsFromVenues = venues.flatMap((v) =>
+        Array.isArray(v.canchas)
+          ? v.canchas.map((c: any) => this.mapBackendCourtToCancha(c, Number(c.venueId ?? v.id)))
+          : [],
+      );
+      const courtsFromEndpoint = (Array.isArray(courts) ? courts : []).map((c) =>
+        this.mapBackendCourtToCancha(c, Number(c.venueId)),
+      );
+      const canchasMap = new Map<number, any>();
+      for (const c of courtsFromVenues) {
+        if (c.id) canchasMap.set(Number(c.id), c);
+      }
+      for (const c of courtsFromEndpoint) {
+        if (c.id) canchasMap.set(Number(c.id), c);
+      }
+      const canchas = Array.from(canchasMap.values());
       this.sedes.set(sedes);
       this.canchas.set(canchas);
       this.catalogLoading.set(false);
@@ -272,6 +287,23 @@ export class DatabaseService {
   }
 
   private mapBackendCourtToCancha(c: any, sedeId: number) {
+    let supNorm = c.superficie || '';
+    const supLower = String(supNorm).toLowerCase();
+    if (supLower.includes('natural')) supNorm = 'Césped Natural';
+    else if (supLower.includes('sintétic') || supLower.includes('sintetic'))
+      supNorm = 'Grass Sintético';
+    else if (
+      supLower.includes('loza') ||
+      supLower.includes('losa') ||
+      supLower.includes('concreto') ||
+      supLower.includes('cemento')
+    )
+      supNorm = 'Losa Deportiva';
+    else if (supLower.includes('parquet') || supLower.includes('madera'))
+      supNorm = 'Piso de Madera';
+    else if (supLower.includes('goma') || supLower.includes('caucho')) supNorm = 'Piso de Goma';
+    else if (supLower.includes('arena') || supLower.includes('playa')) supNorm = 'Arena';
+
     return {
       id: Number(c.id),
       id_cancha: Number(c.id),
@@ -281,7 +313,7 @@ export class DatabaseService {
       nombre_numero: c.nombre,
       tipo: c.tipo || c.formato || '',
       formato: c.formato || c.tipo || '',
-      superficie: c.superficie || '',
+      superficie: supNorm,
       cobertura:
         c.cobertura ??
         (c.techada === true ? 'Techada' : c.techada === false ? 'Al Aire Libre' : ''),
@@ -983,7 +1015,7 @@ export class DatabaseService {
             : [],
         latitud: data['latitud'] !== undefined ? Number(data['latitud']) : -14.06778,
         longitud: data['longitud'] !== undefined ? Number(data['longitud']) : -75.72861,
-        rating: 4.5,
+        rating: 0,
         activo: true,
         estado: 'A',
         creado_en: now,

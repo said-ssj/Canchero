@@ -9,6 +9,13 @@ import { NotificationPreferences } from '@shared/components/notification-prefere
 import { ProfileHeader } from '@shared/components/profile-header/profile-header';
 import { ManagedVenueProfiles } from '@shared/components/profile-header/managed-venue-profiles';
 import { CommunityProfilePage } from './community-profile';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 
 interface District {
   id_departamento: number;
@@ -26,6 +33,13 @@ interface District {
     ProfileHeader,
     ManagedVenueProfiles,
     CommunityProfilePage,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    MatIconModule,
+    MatButtonModule,
+    MatProgressSpinnerModule,
+    MatProgressBarModule,
   ],
   templateUrl: './player-profile.html',
   styleUrl: './player-profile.css',
@@ -222,7 +236,9 @@ export class PlayerProfilePage {
   /* ================= COMPARTIR PERFIL ================= */
   protected async compartirPerfil(): Promise<void> {
     const url = typeof window !== 'undefined' ? window.location.href : '';
-    const title = this.fullName ? `Perfil de ${this.fullName} en Canchero` : 'Perfil de jugador en Canchero';
+    const title = this.fullName
+      ? `Perfil de ${this.fullName} en Canchero`
+      : 'Perfil de jugador en Canchero';
     if (typeof navigator !== 'undefined' && navigator.share) {
       try {
         await navigator.share({ title, text: `Mira mi perfil en Canchero`, url });

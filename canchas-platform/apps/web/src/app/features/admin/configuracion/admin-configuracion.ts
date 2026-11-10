@@ -22,6 +22,11 @@ import {
   type ComprobanteLiquidacionItem,
 } from './admin-configuracion.models';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 
 export type SeccionConfiguracion =
   'cuenta' | 'seguridad' | 'sesiones' | 'notificaciones' | 'reservas' | 'comision';
@@ -38,6 +43,11 @@ export type SeccionConfiguracion =
     MatIconModule,
     MatDividerModule,
     MatButtonToggleModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    MatProgressSpinnerModule,
+    MatProgressBarModule,
   ],
   templateUrl: './admin-configuracion.html',
   styleUrl: './admin-configuracion.css',

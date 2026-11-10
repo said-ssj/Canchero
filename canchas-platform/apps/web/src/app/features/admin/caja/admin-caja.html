@@ -1,36 +1,45 @@
 <div class="admin-caja-wrapper">
   @if (loading()) {
-    <div class="skeletons" role="status" aria-label="Cargando módulo de caja" aria-busy="true">
-      <span class="skeleton short"></span>
-      <span class="skeleton"></span>
-      <span class="skeleton photo"></span>
-      <span class="skeleton button"></span>
+    <div class="cn-loader" role="status" aria-label="Cargando módulo de caja" aria-busy="true">
+      <mat-spinner diameter="48"></mat-spinner>
+      <span>Cargando información...</span>
     </div>
   } @else if (error()) {
     <div class="caja-error-state notice danger" role="alert">
-      <span class="material-symbols-outlined icon error-icon" aria-hidden="true">error_outline</span>
+      <span class="material-symbols-outlined icon error-icon" aria-hidden="true"
+        >error_outline</span
+      >
       <div>
         <h3>Error en la gestión de caja</h3>
         <p>{{ error() }}</p>
       </div>
-      <button mat-stroked-button (click)="db.refreshCatalogo(); cajaService.recargar()">Reintentar</button>
+      <button mat-stroked-button (click)="db.refreshCatalogo(); cajaService.recargar()">
+        Reintentar
+      </button>
     </div>
   } @else if (!venueId()) {
-    <app-admin-venue-required title="Caja Operativa &amp; Turnos" description="Turnos, movimientos de efectivo y arqueos de la sede." icon="point_of_sale" />
+    <app-admin-venue-required
+      title="Caja Operativa &amp; Turnos"
+      description="Turnos, movimientos de efectivo y arqueos de la sede."
+      icon="point_of_sale"
+    />
   } @else {
     <!-- Cabecera de la Vista Caja -->
     <header class="caja-view-header page-title">
       <div class="caja-header-info">
         <h1 class="caja-title">Caja operativa y turnos</h1>
         <p class="caja-subtitle">
-          {{ venueName() || 'Sede seleccionada' }} · Control contable de ventanilla, registro de fondo de sencillo, movimientos manuales y arqueo físico.
+          {{ venueName() || 'Sede seleccionada' }} · Control contable de ventanilla, registro de
+          fondo de sencillo, movimientos manuales y arqueo físico.
         </p>
       </div>
 
       <div class="caja-header-actions">
         @if (cajaService.tieneSesionActiva()) {
           <button type="button" class="btn btn-outline" (click)="abrirModalMovimiento('egreso')">
-            <span class="material-symbols-outlined icon icon-18" aria-hidden="true">receipt_long</span>
+            <span class="material-symbols-outlined icon icon-18" aria-hidden="true"
+              >receipt_long</span
+            >
             <span>Nuevo Movimiento</span>
           </button>
           <button type="button" class="btn btn-primary" (click)="cambiarCajaSubTab('arqueo')">
@@ -46,7 +55,9 @@
       <div class="caja-alert-banner is-active-session">
         <div class="session-banner-content">
           <div class="session-icon-box">
-            <span class="material-symbols-outlined icon-28 icon" aria-hidden="true">point_of_sale</span>
+            <span class="material-symbols-outlined icon-28 icon" aria-hidden="true"
+              >point_of_sale</span
+            >
           </div>
           <div class="session-details">
             <div class="session-tags">
@@ -56,24 +67,42 @@
               <span class="session-code">#SES-{{ sesion.id }}</span>
             </div>
             <div class="session-title">
-              {{ sesion.cajaNombre }} &bull; Cajero: <span class="cajero-name">{{ sesion.cajeroNombre }}</span>
+              {{ sesion.cajaNombre }} &bull; Cajero:
+              <span class="cajero-name">{{ sesion.cajeroNombre }}</span>
             </div>
             <p class="session-meta">
-              Aperturado el {{ sesion.fechaApertura | date:'short' }} con fondo inicial de <strong>S/ {{ sesion.montoApertura.toFixed(2) }}</strong>
+              Aperturado el {{ sesion.fechaApertura | date: 'short' }} con fondo inicial de
+              <strong>S/ {{ sesion.montoApertura.toFixed(2) }}</strong>
             </p>
           </div>
         </div>
 
         <div class="session-banner-actions">
-          <button type="button" class="btn btn-sm btn-outline-light" (click)="abrirModalMovimiento('ingreso')">
-            <span class="material-symbols-outlined icon-16 icon" aria-hidden="true">add_circle</span>
+          <button
+            type="button"
+            class="btn btn-sm btn-outline-light"
+            (click)="abrirModalMovimiento('ingreso')"
+          >
+            <span class="material-symbols-outlined icon-16 icon" aria-hidden="true"
+              >add_circle</span
+            >
             <span>Ingreso menor</span>
           </button>
-          <button type="button" class="btn btn-sm btn-outline-light" (click)="abrirModalMovimiento('egreso')">
-            <span class="material-symbols-outlined icon-16 icon" aria-hidden="true">remove_circle</span>
+          <button
+            type="button"
+            class="btn btn-sm btn-outline-light"
+            (click)="abrirModalMovimiento('egreso')"
+          >
+            <span class="material-symbols-outlined icon-16 icon" aria-hidden="true"
+              >remove_circle</span
+            >
             <span>Egreso operativo</span>
           </button>
-          <button type="button" class="btn btn-sm btn-light-action" (click)="cambiarCajaSubTab('arqueo')">
+          <button
+            type="button"
+            class="btn btn-sm btn-light-action"
+            (click)="cambiarCajaSubTab('arqueo')"
+          >
             Ir a Arqueo Físico
           </button>
         </div>
@@ -88,7 +117,8 @@
             <div class="closed-tag">Caja Cerrada</div>
             <div class="closed-title">No hay ningún turno abierto actualmente</div>
             <p class="closed-meta">
-              Antes de operar la ventanilla y recibir pagos en efectivo, es obligatorio registrar el fondo inicial de sencillo.
+              Antes de operar la ventanilla y recibir pagos en efectivo, es obligatorio registrar el
+              fondo inicial de sencillo.
             </p>
           </div>
         </div>
@@ -100,11 +130,17 @@
     }
 
     <!-- SUB-PESTAÑAS DE NAVEGACIÓN -->
-    <mat-button-toggle-group class="caja-tabs-nav" aria-label="Secciones de caja"
-      [value]="cajaSubTab()" (change)="cambiarCajaSubTab($event.value)">
+    <mat-button-toggle-group
+      class="caja-tabs-nav"
+      aria-label="Secciones de caja"
+      [value]="cajaSubTab()"
+      (change)="cambiarCajaSubTab($event.value)"
+    >
       <mat-button-toggle value="operacion" [disableRipple]="true">Turno</mat-button-toggle>
       <mat-button-toggle value="arqueo" [disableRipple]="true">Arqueo</mat-button-toggle>
-      <mat-button-toggle value="historial" [disableRipple]="true">Historial ({{ cajaService.historialArqueos().length }})</mat-button-toggle>
+      <mat-button-toggle value="historial" [disableRipple]="true"
+        >Historial ({{ cajaService.historialArqueos().length }})</mat-button-toggle
+      >
     </mat-button-toggle-group>
 
     <!-- PESTAÑA 1: TURNO EN CURSO & MOVIMIENTOS -->
@@ -114,19 +150,35 @@
         <div>
           <span>Fondo de Apertura</span>
           <strong>S/ {{ (cajaService.sesionActiva()?.montoApertura || 0).toFixed(2) }}</strong>
-          <small class="stat-sub">{{ cajaService.tieneSesionActiva() ? 'Verificado en apertura' : 'Sin turno activo' }}</small>
+          <small class="stat-sub">{{
+            cajaService.tieneSesionActiva() ? 'Verificado en apertura' : 'Sin turno activo'
+          }}</small>
         </div>
         <div>
           <span>Pagos en Efectivo</span>
-          <strong style="color: var(--color-brand-green, #27802D)">S/ {{ cajaService.pagosEfectivoTurno().toFixed(2) }}</strong>
+          <strong style="color: var(--color-brand-green, #27802d)"
+            >S/ {{ cajaService.pagosEfectivoTurno().toFixed(2) }}</strong
+          >
           <small class="stat-sub">Cobrado en ventanilla en este turno</small>
         </div>
         <div>
           <span>Movimientos Manuales</span>
-          <strong [style.color]="cajaService.balanceMovimientosManuales() < 0 ? 'var(--color-danger, #dc2626)' : 'inherit'">
-            {{ cajaService.balanceMovimientosManuales() >= 0 ? '+' : '' }}S/ {{ cajaService.balanceMovimientosManuales().toFixed(2) }}
+          <strong
+            [style.color]="
+              cajaService.balanceMovimientosManuales() < 0
+                ? 'var(--color-danger, #dc2626)'
+                : 'inherit'
+            "
+          >
+            {{ cajaService.balanceMovimientosManuales() >= 0 ? '+' : '' }}S/
+            {{ cajaService.balanceMovimientosManuales().toFixed(2) }}
           </strong>
-          <small class="stat-sub">+{{ cajaService.totalIngresosManuales().toFixed(2) }} ing · -{{ cajaService.totalEgresosManuales().toFixed(2) }} egr</small>
+          <small class="stat-sub"
+            >+{{ cajaService.totalIngresosManuales().toFixed(2) }} ing · -{{
+              cajaService.totalEgresosManuales().toFixed(2)
+            }}
+            egr</small
+          >
         </div>
         <div>
           <span>Saldo Teórico en Gaveta</span>
@@ -139,18 +191,21 @@
       <div class="digital-payments-card">
         <div class="digital-info-wrap">
           <div class="digital-icon-box">
-            <span class="material-symbols-outlined icon-24 icon" aria-hidden="true">smartphone</span>
+            <span class="material-symbols-outlined icon-24 icon" aria-hidden="true"
+              >smartphone</span
+            >
           </div>
           <div>
-            <h4 class="digital-title">Ventas &amp; Cobros Digitales en Turno (Yape / Plin / Tarjetas)</h4>
+            <h4 class="digital-title">
+              Ventas &amp; Cobros Digitales en Turno (Yape / Plin / Tarjetas)
+            </h4>
             <p class="digital-desc">
-              Dinero acreditado en cuentas bancarias. No debe sumarse al conteo físico de billetes y monedas en gaveta.
+              Dinero acreditado en cuentas bancarias. No debe sumarse al conteo físico de billetes y
+              monedas en gaveta.
             </p>
           </div>
         </div>
-        <div class="digital-amount">
-          S/ {{ cajaService.pagosDigitalesTurno().toFixed(2) }}
-        </div>
+        <div class="digital-amount">S/ {{ cajaService.pagosDigitalesTurno().toFixed(2) }}</div>
       </div>
 
       <!-- TABLA DE MOVIMIENTOS MANUALES (INGRESOS Y EGRESOS) -->
@@ -159,16 +214,29 @@
           <div>
             <h3 class="card-box-title">Movimientos Manuales del Turno (movimiento_caja)</h3>
             <p class="card-box-subtitle">
-              Gastos menores operativos autorizados (compra de hielo, arbitrajes, garantías y sencillos)
+              Gastos menores operativos autorizados (compra de hielo, arbitrajes, garantías y
+              sencillos)
             </p>
           </div>
           <div class="card-box-actions">
-            <button type="button" class="btn btn-sm btn-outline" (click)="abrirModalMovimiento('ingreso')">
-              <span class="material-symbols-outlined icon-16 text-green icon" aria-hidden="true">add_circle</span>
+            <button
+              type="button"
+              class="btn btn-sm btn-outline"
+              (click)="abrirModalMovimiento('ingreso')"
+            >
+              <span class="material-symbols-outlined icon-16 text-green icon" aria-hidden="true"
+                >add_circle</span
+              >
               <span>Registrar ingreso</span>
             </button>
-            <button type="button" class="btn btn-sm btn-outline" (click)="abrirModalMovimiento('egreso')">
-              <span class="material-symbols-outlined icon-16 text-red icon" aria-hidden="true">remove_circle</span>
+            <button
+              type="button"
+              class="btn btn-sm btn-outline"
+              (click)="abrirModalMovimiento('egreso')"
+            >
+              <span class="material-symbols-outlined icon-16 text-red icon" aria-hidden="true"
+                >remove_circle</span
+              >
               <span>Registrar egreso</span>
             </button>
           </div>
@@ -176,45 +244,73 @@
 
         @if (cajaService.movimientos().length > 0) {
           <div class="table-responsive">
-            <table class="admin-table">
-              <thead>
-                <tr>
-                  <th>Hora</th>
-                  <th>Tipo</th>
-                  <th>Concepto / Motivo</th>
-                  <th>Autorizado Por</th>
-                  <th class="text-right">Monto</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (mov of cajaService.movimientos(); track mov.id) {
-                  <tr>
-                    <td class="font-mono">{{ mov.hora }}</td>
-                    <td>
-                      @if (mov.tipo === 'ingreso') {
-                        <span class="badge badge-success">+ INGRESO</span>
-                      } @else {
-                        <span class="badge badge-danger">- EGRESO</span>
-                      }
-                    </td>
-                    <td class="font-semibold">{{ mov.concepto }}</td>
-                    <td class="text-muted">{{ mov.autorizadoPor }}</td>
-                    <td class="text-right font-bold" [class.text-green]="mov.tipo === 'ingreso'" [class.text-red]="mov.tipo === 'egreso'">
-                      {{ mov.tipo === 'ingreso' ? '+' : '-' }} S/ {{ mov.monto.toFixed(2) }}
-                    </td>
-                  </tr>
-                }
-              </tbody>
+            <table mat-table [dataSource]="paginatedMovimientos()" class="admin-table">
+              <ng-container matColumnDef="hora">
+                <th mat-header-cell *matHeaderCellDef>Hora</th>
+                <td mat-cell *matCellDef="let mov" class="font-mono">{{ mov.hora }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="tipo">
+                <th mat-header-cell *matHeaderCellDef>Tipo</th>
+                <td mat-cell *matCellDef="let mov">
+                  @if (mov.tipo === 'ingreso') {
+                    <span class="badge badge-success">+ INGRESO</span>
+                  } @else {
+                    <span class="badge badge-danger">- EGRESO</span>
+                  }
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="concepto">
+                <th mat-header-cell *matHeaderCellDef>Concepto / Motivo</th>
+                <td mat-cell *matCellDef="let mov" class="font-semibold">{{ mov.concepto }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="autorizadoPor">
+                <th mat-header-cell *matHeaderCellDef>Autorizado Por</th>
+                <td mat-cell *matCellDef="let mov" class="text-muted">{{ mov.autorizadoPor }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="monto">
+                <th mat-header-cell *matHeaderCellDef class="text-right">Monto</th>
+                <td
+                  mat-cell
+                  *matCellDef="let mov"
+                  class="text-right font-bold"
+                  [class.text-green]="mov.tipo === 'ingreso'"
+                  [class.text-red]="mov.tipo === 'egreso'"
+                >
+                  {{ mov.tipo === 'ingreso' ? '+' : '-' }} S/ {{ mov.monto.toFixed(2) }}
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="displayedColumnsMovimientos"></tr>
+              <tr mat-row *matRowDef="let row; columns: displayedColumnsMovimientos"></tr>
             </table>
           </div>
+          <mat-paginator
+            [length]="cajaService.movimientos().length"
+            [pageIndex]="movPageIndex()"
+            [pageSize]="movPageSize()"
+            [pageSizeOptions]="[5, 10, 25, 100]"
+            (page)="onMovimientosPage($event)"
+            aria-label="Seleccionar página de movimientos"
+          ></mat-paginator>
         } @else {
           <div class="empty-placeholder">
-            <span class="material-symbols-outlined icon-36 icon" aria-hidden="true">receipt_long</span>
+            <span class="material-symbols-outlined icon-36 icon" aria-hidden="true"
+              >receipt_long</span
+            >
             <div class="empty-placeholder-title">Sin movimientos menores en este turno</div>
             <p class="empty-placeholder-desc">
-              Usa los botones superiores si necesitas registrar compras de hielo, pago de arbitraje o ingresos extras.
+              Usa los botones superiores si necesitas registrar compras de hielo, pago de arbitraje
+              o ingresos extras.
             </p>
-            <button type="button" class="btn btn-outline btn-sm" (click)="abrirModalMovimiento('egreso')">
+            <button
+              type="button"
+              class="btn btn-outline btn-sm"
+              (click)="abrirModalMovimiento('egreso')"
+            >
               Registrar Primer Egreso
             </button>
           </div>
@@ -229,20 +325,38 @@
           <div class="card-box-header">
             <div>
               <div class="arqueo-title-row">
-                <span class="material-symbols-outlined icon-24 text-green icon" aria-hidden="true">fact_check</span>
-                <h3 class="card-box-title">TABLA DE CONTEO FÍSICO (ARQUEO DE BILLETES Y MONEDAS)</h3>
+                <span class="material-symbols-outlined icon-24 text-green icon" aria-hidden="true"
+                  >fact_check</span
+                >
+                <h3 class="card-box-title">
+                  TABLA DE CONTEO FÍSICO (ARQUEO DE BILLETES Y MONEDAS)
+                </h3>
               </div>
               <p class="card-box-subtitle">
-                Ingresa el conteo físico de billetes y monedas que tienes en mano. El sistema conciliará automáticamente contra las ventas.
+                Ingresa el conteo físico de billetes y monedas que tienes en mano. El sistema
+                conciliará automáticamente contra las ventas.
               </p>
             </div>
             <div class="card-box-actions">
-              <button type="button" class="btn btn-sm btn-outline" disabled title="Conteo de ejemplo no disponible en caja operativa">
-                <span class="material-symbols-outlined icon-16 icon" aria-hidden="true">analytics</span>
+              <button
+                type="button"
+                class="btn btn-sm btn-outline"
+                disabled
+                title="Conteo de ejemplo no disponible en caja operativa"
+              >
+                <span class="material-symbols-outlined icon-16 icon" aria-hidden="true"
+                  >analytics</span
+                >
                 <span>Cargar Ejemplo 5.4</span>
               </button>
-              <button type="button" class="btn btn-sm btn-secondary" (click)="limpiarConteoArqueo()">
-                <span class="material-symbols-outlined icon-16 icon" aria-hidden="true">refresh</span>
+              <button
+                type="button"
+                class="btn btn-sm btn-secondary"
+                (click)="limpiarConteoArqueo()"
+              >
+                <span class="material-symbols-outlined icon-16 icon" aria-hidden="true"
+                  >refresh</span
+                >
                 <span>Limpiar Conteo</span>
               </button>
             </div>
@@ -253,10 +367,10 @@
             <table class="admin-table arqueo-table">
               <thead>
                 <tr>
-                  <th style="width: 34%;">DENOMINACIÓN</th>
-                  <th style="width: 16%;">TIPO</th>
-                  <th style="width: 25%; text-align: center;">CANTIDAD FÍSICA</th>
-                  <th style="width: 25%; text-align: right;">SUBTOTAL (S/)</th>
+                  <th style="width: 34%">DENOMINACIÓN</th>
+                  <th style="width: 16%">TIPO</th>
+                  <th style="width: 25%; text-align: center">CANTIDAD FÍSICA</th>
+                  <th style="width: 25%; text-align: right">SUBTOTAL (S/)</th>
                 </tr>
               </thead>
               <tbody>
@@ -264,28 +378,64 @@
                   <tr [class.row-highlight]="fila.cantidad > 0">
                     <td>
                       <div class="denom-cell">
-                        <span class="material-symbols-outlined icon-20 icon" [class.text-green]="fila.denominacion.tipo === 'Billete'" [class.text-amber]="fila.denominacion.tipo === 'Moneda'" aria-hidden="true">
+                        <span
+                          class="material-symbols-outlined icon-20 icon"
+                          [class.text-green]="fila.denominacion.tipo === 'Billete'"
+                          [class.text-amber]="fila.denominacion.tipo === 'Moneda'"
+                          aria-hidden="true"
+                        >
                           {{ fila.denominacion.icono }}
                         </span>
                         <strong class="denom-label">{{ fila.denominacion.label }}</strong>
                       </div>
                     </td>
                     <td>
-                      <span class="badge" [class.badge-billete]="fila.denominacion.tipo === 'Billete'" [class.badge-moneda]="fila.denominacion.tipo === 'Moneda'">
+                      <span
+                        class="badge"
+                        [class.badge-billete]="fila.denominacion.tipo === 'Billete'"
+                        [class.badge-moneda]="fila.denominacion.tipo === 'Moneda'"
+                      >
                         {{ fila.denominacion.tipo }}
                       </span>
                     </td>
                     <td>
                       <div class="stepper-wrap">
-                        <button type="button" class="btn-stepper" (click)="modificarCantidadDenominacion(fila.denominacion.id, -1)" aria-label="Restar">-</button>
-                        <input
-                          type="number"
-                          min="0"
-                          class="input-stepper"
-                          [value]="fila.cantidad"
-                          (input)="setCantidadDenominacion(fila.denominacion.id, $any($event.target).value)"
-                          aria-label="Cantidad para {{ fila.denominacion.label }}" />
-                        <button type="button" class="btn-stepper" (click)="modificarCantidadDenominacion(fila.denominacion.id, 1)" aria-label="Sumar">+</button>
+                        <button
+                          type="button"
+                          class="btn-stepper"
+                          (click)="modificarCantidadDenominacion(fila.denominacion.id, -1)"
+                          aria-label="Restar"
+                        >
+                          -
+                        </button>
+                        <mat-form-field
+                          appearance="outline"
+                          subscriptSizing="dynamic"
+                          class="cn-field"
+                        >
+                          <input
+                            matInput
+                            type="number"
+                            min="0"
+                            class="input-stepper"
+                            [value]="fila.cantidad"
+                            (input)="
+                              setCantidadDenominacion(
+                                fila.denominacion.id,
+                                $any($event.target).value
+                              )
+                            "
+                            aria-label="Cantidad para {{ fila.denominacion.label }}"
+                          />
+                        </mat-form-field>
+                        <button
+                          type="button"
+                          class="btn-stepper"
+                          (click)="modificarCantidadDenominacion(fila.denominacion.id, 1)"
+                          aria-label="Sumar"
+                        >
+                          +
+                        </button>
                       </div>
                     </td>
                     <td class="text-right font-bold denom-subtotal-val">
@@ -296,9 +446,7 @@
               </tbody>
               <tfoot>
                 <tr class="table-total-row">
-                  <td colspan="3" class="total-label-cell">
-                    TOTAL EFECTIVO RECONTADO EN MANO
-                  </td>
+                  <td colspan="3" class="total-label-cell">TOTAL EFECTIVO RECONTADO EN MANO</td>
                   <td class="text-right total-val-cell">
                     S/ {{ totalEfectivoRecontado().toFixed(2) }}
                   </td>
@@ -314,7 +462,8 @@
             <div>
               <h3 class="card-box-title">Conciliación Contable &amp; Balance Final</h3>
               <p class="card-box-subtitle">
-                Cálculo de la diferencia entre el efectivo recontado y el monto registrado por el sistema.
+                Cálculo de la diferencia entre el efectivo recontado y el monto registrado por el
+                sistema.
               </p>
             </div>
             <button type="button" class="btn btn-sm btn-outline" (click)="alternarArqueoCiego()">
@@ -332,40 +481,61 @@
               <div class="formulas-grid">
                 <div>
                   <span class="formula-label">Monto Apertura:</span>
-                  <div class="formula-val">S/ {{ (cajaService.sesionActiva()?.montoApertura || 0).toFixed(2) }}</div>
+                  <div class="formula-val">
+                    S/ {{ (cajaService.sesionActiva()?.montoApertura || 0).toFixed(2) }}
+                  </div>
                 </div>
                 <div>
                   <span class="formula-label">(+) Pagos Efectivo:</span>
-                  <div class="formula-val text-green">+ S/ {{ cajaService.pagosEfectivoTurno().toFixed(2) }}</div>
+                  <div class="formula-val text-green">
+                    + S/ {{ cajaService.pagosEfectivoTurno().toFixed(2) }}
+                  </div>
                 </div>
                 <div>
                   <span class="formula-label">(+) Ingresos Manuales:</span>
-                  <div class="formula-val text-green">+ S/ {{ cajaService.totalIngresosManuales().toFixed(2) }}</div>
+                  <div class="formula-val text-green">
+                    + S/ {{ cajaService.totalIngresosManuales().toFixed(2) }}
+                  </div>
                 </div>
                 <div>
                   <span class="formula-label">(-) Egresos Manuales:</span>
-                  <div class="formula-val text-red">- S/ {{ cajaService.totalEgresosManuales().toFixed(2) }}</div>
+                  <div class="formula-val text-red">
+                    - S/ {{ cajaService.totalEgresosManuales().toFixed(2) }}
+                  </div>
                 </div>
               </div>
 
               <div class="formulas-total-row">
                 <span class="formula-total-label">Monto Sistema Esperado:</span>
-                <strong class="formula-total-val">S/ {{ montoSistemaCalculado().toFixed(2) }}</strong>
+                <strong class="formula-total-val"
+                  >S/ {{ montoSistemaCalculado().toFixed(2) }}</strong
+                >
               </div>
             </div>
           }
 
           <!-- Tarjeta de Balance Resultante -->
-          <div class="balance-result-card" [class.is-cuadrada]="balanceEstadoCalculado() === 'cuadrada'" [class.is-faltante]="balanceEstadoCalculado() === 'faltante'" [class.is-sobrante]="balanceEstadoCalculado() === 'sobrante'">
+          <div
+            class="balance-result-card"
+            [class.is-cuadrada]="balanceEstadoCalculado() === 'cuadrada'"
+            [class.is-faltante]="balanceEstadoCalculado() === 'faltante'"
+            [class.is-sobrante]="balanceEstadoCalculado() === 'sobrante'"
+          >
             <div class="balance-card-inner">
               <div class="balance-status-info">
                 <div class="balance-icon-circle">
                   @if (balanceEstadoCalculado() === 'cuadrada') {
-                    <span class="material-symbols-outlined icon-28 icon" aria-hidden="true">check_circle</span>
+                    <span class="material-symbols-outlined icon-28 icon" aria-hidden="true"
+                      >check_circle</span
+                    >
                   } @else if (balanceEstadoCalculado() === 'faltante') {
-                    <span class="material-symbols-outlined icon-28 icon" aria-hidden="true">warning</span>
+                    <span class="material-symbols-outlined icon-28 icon" aria-hidden="true"
+                      >warning</span
+                    >
                   } @else {
-                    <span class="material-symbols-outlined icon-28 icon" aria-hidden="true">info</span>
+                    <span class="material-symbols-outlined icon-28 icon" aria-hidden="true"
+                      >info</span
+                    >
                   }
                 </div>
                 <div>
@@ -385,7 +555,8 @@
               <div class="balance-diff-box">
                 <div class="balance-diff-label">Diferencia (Efectivo Físico - Sistema):</div>
                 <div class="balance-diff-val">
-                  {{ diferenciaCalculada() >= 0 ? '+' : '' }}S/ {{ diferenciaCalculada().toFixed(2) }}
+                  {{ diferenciaCalculada() >= 0 ? '+' : '' }}S/
+                  {{ diferenciaCalculada().toFixed(2) }}
                 </div>
               </div>
             </div>
@@ -393,34 +564,54 @@
 
           <!-- Observaciones de Cierre -->
           <div class="caja-obs-group">
-            <label for="cajaObs" class="caja-label">
-              Observaciones del Cajero para el Arqueo:
-              @if (balanceEstadoCalculado() !== 'cuadrada') {
-                <span class="text-red font-bold">(Obligatorio por descuadre)</span>
-              } @else {
-                <span class="text-muted">(Opcional)</span>
-              }
-            </label>
-            <textarea
-              id="cajaObs"
-              rows="2"
-              class="filter-control caja-textarea"
-              placeholder="Ej. Sencillo cuadrado conforme con cajero del turno de noche..."
-              [value]="arqueoObservaciones()"
-              (input)="arqueoObservaciones.set($any($event.target).value)"></textarea>
+            <mat-form-field
+              appearance="outline"
+              subscriptSizing="dynamic"
+              class="cn-field cn-field-textarea"
+            >
+              <mat-label>
+                Observaciones del Cajero para el Arqueo:
+                @if (balanceEstadoCalculado() !== 'cuadrada') {
+                  <span class="text-red font-bold">(Obligatorio por descuadre)</span>
+                } @else {
+                  <span class="text-muted">(Opcional)</span>
+                }
+              </mat-label>
+              <textarea
+                matInput
+                id="cajaObs"
+                rows="2"
+                class="caja-textarea"
+                placeholder="Ej. Sencillo cuadrado conforme con cajero del turno de noche..."
+                [value]="arqueoObservaciones()"
+                (input)="arqueoObservaciones.set($any($event.target).value)"
+              ></textarea>
+            </mat-form-field>
           </div>
 
-          @if (cajaService.balanceError()) { <p role="alert">{{ cajaService.balanceError() }}</p> }
+          @if (cajaService.balanceError()) {
+            <p role="alert">{{ cajaService.balanceError() }}</p>
+          }
           <!-- Botón de Cierre Oficial -->
           <div class="cierre-actions-row">
-            <button type="button" class="btn btn-secondary" (click)="cambiarCajaSubTab('operacion')">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              (click)="cambiarCajaSubTab('operacion')"
+            >
               Volver a Operaciones
             </button>
             <button
               type="button"
               class="btn btn-primary btn-cierre-oficial"
-              [disabled]="!cajaService.tieneSesionActiva() || !cajaService.paymentsReady() || !!cajaService.balanceError() || cajaService.processing()"
-              (click)="ejecutarCierreDeTurno()">
+              [disabled]="
+                !cajaService.tieneSesionActiva() ||
+                !cajaService.paymentsReady() ||
+                !!cajaService.balanceError() ||
+                cajaService.processing()
+              "
+              (click)="ejecutarCierreDeTurno()"
+            >
               <span class="material-symbols-outlined icon-18 icon" aria-hidden="true">lock</span>
               <span>Cerrar Turno y Guardar Arqueo</span>
             </button>
@@ -434,7 +625,9 @@
       <div class="admin-card-box">
         <div class="card-box-header">
           <div>
-            <h3 class="card-box-title">Historial de Turnos y Arqueos Cerrados (sesion_caja &amp; arqueo_caja)</h3>
+            <h3 class="card-box-title">
+              Historial de Turnos y Arqueos Cerrados (sesion_caja &amp; arqueo_caja)
+            </h3>
             <p class="card-box-subtitle">
               Auditoría de todos los turnos anteriores, conteos físicos y estados de cuadre.
             </p>
@@ -448,17 +641,25 @@
                 <div class="historial-inner">
                   <div class="historial-meta-wrap">
                     <div class="historial-icon-box">
-                      <span class="material-symbols-outlined icon-22 icon" aria-hidden="true">inventory</span>
+                      <span class="material-symbols-outlined icon-22 icon" aria-hidden="true"
+                        >inventory</span
+                      >
                     </div>
                     <div>
                       <div class="historial-id-row">
                         <span class="historial-id">{{ arq.id }}</span>
-                        <span class="badge" [class.badge-success]="arq.balanceEstado === 'cuadrada'" [class.badge-danger]="arq.balanceEstado === 'faltante'" [class.badge-warning]="arq.balanceEstado === 'sobrante'">
+                        <span
+                          class="badge"
+                          [class.badge-success]="arq.balanceEstado === 'cuadrada'"
+                          [class.badge-danger]="arq.balanceEstado === 'faltante'"
+                          [class.badge-warning]="arq.balanceEstado === 'sobrante'"
+                        >
                           {{ arq.balanceEstado.toUpperCase() }}
                         </span>
                       </div>
                       <div class="historial-submeta">
-                        {{ arq.cajaNombre }} &bull; Cajero: {{ arq.cajeroNombre }} &bull; {{ arq.fechaArqueo | date:'medium' }}
+                        {{ arq.cajaNombre }} &bull; Cajero: {{ arq.cajeroNombre }} &bull;
+                        {{ arq.fechaArqueo | date: 'medium' }}
                       </div>
                       @if (arq.observaciones) {
                         <div class="historial-obs">"{{ arq.observaciones }}"</div>
@@ -473,12 +674,22 @@
                     </div>
                     <div class="historial-metric">
                       <span class="metric-label">Diferencia:</span>
-                      <div class="metric-val" [class.text-green]="arq.balanceEstado === 'cuadrada'" [class.text-red]="arq.balanceEstado !== 'cuadrada'">
+                      <div
+                        class="metric-val"
+                        [class.text-green]="arq.balanceEstado === 'cuadrada'"
+                        [class.text-red]="arq.balanceEstado !== 'cuadrada'"
+                      >
                         {{ arq.diferencia >= 0 ? '+' : '' }}S/ {{ arq.diferencia.toFixed(2) }}
                       </div>
                     </div>
-                    <button type="button" class="btn btn-outline btn-sm" (click)="abrirComprobanteArqueo(arq)">
-                      <span class="material-symbols-outlined icon-16 icon" aria-hidden="true">visibility</span>
+                    <button
+                      type="button"
+                      class="btn btn-outline btn-sm"
+                      (click)="abrirComprobanteArqueo(arq)"
+                    >
+                      <span class="material-symbols-outlined icon-16 icon" aria-hidden="true"
+                        >visibility</span
+                      >
                       <span>Ver Comprobante</span>
                     </button>
                   </div>
@@ -491,7 +702,8 @@
             <span class="material-symbols-outlined icon-36 icon" aria-hidden="true">history</span>
             <div class="empty-placeholder-title">Aún no se han cerrado turnos de caja</div>
             <p class="empty-placeholder-desc">
-              Cuando finalices tu primer turno y realices el arqueo físico, el comprobante oficial quedará guardado aquí.
+              Cuando finalices tu primer turno y realices el arqueo físico, el comprobante oficial
+              quedará guardado aquí.
             </p>
           </div>
         }
@@ -507,8 +719,19 @@
 <!-- Modal 1: Apertura de Turno -->
 @if (modalAperturaCajaOpen()) {
   <div class="modal-overlay-classic is-visible" (click)="cerrarModalAperturaCaja()">
-    <div class="modal-window-classic modal-caja" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Apertura de Turno">
-      <button type="button" class="modal-close-btn" (click)="cerrarModalAperturaCaja()" aria-label="Cerrar">
+    <div
+      class="modal-window-classic modal-caja"
+      (click)="$event.stopPropagation()"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Apertura de Turno"
+    >
+      <button
+        type="button"
+        class="modal-close-btn"
+        (click)="cerrarModalAperturaCaja()"
+        aria-label="Cerrar"
+      >
         <span class="material-symbols-outlined icon icon-20" aria-hidden="true">close</span>
       </button>
 
@@ -524,47 +747,47 @@
 
       <div class="modal-caja-form">
         <div>
-          <label for="aperturaCajaSelect" class="caja-label">
-            Seleccionar Caja Operativa:
-          </label>
-          <select
-            id="aperturaCajaSelect"
-            class="filter-control"
-            [value]="aperturaCajaId()"
-            (change)="aperturaCajaId.set(+$any($event.target).value)">
-            @for (c of cajaService.cajasRegistradas(); track c.id) {
-              <option [value]="c.id">{{ c.nombre }}</option>
-            }
-          </select>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field">
+            <mat-label>Seleccionar Caja Operativa:</mat-label>
+            <mat-select
+              id="aperturaCajaSelect"
+              [value]="aperturaCajaId()"
+              (selectionChange)="aperturaCajaId.set(+$event.value)"
+            >
+              @for (c of cajaService.cajasRegistradas(); track c.id) {
+                <mat-option [value]="c.id">{{ c.nombre }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
         </div>
 
         <div>
-          <label for="aperturaCajeroInput" class="caja-label">
-            Cajero Responsable:
-          </label>
-          <input
-            id="aperturaCajeroInput"
-            type="text"
-            class="filter-control"
-            [value]="aperturaCajero()"
-            (input)="aperturaCajero.set($any($event.target).value)" />
-        </div>
-
-        <div>
-          <label for="aperturaMontoInput" class="caja-label">
-            Fondo Inicial de Sencillo (monto_apertura en Soles):
-          </label>
-          <div class="input-prefix-wrap">
-            <span class="input-prefix">S/</span>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field">
+            <mat-label>Cajero Responsable:</mat-label>
             <input
+              matInput
+              id="aperturaCajeroInput"
+              type="text"
+              [value]="aperturaCajero()"
+              (input)="aperturaCajero.set($any($event.target).value)"
+            />
+          </mat-form-field>
+        </div>
+
+        <div>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field">
+            <mat-label>Fondo Inicial de Sencillo (monto_apertura en Soles):</mat-label>
+            <span matTextPrefix>S/&nbsp;</span>
+            <input
+              matInput
               id="aperturaMontoInput"
               type="number"
               min="0"
               step="5"
-              class="filter-control input-with-prefix"
               [value]="aperturaMonto()"
-              (input)="aperturaMonto.set(+$any($event.target).value)" />
-          </div>
+              (input)="aperturaMonto.set(+$any($event.target).value)"
+            />
+          </mat-form-field>
           <p class="caja-input-help">
             Monto físico disponible en gaveta para dar vuelto a los clientes.
           </p>
@@ -572,8 +795,15 @@
       </div>
 
       <div class="modal-caja-actions">
-        <button type="button" class="btn btn-secondary" (click)="cerrarModalAperturaCaja()">Cancelar</button>
-        <button type="button" class="btn btn-primary" [disabled]="cajaService.processing()" (click)="confirmarAperturaTurno()">
+        <button type="button" class="btn btn-secondary" (click)="cerrarModalAperturaCaja()">
+          Cancelar
+        </button>
+        <button
+          type="button"
+          class="btn btn-primary"
+          [disabled]="cajaService.processing()"
+          (click)="confirmarAperturaTurno()"
+        >
           <span class="material-symbols-outlined icon-18 icon" aria-hidden="true">check</span>
           <span>Confirmar e Iniciar Operación</span>
         </button>
@@ -585,13 +815,28 @@
 <!-- Modal 2: Movimiento Manual de Caja -->
 @if (modalMovimientoCajaOpen()) {
   <div class="modal-overlay-classic is-visible" (click)="cerrarModalMovimiento()">
-    <div class="modal-window-classic modal-caja" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Movimiento de Caja">
-      <button type="button" class="modal-close-btn" (click)="cerrarModalMovimiento()" aria-label="Cerrar">
+    <div
+      class="modal-window-classic modal-caja"
+      (click)="$event.stopPropagation()"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Movimiento de Caja"
+    >
+      <button
+        type="button"
+        class="modal-close-btn"
+        (click)="cerrarModalMovimiento()"
+        aria-label="Cerrar"
+      >
         <span class="material-symbols-outlined icon icon-20" aria-hidden="true">close</span>
       </button>
 
       <div class="modal-caja-header">
-        <div class="modal-caja-icon-box" [class.icon-green]="movimientoTipo() === 'ingreso'" [class.icon-red]="movimientoTipo() === 'egreso'">
+        <div
+          class="modal-caja-icon-box"
+          [class.icon-green]="movimientoTipo() === 'ingreso'"
+          [class.icon-red]="movimientoTipo() === 'egreso'"
+        >
           <span class="material-symbols-outlined icon-24 icon" aria-hidden="true">
             {{ movimientoTipo() === 'ingreso' ? 'add_circle' : 'remove_circle' }}
           </span>
@@ -610,61 +855,83 @@
               type="button"
               class="btn btn-sm toggle-btn"
               [class.is-active-ingreso]="movimientoTipo() === 'ingreso'"
-              (click)="movimientoTipo.set('ingreso')">
+              (click)="movimientoTipo.set('ingreso')"
+            >
               + INGRESO
+              @if (movimientoTipo() === 'ingreso') {
+                <mat-icon class="active-check" aria-hidden="true">check</mat-icon>
+              }
             </button>
             <button
               type="button"
               class="btn btn-sm toggle-btn"
               [class.is-active-egreso]="movimientoTipo() === 'egreso'"
-              (click)="movimientoTipo.set('egreso')">
+              (click)="movimientoTipo.set('egreso')"
+            >
               - EGRESO (GASTO)
+              @if (movimientoTipo() === 'egreso') {
+                <mat-icon class="active-check" aria-hidden="true">check</mat-icon>
+              }
             </button>
           </div>
         </div>
 
         <div>
-          <label for="movMontoInput" class="caja-label">Monto en Efectivo (Soles):</label>
-          <div class="input-prefix-wrap">
-            <span class="input-prefix">S/</span>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field">
+            <mat-label>Monto en Efectivo (Soles):</mat-label>
+            <span matTextPrefix>S/&nbsp;</span>
             <input
+              matInput
               id="movMontoInput"
               type="number"
               min="0.1"
               step="0.5"
-              class="filter-control input-with-prefix"
               [class.text-green]="movimientoTipo() === 'ingreso'"
               [class.text-red]="movimientoTipo() === 'egreso'"
               [value]="movimientoMonto()"
-              (input)="movimientoMonto.set(+$any($event.target).value)" />
-          </div>
+              (input)="movimientoMonto.set(+$any($event.target).value)"
+            />
+          </mat-form-field>
         </div>
 
         <div>
-          <label for="movConceptoInput" class="caja-label">Concepto / Motivo Obligatorio:</label>
-          <input
-            id="movConceptoInput"
-            type="text"
-            class="filter-control"
-            placeholder="Ej. Compra de 2 bolsas de hielo, Pago de arbitraje..."
-            [value]="movimientoConcepto()"
-            (input)="movimientoConcepto.set($any($event.target).value)" />
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field">
+            <mat-label>Concepto / Motivo Obligatorio:</mat-label>
+            <input
+              matInput
+              id="movConceptoInput"
+              type="text"
+              placeholder="Ej. Compra de 2 bolsas de hielo, Pago de arbitraje..."
+              [value]="movimientoConcepto()"
+              (input)="movimientoConcepto.set($any($event.target).value)"
+            />
+          </mat-form-field>
         </div>
 
         <div>
-          <label for="movAutorizadoInput" class="caja-label">Autorizado Por:</label>
-          <input
-            id="movAutorizadoInput"
-            type="text"
-            class="filter-control"
-            [value]="movimientoAutorizado()"
-            (input)="movimientoAutorizado.set($any($event.target).value)" />
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field">
+            <mat-label>Autorizado Por:</mat-label>
+            <input
+              matInput
+              id="movAutorizadoInput"
+              type="text"
+              [value]="movimientoAutorizado()"
+              (input)="movimientoAutorizado.set($any($event.target).value)"
+            />
+          </mat-form-field>
         </div>
       </div>
 
       <div class="modal-caja-actions">
-        <button type="button" class="btn btn-secondary" (click)="cerrarModalMovimiento()">Cancelar</button>
-        <button type="button" class="btn btn-primary" [disabled]="cajaService.processing()" (click)="confirmarRegistroMovimiento()">
+        <button type="button" class="btn btn-secondary" (click)="cerrarModalMovimiento()">
+          Cancelar
+        </button>
+        <button
+          type="button"
+          class="btn btn-primary"
+          [disabled]="cajaService.processing()"
+          (click)="confirmarRegistroMovimiento()"
+        >
           <span class="material-symbols-outlined icon-18 icon" aria-hidden="true">save</span>
           <span>Guardar Movimiento</span>
         </button>
@@ -676,15 +943,28 @@
 <!-- Modal 3: Comprobante Oficial de Arqueo y Cierre -->
 @if (modalComprobanteArqueoOpen() && detalleArqueoSeleccionado(); as arq) {
   <div class="modal-overlay-classic is-visible" (click)="cerrarModalComprobanteArqueo()">
-    <div class="modal-window-classic ticket-arqueo-window" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Comprobante de Arqueo">
-      <button type="button" class="modal-close-btn" (click)="cerrarModalComprobanteArqueo()" aria-label="Cerrar">
+    <div
+      class="modal-window-classic ticket-arqueo-window"
+      (click)="$event.stopPropagation()"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Comprobante de Arqueo"
+    >
+      <button
+        type="button"
+        class="modal-close-btn"
+        (click)="cerrarModalComprobanteArqueo()"
+        aria-label="Cerrar"
+      >
         <span class="material-symbols-outlined icon icon-20" aria-hidden="true">close</span>
       </button>
 
       <div class="ticket-header">
         <div class="ticket-brand">CANCHERO &bull; COMPROBANTE DE ARQUEO</div>
         <div class="ticket-sub">Auditoría Oficial de Cierre de Caja &bull; {{ arq.id }}</div>
-        <div class="ticket-meta">{{ arq.cajaNombre }} &bull; {{ arq.fechaArqueo | date:'medium' }}</div>
+        <div class="ticket-meta">
+          {{ arq.cajaNombre }} &bull; {{ arq.fechaArqueo | date: 'medium' }}
+        </div>
       </div>
 
       <div class="ticket-summary">
@@ -699,18 +979,18 @@
         @if (arq.desgloseDisponible === false) {
           <p role="status">Arqueo historico sin desglose de pagos e ingresos manuales guardado.</p>
         } @else {
-        <div class="ticket-row">
-          <span class="text-muted">(+) Pagos Efectivo (Ventanilla):</span>
-          <strong class="text-green">+ S/ {{ arq.totalPagosEfectivo.toFixed(2) }}</strong>
-        </div>
-        <div class="ticket-row">
-          <span class="text-muted">(+) Ingresos Manuales:</span>
-          <strong class="text-green">+ S/ {{ arq.totalIngresos.toFixed(2) }}</strong>
-        </div>
-        <div class="ticket-row">
-          <span class="text-muted">(-) Egresos Manuales:</span>
-          <strong class="text-red">- S/ {{ arq.totalEgresos.toFixed(2) }}</strong>
-        </div>
+          <div class="ticket-row">
+            <span class="text-muted">(+) Pagos Efectivo (Ventanilla):</span>
+            <strong class="text-green">+ S/ {{ arq.totalPagosEfectivo.toFixed(2) }}</strong>
+          </div>
+          <div class="ticket-row">
+            <span class="text-muted">(+) Ingresos Manuales:</span>
+            <strong class="text-green">+ S/ {{ arq.totalIngresos.toFixed(2) }}</strong>
+          </div>
+          <div class="ticket-row">
+            <span class="text-muted">(-) Egresos Manuales:</span>
+            <strong class="text-red">- S/ {{ arq.totalEgresos.toFixed(2) }}</strong>
+          </div>
         }
         <div class="ticket-row ticket-system-expected">
           <span>Monto Sistema Esperado:</span>
@@ -738,7 +1018,12 @@
       </div>
 
       <!-- Dictamen del Balance -->
-      <div class="ticket-balance-box" [class.is-cuadrada]="arq.balanceEstado === 'cuadrada'" [class.is-faltante]="arq.balanceEstado === 'faltante'" [class.is-sobrante]="arq.balanceEstado === 'sobrante'">
+      <div
+        class="ticket-balance-box"
+        [class.is-cuadrada]="arq.balanceEstado === 'cuadrada'"
+        [class.is-faltante]="arq.balanceEstado === 'faltante'"
+        [class.is-sobrante]="arq.balanceEstado === 'sobrante'"
+      >
         <div class="dictamen-title">DICTAMEN DE ARQUEO</div>
         <div class="dictamen-status">
           @if (arq.balanceEstado === 'cuadrada') {
@@ -762,7 +1047,11 @@
           <span class="material-symbols-outlined icon-16 icon" aria-hidden="true">print</span>
           <span>Imprimir Comprobante</span>
         </button>
-        <button type="button" class="btn btn-primary btn-sm" (click)="cerrarModalComprobanteArqueo()">
+        <button
+          type="button"
+          class="btn btn-primary btn-sm"
+          (click)="cerrarModalComprobanteArqueo()"
+        >
           Cerrar
         </button>
       </div>

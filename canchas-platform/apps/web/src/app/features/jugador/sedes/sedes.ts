@@ -1,4 +1,10 @@
 import { Component, computed, inject, signal } from '@angular/core';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSelectModule } from '@angular/material/select';
 import { Router, RouterLink } from '@angular/router';
 import { DatabaseService } from '@core/supabase/database.service';
 import { CourtFilterService, type CourtFacet } from '@core/services/court-filter.service';
@@ -6,7 +12,15 @@ import { MapsService } from '@core/services/maps.service';
 import type { Venue } from '@shared/models/venue.model';
 
 @Component({
-  imports: [RouterLink],
+  imports: [
+    RouterLink,
+    MatFormFieldModule,
+    MatIconModule,
+    MatInputModule,
+    MatProgressBarModule,
+    MatProgressSpinnerModule,
+    MatSelectModule,
+  ],
   selector: 'app-sedes',
   styleUrl: './sedes.css',
   templateUrl: './sedes.html',
@@ -21,6 +35,9 @@ export class Sedes {
   protected readonly catalogError = computed(() => this.db.catalogError());
   protected readonly showSkeleton = computed(() => this.isLoading() && !this.venues().length);
   protected readonly fallbackVenueImg = '/images/venue-placeholder.svg';
+  protected readonly layoutMode = signal<'grid' | 'list'>('list');
+  protected readonly sortBy = signal<'recomendados' | 'precio_asc' | 'rating_desc'>('recomendados');
+  private readonly brokenPhotoIds = signal<Set<string>>(new Set());
 
   protected readonly venues = computed(() => this.db.getVenuesPublicos());
 
@@ -34,10 +51,73 @@ export class Sedes {
     ].sort(),
   );
 
-  protected onImgError(event: Event): void {
+  protected onImgError(event: Event, venueId?: string): void {
     const img = event.target as HTMLImageElement;
     if (img && img.getAttribute('src') !== this.fallbackVenueImg) {
       img.src = this.fallbackVenueImg;
+    }
+    if (venueId) {
+      this.brokenPhotoIds.update((set) => {
+        const next = new Set(set);
+        next.add(venueId);
+        return next;
+      });
+    }
+  }
+
+  protected hasCustomPhoto(venue: Venue): boolean {
+    const first = venue.fotos?.[0]?.trim();
+    if (!first || first === this.fallbackVenueImg || first.includes('venue-placeholder')) {
+      return false;
+    }
+    return !this.brokenPhotoIds().has(venue.id);
+  }
+
+  protected primaryFormat(venue: Venue): string {
+    const formats = [
+      ...new Set(venue.canchas.map((c) => (c.formato || c.tipo || '').trim()).filter(Boolean)),
+    ];
+    if (formats.length === 0) return 'Fútbol 7';
+    if (formats.length === 1) return formats[0];
+    const secondNum = formats[1].replace(/^Fútbol\s*/i, '').trim();
+    return secondNum ? `${formats[0]} / ${secondNum}` : formats[0];
+  }
+
+  protected primarySurface(venue: Venue): string {
+    const raw = (venue.canchas[0]?.superficie || '').toLowerCase();
+    if (raw.includes('losa') || raw.includes('cemento')) return 'Losa';
+    if (raw.includes('parquet') || raw.includes('madera')) return 'Parquet';
+    return 'Gras';
+  }
+
+  protected getVenueBadges(venue: Venue): string[] {
+    const badges: string[] = [];
+    const firstCourt = venue.canchas[0];
+    if (firstCourt) {
+      if (firstCourt.formato || firstCourt.tipo) {
+        badges.push(firstCourt.formato || firstCourt.tipo);
+      }
+      if (firstCourt.superficie) {
+        badges.push(firstCourt.superficie);
+      }
+      if (firstCourt.cobertura) {
+        badges.push(firstCourt.cobertura);
+      }
+    }
+    if (Array.isArray(venue.amenidades)) {
+      for (const a of venue.amenidades) {
+        if (!badges.includes(a)) {
+          badges.push(a);
+        }
+      }
+    }
+    return badges;
+  }
+
+  protected onSortChange(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    if (value === 'precio_asc' || value === 'rating_desc' || value === 'recomendados') {
+      this.sortBy.set(value);
     }
   }
 
@@ -110,12 +190,20 @@ export class Sedes {
   private readonly scopedCourts = computed(() =>
     this.scopedVenues().flatMap((venue) => venue.canchas),
   );
-  protected readonly filteredVenues = computed(() =>
-    this.scopedVenues().filter(
+  protected readonly filteredVenues = computed(() => {
+    const list = this.scopedVenues().filter(
       (venue) =>
         !this.courtFilters.hasActiveCourtFilters() || this.courtFilters.matchesVenue(venue),
-    ),
-  );
+    );
+    const sort = this.sortBy();
+    if (sort === 'precio_asc') {
+      return [...list].sort((a, b) => (a.precioBase || 0) - (b.precioBase || 0));
+    }
+    if (sort === 'rating_desc') {
+      return [...list].sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    }
+    return list;
+  });
   protected readonly courtOptions = computed(() => ({
     formato: this.courtFilters.optionsFor('formato', this.scopedCourts()),
     superficie: this.courtFilters.optionsFor('superficie', this.scopedCourts()),
@@ -123,8 +211,8 @@ export class Sedes {
     equipamiento: this.courtFilters.optionsFor('equipamiento', this.scopedCourts()),
   }));
 
-  protected changeCourtFilter(facet: CourtFacet, event: Event): void {
-    this.courtFilters[facet].set((event.target as HTMLSelectElement).value);
+  protected changeCourtFilter(facet: CourtFacet, value: string): void {
+    this.courtFilters[facet].set(value);
   }
 
   protected retryCatalog(): void {
@@ -169,15 +257,15 @@ export class Sedes {
     return venue.canchas.filter((cancha) => cancha.disponible).length;
   }
 
-  protected onCityChange(event: Event): void {
-    this.ciudad.set((event.target as HTMLSelectElement).value);
+  protected onCityChange(value: string): void {
+    this.ciudad.set(value);
     this.distrito.set('all');
     if (!this.isLoading() || this.venues().length)
       this.courtFilters.clearUnavailable(this.scopedCourts());
   }
 
-  protected onDistritoChange(event: Event): void {
-    this.distrito.set((event.target as HTMLSelectElement).value);
+  protected onDistritoChange(value: string): void {
+    this.distrito.set(value);
     if (!this.isLoading() || this.venues().length)
       this.courtFilters.clearUnavailable(this.scopedCourts());
   }

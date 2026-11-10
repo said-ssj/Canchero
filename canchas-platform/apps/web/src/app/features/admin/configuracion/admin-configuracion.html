@@ -57,16 +57,9 @@
   </div>
 
   @if (loading()) {
-    <!-- Skeleton Loading State -->
-    <div class="config-active-view animate-pulse">
-      <div
-        style="
-          height: 380px;
-          background-color: var(--can-color-background, #f5f6f7);
-          border-radius: 8px;
-          border: 1px solid var(--can-color-border, #dfe3e8);
-        "
-      ></div>
+    <div class="cn-loader">
+      <mat-spinner diameter="48" color="primary"></mat-spinner>
+      <span>Cargando información...</span>
     </div>
   } @else {
     <!-- Main Active Section View (Single focused card) -->
@@ -122,20 +115,26 @@
 
           <!-- Form fields representados conforme a Canchero/Field en Figma -->
           <div class="config-field">
-            <label>Titular</label>
-            <input class="config-input" type="text" [value]="titularRazonSocial()" readonly />
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+              <mat-label>Titular</mat-label>
+              <input matInput type="text" [value]="titularRazonSocial()" readonly />
+            </mat-form-field>
             <span class="config-field-hint">Nombre visible para tus jugadores.</span>
           </div>
 
           <div class="config-field">
-            <label>Correo</label>
-            <input class="config-input is-disabled" type="email" [value]="perfilEmail()" disabled />
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+              <mat-label>Correo</mat-label>
+              <input matInput type="email" [value]="perfilEmail()" disabled />
+            </mat-form-field>
             <span class="config-field-hint">Correo principal de administración.</span>
           </div>
 
           <div class="config-field">
-            <label>Teléfono</label>
-            <input class="config-input" type="text" [value]="perfilTelefono()" readonly />
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+              <mat-label>Teléfono</mat-label>
+              <input matInput type="text" [value]="perfilTelefono()" readonly />
+            </mat-form-field>
             <span class="config-field-hint">Canal de comunicación de soporte Canchero.</span>
           </div>
         </section>
@@ -152,6 +151,9 @@
               <span>Credenciales y acceso a la cuenta</span>
             </div>
           </div>
+          @if (pwdUpdating()) {
+            <mat-progress-bar mode="indeterminate" color="primary"></mat-progress-bar>
+          }
 
           <form
             (submit)="guardarNuevaPassword(); $event.preventDefault()"
@@ -159,10 +161,14 @@
           >
             <!-- Contraseña actual -->
             <div class="config-field">
-              <label for="pwd-current">Contraseña actual</label>
-              <div class="config-input-wrapper">
+              <mat-form-field
+                appearance="outline"
+                subscriptSizing="dynamic"
+                class="cn-field w-full"
+              >
+                <mat-label>Contraseña actual</mat-label>
                 <input
-                  class="config-input config-input-pwd"
+                  matInput
                   id="pwd-current"
                   [type]="showPwdCurrent() ? 'text' : 'password'"
                   placeholder="••••••••••••"
@@ -170,6 +176,7 @@
                   (input)="pwdCurrent.set($any($event.target).value)"
                 />
                 <button
+                  matSuffix
                   aria-label="Mostrar contraseña actual"
                   class="config-pwd-btn"
                   (click)="toggleShowPwdCurrent()"
@@ -179,16 +186,20 @@
                     showPwdCurrent() ? 'visibility_off' : 'visibility'
                   }}</span>
                 </button>
-              </div>
+              </mat-form-field>
               <span class="config-field-hint">Mínimo 8 caracteres.</span>
             </div>
 
             <!-- Nueva contraseña -->
             <div class="config-field">
-              <label for="pwd-new">Nueva contraseña</label>
-              <div class="config-input-wrapper">
+              <mat-form-field
+                appearance="outline"
+                subscriptSizing="dynamic"
+                class="cn-field w-full"
+              >
+                <mat-label>Nueva contraseña</mat-label>
                 <input
-                  class="config-input config-input-pwd"
+                  matInput
                   id="pwd-new"
                   [type]="showPwdNew() ? 'text' : 'password'"
                   placeholder="••••••••••••"
@@ -196,6 +207,7 @@
                   (input)="pwdNew.set($any($event.target).value)"
                 />
                 <button
+                  matSuffix
                   aria-label="Mostrar nueva contraseña"
                   class="config-pwd-btn"
                   (click)="toggleShowPwdNew()"
@@ -205,20 +217,26 @@
                     showPwdNew() ? 'visibility_off' : 'visibility'
                   }}</span>
                 </button>
-              </div>
+              </mat-form-field>
             </div>
 
             <!-- Confirmar nueva contraseña -->
             <div class="config-field">
-              <label for="pwd-confirm">Confirmar nueva contraseña</label>
-              <input
-                class="config-input"
-                id="pwd-confirm"
-                type="password"
-                placeholder="Repite la nueva contraseña"
-                [value]="pwdConfirm()"
-                (input)="pwdConfirm.set($any($event.target).value)"
-              />
+              <mat-form-field
+                appearance="outline"
+                subscriptSizing="dynamic"
+                class="cn-field w-full"
+              >
+                <mat-label>Confirmar nueva contraseña</mat-label>
+                <input
+                  matInput
+                  id="pwd-confirm"
+                  type="password"
+                  placeholder="Repite la nueva contraseña"
+                  [value]="pwdConfirm()"
+                  (input)="pwdConfirm.set($any($event.target).value)"
+                />
+              </mat-form-field>
             </div>
 
             <!-- Feedback de contraseña -->
@@ -501,8 +519,10 @@
           </div>
 
           <div class="config-field">
-            <label>Adelanto mínimo</label>
-            <input class="config-input is-disabled" type="text" value="30%" disabled />
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+              <mat-label>Adelanto mínimo</mat-label>
+              <input matInput type="text" value="30%" disabled />
+            </mat-form-field>
             <span class="config-field-hint">Nombre visible para tus jugadores.</span>
           </div>
 
@@ -615,6 +635,9 @@
                 type="button"
               >
                 Semanal
+                @if (frecuenciaPago() === 'Semanal (Lunes)') {
+                  <mat-icon class="active-check" aria-hidden="true">check</mat-icon>
+                }
               </button>
               <button
                 class="freq-btn"
@@ -623,6 +646,9 @@
                 type="button"
               >
                 Quincenal
+                @if (frecuenciaPago() === 'Quincenal') {
+                  <mat-icon class="active-check" aria-hidden="true">check</mat-icon>
+                }
               </button>
               <button
                 class="freq-btn"
@@ -631,6 +657,9 @@
                 type="button"
               >
                 Mensual
+                @if (frecuenciaPago() === 'Mensual') {
+                  <mat-icon class="active-check" aria-hidden="true">check</mat-icon>
+                }
               </button>
             </div>
           </div>
@@ -712,31 +741,37 @@
       </div>
       <div style="display: flex; flex-direction: column; gap: 12px">
         <div class="config-field">
-          <label>Nombre Completo o Razón Social</label>
-          <input
-            class="config-input"
-            [value]="editNombre()"
-            (input)="editNombre.set($any($event.target).value)"
-            placeholder="Ej: Complejo Deportivo S.A.C."
-          />
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+            <mat-label>Nombre Completo o Razón Social</mat-label>
+            <input
+              matInput
+              [value]="editNombre()"
+              (input)="editNombre.set($any($event.target).value)"
+              placeholder="Ej: Complejo Deportivo S.A.C."
+            />
+          </mat-form-field>
         </div>
         <div class="config-field">
-          <label>RUC Fiscal</label>
-          <input
-            class="config-input"
-            [value]="editRuc()"
-            (input)="editRuc.set($any($event.target).value)"
-            placeholder="20XXXXXXXXX"
-          />
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+            <mat-label>RUC Fiscal</mat-label>
+            <input
+              matInput
+              [value]="editRuc()"
+              (input)="editRuc.set($any($event.target).value)"
+              placeholder="20XXXXXXXXX"
+            />
+          </mat-form-field>
         </div>
         <div class="config-field">
-          <label>Teléfono de Contacto</label>
-          <input
-            class="config-input"
-            [value]="editTelefono()"
-            (input)="editTelefono.set($any($event.target).value)"
-            placeholder="+51 987 654 321"
-          />
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+            <mat-label>Teléfono de Contacto</mat-label>
+            <input
+              matInput
+              [value]="editTelefono()"
+              (input)="editTelefono.set($any($event.target).value)"
+              placeholder="+51 987 654 321"
+            />
+          </mat-form-field>
         </div>
       </div>
       <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px">
@@ -763,46 +798,53 @@
       </div>
       <div style="display: flex; flex-direction: column; gap: 12px">
         <div class="config-field">
-          <label>Entidad Bancaria</label>
-          <select
-            class="config-input"
-            [value]="nuevaCuentaBanco()"
-            (change)="nuevaCuentaBanco.set($any($event.target).value)"
-          >
-            <option value="BBVA">BBVA Perú</option>
-            <option value="Scotiabank">Scotiabank Perú</option>
-            <option value="BanBif">BanBif</option>
-            <option value="Banco Pichincha">Banco Pichincha</option>
-            <option value="BCP">Banco de Crédito (BCP)</option>
-            <option value="Interbank">Interbank</option>
-          </select>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+            <mat-label>Entidad Bancaria</mat-label>
+            <mat-select
+              [value]="nuevaCuentaBanco()"
+              (selectionChange)="nuevaCuentaBanco.set($event.value)"
+            >
+              <mat-option value="BBVA">BBVA Perú</mat-option>
+              <mat-option value="Scotiabank">Scotiabank Perú</mat-option>
+              <mat-option value="BanBif">BanBif</mat-option>
+              <mat-option value="Banco Pichincha">Banco Pichincha</mat-option>
+              <mat-option value="BCP">Banco de Crédito (BCP)</mat-option>
+              <mat-option value="Interbank">Interbank</mat-option>
+            </mat-select>
+          </mat-form-field>
         </div>
         <div class="config-field">
-          <label>Tipo de Cuenta</label>
-          <input
-            class="config-input"
-            [value]="nuevaCuentaTipo()"
-            (input)="nuevaCuentaTipo.set($any($event.target).value)"
-            placeholder="Cuenta Corriente Soles"
-          />
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+            <mat-label>Tipo de Cuenta</mat-label>
+            <input
+              matInput
+              [value]="nuevaCuentaTipo()"
+              (input)="nuevaCuentaTipo.set($any($event.target).value)"
+              placeholder="Cuenta Corriente Soles"
+            />
+          </mat-form-field>
         </div>
         <div class="config-field">
-          <label>Número de Cuenta</label>
-          <input
-            class="config-input"
-            [value]="nuevaCuentaNumero()"
-            (input)="nuevaCuentaNumero.set($any($event.target).value)"
-            placeholder="0011-0123-0200123456"
-          />
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+            <mat-label>Número de Cuenta</mat-label>
+            <input
+              matInput
+              [value]="nuevaCuentaNumero()"
+              (input)="nuevaCuentaNumero.set($any($event.target).value)"
+              placeholder="0011-0123-0200123456"
+            />
+          </mat-form-field>
         </div>
         <div class="config-field">
-          <label>Código Interbancario (CCI)</label>
-          <input
-            class="config-input"
-            [value]="nuevaCuentaCci()"
-            (input)="nuevaCuentaCci.set($any($event.target).value)"
-            placeholder="011-123-000200123456-12"
-          />
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+            <mat-label>Código Interbancario (CCI)</mat-label>
+            <input
+              matInput
+              [value]="nuevaCuentaCci()"
+              (input)="nuevaCuentaCci.set($any($event.target).value)"
+              placeholder="011-123-000200123456-12"
+            />
+          </mat-form-field>
         </div>
       </div>
       <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px">

@@ -13,9 +13,6 @@ import { Component, input, signal } from '@angular/core';
             <span class="cover-circle"></span>
           }
         </div>
-        <div class="cover-actions">
-          <ng-content select="[profileActions]" />
-        </div>
       </div>
       <div class="profile-identity">
         <div class="identity-top" [class.no-avatar]="!showAvatar()">
@@ -28,22 +25,34 @@ import { Component, input, signal } from '@angular/core';
                   (error)="brokenPhoto.set(photo())"
                 />
               } @else if (isBusiness()) {
-                <span class="material-symbols-outlined business-avatar-icon" aria-hidden="true">stadium</span>
+                <span class="material-symbols-outlined business-avatar-icon" aria-hidden="true"
+                  >stadium</span
+                >
               } @else {
                 <span>{{ initials() || name().trim().slice(0, 1).toUpperCase() || 'C' }}</span>
               }
             </div>
           }
+          <div class="profile-actions-bar">
+            <ng-content select="[profileActions]" />
+          </div>
         </div>
         <div class="name-row">
-          <h1 id="profile-title">{{ name() }}</h1>
-          <span class="role-badge" [class.badge-owner]="isBusiness()">{{ badge() }}</span>
-          @if (verified()) {
-            <span class="verified-badge">
-              <span class="material-symbols-outlined verified-icon" aria-hidden="true">verified</span>
-              Sede verificada
-            </span>
-          }
+          <div class="name-row-main">
+            <h1 id="profile-title">{{ name() }}</h1>
+            <span class="role-badge" [class.badge-owner]="isBusiness()">{{ badge() }}</span>
+            @if (verified()) {
+              <span class="verified-badge">
+                <span class="material-symbols-outlined verified-icon" aria-hidden="true"
+                  >verified</span
+                >
+                Sede verificada
+              </span>
+            }
+          </div>
+          <div class="name-row-end">
+            <ng-content select="[profileIdentityEnd]" />
+          </div>
         </div>
         <div class="profile-meta"><ng-content select="[profileMeta]" /></div>
         @if (description()) {

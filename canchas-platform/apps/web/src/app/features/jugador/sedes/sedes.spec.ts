@@ -139,17 +139,14 @@ describe('Sedes Component - Fase 7: Diseño y Verificación Integral', () => {
       mockVenues[1],
     ]);
     createComponent();
+    const facetOf = (id: string) => id.replace('Select', '') as 'formato';
     const select = (id: string, value: string) => {
-      const field = fixture.nativeElement.querySelector('#' + id) as HTMLSelectElement;
-      field.value = value;
-      field.dispatchEvent(new Event('change'));
+      if (id === 'districtSelect') component['onDistritoChange'](value);
+      else component['changeCourtFilter'](facetOf(id), value);
       fixture.detectChanges();
     };
     const options = (id: string) =>
-      Array.from(
-        (fixture.nativeElement.querySelector('#' + id) as HTMLSelectElement).options,
-        (option) => option.value,
-      );
+      component['courtOptions']()[facetOf(id)].map((option: { value: string }) => option.value);
     select('formatoSelect', 'f7');
     select('districtSelect', 'Ica');
     expect(options('formatoSelect')).toEqual(['all', 'f6', 'f11']);

@@ -13,6 +13,9 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatTableModule } from '@angular/material/table';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { CajaService, DENOMINACIONES_PERU } from '@core/services/caja.service';
 import { AuthService } from '@core/auth/auth.service';
 import { DatabaseService } from '@core/supabase/database.service';
@@ -37,11 +40,14 @@ import type {
     MatButtonToggleModule,
     MatCardModule,
     MatIconModule,
+    MatProgressSpinnerModule,
     MatChipsModule,
     MatTooltipModule,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
+    MatTableModule,
+    MatPaginatorModule,
   ],
   templateUrl: './admin-caja.html',
   providers: [{ provide: MAT_RIPPLE_GLOBAL_OPTIONS, useValue: { disabled: true } }],
@@ -52,13 +58,27 @@ export class AdminCaja {
   private confirmingClosure = false;
   private readonly context = inject(AdminContext);
   readonly venueIdInput = input<number | null | undefined>(undefined, { alias: 'venueId' });
-  readonly venueId = computed(() => this.venueIdInput() !== undefined ? this.venueIdInput()! : this.context.venue()?.id ?? null);
+  readonly venueId = computed(() =>
+    this.venueIdInput() !== undefined ? this.venueIdInput()! : (this.context.venue()?.id ?? null),
+  );
   readonly venueNameInput = input<string | undefined>(undefined, { alias: 'venueName' });
-  readonly venueName = computed(() => this.venueNameInput() !== undefined ? this.venueNameInput()! : this.context.venue()?.nombre ?? 'Sin sede seleccionada');
+  readonly venueName = computed(() =>
+    this.venueNameInput() !== undefined
+      ? this.venueNameInput()!
+      : (this.context.venue()?.nombre ?? 'Sin sede seleccionada'),
+  );
   readonly loadingInput = input<boolean | undefined>(undefined, { alias: 'loading' });
-  readonly loading = computed(() => this.loadingInput() !== undefined ? this.loadingInput()! : this.context.loading() || (this.cajaService.loading?.() ?? false));
+  readonly loading = computed(() =>
+    this.loadingInput() !== undefined
+      ? this.loadingInput()!
+      : this.context.loading() || (this.cajaService.loading?.() ?? false),
+  );
   readonly errorInput = input<string | undefined>(undefined, { alias: 'error' });
-  readonly error = computed(() => this.errorInput() !== undefined ? this.errorInput()! : this.context.error() || (this.cajaService.loadError?.() ?? ''));
+  readonly error = computed(() =>
+    this.errorInput() !== undefined
+      ? this.errorInput()!
+      : this.context.error() || (this.cajaService.loadError?.() ?? ''),
+  );
 
   readonly notice = output<string>();
 
@@ -86,7 +106,17 @@ export class AdminCaja {
 
   // Conteo Físico para Arqueo
   readonly conteoCantidades = signal<Record<number, number>>({
-    1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0, 10: 0, 11: 0,
+    1: 0,
+    2: 0,
+    3: 0,
+    4: 0,
+    5: 0,
+    6: 0,
+    7: 0,
+    8: 0,
+    9: 0,
+    10: 0,
+    11: 0,
   });
   readonly arqueoObservaciones = signal('');
   readonly arqueoCiegoRevelado = signal(false);
@@ -95,6 +125,18 @@ export class AdminCaja {
 
   // Computeds
   readonly sesionActual = computed(() => this.cajaService.sesionActiva());
+  readonly displayedColumnsMovimientos = ['hora', 'tipo', 'concepto', 'autorizadoPor', 'monto'];
+  readonly movPageIndex = signal(0);
+  readonly movPageSize = signal(10);
+  readonly paginatedMovimientos = computed(() => {
+    const start = this.movPageIndex() * this.movPageSize();
+    return this.cajaService.movimientos().slice(start, start + this.movPageSize());
+  });
+
+  onMovimientosPage(event: PageEvent): void {
+    this.movPageIndex.set(event.pageIndex);
+    this.movPageSize.set(event.pageSize);
+  }
 
   readonly arqueoFilasCalculadas = computed<ArqueoFila[]>(() => {
     const counts = this.conteoCantidades();
@@ -109,7 +151,11 @@ export class AdminCaja {
   });
 
   readonly totalEfectivoRecontado = computed<number>(() => {
-    return Number(this.arqueoFilasCalculadas().reduce((acc, f) => acc + f.subtotal, 0).toFixed(2));
+    return Number(
+      this.arqueoFilasCalculadas()
+        .reduce((acc, f) => acc + f.subtotal, 0)
+        .toFixed(2),
+    );
   });
 
   readonly montoSistemaCalculado = computed<number>(() => {
@@ -147,24 +193,28 @@ export class AdminCaja {
       this.notice.emit('Ingresa un monto de apertura válido.');
       return;
     }
-    const caja = this.cajaService.cajasRegistradas().find(c => c.id === this.aperturaCajaId() && Number(c.sedeId) === Number(this.venueId()));
+    const caja = this.cajaService
+      .cajasRegistradas()
+      .find((c) => c.id === this.aperturaCajaId() && Number(c.sedeId) === Number(this.venueId()));
     if (!this.venueId() || !caja) {
       this.notice.emit('Selecciona una caja registrada en esta sede.');
       return;
     }
     try {
-    await this.cajaService.abrirTurno(
-      caja.id,
-      caja.nombre,
-      this.venueId() || caja.sedeId,
-      this.aperturaCajero(),
-      this.auth.currentUser()?.email || 'admin@canchero.pe',
-      monto
-    );
-    this.modalAperturaCajaOpen.set(false);
-    this.limpiarConteoArqueo();
-    this.cajaSubTab.set('operacion');
-    this.notice.emit(`Turno aperturado en ${caja.nombre} con fondo inicial de S/ ${monto.toFixed(2)}.`);
+      await this.cajaService.abrirTurno(
+        caja.id,
+        caja.nombre,
+        this.venueId() || caja.sedeId,
+        this.aperturaCajero(),
+        this.auth.currentUser()?.email || 'admin@canchero.pe',
+        monto,
+      );
+      this.modalAperturaCajaOpen.set(false);
+      this.limpiarConteoArqueo();
+      this.cajaSubTab.set('operacion');
+      this.notice.emit(
+        `Turno aperturado en ${caja.nombre} con fondo inicial de S/ ${monto.toFixed(2)}.`,
+      );
     } catch (error: any) {
       this.notice.emit(error?.error?.message || error?.message || 'No se pudo abrir el turno.');
     }
@@ -199,18 +249,20 @@ export class AdminCaja {
       return;
     }
     try {
-    await this.cajaService.registrarMovimiento(
-      this.movimientoTipo(),
-      monto,
-      concepto,
-      this.movimientoAutorizado()
-    );
-    this.modalMovimientoCajaOpen.set(false);
-    this.notice.emit(
-      `Movimiento de ${this.movimientoTipo() === 'ingreso' ? 'Ingreso' : 'Egreso'} por S/ ${monto.toFixed(2)} registrado correctamente.`
-    );
+      await this.cajaService.registrarMovimiento(
+        this.movimientoTipo(),
+        monto,
+        concepto,
+        this.movimientoAutorizado(),
+      );
+      this.modalMovimientoCajaOpen.set(false);
+      this.notice.emit(
+        `Movimiento de ${this.movimientoTipo() === 'ingreso' ? 'Ingreso' : 'Egreso'} por S/ ${monto.toFixed(2)} registrado correctamente.`,
+      );
     } catch (error: any) {
-      this.notice.emit(error?.error?.message || error?.message || 'No se pudo guardar el movimiento.');
+      this.notice.emit(
+        error?.error?.message || error?.message || 'No se pudo guardar el movimiento.',
+      );
     }
   }
 
@@ -229,7 +281,17 @@ export class AdminCaja {
 
   limpiarConteoArqueo(): void {
     this.conteoCantidades.set({
-      1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0, 10: 0, 11: 0,
+      1: 0,
+      2: 0,
+      3: 0,
+      4: 0,
+      5: 0,
+      6: 0,
+      7: 0,
+      8: 0,
+      9: 0,
+      10: 0,
+      11: 0,
     });
     this.arqueoObservaciones.set('');
     this.arqueoCiegoRevelado.set(false);
@@ -237,20 +299,22 @@ export class AdminCaja {
 
   cargarEjemploArqueoEspecificacion(): void {
     this.conteoCantidades.set({
-      1: 1,  // S/ 200 -> 200
-      2: 4,  // S/ 100 -> 400
-      3: 3,  // S/ 50  -> 150
-      4: 5,  // S/ 20  -> 100
-      5: 8,  // S/ 10  -> 80
+      1: 1, // S/ 200 -> 200
+      2: 4, // S/ 100 -> 400
+      3: 3, // S/ 50  -> 150
+      4: 5, // S/ 20  -> 100
+      5: 8, // S/ 10  -> 80
       6: 10, // S/ 5   -> 50
       7: 15, // S/ 2   -> 30
       8: 22, // S/ 1   -> 22
-      9: 0,  // S/ 0.50 -> 0
+      9: 0, // S/ 0.50 -> 0
       10: 0, // S/ 0.20 -> 0
       11: 0, // S/ 0.10 -> 0
     });
     this.arqueoCiegoRevelado.set(true);
-    this.notice.emit('Tabla de conteo físico cargada según especificación 5.4 (Total: S/ 1,032.00).');
+    this.notice.emit(
+      'Tabla de conteo físico cargada según especificación 5.4 (Total: S/ 1,032.00).',
+    );
   }
 
   alternarArqueoCiego(): void {
@@ -267,7 +331,9 @@ export class AdminCaja {
     const balance = this.balanceEstadoCalculado();
     const obs = this.arqueoObservaciones().trim();
     if (balance !== 'cuadrada' && !obs) {
-      this.notice.emit('Es obligatorio ingresar una justificación en las observaciones por descuadre de caja.');
+      this.notice.emit(
+        'Es obligatorio ingresar una justificación en las observaciones por descuadre de caja.',
+      );
       return;
     }
 
@@ -278,23 +344,32 @@ export class AdminCaja {
     try {
       confirmed = await this.confirmation.confirm({
         title: '¿Cerrar este turno de caja?',
-        message: 'Confirma que revisaste el conteo físico y las observaciones. El cierre finalizará el turno actual.',
+        message:
+          'Confirma que revisaste el conteo físico y las observaciones. El cierre finalizará el turno actual.',
         confirmLabel: 'Sí, cerrar turno',
       });
-    } finally { this.confirmingClosure = false; }
-    if (!confirmed || venueId !== this.venueId() || sessionId !== this.cajaService.sesionActiva()?.id) return;
+    } finally {
+      this.confirmingClosure = false;
+    }
+    if (
+      !confirmed ||
+      venueId !== this.venueId() ||
+      sessionId !== this.cajaService.sesionActiva()?.id
+    )
+      return;
     try {
-    const arqueo = await this.cajaService.cerrarTurnoConArqueo(
-      this.conteoCantidades(),
-      obs
-    );
-    this.detalleArqueoSeleccionado.set(arqueo);
-    this.modalComprobanteArqueoOpen.set(true);
-    this.limpiarConteoArqueo();
-    this.cajaSubTab.set('historial');
-    this.notice.emit(`Cierre de caja completado: Balance ${arqueo.balanceEstado.toUpperCase()}.`);
+      const arqueo = await this.cajaService.cerrarTurnoConArqueo(this.conteoCantidades(), obs);
+      this.detalleArqueoSeleccionado.set(arqueo);
+      this.modalComprobanteArqueoOpen.set(true);
+      this.limpiarConteoArqueo();
+      this.cajaSubTab.set('historial');
+      this.notice.emit(`Cierre de caja completado: Balance ${arqueo.balanceEstado.toUpperCase()}.`);
     } catch (error: any) {
-      this.notice.emit(error?.error?.message || error?.message || 'No se pudo cerrar el turno. Sigue abierto hasta confirmacion del servidor.');
+      this.notice.emit(
+        error?.error?.message ||
+          error?.message ||
+          'No se pudo cerrar el turno. Sigue abierto hasta confirmacion del servidor.',
+      );
     }
   }
 

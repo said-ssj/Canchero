@@ -3,12 +3,22 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { AuthService } from '@core/auth/auth.service';
 import { googleOAuthClient } from '@core/supabase/client';
 import { environment } from '@env/environment';
 
 @Component({
-  imports: [RouterLink],
+  imports: [
+    RouterLink,
+    MatFormFieldModule,
+    MatInputModule,
+    MatIconModule,
+    MatProgressSpinnerModule,
+  ],
   templateUrl: './google-callback.html',
   styleUrl: './google-callback.css',
 })

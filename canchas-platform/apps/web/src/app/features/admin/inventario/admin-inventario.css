@@ -114,7 +114,7 @@
   font-size: 28px;
   width: 28px;
   height: 28px;
-  color: #27802D;
+  color: #27802d;
 }
 
 .view-subtitle {
@@ -140,7 +140,7 @@
 
 .action-btn-primary {
   font-weight: 600;
-  background-color: #27802D !important;
+  background-color: #27802d !important;
   color: #ffffff !important;
   border-radius: 4px !important;
 }
@@ -262,14 +262,6 @@ mat-button-toggle,
 .tabs-bar .mat-button-toggle-button::after {
   font-size: 13px;
   font-weight: 600;
-}
-
-.tabs-bar .mat-button-toggle-checked-indicator,
-mat-button-toggle .mat-button-toggle-checked-indicator {
-  display: none !important;
-  visibility: hidden !important;
-  width: 0 !important;
-  height: 0 !important;
 }
 
 .tab-panel {
@@ -539,7 +531,9 @@ mat-button-toggle .mat-button-toggle-checked-indicator {
 .modal-card {
   background-color: #ffffff;
   border-radius: 4px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
   width: 100%;
   max-width: 520px;
   display: flex;
@@ -570,7 +564,7 @@ mat-button-toggle .mat-button-toggle-checked-indicator {
 }
 
 .modal-header h3 mat-icon {
-  color: #27802D;
+  color: #27802d;
 }
 
 .close-btn {

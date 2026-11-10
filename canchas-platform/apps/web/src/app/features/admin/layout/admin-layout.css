@@ -268,14 +268,14 @@ button.btn-bell:hover,
 button.btn-theme-toggle:hover,
 button.profile-avatar-btn:hover {
   background: transparent !important;
-  color: var(--color-brand-green, #27802D) !important;
+  color: var(--color-brand-green, #27802d) !important;
 }
 
 .btn-bell:hover mat-icon,
 .btn-theme-toggle:hover mat-icon,
 button.btn-bell:hover mat-icon,
 button.btn-theme-toggle:hover mat-icon {
-  color: var(--color-brand-green, #27802D) !important;
+  color: var(--color-brand-green, #27802d) !important;
 }
 
 .profile-avatar-btn .user-avatar-badge {
@@ -286,7 +286,7 @@ button.btn-theme-toggle:hover mat-icon {
 }
 
 .profile-avatar-btn:hover .user-avatar-badge {
-  outline: 2px solid var(--color-brand-green, #27802D) !important;
+  outline: 2px solid var(--color-brand-green, #27802d) !important;
   outline-offset: 1px !important;
 }
 .management-scope {
@@ -335,13 +335,15 @@ button.btn-theme-toggle:hover mat-icon {
   background: var(--color-surface, #ffffff);
   border: 1px solid var(--color-border, #cbd5e1);
   border-radius: 4px;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .venue-search-input-box.is-focused,
 .venue-search-input-box:focus-within {
-  border-color: var(--color-brand-green, #27802D);
-  box-shadow: 0 0 0 1px var(--color-brand-green, #27802D);
+  border-color: var(--color-brand-green, #27802d);
+  box-shadow: 0 0 0 1px var(--color-brand-green, #27802d);
 }
 
 .venue-search-icon {
@@ -349,7 +351,7 @@ button.btn-theme-toggle:hover mat-icon {
   width: 20px;
   height: 20px;
   line-height: 20px;
-  color: var(--color-brand-green, #27802D);
+  color: var(--color-brand-green, #27802d);
   flex-shrink: 0;
 }
 
@@ -464,7 +466,7 @@ button.btn-theme-toggle:hover mat-icon {
 }
 
 .venue-dropdown-item.is-selected .venue-item-icon {
-  color: var(--color-brand-green, #27802D);
+  color: var(--color-brand-green, #27802d);
 }
 
 .venue-item-info {
@@ -484,7 +486,7 @@ button.btn-theme-toggle:hover mat-icon {
 }
 
 .venue-dropdown-item.is-selected .venue-item-name {
-  color: var(--color-brand-green, #27802D);
+  color: var(--color-brand-green, #27802d);
 }
 
 .venue-item-address {
@@ -500,7 +502,7 @@ button.btn-theme-toggle:hover mat-icon {
   width: 18px;
   height: 18px;
   line-height: 18px;
-  color: var(--color-brand-green, #27802D);
+  color: var(--color-brand-green, #27802d);
   flex-shrink: 0;
 }
 
@@ -530,7 +532,9 @@ button.btn-theme-toggle:hover mat-icon {
   background: #ffffff;
   border: 1px solid var(--color-border, #e2e8f0);
   border-radius: 8px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18), 0 2px 6px rgba(0, 0, 0, 0.08);
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.18),
+    0 2px 6px rgba(0, 0, 0, 0.08);
   z-index: 9999;
   display: flex;
   flex-direction: column;
@@ -582,7 +586,7 @@ button.btn-theme-toggle:hover mat-icon {
 }
 
 .fb-notif-action-icon:hover {
-  color: var(--color-brand-green, #27802D);
+  color: var(--color-brand-green, #27802d);
   background: rgba(39, 128, 45, 0.08);
 }
 
@@ -605,7 +609,7 @@ button.btn-theme-toggle:hover mat-icon {
 
 .fb-notif-tab.active {
   background: rgba(39, 128, 45, 0.15);
-  color: var(--color-brand-green, #27802D);
+  color: var(--color-brand-green, #27802d);
 }
 
 .fb-notif-section-row {
@@ -624,7 +628,7 @@ button.btn-theme-toggle:hover mat-icon {
 .fb-notif-link-btn {
   border: none;
   background: transparent;
-  color: var(--color-brand-green, #27802D);
+  color: var(--color-brand-green, #27802d);
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
@@ -736,7 +740,7 @@ button.btn-theme-toggle:hover mat-icon {
 .fb-notif-time {
   font-size: 11px;
   font-weight: 600;
-  color: var(--color-brand-green, #27802D);
+  color: var(--color-brand-green, #27802d);
 }
 
 .fb-notif-dot {
@@ -772,7 +776,7 @@ button.btn-theme-toggle:hover mat-icon {
 .fb-notif-footer-btn {
   border: none;
   background: transparent;
-  color: var(--color-brand-green, #27802D);
+  color: var(--color-brand-green, #27802d);
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
@@ -854,4 +858,42 @@ body.dark-theme .fb-notif-time {
 :root.dark-theme .fb-notif-dot,
 body.dark-theme .fb-notif-dot {
   background-color: #3b82f6;
+}
+
+.management-scope-field {
+  width: 180px;
+  max-width: 100%;
+}
+
+.venue-header-search-field {
+  width: 100%;
+}
+
+:root.dark-theme .venue-live-dropdown,
+body.dark-theme .venue-live-dropdown {
+  background: #1f1f1f;
+  border-color: rgba(255, 255, 255, 0.16);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+}
+
+:root.dark-theme .venue-dropdown-item:hover,
+body.dark-theme .venue-dropdown-item:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+:root.dark-theme .venue-dropdown-item.is-selected,
+body.dark-theme .venue-dropdown-item.is-selected {
+  background-color: rgba(39, 128, 45, 0.22);
+}
+
+:root.dark-theme .venue-item-name,
+body.dark-theme .venue-item-name {
+  color: #f1f5f9;
+}
+
+:root.dark-theme .venue-item-address,
+body.dark-theme .venue-item-address,
+:root.dark-theme .venue-dropdown-empty,
+body.dark-theme .venue-dropdown-empty {
+  color: #94a3b8;
 }

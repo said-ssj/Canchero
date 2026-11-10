@@ -2,7 +2,10 @@
   <section class="card callback-card" aria-labelledby="google-title">
     <h1 id="google-title">Continuar con Google</h1>
     @if (busy()) {
-      <p role="status">Comprobando tu cuenta…</p>
+      <div class="cn-loader" role="status">
+        <mat-spinner diameter="48" color="primary"></mat-spinner>
+        <span>Comprobando tu cuenta…</span>
+      </div>
     }
     @if (error()) {
       <p class="form-error" role="alert">{{ error() }}</p>
@@ -13,9 +16,10 @@
       </p>
       <form (submit)="confirm($event, password, confirmation)" (input)="mismatch.set(false)">
         <div class="field">
-          <label for="google-link-password">Contraseña de Canchero</label>
-          <div class="password-control">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+            <mat-label>Contraseña de Canchero</mat-label>
             <input
+              matInput
               #password
               id="google-link-password"
               [type]="showPassword() ? 'text' : 'password'"
@@ -23,6 +27,7 @@
               required
             />
             <button
+              matSuffix
               type="button"
               class="visibility-button"
               aria-controls="google-link-password"
@@ -33,12 +38,13 @@
                 showPassword() ? 'visibility_off' : 'visibility'
               }}</span>
             </button>
-          </div>
+          </mat-form-field>
         </div>
         <div class="field">
-          <label for="google-link-confirmation">Confirmar contraseña</label>
-          <div class="password-control">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+            <mat-label>Confirmar contraseña</mat-label>
             <input
+              matInput
               #confirmation
               id="google-link-confirmation"
               [type]="showConfirmation() ? 'text' : 'password'"
@@ -48,6 +54,7 @@
               [attr.aria-describedby]="mismatch() ? 'google-password-mismatch' : null"
             />
             <button
+              matSuffix
               type="button"
               class="visibility-button"
               aria-controls="google-link-confirmation"
@@ -60,7 +67,7 @@
                 showConfirmation() ? 'visibility_off' : 'visibility'
               }}</span>
             </button>
-          </div>
+          </mat-form-field>
           @if (mismatch()) {
             <p id="google-password-mismatch" class="form-error" role="alert">
               Las contraseñas no coinciden.

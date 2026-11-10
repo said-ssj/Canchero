@@ -10,7 +10,10 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatTableModule } from '@angular/material/table';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { AdminContext } from '../admin-context.service';
 import { CatalogService } from '@core/services/catalog.service';
 import { AuthService } from '@core/auth/auth.service';
@@ -39,7 +42,10 @@ import {
     MatSelectModule,
     MatButtonToggleModule,
     MatTableModule,
+    MatPaginatorModule,
     MatTooltipModule,
+    MatProgressSpinnerModule,
+    MatProgressBarModule,
   ],
   templateUrl: './admin-catalogo.html',
   styleUrl: './admin-catalogo.css',
@@ -50,7 +56,9 @@ export class AdminCatalogo {
   readonly auth = inject(AuthService);
 
   readonly currentSedeId = computed(() => this.context.venue()?.id ?? null);
-  readonly currentSedeName = computed(() => this.context.venue()?.nombre ?? 'Sin sede seleccionada');
+  readonly currentSedeName = computed(
+    () => this.context.venue()?.nombre ?? 'Sin sede seleccionada',
+  );
 
   // Pestaña activa
   readonly activeTab = signal<'productos' | 'categorias'>('productos');
@@ -108,13 +116,15 @@ export class AdminCatalogo {
   }
 
   obtenerIconoProducto(p: Producto): string {
-    const cat = this.catalog.categories().find(
-      (c) =>
-        (p.categoriaId != null && Number(c.id) === Number(p.categoriaId)) ||
-        (c.nombre &&
-          p.categoriaNombre &&
-          c.nombre.toLowerCase().trim() === p.categoriaNombre.toLowerCase().trim()),
-    );
+    const cat = this.catalog
+      .categories()
+      .find(
+        (c) =>
+          (p.categoriaId != null && Number(c.id) === Number(p.categoriaId)) ||
+          (c.nombre &&
+            p.categoriaNombre &&
+            c.nombre.toLowerCase().trim() === p.categoriaNombre.toLowerCase().trim()),
+      );
     if (cat?.icono && cat.icono !== 'category') {
       return cat.icono;
     }
@@ -165,7 +175,8 @@ export class AdminCatalogo {
     () => this.catalog.products().filter((p) => p.estado !== 'I').length,
   );
   readonly lowStockCount = computed(
-    () => this.catalog.products().filter((p) => p.stock <= p.stockMinimo && p.estado !== 'I').length,
+    () =>
+      this.catalog.products().filter((p) => p.stock <= p.stockMinimo && p.estado !== 'I').length,
   );
   readonly averageMargin = computed(() => {
     const prods = this.catalog.products().filter((p) => p.precioVenta > 0 && p.estado !== 'I');
@@ -197,6 +208,30 @@ export class AdminCatalogo {
       return true;
     });
   });
+
+  readonly displayedColumnsProductos = [
+    'producto',
+    'categoria',
+    'codigo',
+    'presentacion',
+    'costo',
+    'precioVenta',
+    'margen',
+    'stock',
+    'estado',
+    'acciones',
+  ];
+  readonly pageIndex = signal(0);
+  readonly pageSize = signal(10);
+  readonly paginatedProducts = computed(() => {
+    const start = this.pageIndex() * this.pageSize();
+    return this.filteredProducts().slice(start, start + this.pageSize());
+  });
+
+  onProductsPage(event: PageEvent): void {
+    this.pageIndex.set(event.pageIndex);
+    this.pageSize.set(event.pageSize);
+  }
 
   // Lista filtrada de categorías
   readonly filteredCategories = computed(() => {

@@ -625,7 +625,7 @@ a:focus-visible {
   background-color: transparent !important;
   box-shadow: none !important;
   outline: none !important;
-  color: var(--can-color-primary, #27802D) !important;
+  color: var(--can-color-primary, #27802d) !important;
 }
 
 .btn.icon-only:hover .material-symbols-outlined,
@@ -640,7 +640,7 @@ a:focus-visible {
 .btn-icon-action:hover .material-symbols-outlined,
 .btn-icon-action:active .material-symbols-outlined,
 .btn-icon-action:focus .material-symbols-outlined {
-  color: var(--can-color-primary, #27802D) !important;
+  color: var(--can-color-primary, #27802d) !important;
 }
 
 /* Modo oscuro para botones de solo icono */
@@ -2839,15 +2839,38 @@ body.dark-theme .itinerario-subbar {
 /* ==========================================================================
    MAT-BUTTON-TOGGLE GLOBAL NORMALIZATION (4PX RADIUS, NO CHECKMARK, BRAND GREEN)
    ========================================================================== */
-/* 1. Ocultar completamente el indicador de verificación / checkmark de Material MDC */
-.mat-button-toggle-checked-indicator,
-.mat-pseudo-checkbox,
-.mat-button-toggle-checked .mat-button-toggle-checked-indicator,
-mat-button-toggle .mat-button-toggle-checked-indicator {
-  display: none !important;
-  width: 0 !important;
-  height: 0 !important;
-  visibility: hidden !important;
+/* 1. Indicador de verificación (check) del botón activo: VISIBLE y alineado a la derecha del texto.
+   (Antes se ocultaba con display:none pero el contenedor seguía reservando espacio vacío.) */
+.mat-button-toggle .mat-button-toggle-checkbox-wrapper {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  order: 2;
+  margin: 0 0 0 6px !important;
+  padding: 0 !important;
+}
+
+.mat-button-toggle .mat-button-toggle-checkbox-wrapper .mat-pseudo-checkbox {
+  display: inline-block !important;
+  visibility: visible !important;
+  width: 16px !important;
+  height: 16px !important;
+  --mat-pseudo-checkbox-minimal-selected-checkmark-color: #1e3a1e;
+  --mat-pseudo-checkbox-minimal-disabled-selected-checkmark-color: #94a3b8;
+  color: #1e3a1e;
+}
+
+:root.dark-theme .mat-button-toggle .mat-button-toggle-checkbox-wrapper .mat-pseudo-checkbox,
+body.dark-theme .mat-button-toggle .mat-button-toggle-checkbox-wrapper .mat-pseudo-checkbox {
+  --mat-pseudo-checkbox-minimal-selected-checkmark-color: #4ade80;
+  color: #4ade80;
+}
+
+.mat-button-toggle .mat-button-toggle-label-content {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
 }
 
 :root,
@@ -2903,26 +2926,50 @@ mat-button-toggle-group mat-button-toggle,
   border-radius: 0 !important;
 }
 
-.mat-button-toggle-group-appearance-standard:not(.mat-button-toggle-vertical) .mat-button-toggle:first-of-type,
-.mat-button-toggle-group-appearance-standard:not(.mat-button-toggle-vertical) .mat-button-toggle:first-of-type .mat-button-toggle-button,
-.mat-button-toggle-group-appearance-standard:not(.mat-button-toggle-vertical) .mat-button-toggle:first-of-type .mat-button-toggle-button::before,
-.mat-button-toggle-group-appearance-standard:not(.mat-button-toggle-vertical) .mat-button-toggle:first-of-type .mat-button-toggle-focus-overlay,
-.mat-button-toggle-group-appearance-standard.mat-button-toggle-vertical .mat-button-toggle:first-of-type,
-.mat-button-toggle-group-appearance-standard.mat-button-toggle-vertical .mat-button-toggle:first-of-type .mat-button-toggle-button,
-.mat-button-toggle-group-appearance-standard.mat-button-toggle-vertical .mat-button-toggle:first-of-type .mat-button-toggle-button::before {
+.mat-button-toggle-group-appearance-standard:not(.mat-button-toggle-vertical)
+  .mat-button-toggle:first-of-type,
+.mat-button-toggle-group-appearance-standard:not(.mat-button-toggle-vertical)
+  .mat-button-toggle:first-of-type
+  .mat-button-toggle-button,
+.mat-button-toggle-group-appearance-standard:not(.mat-button-toggle-vertical)
+  .mat-button-toggle:first-of-type
+  .mat-button-toggle-button::before,
+.mat-button-toggle-group-appearance-standard:not(.mat-button-toggle-vertical)
+  .mat-button-toggle:first-of-type
+  .mat-button-toggle-focus-overlay,
+.mat-button-toggle-group-appearance-standard.mat-button-toggle-vertical
+  .mat-button-toggle:first-of-type,
+.mat-button-toggle-group-appearance-standard.mat-button-toggle-vertical
+  .mat-button-toggle:first-of-type
+  .mat-button-toggle-button,
+.mat-button-toggle-group-appearance-standard.mat-button-toggle-vertical
+  .mat-button-toggle:first-of-type
+  .mat-button-toggle-button::before {
   border-top-left-radius: 4px !important;
   border-bottom-left-radius: 4px !important;
   border-top-right-radius: 0 !important;
   border-bottom-right-radius: 0 !important;
 }
 
-.mat-button-toggle-group-appearance-standard:not(.mat-button-toggle-vertical) .mat-button-toggle:last-of-type,
-.mat-button-toggle-group-appearance-standard:not(.mat-button-toggle-vertical) .mat-button-toggle:last-of-type .mat-button-toggle-button,
-.mat-button-toggle-group-appearance-standard:not(.mat-button-toggle-vertical) .mat-button-toggle:last-of-type .mat-button-toggle-button::before,
-.mat-button-toggle-group-appearance-standard:not(.mat-button-toggle-vertical) .mat-button-toggle:last-of-type .mat-button-toggle-focus-overlay,
-.mat-button-toggle-group-appearance-standard.mat-button-toggle-vertical .mat-button-toggle:last-of-type,
-.mat-button-toggle-group-appearance-standard.mat-button-toggle-vertical .mat-button-toggle:last-of-type .mat-button-toggle-button,
-.mat-button-toggle-group-appearance-standard.mat-button-toggle-vertical .mat-button-toggle:last-of-type .mat-button-toggle-button::before {
+.mat-button-toggle-group-appearance-standard:not(.mat-button-toggle-vertical)
+  .mat-button-toggle:last-of-type,
+.mat-button-toggle-group-appearance-standard:not(.mat-button-toggle-vertical)
+  .mat-button-toggle:last-of-type
+  .mat-button-toggle-button,
+.mat-button-toggle-group-appearance-standard:not(.mat-button-toggle-vertical)
+  .mat-button-toggle:last-of-type
+  .mat-button-toggle-button::before,
+.mat-button-toggle-group-appearance-standard:not(.mat-button-toggle-vertical)
+  .mat-button-toggle:last-of-type
+  .mat-button-toggle-focus-overlay,
+.mat-button-toggle-group-appearance-standard.mat-button-toggle-vertical
+  .mat-button-toggle:last-of-type,
+.mat-button-toggle-group-appearance-standard.mat-button-toggle-vertical
+  .mat-button-toggle:last-of-type
+  .mat-button-toggle-button,
+.mat-button-toggle-group-appearance-standard.mat-button-toggle-vertical
+  .mat-button-toggle:last-of-type
+  .mat-button-toggle-button::before {
   border-top-right-radius: 4px !important;
   border-bottom-right-radius: 4px !important;
   border-top-left-radius: 0 !important;
@@ -2947,7 +2994,7 @@ mat-button-toggle-group mat-button-toggle,
 .mat-button-toggle-checked mat-icon,
 .mat-admin-shell .mat-button-toggle-checked .material-symbols-outlined,
 .mat-button-toggle-checked .material-symbols-outlined {
-  color: #27802D !important;
+  color: #27802d !important;
 }
 
 .chip-filter,
@@ -3018,8 +3065,14 @@ body.dark-theme .mat-button-toggle .mat-button-toggle-label-content,
 :root.dark-theme .mat-button-toggle + .mat-button-toggle,
 body.dark-theme .mat-button-toggle + .mat-button-toggle,
 .dark-theme .mat-button-toggle + .mat-button-toggle,
-:root.dark-theme .mat-button-toggle-group-appearance-standard .mat-button-toggle + .mat-button-toggle,
-body.dark-theme .mat-button-toggle-group-appearance-standard .mat-button-toggle + .mat-button-toggle {
+:root.dark-theme
+  .mat-button-toggle-group-appearance-standard
+  .mat-button-toggle
+  + .mat-button-toggle,
+body.dark-theme
+  .mat-button-toggle-group-appearance-standard
+  .mat-button-toggle
+  + .mat-button-toggle {
   border-left: 1px solid rgba(255, 255, 255, 0.12) !important;
 }
 
@@ -3031,9 +3084,15 @@ body.dark-theme .mat-button-toggle:hover:not(.mat-button-toggle-checked),
   color: #ffffff !important;
 }
 
-:root.dark-theme .mat-button-toggle:hover:not(.mat-button-toggle-checked) .mat-button-toggle-label-content,
-body.dark-theme .mat-button-toggle:hover:not(.mat-button-toggle-checked) .mat-button-toggle-label-content,
-.dark-theme mat-button-toggle:hover:not(.mat-button-toggle-checked) .mat-button-toggle-label-content {
+:root.dark-theme
+  .mat-button-toggle:hover:not(.mat-button-toggle-checked)
+  .mat-button-toggle-label-content,
+body.dark-theme
+  .mat-button-toggle:hover:not(.mat-button-toggle-checked)
+  .mat-button-toggle-label-content,
+.dark-theme
+  mat-button-toggle:hover:not(.mat-button-toggle-checked)
+  .mat-button-toggle-label-content {
   color: #ffffff !important;
 }
 
@@ -3090,7 +3149,7 @@ body.dark-theme .segmented button:hover:not(.active),
 body.dark-theme .segmented button.active,
 .dark-theme .segmented button.active {
   background: rgba(39, 128, 45, 0.3) !important;
-  border-color: #27802D !important;
+  border-color: #27802d !important;
   color: #4ade80 !important;
   font-weight: 700 !important;
 }
@@ -3160,7 +3219,7 @@ body.dark-theme .freq-btn:hover:not(.active),
 body.dark-theme .freq-btn.active,
 .dark-theme .freq-btn.active {
   background: rgba(39, 128, 45, 0.3) !important;
-  border-color: #27802D !important;
+  border-color: #27802d !important;
   color: #4ade80 !important;
   font-weight: 700 !important;
 }
@@ -3362,7 +3421,6 @@ body.dark-theme .btn-historial:hover,
   display: none !important;
 }
 
-
 /* ==========================================================================
    PROFILE HERO COVER ACTIONS (GLOBAL)
    ========================================================================== */
@@ -3423,23 +3481,23 @@ body.dark-theme .btn-historial:hover,
   color: #15803d !important;
 }
 
-[data-theme="dark"] .btn-cover-secondary,
+[data-theme='dark'] .btn-cover-secondary,
 .dark-theme .btn-cover-secondary {
   background: #1e293b !important;
   color: #f1f5f9 !important;
   border-color: rgba(255, 255, 255, 0.18) !important;
 }
-[data-theme="dark"] .btn-cover-secondary:hover:not(:disabled),
+[data-theme='dark'] .btn-cover-secondary:hover:not(:disabled),
 .dark-theme .btn-cover-secondary:hover:not(:disabled) {
   background: #334155 !important;
 }
-[data-theme="dark"] .btn-cover-icon,
+[data-theme='dark'] .btn-cover-icon,
 .dark-theme .btn-cover-icon {
   background: #1e293b !important;
   color: #f1f5f9 !important;
   border-color: rgba(255, 255, 255, 0.18) !important;
 }
-[data-theme="dark"] .btn-cover-icon:hover:not(:disabled),
+[data-theme='dark'] .btn-cover-icon:hover:not(:disabled),
 .dark-theme .btn-cover-icon:hover:not(:disabled) {
   background: #334155 !important;
   color: #4ade80 !important;
@@ -3479,7 +3537,9 @@ button.nav-search-btn {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  transition: color 0.15s ease, transform 0.15s ease !important;
+  transition:
+    color 0.15s ease,
+    transform 0.15s ease !important;
 }
 
 .admin-top-actions .btn-bell:hover,
@@ -3497,7 +3557,7 @@ button.nav-search-btn:hover {
   background: transparent !important;
   background-color: transparent !important;
   box-shadow: none !important;
-  color: var(--color-brand-green, #27802D) !important;
+  color: var(--color-brand-green, #27802d) !important;
 }
 
 .admin-top-actions .btn-bell mat-icon,
@@ -3519,7 +3579,7 @@ button.nav-search-btn:hover {
 .btn-theme-toggle:hover mat-icon,
 .nav-search-btn:hover .material-symbols-outlined,
 .btn-theme-toggle:hover .material-symbols-outlined {
-  color: var(--color-brand-green, #27802D) !important;
+  color: var(--color-brand-green, #27802d) !important;
 }
 
 /* El círculo del avatar de perfil es el único elemento visible sin recuadro cuadrado */
@@ -3535,6 +3595,365 @@ button.nav-search-btn:hover {
 }
 
 .profile-avatar-btn:hover .user-avatar-badge {
-  outline: 2px solid var(--color-brand-green, #27802D) !important;
+  outline: 2px solid var(--color-brand-green, #27802d) !important;
   outline-offset: 1px !important;
+}
+
+/* ==========================================================================
+   CANCHERO UI KIT — Angular Material (outline) estandarizado
+   Utilidades globales: .cn-field, .cn-filterbar, .cn-loader, .btn-photo-upload,
+   .active-check. Compatibles con modo claro/oscuro (.dark-theme).
+   ========================================================================== */
+
+/* Campos outline compactos y alineados (sin espacio inferior de validación) */
+.mat-mdc-form-field.cn-field {
+  width: 100%;
+  --mat-form-field-container-height: 44px;
+  --mat-form-field-container-vertical-padding: 10px;
+  --mat-form-field-filled-with-label-container-padding-top: 10px;
+  --mat-form-field-outlined-outline-color: var(--color-border, #cbd5e1);
+  --mat-form-field-outlined-hover-outline-color: #94a3b8;
+  --mat-form-field-outlined-focus-outline-color: var(--color-brand-green, #27802d);
+  --mat-form-field-outlined-focus-label-text-color: var(--color-brand-green, #27802d);
+  --mat-form-field-outlined-caret-color: var(--color-brand-green, #27802d);
+  --mat-form-field-container-text-size: 13px;
+}
+
+.mat-mdc-form-field.cn-field .mat-mdc-form-field-icon-prefix > .mat-icon {
+  padding: 0 8px 0 12px;
+  color: var(--color-brand-green, #27802d);
+  font-size: 20px;
+  width: 36px;
+  height: 20px;
+  box-sizing: content-box;
+}
+
+/* Textareas conservan su altura natural */
+.mat-mdc-form-field.cn-field.cn-field-textarea {
+  --mat-form-field-container-height: auto;
+}
+
+/* Barra de filtros: todos los controles centrados verticalmente en la misma fila */
+.cn-filterbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.cn-filterbar .mat-mdc-form-field {
+  --mat-form-field-container-height: 44px;
+  --mat-form-field-container-vertical-padding: 10px;
+}
+
+.cn-filterbar .mat-mdc-form-field.cn-field:not(.w-full) {
+  width: auto;
+  flex: 1 1 180px;
+}
+
+.cn-filterbar .mat-button-toggle-group {
+  height: 44px;
+  align-items: stretch;
+}
+
+.cn-filterbar .mat-button-toggle-group .mat-button-toggle-button {
+  height: 100%;
+}
+
+.cn-filterbar .mat-mdc-form-field-subscript-wrapper {
+  display: none;
+}
+
+/* Botón de subida de fotos (Sedes y Canchas): fondo blanco, contorno verde */
+.btn.btn-photo-upload,
+.btn-photo-upload {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #ffffff !important;
+  color: var(--color-brand-green, #27802d) !important;
+  border: 1.5px solid var(--color-brand-green, #27802d) !important;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn.btn-photo-upload:hover:not(:disabled) {
+  background: #f1f8f2 !important;
+}
+
+.btn.btn-photo-upload:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+:root.dark-theme .btn.btn-photo-upload,
+body.dark-theme .btn.btn-photo-upload {
+  background: transparent !important;
+  color: #4ade80 !important;
+  border-color: #4ade80 !important;
+}
+
+.cancha-photo-dropzone {
+  background: transparent !important;
+  border: 0 !important;
+  padding: 0 !important;
+}
+
+/* Icono de check de botones/chips activos (filtros y pestañas personalizadas) */
+.active-check {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  line-height: 18px;
+  margin-left: 6px;
+  flex-shrink: 0;
+  color: currentColor;
+}
+
+/* Cargadores Angular Material */
+.cn-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 16px;
+  width: 100%;
+  gap: 12px;
+  color: #64748b;
+  font-size: 14px;
+}
+
+:root.dark-theme .cn-loader,
+body.dark-theme .cn-loader {
+  color: #94a3b8;
+}
+
+.cn-top-progress {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  width: 100%;
+}
+
+/* Modo oscuro: campos outline y paneles de mat-select */
+:root.dark-theme .mat-mdc-form-field,
+body.dark-theme .mat-mdc-form-field {
+  --mat-form-field-outlined-outline-color: rgba(255, 255, 255, 0.22);
+  --mat-form-field-outlined-hover-outline-color: rgba(255, 255, 255, 0.4);
+  --mat-form-field-outlined-focus-outline-color: #4ade80;
+  --mat-form-field-outlined-label-text-color: #94a3b8;
+  --mat-form-field-outlined-hover-label-text-color: #cbd5e1;
+  --mat-form-field-outlined-focus-label-text-color: #4ade80;
+  --mat-form-field-outlined-input-text-color: #f1f5f9;
+  --mat-form-field-outlined-input-text-placeholder-color: #94a3b8;
+  --mat-form-field-outlined-caret-color: #4ade80;
+  --mat-select-enabled-trigger-text-color: #f1f5f9;
+  --mat-select-enabled-arrow-color: #94a3b8;
+  --mat-select-placeholder-text-color: #94a3b8;
+}
+
+:root.dark-theme .mat-mdc-form-field .mat-mdc-form-field-icon-prefix > .mat-icon,
+body.dark-theme .mat-mdc-form-field .mat-mdc-form-field-icon-prefix > .mat-icon {
+  color: #4ade80;
+}
+
+body.dark-theme .mat-mdc-select-panel,
+:root.dark-theme .mat-mdc-select-panel,
+body.dark-theme .mat-mdc-autocomplete-panel,
+:root.dark-theme .mat-mdc-autocomplete-panel {
+  background: #1f1f1f !important;
+  --mat-select-panel-background-color: #1f1f1f;
+  --mat-autocomplete-background-color: #1f1f1f;
+  --mat-option-label-text-color: #f1f5f9;
+  --mat-option-selected-state-label-text-color: #4ade80;
+  --mat-option-hover-state-layer-color: rgba(255, 255, 255, 0.08);
+  --mat-option-focus-state-layer-color: rgba(255, 255, 255, 0.12);
+}
+
+/* ==========================================================================
+   MICROINTERACCIONES Y BOTONES ANGULAR MATERIAL (REQUERIMIENTOS 1.1, 1.2, 1.3)
+   ========================================================================== */
+
+/* Botones con relleno (mat-flat-button / primary) y contorno (mat-stroked-button / outline / .btn):
+   Oscurecer o resaltar sutilmente al hacer hover */
+.btn:not(:disabled),
+.mat-mdc-unelevated-button:not(:disabled),
+.mat-mdc-outlined-button:not(:disabled),
+.btn.primary:not(:disabled),
+.btn-primary:not(:disabled),
+.btn.outline:not(:disabled),
+.btn-outline:not(:disabled),
+.btn-secondary:not(:disabled) {
+  transition:
+    filter 0.16s ease,
+    background-color 0.16s ease,
+    border-color 0.16s ease,
+    color 0.16s ease;
+}
+
+.btn:not(.primary):not(.btn-primary):not(.secondary):not(.btn-secondary):not(.icon-only):hover:not(
+    :disabled
+  ),
+.management-card .btn:not(.primary):not(.btn-primary):hover:not(:disabled) {
+  background-color: rgba(39, 128, 45, 0.1) !important;
+  border-color: var(--color-brand-green, #27802d) !important;
+  color: var(--color-brand-green-dark, #1e6624) !important;
+}
+
+.mat-mdc-unelevated-button:hover:not(:disabled),
+.btn.primary:hover:not(:disabled),
+.btn-primary:hover:not(:disabled) {
+  filter: brightness(0.92);
+}
+
+.mat-mdc-outlined-button:hover:not(:disabled),
+.btn.outline:hover:not(:disabled),
+.btn-outline:hover:not(:disabled),
+.btn-secondary:hover:not(:disabled) {
+  background-color: transparent;
+}
+
+:root.dark-theme .mat-mdc-outlined-button:hover:not(:disabled),
+body.dark-theme .mat-mdc-outlined-button:hover:not(:disabled),
+:root.dark-theme .btn.outline:hover:not(:disabled),
+body.dark-theme .btn.outline:hover:not(:disabled) {
+  background-color: transparent;
+}
+
+/* Botones de solo icono (mat-icon-button / .icon-only):
+   Sin contorno, sin fondo por defecto, área de click ajustada */
+.mat-mdc-icon-button,
+button[mat-icon-button],
+.btn.icon-only,
+.btn-icon {
+  border: none !important;
+  background: transparent;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.mat-mdc-icon-button:hover:not(:disabled),
+button[mat-icon-button]:hover:not(:disabled),
+.btn.icon-only:hover:not(:disabled),
+.btn-icon:hover:not(:disabled) {
+  color: var(--color-brand-green, #27802d);
+  background-color: transparent;
+}
+
+/* Botón de cambio de tema: sin fondo en hover, solo cambio de color de icono */
+app-theme-toggle button[mat-icon-button],
+app-theme-toggle button[mat-icon-button]:hover:not(:disabled),
+app-theme-toggle button[mat-icon-button]:focus,
+app-theme-toggle button[mat-icon-button]:active,
+.btn-theme-toggle,
+.btn-theme-toggle:hover:not(:disabled),
+.btn-theme-toggle:focus,
+.btn-theme-toggle:active {
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  --mat-icon-button-state-layer-color: transparent !important;
+}
+
+/* Botón menú hamburguesa de la barra pública: solo visible en celular (<= 767px) */
+.navbar #mobileMenuBtn.mobile-menu-btn {
+  display: none !important;
+}
+
+@media (min-width: 768px) {
+  .navbar #mobileMenuBtn.mobile-menu-btn {
+    display: none !important;
+  }
+
+  .navbar .nav-menu {
+    display: flex !important;
+    position: static !important;
+    width: auto !important;
+    background-color: transparent !important;
+    flex-direction: row !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border-top: none !important;
+    align-items: center !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .navbar #mobileMenuBtn.mobile-menu-btn {
+    display: inline-flex !important;
+  }
+}
+
+/* ==========================================================================
+   TABLAS MATERIAL (mat-table), PAGINADORES (mat-paginator) Y DATEPICKER
+   ========================================================================== */
+table.mat-mdc-table {
+  width: 100%;
+  background: transparent;
+}
+
+.mat-mdc-paginator {
+  background: transparent !important;
+  border-top: 1px solid var(--color-border, #e2e8f0);
+}
+
+:root.dark-theme .mat-mdc-table,
+body.dark-theme .mat-mdc-table {
+  --mat-table-background-color: transparent;
+  --mat-table-header-headline-color: #94a3b8;
+  --mat-table-row-item-label-text-color: #e2e8f0;
+  --mat-table-row-item-outline-color: rgba(255, 255, 255, 0.08);
+}
+
+:root.dark-theme .mat-mdc-paginator,
+body.dark-theme .mat-mdc-paginator {
+  color: #cbd5e1 !important;
+  border-top-color: rgba(255, 255, 255, 0.12);
+  --mat-paginator-container-text-color: #cbd5e1;
+  --mat-paginator-enabled-icon-color: #cbd5e1;
+  --mat-paginator-disabled-icon-color: rgba(255, 255, 255, 0.3);
+}
+
+:root.dark-theme .mat-datepicker-content,
+body.dark-theme .mat-datepicker-content {
+  background-color: #1f1f1f !important;
+  color: #f1f5f9 !important;
+  --mat-datepicker-calendar-container-background-color: #1f1f1f;
+  --mat-datepicker-calendar-container-text-color: #f1f5f9;
+  --mat-datepicker-calendar-date-text-color: #e2e8f0;
+  --mat-datepicker-calendar-body-label-text-color: #94a3b8;
+  --mat-datepicker-calendar-header-text-color: #cbd5e1;
+  --mat-datepicker-calendar-period-button-text-color: #f1f5f9;
+  --mat-datepicker-calendar-period-button-icon-color: #94a3b8;
+  --mat-datepicker-calendar-navigation-button-icon-color: #cbd5e1;
+  --mat-datepicker-calendar-date-selected-state-background-color: #27802d;
+  --mat-datepicker-calendar-date-selected-state-text-color: #ffffff;
+}
+
+/* Corrección global para evitar que la línea de contorno atraviese etiquetas flotantes */
+.composer-field .mat-mdc-floating-label,
+.composer-field .mdc-floating-label,
+.cn-field-textarea .mat-mdc-floating-label,
+.cn-field-textarea .mdc-floating-label {
+  background: var(--color-surface, #ffffff) !important;
+  padding: 0 6px !important;
+  z-index: 5 !important;
+  border-radius: 4px;
+}
+
+.composer-field .mdc-notched-outline__notch,
+.cn-field-textarea .mdc-notched-outline__notch {
+  border-top: none !important;
+}
+
+:root.dark-theme .composer-field .mat-mdc-floating-label,
+body.dark-theme .composer-field .mat-mdc-floating-label,
+:root.dark-theme .cn-field-textarea .mat-mdc-floating-label,
+body.dark-theme .cn-field-textarea .mdc-floating-label {
+  background: var(--color-surface-card, #18181b) !important;
 }

@@ -17,7 +17,12 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { MAT_RIPPLE_GLOBAL_OPTIONS } from '@angular/material/core';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatTableModule } from '@angular/material/table';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MAT_RIPPLE_GLOBAL_OPTIONS, MatNativeDateModule } from '@angular/material/core';
+import { applyDateMaskToInput, isoToLocalDate, localDateToIso } from '@shared/utils/date-mask.util';
 
 import { AdminContext } from '../admin-context.service';
 import { CreditService } from '@core/services/credit.service';
@@ -44,6 +49,11 @@ import type {
     MatInputModule,
     MatButtonToggleModule,
     MatTooltipModule,
+    MatProgressSpinnerModule,
+    MatTableModule,
+    MatPaginatorModule,
+    MatDatepickerModule,
+    MatNativeDateModule,
   ],
   providers: [{ provide: MAT_RIPPLE_GLOBAL_OPTIONS, useValue: { disabled: true } }],
   templateUrl: './admin-creditos.html',
@@ -88,6 +98,48 @@ export class AdminCreditos {
 
   readonly modalDetalleOpen = signal(false);
   readonly cuentaDetalle = signal<CuentaPorCobrar | null>(null);
+
+  readonly cuentasColumns = [
+    'cliente',
+    'concepto',
+    'original',
+    'abonado',
+    'saldo',
+    'vencimiento',
+    'estado',
+    'acciones',
+  ] as const;
+  readonly abonosColumns = [
+    'fecha',
+    'medio',
+    'operacion',
+    'cajero',
+    'monto',
+    'comprobante',
+  ] as const;
+  readonly pageIndex = signal(0);
+  readonly pageSize = signal(10);
+  readonly cuentasPaginadas = computed(() => {
+    const all = this.creditService.cuentasFiltradas();
+    const start = this.pageIndex() * this.pageSize();
+    return all.slice(start, start + this.pageSize());
+  });
+  readonly nuevoFechaVencimientoDate = computed(() => isoToLocalDate(this.nuevoFechaVencimiento()));
+
+  onPageChange(event: PageEvent): void {
+    this.pageIndex.set(event.pageIndex);
+    this.pageSize.set(event.pageSize);
+  }
+
+  onVencimientoDateChange(date: Date | null): void {
+    const iso = localDateToIso(date);
+    if (iso) this.nuevoFechaVencimiento.set(iso);
+  }
+
+  onVencimientoMaskInput(event: Event): void {
+    const { iso } = applyDateMaskToInput(event);
+    if (iso) this.nuevoFechaVencimiento.set(iso);
+  }
 
   constructor() {
     effect(() => {
@@ -216,7 +268,9 @@ export class AdminCreditos {
       });
 
       this.modalNuevaCuentaOpen.set(false);
-      this.notice.emit(`Cuenta creada exitosamente para ${created.clienteNombre} (S/ ${monto.toFixed(2)})`);
+      this.notice.emit(
+        `Cuenta creada exitosamente para ${created.clienteNombre} (S/ ${monto.toFixed(2)})`,
+      );
     } catch (err: any) {
       this.notice.emit(err?.message || 'Error al crear la cuenta de crédito');
     }

@@ -39,12 +39,9 @@
 
     <!-- SECCIÓN DE CANCHAS: CARGA, ERROR, VACÍO O LISTADO -->
     @if (isLoading()) {
-      <!-- Skeletons estáticos para canchas -->
-      <div class="skeletons" aria-busy="true" role="status" aria-label="Cargando canchas">
-        <span class="skeleton short"></span>
-        <span class="skeleton"></span>
-        <span class="skeleton photo"></span>
-        <span class="skeleton button"></span>
+      <div class="cn-loader" aria-busy="true" role="status" aria-label="Cargando canchas">
+        <mat-spinner diameter="48" color="primary"></mat-spinner>
+        <span>Cargando información...</span>
       </div>
     } @else if (hasError()) {
       <!-- Estado de Error de Catálogo -->
@@ -90,12 +87,6 @@
             <span>Agregar cancha</span>
           </button>
         </article>
-
-        <app-admin-add-action
-          label="Agregar nueva cancha"
-          description="Datos, fotografías y tarifas."
-          (activated)="abrirModalCrearCancha()"
-        />
       }
     } @else {
       <!-- LISTADO DE CANCHAS -->
@@ -216,54 +207,71 @@
         <section class="management-editor-section">
           <h2><span>01</span>Identidad</h2>
 
-          <label class="field">
-            <span>Nombre de cancha</span>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+            <mat-label>Nombre de cancha</mat-label>
             <input
+              matInput
               type="text"
               [value]="nuevaCanchaNombre()"
               (input)="nuevaCanchaNombre.set($any($event.target).value)"
               placeholder="Ej. Cancha 1 · Grass Sintético"
             />
-          </label>
+          </mat-form-field>
 
           <div class="grid two">
-            <label class="field">
-              <span>Sede</span>
+            <div>
               @if (sedesDelDueno().length === 0) {
-                <select disabled>
-                  <option value="">Sin sedes disponibles</option>
-                </select>
-              } @else {
-                <select
-                  [value]="nuevaCanchaSedeId() || ''"
-                  (change)="
-                    nuevaCanchaSedeId.set(
-                      $any($event.target).value ? +$any($event.target).value : null
-                    )
-                  "
+                <mat-form-field
+                  appearance="outline"
+                  subscriptSizing="dynamic"
+                  class="cn-field w-full"
                 >
-                  @for (s of sedesDelDueno(); track s.id) {
-                    <option [value]="s.id" [selected]="s.id === nuevaCanchaSedeId()">
-                      {{ s.nombre }}
-                    </option>
-                  }
-                </select>
+                  <mat-label>Sede</mat-label>
+                  <mat-select [disabled]="true" value="">
+                    <mat-option value="">Sin sedes disponibles</mat-option>
+                  </mat-select>
+                </mat-form-field>
+              } @else {
+                <mat-form-field
+                  appearance="outline"
+                  subscriptSizing="dynamic"
+                  class="cn-field w-full"
+                >
+                  <mat-label>Sede</mat-label>
+                  <mat-select
+                    [value]="nuevaCanchaSedeId()"
+                    (selectionChange)="
+                      nuevaCanchaSedeId.set($event.value != null ? +$event.value : null)
+                    "
+                  >
+                    @for (s of sedesDelDueno(); track s.id) {
+                      <mat-option [value]="s.id">{{ s.nombre }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
               }
               <small class="muted">Sede a la que pertenece esta cancha.</small>
-            </label>
+            </div>
 
-            <label class="field">
-              <span>Formato</span>
-              <select
-                [value]="nuevaCanchaFormato()"
-                (change)="nuevaCanchaFormato.set($any($event.target).value)"
+            <div>
+              <mat-form-field
+                appearance="outline"
+                subscriptSizing="dynamic"
+                class="cn-field w-full"
               >
-                @for (fmt of formatosCancha; track fmt) {
-                  <option [value]="fmt" [selected]="fmt === nuevaCanchaFormato()">{{ fmt }}</option>
-                }
-              </select>
+                <mat-label>Formato</mat-label>
+                <mat-select
+                  [value]="nuevaCanchaFormato()"
+                  [placeholder]="nuevaCanchaFormato()"
+                  (selectionChange)="nuevaCanchaFormato.set($event.value)"
+                >
+                  @for (fmt of formatosCancha; track fmt) {
+                    <mat-option [value]="fmt">{{ fmt }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
               <small class="muted">Cantidad de jugadores por equipo.</small>
-            </label>
+            </div>
           </div>
         </section>
 
@@ -272,33 +280,31 @@
           <h2><span>02</span>Atributos de juego</h2>
 
           <div class="grid two">
-            <label class="field">
-              <span>Superficie</span>
-              <select
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+              <mat-label>Superficie</mat-label>
+              <mat-select
                 [value]="nuevaCanchaSuperficie()"
-                (change)="nuevaCanchaSuperficie.set($any($event.target).value)"
+                [placeholder]="nuevaCanchaSuperficie()"
+                (selectionChange)="nuevaCanchaSuperficie.set($event.value)"
               >
                 @for (sup of superficiesCancha; track sup) {
-                  <option [value]="sup" [selected]="sup === nuevaCanchaSuperficie()">
-                    {{ sup }}
-                  </option>
+                  <mat-option [value]="sup">{{ sup }}</mat-option>
                 }
-              </select>
-            </label>
+              </mat-select>
+            </mat-form-field>
 
-            <label class="field">
-              <span>Cobertura</span>
-              <select
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+              <mat-label>Cobertura</mat-label>
+              <mat-select
                 [value]="nuevaCanchaCobertura()"
-                (change)="nuevaCanchaCobertura.set($any($event.target).value)"
+                [placeholder]="nuevaCanchaCobertura()"
+                (selectionChange)="nuevaCanchaCobertura.set($event.value)"
               >
                 @for (cob of coberturasCancha; track cob) {
-                  <option [value]="cob" [selected]="cob === nuevaCanchaCobertura()">
-                    {{ cob }}
-                  </option>
+                  <mat-option [value]="cob">{{ cob }}</mat-option>
                 }
-              </select>
-            </label>
+              </mat-select>
+            </mat-form-field>
           </div>
 
           <fieldset class="management-checks">
@@ -315,16 +321,20 @@
             }
           </fieldset>
 
-          <label class="field">
-            <span>Descripción adicional</span>
+          <mat-form-field
+            appearance="outline"
+            subscriptSizing="dynamic"
+            class="cn-field-textarea w-full"
+          >
+            <mat-label>Descripción adicional</mat-label>
             <textarea
+              matInput
               rows="3"
               [value]="nuevaCanchaDesc()"
               (input)="nuevaCanchaDesc.set($any($event.target).value)"
               placeholder="Detalles sobre las dimensiones, recomendaciones de calzado o comodidades..."
-            >
-            </textarea>
-          </label>
+            ></textarea>
+          </mat-form-field>
         </section>
 
         <!-- 03 Tarifas y disponibilidad -->
@@ -332,36 +342,39 @@
           <h2><span>03</span>Tarifas y disponibilidad</h2>
 
           <div class="grid two">
-            <label class="field">
-              <span>Tarifa diurna (S/)</span>
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+              <mat-label>Tarifa diurna (S/)</mat-label>
               <input
+                matInput
                 type="number"
                 min="0"
                 step="0.01"
                 [value]="nuevaCanchaTarifa()"
                 (input)="nuevaCanchaTarifa.set(+$any($event.target).value)"
               />
-            </label>
+            </mat-form-field>
 
-            <label class="field">
-              <span>Tarifa nocturna (S/)</span>
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+              <mat-label>Tarifa nocturna (S/)</mat-label>
               <input
+                matInput
                 type="number"
                 min="0"
                 step="0.01"
                 [value]="nuevaCanchaTarifaNoc()"
                 (input)="nuevaCanchaTarifaNoc.set(+$any($event.target).value)"
               />
-            </label>
+            </mat-form-field>
 
-            <label class="field">
-              <span>Inicio de tarifa nocturna</span>
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+              <mat-label>Inicio de tarifa nocturna</mat-label>
               <input
+                matInput
                 type="time"
                 [value]="nuevaCanchaHoraInicioNoche()"
                 (input)="nuevaCanchaHoraInicioNoche.set($any($event.target).value)"
               />
-            </label>
+            </mat-form-field>
           </div>
 
           <div class="row" style="gap: 12px; margin-top: 8px">
@@ -400,15 +413,18 @@
               (change)="onCanchaFotoSelected($event)"
             />
 
-            <!-- Zona Dropzone exigida por admin-canchas.spec.ts (.cancha-photo-dropzone button) -->
-            <div class="cancha-photo-dropzone management-map" style="padding: 20px">
+            <!-- Zona exigida por admin-canchas.spec.ts (.cancha-photo-dropzone button). Mismo botón que /admin/sedes -->
+            <div class="cancha-photo-dropzone">
               <button
                 type="button"
-                class="btn primary"
+                class="btn btn-photo-upload"
+                [disabled]="subiendoFoto()"
                 (click)="triggerInputFotoCancha(); $event.stopPropagation()"
               >
-                <span class="material-symbols-outlined icon" aria-hidden="true">add</span>
-                <span>Seleccionar fotos</span>
+                <span class="material-symbols-outlined icon" aria-hidden="true"
+                  >add_photo_alternate</span
+                >
+                <span>Agregar fotos</span>
               </button>
               <p class="small muted" style="margin-top: 8px">
                 {{
@@ -418,6 +434,7 @@
                 }}
               </p>
               @if (subiendoFoto()) {
+                <mat-progress-bar mode="indeterminate" color="primary"></mat-progress-bar>
                 <small class="muted">Subiendo fotos a la plataforma...</small>
               }
             </div>
@@ -546,6 +563,9 @@
           >
             <span class="material-symbols-outlined icon" aria-hidden="true">schedule</span>
             <span>Horarios</span>
+            @if (tabGestion() === 'horarios') {
+              <mat-icon class="active-check" aria-hidden="true">check</mat-icon>
+            }
           </button>
           <button
             type="button"
@@ -555,6 +575,9 @@
           >
             <span class="material-symbols-outlined icon" aria-hidden="true">coffee</span>
             <span>Descansos ({{ descansosCancha().length }})</span>
+            @if (tabGestion() === 'descansos') {
+              <mat-icon class="active-check" aria-hidden="true">check</mat-icon>
+            }
           </button>
           <button
             type="button"
@@ -569,6 +592,9 @@
                 ({{ reservasAfectadasPorCierres().length }})
               }
             </span>
+            @if (tabGestion() === 'cierres') {
+              <mat-icon class="active-check" aria-hidden="true">check</mat-icon>
+            }
           </button>
         </div>
 
@@ -660,9 +686,14 @@
                       @if (item.activo) {
                         <div class="schedule-ranges">
                           <div class="schedule-range">
-                            <label class="field">
-                              <span>Apertura</span>
+                            <mat-form-field
+                              appearance="outline"
+                              subscriptSizing="dynamic"
+                              class="cn-field"
+                            >
+                              <mat-label>Apertura</mat-label>
                               <input
+                                matInput
                                 type="time"
                                 [value]="item.apertura"
                                 (change)="
@@ -673,11 +704,16 @@
                                   )
                                 "
                               />
-                            </label>
+                            </mat-form-field>
                             <span class="muted">—</span>
-                            <label class="field">
-                              <span>Cierre</span>
+                            <mat-form-field
+                              appearance="outline"
+                              subscriptSizing="dynamic"
+                              class="cn-field"
+                            >
+                              <mat-label>Cierre</mat-label>
                               <input
+                                matInput
                                 type="time"
                                 [value]="item.cierre"
                                 (change)="
@@ -688,7 +724,7 @@
                                   )
                                 "
                               />
-                            </label>
+                            </mat-form-field>
                           </div>
                         </div>
                       }
@@ -787,15 +823,20 @@
               <div class="card card-pad stack" style="gap: 12px">
                 <h3>Añadir nuevo descanso recurrente</h3>
 
-                <label class="field">
-                  <span>Motivo o nombre</span>
+                <mat-form-field
+                  appearance="outline"
+                  subscriptSizing="dynamic"
+                  class="cn-field w-full"
+                >
+                  <mat-label>Motivo o nombre</mat-label>
                   <input
+                    matInput
                     type="text"
                     [value]="nuevoDescansoNombre()"
                     (input)="nuevoDescansoNombre.set($any($event.target).value)"
                     placeholder="Ej. Regado de grass y cepillado"
                   />
-                </label>
+                </mat-form-field>
 
                 <div class="field">
                   <span>Días aplicables</span>
@@ -814,22 +855,32 @@
                 </div>
 
                 <div class="grid two">
-                  <label class="field">
-                    <span>Hora inicio</span>
+                  <mat-form-field
+                    appearance="outline"
+                    subscriptSizing="dynamic"
+                    class="cn-field w-full"
+                  >
+                    <mat-label>Hora inicio</mat-label>
                     <input
+                      matInput
                       type="time"
                       [value]="nuevoDescansoHoraInicio()"
                       (change)="nuevoDescansoHoraInicio.set($any($event.target).value)"
                     />
-                  </label>
-                  <label class="field">
-                    <span>Hora fin</span>
+                  </mat-form-field>
+                  <mat-form-field
+                    appearance="outline"
+                    subscriptSizing="dynamic"
+                    class="cn-field w-full"
+                  >
+                    <mat-label>Hora fin</mat-label>
                     <input
+                      matInput
                       type="time"
                       [value]="nuevoDescansoHoraFin()"
                       (change)="nuevoDescansoHoraFin.set($any($event.target).value)"
                     />
-                  </label>
+                  </mat-form-field>
                 </div>
 
                 @if (nuevoDescansoHoraInicio() > nuevoDescansoHoraFin()) {
@@ -993,34 +1044,67 @@
 
                   @if (nuevoCierreTipo() === 'programado') {
                     <div class="grid two">
-                      <label class="field">
-                        <span>Fecha inicio</span>
+                      <mat-form-field
+                        appearance="outline"
+                        subscriptSizing="dynamic"
+                        class="cn-field w-full"
+                      >
+                        <mat-label>Fecha inicio</mat-label>
                         <input
-                          type="date"
-                          [value]="nuevoCierreFechaInicio()"
-                          (change)="nuevoCierreFechaInicio.set($any($event.target).value)"
+                          matInput
+                          [matDatepicker]="pickerCierreInicio"
+                          [value]="toDate(nuevoCierreFechaInicio())"
+                          placeholder="DD/MM/YYYY"
+                          maxlength="10"
+                          (input)="onDateMaskInput(nuevoCierreFechaInicio, $event)"
+                          (dateChange)="onDatePickerSelect(nuevoCierreFechaInicio, $event.value)"
                         />
-                      </label>
-                      <label class="field">
-                        <span>Fecha fin</span>
+                        <mat-datepicker-toggle
+                          matIconSuffix
+                          [for]="pickerCierreInicio"
+                        ></mat-datepicker-toggle>
+                        <mat-datepicker #pickerCierreInicio></mat-datepicker>
+                        <mat-hint>DD/MM/YYYY</mat-hint>
+                      </mat-form-field>
+                      <mat-form-field
+                        appearance="outline"
+                        subscriptSizing="dynamic"
+                        class="cn-field w-full"
+                      >
+                        <mat-label>Fecha fin</mat-label>
                         <input
-                          type="date"
-                          [value]="nuevoCierreFechaFin()"
-                          (change)="nuevoCierreFechaFin.set($any($event.target).value)"
+                          matInput
+                          [matDatepicker]="pickerCierreFin"
+                          [value]="toDate(nuevoCierreFechaFin())"
+                          placeholder="DD/MM/YYYY"
+                          maxlength="10"
+                          (input)="onDateMaskInput(nuevoCierreFechaFin, $event)"
+                          (dateChange)="onDatePickerSelect(nuevoCierreFechaFin, $event.value)"
                         />
-                      </label>
+                        <mat-datepicker-toggle
+                          matIconSuffix
+                          [for]="pickerCierreFin"
+                        ></mat-datepicker-toggle>
+                        <mat-datepicker #pickerCierreFin></mat-datepicker>
+                        <mat-hint>DD/MM/YYYY</mat-hint>
+                      </mat-form-field>
                     </div>
                   }
 
-                  <label class="field">
-                    <span>Motivo del cierre</span>
+                  <mat-form-field
+                    appearance="outline"
+                    subscriptSizing="dynamic"
+                    class="cn-field w-full"
+                  >
+                    <mat-label>Motivo del cierre</mat-label>
                     <input
+                      matInput
                       type="text"
                       [value]="nuevoCierreMotivo()"
                       (input)="nuevoCierreMotivo.set($any($event.target).value)"
                       placeholder="Mantenimiento de luminarias, lluvia, etc."
                     />
-                  </label>
+                  </mat-form-field>
 
                   @if (errorCierre()) {
                     <p class="small" style="color: #dc2626; font-weight: 700">
@@ -1116,32 +1200,52 @@
 
         <div class="hours-body">
           <div class="stack" style="gap: 12px">
-            <label class="field">
-              <span>Nueva fecha</span>
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+              <mat-label>Nueva fecha</mat-label>
               <input
-                type="date"
-                [value]="reprogramarFecha()"
-                (change)="reprogramarFecha.set($any($event.target).value)"
+                matInput
+                [matDatepicker]="pickerReprogramarFecha"
+                [value]="toDate(reprogramarFecha())"
+                placeholder="DD/MM/YYYY"
+                maxlength="10"
+                (input)="onDateMaskInput(reprogramarFecha, $event)"
+                (dateChange)="onDatePickerSelect(reprogramarFecha, $event.value)"
               />
-            </label>
+              <mat-datepicker-toggle
+                matIconSuffix
+                [for]="pickerReprogramarFecha"
+              ></mat-datepicker-toggle>
+              <mat-datepicker #pickerReprogramarFecha></mat-datepicker>
+              <mat-hint>DD/MM/YYYY</mat-hint>
+            </mat-form-field>
 
             <div class="grid two">
-              <label class="field">
-                <span>Hora inicio</span>
+              <mat-form-field
+                appearance="outline"
+                subscriptSizing="dynamic"
+                class="cn-field w-full"
+              >
+                <mat-label>Hora inicio</mat-label>
                 <input
+                  matInput
                   type="time"
                   [value]="reprogramarHoraInicio()"
                   (change)="reprogramarHoraInicio.set($any($event.target).value)"
                 />
-              </label>
-              <label class="field">
-                <span>Hora fin</span>
+              </mat-form-field>
+              <mat-form-field
+                appearance="outline"
+                subscriptSizing="dynamic"
+                class="cn-field w-full"
+              >
+                <mat-label>Hora fin</mat-label>
                 <input
+                  matInput
                   type="time"
                   [value]="reprogramarHoraFin()"
                   (change)="reprogramarHoraFin.set($any($event.target).value)"
                 />
-              </label>
+              </mat-form-field>
             </div>
           </div>
         </div>
@@ -1231,7 +1335,7 @@
             <div class="card card-pad state" style="padding: 2rem; text-align: center">
               <span
                 class="material-symbols-outlined icon-32"
-                style="color: var(--color-brand-green, #27802D)"
+                style="color: var(--color-brand-green, #27802d)"
                 aria-hidden="true"
                 >check_circle</span
               >
@@ -1304,16 +1408,20 @@
                         gap: 8px;
                       "
                     >
-                      <label class="field">
-                        <span>Nota de resolución o acción correctiva:</span>
+                      <mat-form-field
+                        appearance="outline"
+                        subscriptSizing="dynamic"
+                        class="cn-field-textarea w-full"
+                      >
+                        <mat-label>Nota de resolución o acción correctiva</mat-label>
                         <textarea
+                          matInput
                           rows="2"
                           [value]="notaResolucion()"
                           (input)="notaResolucion.set($any($event.target).value)"
                           placeholder="Ej. Se reparó la luminaria del lado norte."
-                        >
-                        </textarea>
-                      </label>
+                        ></textarea>
+                      </mat-form-field>
                       <div class="row" style="gap: 8px; justify-content: flex-end">
                         <button type="button" class="btn" (click)="cancelarResolucionReporte()">
                           Cancelar
@@ -1347,7 +1455,7 @@
                         border-top: 1px dashed var(--color-border, #e2e8f0);
                       "
                     >
-                      <small style="color: var(--color-brand-green, #27802D); font-weight: 600">
+                      <small style="color: var(--color-brand-green, #27802d); font-weight: 600">
                         Resolución: {{ rep.resolucion }}
                         @if (rep.fechaResolucion) {
                           ({{ rep.fechaResolucion | date: 'dd/MM/yyyy HH:mm' }})

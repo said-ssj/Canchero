@@ -15,10 +15,28 @@ import {
 } from '@core/services/community-profile.service';
 import { ProfileHeader } from '@shared/components/profile-header/profile-header';
 import { NotificationPreferences } from '@shared/components/notification-preferences/notification-preferences';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 
 @Component({
   selector: 'app-community-profile',
-  imports: [FormsModule, RouterLink, DatePipe, ProfileHeader, NotificationPreferences],
+  imports: [
+    FormsModule,
+    RouterLink,
+    DatePipe,
+    ProfileHeader,
+    NotificationPreferences,
+    MatFormFieldModule,
+    MatInputModule,
+    MatIconModule,
+    MatButtonModule,
+    MatProgressSpinnerModule,
+    MatProgressBarModule,
+  ],
   templateUrl: './community-profile.html',
   styleUrl: './community-profile.css',
 })
@@ -72,9 +90,54 @@ export class CommunityProfilePage {
   /* Emoji Picker */
   protected readonly emojiPickerOpen = signal(false);
   protected readonly emojis = signal<string[]>([
-    '⚽', '🏆', '🔥', '👍', '👏', '🎉', '🏃', '🥅', '👟', '🍺', '🍕', '😎', '💪', '📍', '📅', '⚡',
-    '🥇', '🥈', '🥉', '🎯', '❤️', '🙌', '💯', '🤩', '👋', '🥳', '💥', '🤝', '🚀', '🏟️', '🥎', '🏀',
-    '🏐', '🎾', '🏓', '🥊', '🥋', '🥤', '🥪', '🍔', '⭐', '✨', '😃', '😄', '😁', '😆', '🤙', '👊',
+    '⚽',
+    '🏆',
+    '🔥',
+    '👍',
+    '👏',
+    '🎉',
+    '🏃',
+    '🥅',
+    '👟',
+    '🍺',
+    '🍕',
+    '😎',
+    '💪',
+    '📍',
+    '📅',
+    '⚡',
+    '🥇',
+    '🥈',
+    '🥉',
+    '🎯',
+    '❤️',
+    '🙌',
+    '💯',
+    '🤩',
+    '👋',
+    '🥳',
+    '💥',
+    '🤝',
+    '🚀',
+    '🏟️',
+    '🥎',
+    '🏀',
+    '🏐',
+    '🎾',
+    '🏓',
+    '🥊',
+    '🥋',
+    '🥤',
+    '🥪',
+    '🍔',
+    '⭐',
+    '✨',
+    '😃',
+    '😄',
+    '😁',
+    '😆',
+    '🤙',
+    '👊',
   ]);
   private emojiLoaded = false;
 
@@ -110,13 +173,44 @@ export class CommunityProfilePage {
 
   protected readonly isVisitorPerspective = computed(() => !this.isOwnerPerspective());
 
+  protected togglePerspective(): void {
+    const next = this.isOwnerPerspective() ? 'visitor' : 'owner';
+    this.previewRole.set(next);
+    this.shareToast.set(
+      next === 'owner' ? 'Perspectiva: Vista del dueño' : 'Perspectiva: Vista de visitante',
+    );
+    setTimeout(() => this.shareToast.set(''), 2200);
+  }
+
+  protected readonly ownerRating = computed<number>(() => {
+    const p = this.profile();
+    if (!p) return 0;
+    if (Array.isArray(p.reviews) && p.reviews.length > 0) {
+      const sum = p.reviews.reduce((acc, r) => acc + Number(r.rating || 0), 0);
+      return Math.min(5, Math.max(0, sum / p.reviews.length));
+    }
+    if (typeof p.rating === 'number' && !Number.isNaN(p.rating) && p.rating > 0) {
+      return Math.min(5, Math.max(0, p.rating));
+    }
+    return 0;
+  });
+
+  protected readonly filledStarsCount = computed<number>(() =>
+    Math.max(0, Math.min(5, Math.round(this.ownerRating()))),
+  );
+
   protected readonly isSelf = computed(() => {
     if (this.previewRole() === 'owner') return true;
     if (this.previewRole() === 'visitor') return false;
     const u = this.auth.user();
     if (!u) return false;
     const targetId = this.id();
-    if (!targetId || targetId === 'self' || targetId === 'me' || String(u.id) === String(targetId)) {
+    if (
+      !targetId ||
+      targetId === 'self' ||
+      targetId === 'me' ||
+      String(u.id) === String(targetId)
+    ) {
       return true;
     }
     if (this.auth.isOwner()) {
@@ -137,6 +231,16 @@ export class CommunityProfilePage {
     return false;
   });
   protected readonly signedIn = this.auth.isLoggedIn;
+
+  protected readonly avatarUrl = computed<string | null>(() => {
+    const p = this.profile();
+    if (this.isSelf()) {
+      const player =
+        typeof this.auth.playerProfile === 'function' ? this.auth.playerProfile() : null;
+      return player?.foto || p?.photo || null;
+    }
+    return p?.photo || null;
+  });
 
   protected readonly initials = computed(() => {
     const p = this.profile();
@@ -182,47 +286,58 @@ export class CommunityProfilePage {
 
   protected readonly memberSince = computed(() => 'Octubre 2026');
   protected readonly matchesPlayed = computed(() => this.profile()?.matchesPlayed ?? 24);
-  protected readonly favoriteVenue = computed(() => this.profile()?.favoriteVenue ?? 'Arena Gol Sur');
+  protected readonly favoriteVenue = computed(
+    () => this.profile()?.favoriteVenue ?? 'Arena Gol Sur',
+  );
 
   protected readonly currentUrl = computed(() => {
     return typeof window !== 'undefined' ? window.location.pathname : `/perfiles/${this.id()}`;
   });
 
   protected readonly courts = computed(() => {
-    const list =
-      this.profile()?.venues.flatMap((venue) =>
-        (this.db.getVenueDetalle(venue.id)?.canchas ?? []).map((court) => ({
-          ...court,
-          venueId: venue.id,
-          venueName: venue.name,
-        })),
-      ) ?? [];
-    if (list.length > 0) return list;
     const p = this.profile();
-    if (!p || p.role !== 'Dueño') return [];
-    const vName = p.venues[0]?.name || 'Arena Gol Sur';
-    const vId = p.venues[0]?.id || '1';
-    const formatos = [
-      { tipo: 'Fútbol 7', sup: 'Grass sintético monofilamento 50mm', cob: 'Techo con red perimétrica', precio: 80 },
-      { tipo: 'Fútbol 6', sup: 'Grass sintético fibrilado', cob: 'Iluminación nocturna LED', precio: 70 },
-      { tipo: 'Fútbol 5', sup: 'Grass sintético alta densidad', cob: 'Al aire libre con malla', precio: 60 },
-      { tipo: 'Fútbol 8', sup: 'Grass sintético FIFA Quality', cob: 'Cúpula techada', precio: 100 },
-    ];
-    return Array.from({ length: 14 }, (_, i) => {
-      const fmt = formatos[i % formatos.length];
-      return {
-        id: `court-mock-${i + 1}`,
-        nombre: `Cancha ${i + 1}`,
-        tipo: fmt.tipo,
-        superficie: fmt.sup,
-        cobertura: fmt.cob,
-        precioHora: fmt.precio,
-        disponible: true,
-        foto: 'assets/cancha-default.jpg',
-        venueId: vId,
-        venueName: vName,
-      };
-    });
+    if (!p) return [];
+    const seenIds = new Set<string>();
+    const result: any[] = [];
+
+    for (const venue of p.venues ?? []) {
+      const detalleCanchas = this.db.getVenueDetalle(venue.id)?.canchas ?? [];
+      for (const court of detalleCanchas) {
+        const key = String(court.id);
+        if (!seenIds.has(key)) {
+          seenIds.add(key);
+          result.push({
+            ...court,
+            venueId: venue.id,
+            venueName: venue.name,
+          });
+        }
+      }
+      const rawCanchas =
+        typeof this.db.getCanchasPorSede === 'function'
+          ? (this.db.getCanchasPorSede(Number(venue.id)) ?? [])
+          : [];
+      for (const c of rawCanchas) {
+        const key = String(c.id);
+        if (!seenIds.has(key)) {
+          seenIds.add(key);
+          result.push({
+            id: String(c.id),
+            nombre: c.nombre,
+            tipo: c.tipo || 'Fútbol 7',
+            superficie: c.superficie || 'Grass sintético',
+            cobertura: c.cobertura || 'Iluminación LED',
+            precioHora: Number(c.precio_hora || c.precio_dia || 80),
+            disponible: c.activa !== false && c.estado !== 'mantenimiento',
+            foto: c.imagenes?.[0] || 'assets/cancha-default.jpg',
+            equipamiento: c.equipamiento ?? [],
+            venueId: venue.id,
+            venueName: venue.name,
+          });
+        }
+      }
+    }
+    return result;
   });
 
   protected readonly gallery = computed(() => {
@@ -249,25 +364,19 @@ export class CommunityProfilePage {
     const p = this.profile();
     if (!p) return [];
     return p.venues.map((venue) => {
+      const detalle = this.db.getVenueDetalle(venue.id);
+      const venueAmenities = (detalle?.amenidades ?? [])
+        .map((a: any) => (typeof a === 'string' ? a : a?.label || a?.nombre || ''))
+        .filter(Boolean);
       const courts = this.courts().filter((c) => c.venueId === venue.id);
-      const items = [
-        ...new Set(courts.flatMap((c: any) => c.equipamiento ?? [])),
-      ];
+      const courtEquip = courts
+        .flatMap((c: any) => c.equipamiento ?? [])
+        .map((e: any) => (typeof e === 'string' ? e : e?.label || e?.nombre || ''))
+        .filter(Boolean);
+      const items = [...new Set([...venueAmenities, ...courtEquip])];
       return {
         venue,
-        items:
-          items.length > 0
-            ? items
-            : [
-                'Grass sintético FIFA Quality',
-                'Iluminación LED nocturna de alta potencia',
-                'Estacionamiento vigilado gratuito',
-                'Vestuarios y duchas con agua caliente',
-                'Cafetería y venta de bebidas rehidratantes',
-                'Balones y chalecos distintivos incluidos',
-                'Graderías y zona de descanso techada',
-                'Wifi libre de alta velocidad',
-              ],
+        items,
       };
     });
   });
@@ -291,13 +400,15 @@ export class CommunityProfilePage {
     { icon: 'sports_soccer', label: 'Balones y chalecos' },
   ];
 
-  protected readonly ratingBreakdown = [
-    { stars: 5, count: 58, pct: 67 },
-    { stars: 4, count: 20, pct: 23 },
-    { stars: 3, count: 5, pct: 6 },
-    { stars: 2, count: 2, pct: 2 },
-    { stars: 1, count: 1, pct: 1 },
-  ];
+  protected get ratingBreakdown(): { stars: number; count: number; pct: number }[] {
+    const reviews = this.profile()?.reviews ?? [];
+    const total = reviews.length;
+    return [5, 4, 3, 2, 1].map((stars) => {
+      const count = reviews.filter((r) => Math.round(Number(r.rating || 0)) === stars).length;
+      const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+      return { stars, count, pct };
+    });
+  }
 
   constructor() {
     effect(() => {
@@ -346,7 +457,8 @@ export class CommunityProfilePage {
         if (this.isSelf()) {
           const u = this.auth.user();
           if (u) {
-            const player = typeof this.auth.playerProfile === 'function' ? this.auth.playerProfile() : null;
+            const player =
+              typeof this.auth.playerProfile === 'function' ? this.auth.playerProfile() : null;
             const sedes = this.db.getSedesPorDueno(u.id);
             const isOwner = this.auth.isOwner();
             this.profile.set({
@@ -360,8 +472,8 @@ export class CommunityProfilePage {
               followers: isOwner ? 214 : 18,
               following: isOwner ? 45 : 12,
               postCount: 0,
-              rating: isOwner ? 4.7 : null,
-              reviewCount: isOwner ? 86 : 0,
+              rating: null,
+              reviewCount: 0,
               reviews: [],
               matchesPlayed: 24,
               favoriteVenue: 'Arena Gol Sur',
@@ -382,12 +494,14 @@ export class CommunityProfilePage {
         }
 
         // Detectar si el ID consultado corresponde a un dueño o sede
-        const venue = this.db.sedes().find(
-          (s: any) =>
-            String(s.id) === String(id) ||
-            String(s.id_sede) === String(id) ||
-            String(s.id_dueno) === String(id),
-        );
+        const venue = this.db
+          .sedes()
+          .find(
+            (s: any) =>
+              String(s.id) === String(id) ||
+              String(s.id_sede) === String(id) ||
+              String(s.id_dueno) === String(id),
+          );
         const isOwnerView =
           !!venue ||
           id === 'dueno' ||
@@ -400,7 +514,8 @@ export class CommunityProfilePage {
           const vName = venue?.nombre || 'Canchas La Bombonera – Moquegua';
           const vDistrict = venue?.distrito || 'Mariscal Nieto';
           const vCity = venue?.departamento || 'Moquegua';
-          const vAddress = venue?.direccion || 'Av. Los Libertadores Nº 394, Mariscal Nieto, Moquegua';
+          const vAddress =
+            venue?.direccion || 'Av. Los Libertadores Nº 394, Mariscal Nieto, Moquegua';
           const vPhone = venue?.telefono || '916 518 518';
 
           this.profile.set({
@@ -423,8 +538,8 @@ export class CommunityProfilePage {
             followers: 214,
             following: 45,
             postCount: 3,
-            rating: 4.7,
-            reviewCount: 86,
+            rating: null,
+            reviewCount: 0,
             venues: [
               {
                 id: String(venue?.id || venue?.id_sede || '1'),
@@ -436,41 +551,7 @@ export class CommunityProfilePage {
                 photo: venue?.imagenes?.[0] || null,
               },
             ],
-            reviews: [
-              {
-                venueId: String(venue?.id || '1'),
-                venueName: vName,
-                author: 'Luis Ramos',
-                authorInitials: 'LR',
-                rating: 5,
-                text: 'Excelente el grass y la luz de noche es perfecta. Atención muy amable.',
-                date: 'hace 2 días',
-                reservedHere: true,
-                response: '¡Gracias Luis! Te esperamos de nuevo 💚',
-              },
-              {
-                venueId: String(venue?.id || '1'),
-                venueName: vName,
-                author: 'Ana Torres',
-                authorInitials: 'AT',
-                rating: 4,
-                text: 'Muy buenas canchas. Solo mejoraría los vestuarios en hora punta.',
-                date: 'hace 1 semana',
-                reservedHere: true,
-                response: null,
-              },
-              {
-                venueId: String(venue?.id || '1'),
-                venueName: vName,
-                author: 'Diego Paz',
-                authorInitials: 'DP',
-                rating: 5,
-                text: 'Reservé por la app y todo fue rápido, sin complicaciones.',
-                date: 'hace 2 semanas',
-                reservedHere: true,
-                response: null,
-              },
-            ],
+            reviews: [],
           });
           this.tab.set('publicaciones');
           this.posts.set([
@@ -759,7 +840,11 @@ export class CommunityProfilePage {
       return;
     }
     if (p.whatsapp) {
-      window.open('https://wa.me/' + p.whatsapp.replace(/\D/g, ''), '_blank', 'noopener,noreferrer');
+      window.open(
+        'https://wa.me/' + p.whatsapp.replace(/\D/g, ''),
+        '_blank',
+        'noopener,noreferrer',
+      );
       return;
     }
     this.shareToast.set('Mensajería directa disponible próximamente.');

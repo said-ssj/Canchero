@@ -1,6 +1,6 @@
 /* ==========================================================================
    CANCHERO — Sedes Públicas (sedes.html)
-   Sistema de diseño: layout catálogo 2 columnas + tarjetas public-venue
+   Filtros dinámicos a la izquierda + tarjetas de sedes estándar
    ========================================================================== */
 
 .catalog-layout {
@@ -11,10 +11,12 @@
 }
 
 .filters {
-  border-right: 1px solid var(--line);
+  border-right: 1px solid var(--line, #e2e8f0);
   padding-right: 24px;
   display: grid;
   gap: 16px;
+  position: sticky;
+  top: 90px;
 }
 
 .filters h2 {
@@ -24,70 +26,221 @@
   color: var(--ink);
 }
 
-.field {
-  display: grid;
-  gap: 6px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ink);
-}
-
-.field select,
-.field input {
-  width: 100%;
-  height: 38px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 0 10px;
-  font-family: inherit;
-  font-size: 13px;
-  background: var(--surface);
-  color: var(--ink);
-  outline: none;
-  box-sizing: border-box;
-}
-
-.field select:focus,
-.field input:focus {
-  border-color: var(--primary);
-  outline: none;
-}
-
 .filter-group {
   display: grid;
   gap: 8px;
 }
 
+.catalog-results {
+  min-width: 0;
+}
+
+/* Barra superior de resultados + Ordenar + Selector Lista/Cuadrícula */
 .results-head {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--line);
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line, #e2e8f0);
 }
 
-.results-head p {
+.results-head p,
+.results-count-text {
   margin: 0;
-  font-size: 14px;
+  font-size: 15px;
   color: var(--ink);
 }
 
-.public-venue {
-  display: grid;
-  grid-template-columns: 200px minmax(0, 1fr);
-  border: 1px solid var(--line);
-  border-radius: var(--card-radius);
-  background: var(--surface);
-  overflow: hidden;
-  cursor: default;
-  padding: 0;
+.results-count-text strong {
+  font-weight: 800;
 }
 
+.results-head-controls {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.sort-control-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sort-label {
+  font-size: 13px;
+  color: var(--muted, #64748b);
+  font-weight: 500;
+}
+
+.sort-select {
+  height: 36px;
+  padding: 0 30px 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line, #cbd5e1);
+  background: var(--surface, #ffffff);
+  color: var(--ink, #0f172a);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+}
+
+.sort-select:focus {
+  border-color: var(--primary, #16a34a);
+}
+
+.view-mode-switcher {
+  display: inline-flex;
+  align-items: center;
+  background: var(--color-slate-100, #f1f5f9);
+  border: 1px solid var(--line, #e2e8f0);
+  border-radius: 10px;
+  padding: 3px;
+  gap: 4px;
+}
+
+.view-mode-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted, #64748b);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.view-mode-btn.is-active {
+  background: var(--surface, #ffffff);
+  color: var(--primary, #16a34a);
+  border-color: rgba(22, 163, 74, 0.25);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+
+/* ==========================================================================
+   TARJETAS DE SEDES (public-venue)
+   ========================================================================== */
+.venues-showcase {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.venues-showcase.is-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.public-venue {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line, #e2e8f0);
+  border-radius: 12px;
+  background: var(--surface, #ffffff);
+  overflow: hidden;
+  padding: 0;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+/* Modo Lista (Predeterminado - Imagen 1) */
+.public-venue.is-list {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+}
+
+/* Modo Cuadrícula Estandarizado (Imagen 8) */
+.public-venue.is-grid {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.public-venue.is-grid .photo-wrapper {
+  height: 184px;
+  min-height: 184px;
+  max-height: 184px;
+  width: 100%;
+}
+
+.public-venue.is-grid .venue-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+}
+
+.public-venue.is-grid .venue-title {
+  min-height: 44px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.public-venue.is-grid .venue-badges-row {
+  min-height: 58px;
+  align-content: flex-start;
+}
+
+.public-venue.is-grid .venue-card-bottom {
+  margin-top: auto;
+  padding-top: 12px;
+}
+
+/* Cabecera de fotografía */
 .photo-wrapper {
   position: relative;
-  background: var(--disabled);
-  min-height: 198px;
+  background: #1b2f39;
+  min-height: 184px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.photo-empty-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 16px;
+  text-align: center;
+}
+
+.photo-empty-fallback.canchero-brand-fallback {
+  background-color: #1b2f39 !important;
+}
+
+.brand-fallback-word {
+  color: #ffffff !important;
+  font-size: 28px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.5px !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  user-select: none !important;
+  text-align: center !important;
+}
+
+.photo-empty-text {
+  font-size: 13px;
+  color: #94a3b8;
+  font-weight: 500;
+  user-select: none;
 }
 
 .venue-photo {
@@ -99,6 +252,7 @@
   display: block;
 }
 
+/* Botones en la foto (alert y fav) */
 .fav-btn,
 .alert-btn {
   position: absolute;
@@ -108,9 +262,12 @@
   min-width: 32px;
   padding: 4px;
   background: rgba(255, 255, 255, 0.9);
-  border: 1px solid var(--line);
+  border: 1px solid var(--line, #cbd5e1);
   border-radius: 6px;
   z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .fav-btn {
@@ -121,34 +278,198 @@
   right: 44px;
 }
 
-.fav-btn.is-active {
-  color: var(--orange);
+.fav-btn.fill-1,
+.fav-btn .fill-1 {
+  color: var(--orange, #f59e0b);
 }
 
+/* Cuerpo de la tarjeta */
 .venue-body {
-  padding: 20px;
-  display: grid;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
   gap: 8px;
-  align-content: center;
+  justify-content: center;
   min-width: 0;
 }
 
-.venue-body h3 {
+.venue-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.venue-body h3,
+.venue-title {
   font-size: 17px;
   font-weight: 700;
   margin: 0;
-  color: var(--ink);
+  color: var(--ink, #0f172a);
+  line-height: 1.3;
   overflow-wrap: anywhere;
 }
 
-.venue-body .row > .badge {
-  max-width: 100%;
-  white-space: normal;
-}
-.catalog-results {
-  min-width: 0;
+.badge.success,
+.badge-sede-activa {
+  font-size: 11.5px !important;
+  font-weight: 600 !important;
+  padding: 3px 10px !important;
+  border-radius: 6px !important;
+  background: #e8f8ee !important;
+  color: #007a50 !important;
+  border: 1px solid #c4ecd2 !important;
+  line-height: 1.2 !important;
+  white-space: nowrap !important;
+  display: inline-flex !important;
+  align-items: center !important;
 }
 
+:root.dark-theme .badge.success,
+body.dark-theme .badge.success {
+  background: rgba(16, 185, 129, 0.15) !important;
+  color: #34d399 !important;
+  border-color: rgba(16, 185, 129, 0.3) !important;
+}
+
+.venue-location {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--muted, #64748b);
+  margin: 0;
+}
+
+.venue-location .material-symbols-outlined {
+  font-size: 16px;
+  color: #94a3b8;
+}
+
+.venue-badges-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+
+.venue-badges-row .badge {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  padding: 4px 10px !important;
+  border-radius: 6px !important;
+  background: #e2e5eb !important;
+  color: #5d5d5d !important;
+  border: none !important;
+  line-height: 1.3 !important;
+  white-space: nowrap !important;
+  display: inline-flex !important;
+  align-items: center !important;
+}
+
+.venue-badges-row .badge.muted {
+  background: #e2e5eb !important;
+  color: #5d5d5d !important;
+  font-weight: 700 !important;
+}
+
+:root.dark-theme .venue-badges-row .badge,
+body.dark-theme .venue-badges-row .badge {
+  background: #27272a !important;
+  color: #cbd5e1 !important;
+}
+
+.venue-description {
+  font-size: 13px;
+  color: var(--muted, #64748b);
+  margin: 0;
+}
+
+.live-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+  color: var(--primary, #16a34a);
+}
+
+.pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--primary, #16a34a);
+  display: inline-block;
+}
+
+.venue-card-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 6px;
+  padding-top: 8px;
+}
+
+.price {
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--ink, #0f172a);
+}
+
+.price small {
+  font-weight: 400;
+  color: var(--muted, #64748b);
+  font-size: 12px;
+}
+
+.venue-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-ruta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.btn-ruta.btn-square-icon {
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  padding: 0 !important;
+  border-radius: 6px !important;
+  border: 1px solid var(--line, #cbd5e1) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.btn-ruta.btn-square-icon .material-symbols-outlined {
+  font-size: 20px !important;
+}
+
+.btn-ver-canchas {
+  background: #16a34a !important;
+  color: #ffffff !important;
+  border: none;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+}
+
+.btn-ver-canchas:hover {
+  background: #15803d !important;
+}
+
+/* Skeletons */
 .skeleton-bar {
   display: block;
   width: min(65%, 240px);
@@ -161,70 +482,33 @@
   width: min(85%, 330px);
   height: 20px;
 }
+
 .skeleton-tags {
   gap: 6px;
 }
+
 .skeleton-tags .skeleton-bar {
   width: min(25%, 74px);
   height: 22px;
 }
+
 .skeleton-actions {
   gap: 8px;
   margin-top: 8px;
   align-items: center;
 }
+
 .skeleton-actions .skeleton-bar:first-child {
   width: min(36%, 100px);
 }
+
 .skeleton-actions .skeleton-bar:last-child {
   width: min(55%, 135px);
   height: 36px;
 }
+
 .catalog-error {
   margin-bottom: 16px;
-}
-
-.venue-location {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 13px;
-  color: var(--muted);
-  margin: 0;
-}
-
-.venue-description {
-  font-size: 13px;
-  color: var(--muted);
-  margin: 0;
-}
-
-.live-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-weight: 600;
-  color: var(--primary);
-}
-
-.pulse-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background-color: var(--primary);
-  display: inline-block;
-}
-
-.price {
-  font-weight: 700;
-  font-size: 18px;
-  color: var(--ink);
-}
-
-.price small {
-  font-weight: 400;
-  color: var(--muted);
-  font-size: 12px;
 }
 
 .results-empty {
@@ -255,50 +539,73 @@
   pointer-events: auto;
 }
 
+/* Modo oscuro para sedes */
+:root.dark-theme .public-venue,
+body.dark-theme .public-venue {
+  background: #18181b;
+  border-color: #27272a;
+}
+
+:root.dark-theme .photo-wrapper,
+body.dark-theme .photo-wrapper {
+  background: #27272a;
+}
+
+:root.dark-theme .venue-badges-row .badge,
+body.dark-theme .venue-badges-row .badge {
+  background: #27272a;
+  color: #e2e8f0;
+}
+
+:root.dark-theme .fav-btn,
+:root.dark-theme .alert-btn,
+body.dark-theme .fav-btn,
+body.dark-theme .alert-btn {
+  background: rgba(39, 39, 42, 0.9);
+  border-color: #3f3f46;
+  color: #e2e8f0;
+}
+
+:root.dark-theme .view-mode-switcher,
+body.dark-theme .view-mode-switcher {
+  background: #27272a;
+  border-color: #3f3f46;
+}
+
+:root.dark-theme .view-mode-btn.is-active,
+body.dark-theme .view-mode-btn.is-active {
+  background: #18181b;
+  color: #4ade80;
+}
+
 @media (max-width: 1060px) {
   .catalog-layout {
     grid-template-columns: 200px minmax(0, 1fr);
-  }
-  .public-venue {
-    grid-template-columns: 150px minmax(0, 1fr);
+    gap: 20px;
   }
 }
 
 @media (max-width: 760px) {
   .catalog-layout {
-    display: block;
+    display: flex;
+    flex-direction: column;
   }
+
   .filters {
-    border: 0;
+    position: static;
+    border-right: 0;
     border-bottom: 1px solid var(--line);
     padding: 0 0 20px;
-    margin-bottom: 20px;
+    margin-bottom: 12px;
+    width: 100%;
   }
-  .public-venue {
-    grid-template-columns: 88px minmax(0, 1fr);
+
+  .public-venue.is-list {
+    grid-template-columns: 1fr;
   }
-  .public-venue .photo-wrapper,
-  .public-venue .venue-photo {
-    min-height: 100%;
-  }
-  .venue-skeleton .photo-wrapper {
-    min-height: 165px;
-  }
-  .photo-wrapper .fav-btn {
-    right: 8px;
-    top: 8px;
-  }
-  .photo-wrapper .alert-btn {
-    right: 8px;
-    top: 48px;
-  }
-  .venue-body {
-    padding: 12px;
-  }
-  .venue-body h3 {
-    font-size: 15px;
-  }
-  .price {
-    font-size: 16px;
+
+  .public-venue.is-list .photo-wrapper {
+    height: 180px;
+    min-height: 180px;
   }
 }

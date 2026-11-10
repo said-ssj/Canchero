@@ -1,4 +1,13 @@
-import { Component, computed, effect, inject, input, output, signal, HostListener } from '@angular/core';
+import {
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  output,
+  signal,
+  HostListener,
+} from '@angular/core';
 import { AdminContext } from '../admin-context.service';
 import { PosCatalogEditor } from './pos-catalog-editor';
 import { CommonModule, DatePipe, UpperCasePipe } from '@angular/common';
@@ -10,8 +19,11 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatTableModule } from '@angular/material/table';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MAT_RIPPLE_GLOBAL_OPTIONS } from '@angular/material/core';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { PosService } from '@core/services/pos.service';
@@ -42,8 +54,11 @@ import {
     MatChipsModule,
     MatFormFieldModule,
     MatInputModule,
+    MatSelectModule,
+    MatProgressSpinnerModule,
     MatButtonToggleModule,
     MatTableModule,
+    MatPaginatorModule,
     MatTooltipModule,
   ],
   templateUrl: './admin-pos.html',
@@ -108,13 +123,15 @@ export class AdminPos {
     this.failedProductPhotos.update((ids) => new Set([...ids, id]));
   }
   obtenerIconoProducto(prod: Producto): string {
-    const cat = this.posService.categorias().find(
-      (c) =>
-        (prod.categoriaId != null && Number(c.id) === Number(prod.categoriaId)) ||
-        (c.nombre &&
-          prod.categoriaNombre &&
-          c.nombre.toLowerCase().trim() === prod.categoriaNombre.toLowerCase().trim()),
-    );
+    const cat = this.posService
+      .categorias()
+      .find(
+        (c) =>
+          (prod.categoriaId != null && Number(c.id) === Number(prod.categoriaId)) ||
+          (c.nombre &&
+            prod.categoriaNombre &&
+            c.nombre.toLowerCase().trim() === prod.categoriaNombre.toLowerCase().trim()),
+      );
     if (cat?.icono && cat.icono !== 'category') {
       return cat.icono;
     }
@@ -157,6 +174,28 @@ export class AdminPos {
     'total',
     'nota',
   ];
+  readonly kardexPageIndex = signal(0);
+  readonly kardexPageSize = signal(10);
+  readonly ventasPageIndex = signal(0);
+  readonly ventasPageSize = signal(10);
+  readonly paginatedKardex = computed(() => {
+    const start = this.kardexPageIndex() * this.kardexPageSize();
+    return this.posService.kardex().slice(start, start + this.kardexPageSize());
+  });
+  readonly paginatedVentas = computed(() => {
+    const start = this.ventasPageIndex() * this.ventasPageSize();
+    return this.posService.ventas().slice(start, start + this.ventasPageSize());
+  });
+
+  onKardexPage(event: PageEvent): void {
+    this.kardexPageIndex.set(event.pageIndex);
+    this.kardexPageSize.set(event.pageSize);
+  }
+
+  onVentasPage(event: PageEvent): void {
+    this.ventasPageIndex.set(event.pageIndex);
+    this.ventasPageSize.set(event.pageSize);
+  }
 
   // Destino de la venta / consumo
   readonly posDestino = signal<'mostrador' | 'cancha'>('mostrador');
@@ -175,7 +214,7 @@ export class AdminPos {
     const canchaIds = new Set(canchas.map((c: any) => c.id));
     const hoyStr = new Date().toISOString().slice(0, 10);
     return (this.db.reservas?.() ?? []).filter(
-      (r: any) => canchaIds.has(r.cancha_id || r.id_cancha) && (!r.fecha || r.fecha === hoyStr)
+      (r: any) => canchaIds.has(r.cancha_id || r.id_cancha) && (!r.fecha || r.fecha === hoyStr),
     );
   });
 
@@ -204,7 +243,7 @@ export class AdminPos {
     if (!cancha) return;
 
     const reserva = this.reservasHoySede().find(
-      (r: any) => (r.cancha_id || r.id_cancha) === canchaId
+      (r: any) => (r.cancha_id || r.id_cancha) === canchaId,
     );
     const clienteReserva = reserva?.cliente_nombre || reserva?.nombre_cliente || '';
     if (clienteReserva) {
@@ -220,9 +259,9 @@ export class AdminPos {
     if (!query) return;
 
     // 1. Coincidencia exacta por código de barras
-    const exactoBarcode = this.posService.productos().find(
-      (p) => p.codigoBarras && p.codigoBarras.trim() === query && p.stock > 0
-    );
+    const exactoBarcode = this.posService
+      .productos()
+      .find((p) => p.codigoBarras && p.codigoBarras.trim() === query && p.stock > 0);
     if (exactoBarcode) {
       this.agregarAlCarritoPOS(exactoBarcode);
       this.posService.filtroBusqueda.set('');
@@ -243,7 +282,9 @@ export class AdminPos {
     } else if (filtrados.length === 0) {
       this.notice.emit(`No se encontró producto disponible para: "${query}"`);
     } else {
-      this.notice.emit(`${filtrados.length} productos coincidentes. Selecciona uno en el catálogo.`);
+      this.notice.emit(
+        `${filtrados.length} productos coincidentes. Selecciona uno en el catálogo.`,
+      );
     }
   }
 
@@ -648,9 +689,12 @@ export class AdminPos {
     this.modalIngresoMercaderiaOpen.set(false);
   }
 
-  setIngresoProductoId(event: Event): void {
-    const select = event.target as HTMLSelectElement;
-    const id = parseInt(select?.value, 10) || 1;
+  setIngresoProductoId(eventOrVal: any): void {
+    const raw =
+      typeof eventOrVal === 'number' || typeof eventOrVal === 'string'
+        ? eventOrVal
+        : (eventOrVal?.value ?? (eventOrVal?.target as HTMLSelectElement)?.value);
+    const id = parseInt(String(raw), 10) || 1;
     this.ingresoProductoId.set(id);
     const prod = this.posService.productos().find((p) => p.id === id);
     if (prod) {

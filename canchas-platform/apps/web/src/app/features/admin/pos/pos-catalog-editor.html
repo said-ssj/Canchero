@@ -14,20 +14,26 @@
       ×
     </button>
   </header>
+  @if (busy() || loading() || processingPhoto()) {
+    <mat-progress-bar mode="indeterminate" color="primary"></mat-progress-bar>
+  }
   @if (error()) {
     <p class="error" role="alert">{{ error() }}</p>
   }
   @if (categoryMode()) {
     <form #categoryForm="ngForm" (ngSubmit)="categoryForm.valid && saveCategory()">
       <fieldset [disabled]="busy()">
-        <label
-          >Nombre de categoría<input
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+          <mat-label>Nombre de categoría</mat-label>
+          <input
+            matInput
             name="categoryName"
             required
             maxlength="100"
             [(ngModel)]="categoryName"
             placeholder="Ej. Bebidas"
-        /></label>
+          />
+        </mat-form-field>
         <div class="category-icon-picker-popover-field">
           <span class="icon-label">Icono representativo *</span>
           <div class="category-icon-popover-wrapper">
@@ -38,8 +44,12 @@
               aria-haspopup="dialog"
               [attr.aria-expanded]="iconPopoverOpen()"
             >
-              <span class="material-symbols-outlined current-icon" aria-hidden="true">{{ categoryIcon }}</span>
-              <span class="preview-text">Icono seleccionado (se mostrará en filtros y productos sin foto)</span>
+              <span class="material-symbols-outlined current-icon" aria-hidden="true">{{
+                categoryIcon
+              }}</span>
+              <span class="preview-text"
+                >Icono seleccionado (se mostrará en filtros y productos sin foto)</span
+              >
               <span class="material-symbols-outlined trigger-chevron" aria-hidden="true">{{
                 iconPopoverOpen() ? 'expand_less' : 'expand_more'
               }}</span>
@@ -50,7 +60,14 @@
                 <div class="cloud-arrow"></div>
                 <div class="cloud-header">
                   <span class="cloud-title">Elige un icono</span>
-                  <button type="button" class="cloud-close-btn" (click)="iconPopoverOpen.set(false)" aria-label="Cerrar">✕</button>
+                  <button
+                    type="button"
+                    class="cloud-close-btn"
+                    (click)="iconPopoverOpen.set(false)"
+                    aria-label="Cerrar"
+                  >
+                    ✕
+                  </button>
                 </div>
                 <div class="icon-selector-grid">
                   @for (opt of iconOptions; track opt.icon) {
@@ -69,13 +86,19 @@
             }
           </div>
         </div>
-        <label
-          >Descripción (opcional)<textarea
+        <mat-form-field
+          appearance="outline"
+          subscriptSizing="dynamic"
+          class="cn-field cn-field-textarea w-full"
+        >
+          <mat-label>Descripción (opcional)</mat-label>
+          <textarea
+            matInput
             name="categoryDescription"
             maxlength="1000"
             [(ngModel)]="categoryDescription"
           ></textarea>
-        </label>
+        </mat-form-field>
       </fieldset>
       <footer>
         <button type="button" (click)="categoryMode.set(false); error.set('')" [disabled]="busy()">
@@ -93,38 +116,42 @@
   } @else {
     <form #productForm="ngForm" (ngSubmit)="productForm.valid && saveProduct()">
       <fieldset [disabled]="busy() || loading() || processingPhoto()">
-        <label
-          >Nombre del producto<input
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+          <mat-label>Nombre del producto</mat-label>
+          <input
+            matInput
             name="nombre"
             required
             maxlength="150"
             [(ngModel)]="product.nombre"
             placeholder="Ej. Agua mineral"
-        /></label>
+          />
+        </mat-form-field>
         <div class="category-row">
-          <label
-            >Categoría<select name="categoria" required [(ngModel)]="product.categoriaId">
-              <option [ngValue]="null">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+            <mat-label>Categoría</mat-label>
+            <mat-select name="categoria" required [(ngModel)]="product.categoriaId">
+              <mat-option [value]="null">
                 {{ loading() ? 'Cargando categorías…' : 'Selecciona una categoría' }}
-              </option>
+              </mat-option>
               @for (c of categories(); track c.id) {
-                <option [ngValue]="c.id">{{ c.nombre }}</option>
+                <mat-option [value]="c.id">{{ c.nombre }}</mat-option>
               }
-            </select></label
-          >
+            </mat-select>
+          </mat-form-field>
           <button type="button" (click)="categoryMode.set(true); error.set('')">
             + Nueva categoría
           </button>
         </div>
-        <label
-          >Código de barras / SKU (opcional)<input
-            name="codigo"
-            maxlength="50"
-            [(ngModel)]="product.codigoBarras"
-        /></label>
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+          <mat-label>Código de barras / SKU (opcional)</mat-label>
+          <input matInput name="codigo" maxlength="50" [(ngModel)]="product.codigoBarras" />
+        </mat-form-field>
         <div class="grid">
-          <label
-            >Contenido por unidad<input
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+            <mat-label>Contenido por unidad</mat-label>
+            <input
+              matInput
               type="number"
               name="contenido"
               required
@@ -133,21 +160,25 @@
               step="0.001"
               [(ngModel)]="product.contenido"
               placeholder="Ej. 600"
-          /></label>
-          <label
-            >Unidad de medida<select name="unidad" required [(ngModel)]="product.unidadMedida">
-              <option value="">Selecciona una unidad</option>
-              <option value="und">Unidades (und)</option>
-              <option value="ml">Mililitros (ml)</option>
-              <option value="l">Litros (l)</option>
-              <option value="g">Gramos (g)</option>
-              <option value="kg">Kilogramos (kg)</option>
-              <option value="pack">Paquete (pack)</option>
-              <option value="caja">Caja</option>
-            </select></label
-          >
-          <label
-            >Precio de compra (S/)<input
+            />
+          </mat-form-field>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+            <mat-label>Unidad de medida</mat-label>
+            <mat-select name="unidad" required [(ngModel)]="product.unidadMedida">
+              <mat-option value="">Selecciona una unidad</mat-option>
+              <mat-option value="und">Unidades (und)</mat-option>
+              <mat-option value="ml">Mililitros (ml)</mat-option>
+              <mat-option value="l">Litros (l)</mat-option>
+              <mat-option value="g">Gramos (g)</mat-option>
+              <mat-option value="kg">Kilogramos (kg)</mat-option>
+              <mat-option value="pack">Paquete (pack)</mat-option>
+              <mat-option value="caja">Caja</mat-option>
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+            <mat-label>Precio de compra (S/)</mat-label>
+            <input
+              matInput
               type="number"
               name="compra"
               required
@@ -155,9 +186,12 @@
               max="9999999.99"
               step="0.01"
               [(ngModel)]="product.precioCompra"
-          /></label>
-          <label
-            >Precio de venta (S/)<input
+            />
+          </mat-form-field>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+            <mat-label>Precio de venta (S/)</mat-label>
+            <input
+              matInput
               type="number"
               name="venta"
               required
@@ -165,9 +199,12 @@
               max="9999999.99"
               step="0.01"
               [(ngModel)]="product.precioVenta"
-          /></label>
-          <label
-            >Stock inicial<input
+            />
+          </mat-form-field>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+            <mat-label>Stock inicial</mat-label>
+            <input
+              matInput
               type="number"
               name="stock"
               required
@@ -175,9 +212,12 @@
               max="1000000"
               step="1"
               [(ngModel)]="product.stockInicial"
-          /></label>
-          <label
-            >Stock mínimo<input
+            />
+          </mat-form-field>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+            <mat-label>Stock mínimo</mat-label>
+            <input
+              matInput
               type="number"
               name="minimo"
               required
@@ -185,19 +225,26 @@
               max="1000000"
               step="1"
               [(ngModel)]="product.stockMinimo"
-          /></label>
+            />
+          </mat-form-field>
         </div>
         <p class="hint">
           El stock cuenta unidades de venta completas. El contenido describe cada unidad, por
           ejemplo una botella de 600 ml.
         </p>
-        <label
-          >Descripción (opcional)<textarea
+        <mat-form-field
+          appearance="outline"
+          subscriptSizing="dynamic"
+          class="cn-field cn-field-textarea w-full"
+        >
+          <mat-label>Descripción (opcional)</mat-label>
+          <textarea
+            matInput
             name="descripcion"
             maxlength="1000"
             [(ngModel)]="product.descripcion"
           ></textarea>
-        </label>
+        </mat-form-field>
         <section aria-label="Foto del producto">
           <h3>Foto (opcional)</h3>
           <div class="photo-options">
@@ -207,6 +254,9 @@
               (click)="changePhotoMode('upload')"
             >
               Subir foto
+              @if (photoMode === 'upload') {
+                <mat-icon class="active-check" aria-hidden="true">check</mat-icon>
+              }
             </button>
             <button
               type="button"
@@ -214,6 +264,9 @@
               (click)="changePhotoMode('url')"
             >
               Pegar enlace
+              @if (photoMode === 'url') {
+                <mat-icon class="active-check" aria-hidden="true">check</mat-icon>
+              }
             </button>
           </div>
           @if (photoMode === 'upload') {
@@ -224,8 +277,10 @@
                 (change)="readPhoto($event)"
             /></label>
           } @else {
-            <label
-              >Enlace de la imagen<input
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
+              <mat-label>Enlace de la imagen</mat-label>
+              <input
+                matInput
                 type="url"
                 name="fotoUrl"
                 pattern="https://.+"
@@ -233,7 +288,8 @@
                 [(ngModel)]="product.fotoUrl"
                 (ngModelChange)="photoError.set(false)"
                 placeholder="https://…"
-            /></label>
+              />
+            </mat-form-field>
           }
           @if (product.fotoUrl) {
             @if (!photoError()) {

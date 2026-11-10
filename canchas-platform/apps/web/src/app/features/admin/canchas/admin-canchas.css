@@ -726,3 +726,22 @@
   background: var(--color-success-50) !important;
   color: var(--color-success-700) !important;
 }
+
+.management-card-body .btn {
+  transition:
+    background-color 0.16s ease,
+    border-color 0.16s ease,
+    color 0.16s ease;
+}
+
+.management-card-body .btn:hover:not(:disabled) {
+  background-color: rgba(39, 128, 45, 0.1) !important;
+  border-color: var(--color-brand-green, #27802d) !important;
+  color: var(--color-brand-green-dark, #1e6624) !important;
+}
+
+:host-context(.dark-theme) .management-card-body .btn:hover:not(:disabled) {
+  background-color: rgba(74, 222, 128, 0.14) !important;
+  border-color: #4ade80 !important;
+  color: #4ade80 !important;
+}

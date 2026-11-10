@@ -1,15 +1,15 @@
 <div class="admin-pos">
   @if (loading()) {
-    <div class="skeleton-grid" role="status" aria-busy="true" aria-label="Cargando inventario">
-      @for (item of [1, 2, 3, 4]; track item) {
-        <div class="skeleton skeleton-card"></div>
-      }
+    <div class="cn-loader" role="status" aria-busy="true" aria-label="Cargando inventario">
+      <mat-spinner diameter="48" color="primary"></mat-spinner>
+      <span>Cargando punto de venta...</span>
     </div>
   } @else if (error()) {
     <div role="alert" class="view-error-state">
       <h2>No se pudo cargar el punto de venta</h2>
       <p>{{ error() }}</p>
       <button mat-stroked-button (click)="db.refreshCatalogo(); posService.recargar()">
+        <mat-icon aria-hidden="true">refresh</mat-icon>
         Reintentar
       </button>
     </div>
@@ -19,7 +19,7 @@
     <!-- Cabecera de la Vista POS -->
     <header class="admin-view-header">
       <div>
-                <h1 class="view-title">Punto de Venta (POS) &amp; Kardex</h1>
+        <h1 class="view-title">Punto de Venta (POS) &amp; Kardex</h1>
         <p class="view-subtitle">
           Catálogo visual de cafetería/tienda, carrito rápido con desglose de IGV (18%) y control de
           stock continuo.
@@ -59,17 +59,27 @@
       </div>
       <div>
         <span>Ventas Emitidas</span>
-        <strong style="color: var(--color-brand-green, #27802D)">{{ posService.ventas().length }}</strong>
+        <strong style="color: var(--color-brand-green, #27802d)">{{
+          posService.ventas().length
+        }}</strong>
         <small class="stat-sub">Comprobantes generados</small>
       </div>
       <div>
         <span>Total Recaudado</span>
-        <strong style="color: var(--color-brand-green, #27802D)">S/ {{ totalVendidoPOS().toFixed(2) }}</strong>
+        <strong style="color: var(--color-brand-green, #27802d)"
+          >S/ {{ totalVendidoPOS().toFixed(2) }}</strong
+        >
         <small class="stat-sub">Ventas mostrador y canchas</small>
       </div>
       <div>
         <span>Stock Crítico</span>
-        <strong [style.color]="posService.productosStockCritico().length > 0 ? 'var(--color-danger, #dc2626)' : 'inherit'">
+        <strong
+          [style.color]="
+            posService.productosStockCritico().length > 0
+              ? 'var(--color-danger, #dc2626)'
+              : 'inherit'
+          "
+        >
           {{ posService.productosStockCritico().length }}
         </strong>
         <small class="stat-sub">Alertas de reposición</small>
@@ -167,6 +177,9 @@
               >
                 <mat-icon aria-hidden="true">star</mat-icon>
                 <span class="pos-category-label">Favoritos</span>
+                @if (posService.soloFavoritos()) {
+                  <mat-icon class="active-check" aria-hidden="true">check</mat-icon>
+                }
               </button>
               @for (cat of posService.categorias(); track cat.id) {
                 <button
@@ -180,6 +193,9 @@
                 >
                   <mat-icon aria-hidden="true">{{ cat.icono }}</mat-icon>
                   <span class="pos-category-label">{{ cat.nombre }}</span>
+                  @if (posService.categoriaSeleccionada() === cat.id) {
+                    <mat-icon class="active-check" aria-hidden="true">check</mat-icon>
+                  }
                 </button>
               }
             </div>
@@ -339,6 +355,9 @@
                 >
                   <mat-icon aria-hidden="true" class="icon-16">storefront</mat-icon>
                   <span>Mostrador</span>
+                  @if (posDestino() === 'mostrador') {
+                    <mat-icon class="active-check" aria-hidden="true">check</mat-icon>
+                  }
                 </button>
                 <button
                   type="button"
@@ -348,24 +367,33 @@
                 >
                   <mat-icon aria-hidden="true" class="icon-16">sports_soccer</mat-icon>
                   <span>Cargar a Cancha</span>
+                  @if (posDestino() === 'cancha') {
+                    <mat-icon class="active-check" aria-hidden="true">check</mat-icon>
+                  }
                 </button>
               </div>
             </div>
 
             @if (posDestino() === 'cancha') {
               <div class="pos-cancha-target-card">
-                <label class="pos-cancha-select-label">Seleccionar Cancha en Juego:</label>
-                <select
-                  class="pos-cancha-select input-admin"
-                  [value]="canchaSeleccionadaId() ?? ''"
-                  (change)="seleccionarCanchaDestino(+($any($event.target).value))"
+                <mat-form-field
+                  appearance="outline"
+                  subscriptSizing="dynamic"
+                  class="cn-field w-full"
                 >
-                  @for (cancha of canchasSede(); track cancha.id) {
-                    <option [value]="cancha.id">
-                      {{ cancha.nombre }} ({{ cancha.tipo_futbol || cancha.deporte || 'Cancha' }})
-                    </option>
-                  }
-                </select>
+                  <mat-label>Seleccionar Cancha en Juego</mat-label>
+                  <mat-select
+                    class="pos-cancha-select"
+                    [value]="canchaSeleccionadaId() ?? ''"
+                    (selectionChange)="seleccionarCanchaDestino(+$event.value)"
+                  >
+                    @for (cancha of canchasSede(); track cancha.id) {
+                      <mat-option [value]="cancha.id">
+                        {{ cancha.nombre }} ({{ cancha.tipo_futbol || cancha.deporte || 'Cancha' }})
+                      </mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
                 <span class="pos-cancha-hint">
                   El ticket identificará el consumo para el equipo/reserva de esta cancha.
                 </span>
@@ -701,7 +729,7 @@
         <mat-card class="pos-table-card" appearance="outlined">
           @if (posService.kardex().length > 0) {
             <div class="table-scroll-container">
-              <table mat-table [dataSource]="posService.kardex()" class="pos-data-table">
+              <table mat-table [dataSource]="paginatedKardex()" class="pos-data-table">
                 <ng-container matColumnDef="fecha">
                   <th mat-header-cell *matHeaderCellDef>Fecha / Hora</th>
                   <td mat-cell *matCellDef="let mov">{{ mov.fecha | date: 'dd/MM/yyyy HH:mm' }}</td>
@@ -761,6 +789,14 @@
                 <tr mat-row *matRowDef="let row; columns: posKardexColumns"></tr>
               </table>
             </div>
+            <mat-paginator
+              [length]="posService.kardex().length"
+              [pageIndex]="kardexPageIndex()"
+              [pageSize]="kardexPageSize()"
+              [pageSizeOptions]="[5, 10, 25, 100]"
+              (page)="onKardexPage($event)"
+              aria-label="Seleccionar página de movimientos Kardex"
+            ></mat-paginator>
           } @else {
             <div class="pos-empty-table">
               No hay movimientos registrados en el kardex de almacén.
@@ -791,7 +827,7 @@
         <mat-card class="pos-table-card" appearance="outlined">
           @if (posService.ventas().length > 0) {
             <div class="table-scroll-container">
-              <table mat-table [dataSource]="posService.ventas()" class="pos-data-table">
+              <table mat-table [dataSource]="paginatedVentas()" class="pos-data-table">
                 <ng-container matColumnDef="numero">
                   <th mat-header-cell *matHeaderCellDef>N° Comprobante</th>
                   <td mat-cell *matCellDef="let v">
@@ -868,6 +904,14 @@
                 <tr mat-row *matRowDef="let row; columns: posVentasColumns"></tr>
               </table>
             </div>
+            <mat-paginator
+              [length]="posService.ventas().length"
+              [pageIndex]="ventasPageIndex()"
+              [pageSize]="ventasPageSize()"
+              [pageSizeOptions]="[5, 10, 25, 100]"
+              (page)="onVentasPage($event)"
+              aria-label="Seleccionar página de ventas"
+            ></mat-paginator>
           } @else {
             <div class="pos-empty-table">Aún no se han emitido ventas en el mostrador.</div>
           }
@@ -919,7 +963,11 @@
           </div>
 
           <!-- Ticket Térmico Estilizado -->
-          <div class="pos-receipt-paper" [class.paper-58mm]="ticketAncho() === '58mm'" id="posReceiptPrintable">
+          <div
+            class="pos-receipt-paper"
+            [class.paper-58mm]="ticketAncho() === '58mm'"
+            id="posReceiptPrintable"
+          >
             <div class="pos-receipt-header">
               <h2 class="pos-receipt-brand">CANCHERO SPORT CLUB</h2>
               <div class="pos-receipt-ruc">RUC: 20608912345</div>
@@ -1070,52 +1118,75 @@
 
           <div class="entry-modal-body">
             <div class="entry-field-group">
-              <label class="entry-label"> Seleccionar Producto en Almacén: </label>
-              <select
-                class="input-admin"
-                [value]="ingresoProductoId()"
-                (change)="setIngresoProductoId($event)"
+              <mat-form-field
+                appearance="outline"
+                subscriptSizing="dynamic"
+                class="cn-field w-full"
               >
-                @for (p of posService.productos(); track p.id) {
-                  <option [value]="p.id">{{ p.nombre }} (Stock actual: {{ p.stock }})</option>
-                }
-              </select>
+                <mat-label>Seleccionar Producto en Almacén</mat-label>
+                <mat-select
+                  [value]="ingresoProductoId()"
+                  (selectionChange)="setIngresoProductoId($event)"
+                >
+                  @for (p of posService.productos(); track p.id) {
+                    <mat-option [value]="p.id"
+                      >{{ p.nombre }} (Stock actual: {{ p.stock }})</mat-option
+                    >
+                  }
+                </mat-select>
+              </mat-form-field>
             </div>
 
             <div class="entry-grid-2col">
               <div class="entry-field-group">
-                <label class="entry-label"> Cantidad a Ingresar: </label>
-                <input
-                  type="number"
-                  min="1"
-                  class="input-admin"
-                  [value]="ingresoCantidad()"
-                  (input)="setIngresoCantidad($event)"
-                />
+                <mat-form-field
+                  appearance="outline"
+                  subscriptSizing="dynamic"
+                  class="cn-field w-full"
+                >
+                  <mat-label>Cantidad a Ingresar</mat-label>
+                  <input
+                    matInput
+                    type="number"
+                    min="1"
+                    [value]="ingresoCantidad()"
+                    (input)="setIngresoCantidad($event)"
+                  />
+                </mat-form-field>
               </div>
               <div class="entry-field-group">
-                <label class="entry-label"> Costo Compra Unitario (S/): </label>
-                <input
-                  type="number"
-                  step="0.1"
-                  class="input-admin"
-                  [value]="ingresoPrecioCompra()"
-                  (input)="setIngresoPrecioCompra($event)"
-                />
+                <mat-form-field
+                  appearance="outline"
+                  subscriptSizing="dynamic"
+                  class="cn-field w-full"
+                >
+                  <mat-label>Costo Compra Unitario (S/)</mat-label>
+                  <input
+                    matInput
+                    type="number"
+                    step="0.1"
+                    [value]="ingresoPrecioCompra()"
+                    (input)="setIngresoPrecioCompra($event)"
+                  />
+                </mat-form-field>
               </div>
             </div>
 
             <div class="entry-field-group">
-              <label class="entry-label">
-                Motivo o Referencia (guía, nota o comprobante proveedor):
-              </label>
-              <input
-                type="text"
-                class="input-admin"
-                placeholder="Ej. Compra de proveedor F002-9988"
-                [value]="ingresoMotivo()"
-                (input)="setIngresoMotivo($event)"
-              />
+              <mat-form-field
+                appearance="outline"
+                subscriptSizing="dynamic"
+                class="cn-field w-full"
+              >
+                <mat-label>Motivo o Referencia (guía, nota o comprobante proveedor)</mat-label>
+                <input
+                  matInput
+                  type="text"
+                  placeholder="Ej. Compra de proveedor F002-9988"
+                  [value]="ingresoMotivo()"
+                  (input)="setIngresoMotivo($event)"
+                />
+              </mat-form-field>
             </div>
 
             <div class="entry-kardex-notice">

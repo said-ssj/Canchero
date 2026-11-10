@@ -1,10 +1,21 @@
 import { ThemeService } from '@core/theme/theme.service';
-import { Component, computed, effect, inject, signal, untracked, OnInit, OnDestroy, HostListener } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import {
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+  untracked,
+  OnInit,
+  OnDestroy,
+  HostListener,
+} from '@angular/core';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { AdminContext } from '../admin-context.service';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet, NavigationEnd } from '@angular/router';
-import { filter, map } from 'rxjs';
+import { Observable, combineLatest, filter, map, startWith } from 'rxjs';
 import { AuthService } from '@core/auth/auth.service';
 import { DatabaseService } from '@core/supabase/database.service';
 import { CajaService } from '@core/services/caja.service';
@@ -16,11 +27,14 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatRippleModule } from '@angular/material/core';
+import { ThemeToggle } from '@shared/components/theme-toggle/theme-toggle';
 
 export interface AdminNavItem {
   label: string;
@@ -33,6 +47,7 @@ export interface AdminNavItem {
   selector: 'app-admin-layout',
   imports: [
     CommonModule,
+    ReactiveFormsModule,
     RouterOutlet,
     RouterLink,
     RouterLinkActive,
@@ -42,11 +57,14 @@ export interface AdminNavItem {
     MatIconModule,
     MatSelectModule,
     MatFormFieldModule,
+    MatInputModule,
+    MatAutocompleteModule,
     MatBadgeModule,
     MatMenuModule,
     MatDividerModule,
     MatTooltipModule,
     MatRippleModule,
+    ThemeToggle,
   ],
   templateUrl: './admin-layout.html',
   styleUrl: './admin-layout.css',
@@ -80,9 +98,7 @@ export class AdminLayout implements OnInit, OnDestroy {
   readonly adminModalPrivacidadOpen = signal(false);
   readonly adminModalAyudaOpen = signal(false);
   readonly isSuperAdmin = computed(() => this.auth.isSuperAdmin());
-  readonly canBrowseAllVenues = computed(() =>
-    this.auth.currentUser()?.rol === 'superadmin',
-  );
+  readonly canBrowseAllVenues = computed(() => this.auth.currentUser()?.rol === 'superadmin');
   readonly allVenuesMode = computed(() => this.db.managementScope?.() === 'all');
   readonly accountRoleLabel = computed(() => {
     const role = this.auth.currentUser()?.rol;
@@ -145,7 +161,36 @@ export class AdminLayout implements OnInit, OnDestroy {
   readonly cajaAbierta = computed(() => this.cajaService.tieneSesionActiva());
   readonly stockCriticoCount = computed(() => this.posService.productosStockCritico().length);
 
+  readonly sedeControl = new FormControl<any>('');
+  readonly filteredSedes: Observable<any[]>;
+
+  readonly displaySedeFn = (sede: any): string => {
+    if (!sede) return '';
+    return typeof sede === 'object' ? String(sede.nombre || '') : String(sede);
+  };
+
+  onSedeSelected(sede: any): void {
+    if (!sede) return;
+    const id = typeof sede === 'object' ? sede.id : sede;
+    this.seleccionarSede(id);
+  }
+
   constructor() {
+    const sedes$ = toObservable(this.sedesDelDueno);
+    const query$ = this.sedeControl.valueChanges.pipe(startWith(this.sedeControl.value));
+    this.filteredSedes = combineLatest([sedes$, query$]).pipe(
+      map(([sedes, val]) => {
+        if (!val || typeof val === 'object') {
+          return sedes;
+        }
+        const q = String(val).toLowerCase().trim();
+        if (!q) return sedes;
+        return sedes.filter(
+          (s) => s.nombre?.toLowerCase().includes(q) || s.direccion?.toLowerCase().includes(q),
+        );
+      }),
+    );
+
     effect((onCleanup) => {
       if (!this.auth.currentUser()?.id) return;
       const request = this.auth.loadPlayerProfile().subscribe({ error: () => undefined });
@@ -153,9 +198,13 @@ export class AdminLayout implements OnInit, OnDestroy {
     });
     effect(() => {
       if (this.context.loading()) return;
-      const id = this.context.venue()?.id ?? null;
+      const venue = this.context.venue();
+      const id = venue?.id ?? null;
       untracked(() => {
         if (this.db.sedeOperativaId() !== id) this.db.setSedeOperativaId(id);
+        if (venue && this.sedeControl.value?.id !== venue.id) {
+          this.sedeControl.setValue(venue, { emitEvent: true });
+        }
       });
     });
   }
@@ -174,156 +223,63 @@ export class AdminLayout implements OnInit, OnDestroy {
   readonly sedeSearchQuery = signal('');
   readonly sedeSearchOpen = signal(false);
 
-  /* ================= NOTIFICACIONES OPERATIVAS ESTILO FACEBOOK ================= */
+  /* ================= NOTIFICACIONES OPERATIVAS DINÁMICAS ================= */
   readonly notificationsOpen = signal(false);
   readonly notifFilter = signal<'todas' | 'no_leidas'>('todas');
+  private readonly readNotifIds = signal<Set<string>>(new Set());
 
-  readonly notificationsList = signal([
-    {
-      id: 'notif-1',
-      modulo: 'Reservas & Operaciones',
-      detalle: 'Tienes reservas pendientes por verificar y confirmar abono.',
-      ruta: '/admin/reservas',
-      icono: 'event_available',
-      avatarBg: '#3b82f6',
-      badgeIcon: 'schedule',
-      badgeColor: '#1d4ed8',
-      tiempo: 'Hace 15 min',
-      leida: false,
-    },
-    {
-      id: 'notif-2',
-      modulo: 'Inventario & Kardex',
-      detalle: 'Alerta de existencias: Hay productos con saldo cerca del stock mínimo.',
-      ruta: '/admin/inventario',
-      icono: 'inventory',
-      avatarBg: '#f59e0b',
-      badgeIcon: 'warning',
-      badgeColor: '#b45309',
-      tiempo: 'Hace 30 min',
-      leida: false,
-    },
-    {
-      id: 'notif-3',
-      modulo: 'Caja Operativa & Turnos',
-      detalle: 'Turno activo en sede. Recuerda registrar los movimientos manuales antes del arqueo.',
-      ruta: '/admin/caja',
-      icono: 'point_of_sale',
-      avatarBg: '#10b981',
-      badgeIcon: 'payments',
-      badgeColor: '#047857',
-      tiempo: 'Hace 1 h',
-      leida: false,
-    },
-    {
-      id: 'notif-4',
-      modulo: 'Créditos & Fiados',
-      detalle: 'Cuentas deudoras con saldos pendientes requieren revisión de abonos.',
-      ruta: '/admin/creditos',
-      icono: 'account_balance_wallet',
-      avatarBg: '#ef4444',
-      badgeIcon: 'credit_card',
-      badgeColor: '#b91c1c',
-      tiempo: 'Hace 2 h',
-      leida: false,
-    },
-    {
-      id: 'notif-5',
-      modulo: 'Reportes & Opiniones',
-      detalle: 'Se ha registrado una nueva incidencia o reseña en una cancha de tu sede.',
-      ruta: '/admin/reportes',
-      icono: 'flag',
-      avatarBg: '#ec4899',
-      badgeIcon: 'report_problem',
-      badgeColor: '#be185d',
-      tiempo: 'Hace 3 h',
-      leida: true,
-    },
-    {
-      id: 'notif-6',
-      modulo: 'Compras & Proveedores',
-      detalle: 'Recepción y órdenes de compra con conservación de costo registradas.',
-      ruta: '/admin/compras',
-      icono: 'local_shipping',
-      avatarBg: '#14b8a6',
-      badgeIcon: 'check_circle',
-      badgeColor: '#0f766e',
-      tiempo: 'Ayer',
-      leida: true,
-    },
-    {
-      id: 'notif-7',
-      modulo: 'Punto de Venta (POS)',
-      detalle: 'Mostrador operativo listo para cobros rápidos y emisión de comprobantes.',
-      ruta: '/admin/pos',
-      icono: 'storefront',
-      avatarBg: '#8b5cf6',
-      badgeIcon: 'shopping_cart',
-      badgeColor: '#6d28d9',
-      tiempo: 'Ayer',
-      leida: true,
-    },
-    {
-      id: 'notif-8',
-      modulo: 'Catálogo & Productos',
-      detalle: 'Categorías configuradas con iconos asignados a productos sin foto.',
-      ruta: '/admin/catalogo',
-      icono: 'category',
-      avatarBg: '#06b6d4',
-      badgeIcon: 'sell',
-      badgeColor: '#0e7490',
-      tiempo: 'Hace 2 días',
-      leida: true,
-    },
-    {
-      id: 'notif-9',
-      modulo: 'Mis Sedes & Canchas',
-      detalle: 'Revisa la disponibilidad, descansos y tarifas de tus losas deportivas.',
-      ruta: '/admin/canchas',
-      icono: 'sports_soccer',
-      avatarBg: '#22c55e',
-      badgeIcon: 'sports',
-      badgeColor: '#15803d',
-      tiempo: 'Hace 3 días',
-      leida: true,
-    },
-    {
-      id: 'notif-10',
-      modulo: 'Finanzas & Liquidación',
-      detalle: 'Historial contable y recaudaciones consolidadas listas para conciliación.',
-      ruta: '/admin/finanzas',
-      icono: 'account_balance',
-      avatarBg: '#64748b',
-      badgeIcon: 'trending_up',
-      badgeColor: '#334155',
-      tiempo: 'Hace 5 días',
-      leida: true,
-    },
-    {
-      id: 'notif-11',
-      modulo: 'Personalización & QR',
-      detalle: 'QR vectorial de reserva y fichas de marca disponibles para impresión.',
-      ruta: '/admin/personalizacion',
-      icono: 'qr_code_2',
-      avatarBg: '#0ea5e9',
-      badgeIcon: 'download',
-      badgeColor: '#0369a1',
-      tiempo: 'Hace 1 sem',
-      leida: true,
-    },
-    {
-      id: 'notif-12',
-      modulo: 'Configuración',
-      detalle: 'Ajustes generales, seguridad y datos de cuenta sincronizados.',
-      ruta: '/admin/configuracion',
-      icono: 'settings',
-      avatarBg: '#475569',
-      badgeIcon: 'verified_user',
-      badgeColor: '#1e293b',
-      tiempo: 'Hace 2 sem',
-      leida: true,
-    },
-  ]);
+  readonly notificationsList = computed(() => {
+    const sedeId = this.sedeDelDueno()?.id ?? 'global';
+    const readIds = this.readNotifIds();
+    const items: Array<{
+      id: string;
+      modulo: string;
+      detalle: string;
+      ruta: string;
+      icono: string;
+      avatarBg: string;
+      badgeIcon: string;
+      badgeColor: string;
+      tiempo: string;
+      leida: boolean;
+    }> = [];
+
+    const pendientes = this.pendientesCount();
+    if (pendientes > 0) {
+      const id = `reservas-pendientes-${sedeId}-${pendientes}`;
+      items.push({
+        id,
+        modulo: 'Reservas & Operaciones',
+        detalle: `Tienes ${pendientes} reserva(s) pendiente(s) por verificar y confirmar abono.`,
+        ruta: '/admin/reservas',
+        icono: 'event_available',
+        avatarBg: '#3b82f6',
+        badgeIcon: 'schedule',
+        badgeColor: '#1d4ed8',
+        tiempo: 'Ahora',
+        leida: readIds.has(id),
+      });
+    }
+
+    const criticos = this.stockCriticoCount();
+    if (criticos > 0) {
+      const id = `stock-critico-${sedeId}-${criticos}`;
+      items.push({
+        id,
+        modulo: 'Inventario & Kardex',
+        detalle: `Alerta de existencias: Hay ${criticos} producto(s) con saldo igual o por debajo del stock mínimo.`,
+        ruta: '/admin/inventario',
+        icono: 'inventory',
+        avatarBg: '#f59e0b',
+        badgeIcon: 'warning',
+        badgeColor: '#b45309',
+        tiempo: 'Ahora',
+        leida: readIds.has(id),
+      });
+    }
+
+    return items;
+  });
 
   readonly unreadNotificationsCount = computed(() => {
     return this.notificationsList().filter((n) => !n.leida).length;
@@ -342,15 +298,23 @@ export class AdminLayout implements OnInit, OnDestroy {
   }
 
   abrirNotificacion(item: any): void {
-    this.notificationsList.update((list) =>
-      list.map((n) => (n.id === item.id ? { ...n, leida: true } : n)),
-    );
+    this.readNotifIds.update((set) => {
+      const next = new Set(set);
+      next.add(item.id);
+      return next;
+    });
     this.notificationsOpen.set(false);
     void this.router.navigateByUrl(item.ruta);
   }
 
   marcarTodasLeidas(): void {
-    this.notificationsList.update((list) => list.map((n) => ({ ...n, leida: true })));
+    this.readNotifIds.update((set) => {
+      const next = new Set(set);
+      for (const n of this.notificationsList()) {
+        next.add(n.id);
+      }
+      return next;
+    });
   }
 
   readonly sedesFiltradas = computed(() => {
@@ -358,17 +322,27 @@ export class AdminLayout implements OnInit, OnDestroy {
     const list = this.sedesDelDueno();
     if (!q) return list;
     return list.filter(
-      (s) =>
-        s.nombre?.toLowerCase().includes(q) ||
-        s.direccion?.toLowerCase().includes(q),
+      (s) => s.nombre?.toLowerCase().includes(q) || s.direccion?.toLowerCase().includes(q),
     );
   });
 
-  @HostListener('document:click')
-  onDocumentClick(): void {
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event?: Event): void {
     if (this.sedeSearchOpen()) {
       this.cerrarSedeSearch();
     }
+    // Click exterior: cierra la ventana de notificaciones si el clic ocurre fuera de la campana/popover.
+    if (this.notificationsOpen()) {
+      const target = event?.target as HTMLElement | null;
+      if (!target?.closest?.('.bell-notifications-wrapper')) {
+        this.notificationsOpen.set(false);
+      }
+    }
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.notificationsOpen()) this.notificationsOpen.set(false);
   }
 
   onSedeSearchFocus(): void {
@@ -393,6 +367,10 @@ export class AdminLayout implements OnInit, OnDestroy {
   seleccionarSede(sedeId: number | string | null | undefined): void {
     if (sedeId == null || sedeId === '') return;
     this.context.selectVenue(sedeId);
+    const found = this.sedesDelDueno().find((s) => String(s.id) === String(sedeId));
+    if (found) {
+      this.sedeControl.setValue(found, { emitEvent: true });
+    }
     this.sedeSearchOpen.set(false);
     this.sedeSearchQuery.set('');
   }

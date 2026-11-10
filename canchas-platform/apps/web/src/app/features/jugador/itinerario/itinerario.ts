@@ -1,5 +1,7 @@
 import { Component, computed, inject, signal, effect } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { VenueWeather } from '@shared/components/venue-weather/venue-weather';
 import { DatabaseService } from '@core/supabase/database.service';
 import { AuthService } from '@core/auth/auth.service';
@@ -7,7 +9,7 @@ import { ConfirmationService } from '@shared/components/confirmation/confirmatio
 import type { Booking, BookingStatus } from '@shared/models/booking.model';
 
 @Component({
-  imports: [RouterLink, VenueWeather],
+  imports: [RouterLink, VenueWeather, MatIconModule, MatProgressSpinnerModule],
   selector: 'app-itinerario',
   styleUrl: './itinerario.css',
   templateUrl: './itinerario.html',

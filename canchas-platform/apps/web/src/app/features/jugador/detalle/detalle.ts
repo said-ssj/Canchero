@@ -4,7 +4,14 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { finalize } from 'rxjs';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { VenueWeather } from '@shared/components/venue-weather/venue-weather';
+import { VenueMap } from '@shared/components/venue-map/venue-map';
 import { ProfileHeader } from '@shared/components/profile-header/profile-header';
 import { OwnerIdentity } from '@shared/components/profile-header/owner-identity';
 import type { VenueDayHours } from '@shared/models/venue-hours.model';
@@ -36,7 +43,19 @@ interface TimeSlot {
 }
 
 @Component({
-  imports: [RouterLink, VenueWeather, ProfileHeader, OwnerIdentity],
+  imports: [
+    RouterLink,
+    VenueWeather,
+    VenueMap,
+    ProfileHeader,
+    OwnerIdentity,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    MatIconModule,
+    MatProgressSpinnerModule,
+    MatProgressBarModule,
+  ],
   selector: 'app-detalle',
   styleUrl: './detalle.css',
   templateUrl: './detalle.html',
@@ -574,7 +593,11 @@ export class Detalle {
     const title = venue?.nombre ? `Sede ${venue.nombre} en Canchero` : 'Sede deportiva en Canchero';
     if (typeof navigator !== 'undefined' && navigator.share) {
       try {
-        await navigator.share({ title, text: `¡Reserva tu cancha en ${venue?.nombre || 'Canchero'}!`, url });
+        await navigator.share({
+          title,
+          text: `¡Reserva tu cancha en ${venue?.nombre || 'Canchero'}!`,
+          url,
+        });
         return;
       } catch {
         // Fallback al portapapeles si el usuario cancela o no es compatible
@@ -596,7 +619,11 @@ export class Detalle {
     const title = `${cancha.nombre} - ${venue?.nombre || 'Canchero'}`;
     if (typeof navigator !== 'undefined' && navigator.share) {
       try {
-        await navigator.share({ title, text: `¡Mira la cancha ${cancha.nombre} en ${venue?.nombre || 'Canchero'}!`, url });
+        await navigator.share({
+          title,
+          text: `¡Mira la cancha ${cancha.nombre} en ${venue?.nombre || 'Canchero'}!`,
+          url,
+        });
         return;
       } catch {
         // Fallback al portapapeles
