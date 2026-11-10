@@ -118,6 +118,41 @@ export class AdminUsuarios implements OnInit {
     });
   }
 
+  toggleAdminRole(user: AdminUserItem): void {
+    if (user.id === this.currentUserId() || user.rol.toLowerCase() === 'superadmin') {
+      return;
+    }
+
+    const currentRol = user.rol.toLowerCase();
+    const newRol = currentRol === 'admin' ? 'cliente' : 'admin';
+    const actionText =
+      newRol === 'admin' ? 'otorgar rol de Administrador a' : 'quitar rol de Administrador de';
+
+    const confirmed = window.confirm(`¿Estás seguro de ${actionText} ${user.nombre}?`);
+    if (!confirmed) return;
+
+    this.updatingId.set(user.id);
+    this.error.set(null);
+    this.successMessage.set(null);
+
+    this.userService.updateUserRole(user.id, newRol).subscribe({
+      next: (updatedUser) => {
+        this.users.update((current) =>
+          current.map((u) => (u.id === updatedUser.id ? { ...u, rol: updatedUser.rol } : u)),
+        );
+        this.updatingId.set(null);
+        this.successMessage.set(
+          `Rol actualizado con éxito para ${updatedUser.nombre}: ahora es ${updatedUser.rol.toUpperCase()}.`,
+        );
+        setTimeout(() => this.successMessage.set(null), 4000);
+      },
+      error: (err) => {
+        this.updatingId.set(null);
+        this.error.set(err.error?.message || 'No se pudo actualizar el rol del usuario.');
+      },
+    });
+  }
+
   /** Roles que el superadmin puede dar (el de superadmin no se asigna desde aquí). */
   readonly rolesAsignables = [
     { value: 'user', label: 'Jugador (user)' },
