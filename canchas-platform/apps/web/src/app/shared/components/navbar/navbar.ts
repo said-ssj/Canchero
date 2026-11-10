@@ -8,7 +8,18 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatDividerModule } from '@angular/material/divider';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { AuthService } from '@core/auth/auth.service';
+
+export interface UserMenuItem {
+  label: string;
+  icon: string;
+  route?: string;
+  action?: 'logout';
+  isDivider?: boolean;
+}
 
 @Component({
   imports: [
@@ -21,6 +32,9 @@ import { AuthService } from '@core/auth/auth.service';
     MatInputModule,
     MatIconModule,
     MatButtonModule,
+    MatMenuModule,
+    MatDividerModule,
+    MatTooltipModule,
   ],
   selector: 'app-navbar',
   styleUrl: './navbar.css',
@@ -31,16 +45,10 @@ export class Navbar {
   private readonly router = inject(Router);
 
   protected readonly menuOpen = signal(false);
-  protected readonly profileMenuOpen = signal(false);
 
   // Modal de Búsqueda General (Lupa)
   protected readonly searchOverlayOpen = signal(false);
   protected searchQuery = '';
-
-  // Modales de Perfil
-  protected readonly modalConfigOpen = signal(false);
-  protected readonly modalPrivacidadOpen = signal(false);
-  protected readonly modalAyudaOpen = signal(false);
 
   protected readonly themeMode = inject(ThemeService).mode;
   protected readonly user = this.auth.user;
@@ -51,6 +59,19 @@ export class Navbar {
       [profile?.nombre, profile?.apellido].filter(Boolean).join(' ') || this.user()?.nombre || ''
     );
   });
+
+  protected readonly roleLabel = computed(() => {
+    const u = this.user();
+    if (!u) return 'Usuario';
+    const r = (u.rol || '').toLowerCase();
+    if (r === 'superadmin') return 'Superadministrador';
+    if (r === 'admin') return 'Administrador';
+    if (r === 'dueno' || r === 'owner') return 'Dueño de sede';
+    if (r === 'cajero' || r === 'caja') return 'Cajero';
+    if (r === 'operador') return 'Operador';
+    return 'Jugador';
+  });
+
   protected readonly isOwner = computed(() => {
     const u = this.user();
     if (!u) return false;
@@ -64,19 +85,33 @@ export class Navbar {
     );
   });
 
+  protected readonly menuItems = computed<UserMenuItem[]>(() => {
+    const items: UserMenuItem[] = [
+      { label: 'Mis reservas', icon: 'event_available', route: '/itinerario' },
+      { label: 'Mi perfil', icon: 'person', route: '/perfil' },
+      { label: 'Mi cuenta', icon: 'manage_accounts', route: '/cuenta' },
+    ];
+    if (this.isOwner()) {
+      items.push({
+        label: 'Panel de administración',
+        icon: 'admin_panel_settings',
+        route: '/admin',
+      });
+    }
+    items.push(
+      { label: '', icon: '', isDivider: true },
+      { label: 'Ayuda', icon: 'help', route: '/ayuda' },
+      { label: 'Cerrar sesión', icon: 'logout', action: 'logout' },
+    );
+    return items;
+  });
+
   constructor() {
     effect((onCleanup) => {
       if (!this.user()?.id) return;
       const request = this.auth.loadPlayerProfile().subscribe({ error: () => undefined });
       onCleanup(() => request.unsubscribe());
     });
-  }
-
-  @HostListener('document:click')
-  onDocumentClick(): void {
-    if (this.profileMenuOpen()) {
-      this.profileMenuOpen.set(false);
-    }
   }
 
   @HostListener('window:keydown.escape')
@@ -119,38 +154,7 @@ export class Navbar {
     void this.router.navigate(['/perfil']);
   }
 
-  protected toggleProfileMenu(): void {
-    this.profileMenuOpen.update((open) => !open);
-  }
-
-  protected abrirConfiguracion(): void {
-    this.profileMenuOpen.set(false);
-    this.modalConfigOpen.set(true);
-  }
-
-  protected abrirPrivacidad(): void {
-    this.profileMenuOpen.set(false);
-    this.modalPrivacidadOpen.set(true);
-  }
-
-  protected abrirAyuda(): void {
-    this.profileMenuOpen.set(false);
-    this.modalAyudaOpen.set(true);
-  }
-
-  protected cerrarModales(): void {
-    this.modalConfigOpen.set(false);
-    this.modalPrivacidadOpen.set(false);
-    this.modalAyudaOpen.set(false);
-  }
-
-  protected irAAdmin(): void {
-    this.cerrarModales();
-    void this.router.navigate(['/admin']);
-  }
-
   protected logout(): void {
-    this.profileMenuOpen.set(false);
     this.auth.logout();
     void this.router.navigate(['/']);
   }

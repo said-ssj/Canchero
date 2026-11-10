@@ -1,0 +1,150 @@
+<div class="help-page">
+  <!-- Cabecera -->
+  <header class="help-header">
+    <div
+      class="help-header-badge"
+      [class.online]="availability().active"
+      [class.offline]="!availability().active"
+    >
+      <span class="material-symbols-outlined icon-16" aria-hidden="true">
+        {{ availability().active ? 'check_circle' : 'schedule' }}
+      </span>
+      <span>{{ availability().message }} · {{ availability().submessage }}</span>
+    </div>
+    <h1>Centro de Ayuda Canchero</h1>
+    <p class="help-subtitle">
+      Encuentra respuestas inmediatas sobre tus reservas, pagos y canchas deportivas, o comunícate
+      directamente con nuestro equipo de atención.
+    </p>
+  </header>
+
+  <!-- Tarjeta de contacto WhatsApp -->
+  <section class="support-card" aria-labelledby="support-card-title">
+    <div class="support-info">
+      <div class="support-icon-wrap" aria-hidden="true">
+        <span class="material-symbols-outlined icon-28">chat</span>
+      </div>
+      <div>
+        <h2 id="support-card-title" class="support-title">¿Necesitas soporte personalizado?</h2>
+        <p class="support-meta">
+          Escríbenos por WhatsApp (+51 987 654 321). Atención de lunes a domingo de 08:00 a 23:00.
+        </p>
+      </div>
+    </div>
+    <a
+      [href]="whatsAppUrl()"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="btn-whatsapp"
+      mat-flat-button
+      aria-label="Abrir chat de WhatsApp con el soporte de Canchero"
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">send</span>
+      <span>Escribir por WhatsApp</span>
+    </a>
+  </section>
+
+  <!-- Buscador de Preguntas Frecuentes -->
+  <section class="faq-search-wrap" aria-label="Buscador de preguntas frecuentes">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="faq-search-field">
+      <mat-label>Buscar en las preguntas frecuentes</mat-label>
+      <span
+        matPrefix
+        class="material-symbols-outlined"
+        style="margin-left: 8px; color: var(--color-ink-400)"
+        aria-hidden="true"
+      >
+        search
+      </span>
+      <input
+        matInput
+        type="search"
+        [(ngModel)]="searchQuery"
+        placeholder="Ej. cancelar, lluvia, métodos de pago, pase digital..."
+        aria-label="Buscar en preguntas frecuentes"
+      />
+      @if (searchQuery.trim()) {
+        <button
+          mat-icon-button
+          matSuffix
+          type="button"
+          (click)="searchQuery = ''"
+          aria-label="Limpiar búsqueda"
+          matTooltip="Limpiar"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">close</span>
+        </button>
+      }
+    </mat-form-field>
+  </section>
+
+  <!-- Lista de Preguntas Frecuentes en Acordeón -->
+  <section aria-labelledby="faq-title">
+    <div class="faq-section-title">
+      <h2 id="faq-title" style="margin: 0; font-size: 18px">Preguntas frecuentes</h2>
+      <span class="faq-count"
+        >{{ filteredFaqs().length }}
+        {{ filteredFaqs().length === 1 ? 'resultado' : 'preguntas' }}</span
+      >
+    </div>
+
+    @if (filteredFaqs().length > 0) {
+      <mat-accordion class="faq-accordion" multi="false">
+        @for (faq of filteredFaqs(); track faq.id) {
+          <mat-expansion-panel>
+            <mat-expansion-panel-header>
+              <mat-panel-title style="align-items: center">
+                <span class="faq-category-tag">{{ faq.categoryLabel }}</span>
+                <span>{{ faq.question }}</span>
+              </mat-panel-title>
+            </mat-expansion-panel-header>
+            <div class="faq-panel-content">
+              <p style="margin: 0">{{ faq.answer }}</p>
+            </div>
+          </mat-expansion-panel>
+        }
+      </mat-accordion>
+    } @else {
+      <!-- Estado vacío si no hay coincidencias -->
+      <div class="faq-empty-state" role="status">
+        <span class="material-symbols-outlined faq-empty-icon" aria-hidden="true">search_off</span>
+        <h3 class="faq-empty-title">No encontramos respuestas para "{{ searchQuery }}"</h3>
+        <p class="faq-empty-text">
+          Prueba con otras palabras como "reserva", "pago" o "lluvia", o escríbenos directamente a
+          nuestro WhatsApp de soporte.
+        </p>
+        <a
+          [href]="whatsAppUrl()"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="btn-whatsapp"
+          mat-flat-button
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">chat</span>
+          <span>Preguntar por WhatsApp</span>
+        </a>
+      </div>
+    }
+  </section>
+
+  <!-- Sección exclusiva para administradores de sede -->
+  @if (isOwner()) {
+    <aside class="owner-help-box" aria-label="Soporte para dueños de sede">
+      <div>
+        <h3 class="owner-help-title">¿Administras un complejo deportivo?</h3>
+        <p class="owner-help-desc">
+          Para gestionar tus canchas, tarifas, turnos, caja y personal, ingresa a tu Panel de
+          Administración.
+        </p>
+      </div>
+      <a
+        routerLink="/admin"
+        mat-stroked-button
+        style="border-color: #ea580c; color: #ea580c; font-weight: 700"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">admin_panel_settings</span>
+        <span>Ir al Panel de Administración</span>
+      </a>
+    </aside>
+  }
+</div>

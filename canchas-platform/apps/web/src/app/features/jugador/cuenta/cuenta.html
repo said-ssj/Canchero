@@ -1,0 +1,620 @@
+<div class="account-page">
+  <!-- Cabecera -->
+  <header class="account-header">
+    <h1>Mi cuenta</h1>
+    <p>Administra tus datos personales, preferencias de notificación, apariencia y seguridad.</p>
+  </header>
+
+  <!-- Pestañas de Navegación por URL -->
+  <nav mat-tab-nav-bar [tabPanel]="tabPanel" class="account-nav-bar">
+    <a
+      mat-tab-link
+      [routerLink]="['/cuenta']"
+      [queryParams]="{ tab: 'perfil' }"
+      [active]="activeTab() === 'perfil'"
+      class="account-tab-link"
+      id="tab-perfil"
+      aria-controls="panel-perfil"
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">person</span>
+      <span>Perfil</span>
+    </a>
+    <a
+      mat-tab-link
+      [routerLink]="['/cuenta']"
+      [queryParams]="{ tab: 'notificaciones' }"
+      [active]="activeTab() === 'notificaciones'"
+      class="account-tab-link"
+      id="tab-notificaciones"
+      aria-controls="panel-notificaciones"
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">notifications</span>
+      <span>Notificaciones</span>
+    </a>
+    <a
+      mat-tab-link
+      [routerLink]="['/cuenta']"
+      [queryParams]="{ tab: 'seguridad' }"
+      [active]="activeTab() === 'seguridad'"
+      class="account-tab-link"
+      id="tab-seguridad"
+      aria-controls="panel-seguridad"
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">security</span>
+      <span>Seguridad y privacidad</span>
+    </a>
+  </nav>
+
+  <mat-tab-nav-panel #tabPanel>
+    <!-- ==================== PESTAÑA 1: PERFIL ==================== -->
+    @if (activeTab() === 'perfil') {
+      <div id="panel-perfil" role="tabpanel" aria-labelledby="tab-perfil">
+        <!-- Tarjeta de Identidad -->
+        <section class="user-identity-card" aria-label="Identidad del usuario">
+          <div class="user-identity-avatar" aria-hidden="true">
+            @if (profile()?.foto; as foto) {
+              <img [src]="foto" alt="" />
+            } @else {
+              {{ initials() }}
+            }
+          </div>
+          <div class="user-identity-details">
+            <div class="user-identity-name">{{ fullName() }}</div>
+            <div class="user-identity-meta">
+              <span>{{ user()?.correo || user()?.email }}</span>
+              <span class="user-role-chip">{{ roleLabel() }}</span>
+              <span class="auth-method-chip">
+                <span class="material-symbols-outlined icon-14" aria-hidden="true">
+                  {{ isGoogleAuth() ? 'verified_user' : 'password' }}
+                </span>
+                {{ isGoogleAuth() ? 'Cuenta de Google' : 'Correo y contraseña' }}
+              </span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Formulario de Edición de Datos Personales -->
+        <section class="account-card" aria-labelledby="edit-profile-title">
+          <h2 id="edit-profile-title" class="account-card-title">
+            <span class="material-symbols-outlined" style="color: #15803d" aria-hidden="true"
+              >badge</span
+            >
+            Datos personales
+          </h2>
+          <p class="account-card-desc">
+            Información que verán las sedes deportivas al confirmar tus reservas.
+          </p>
+
+          <form (ngSubmit)="saveProfile()">
+            <div class="form-grid">
+              <mat-form-field appearance="outline" class="w-full">
+                <mat-label>Nombres</mat-label>
+                <input
+                  matInput
+                  type="text"
+                  name="nombre"
+                  [(ngModel)]="formNombre"
+                  required
+                  maxlength="60"
+                  placeholder="Tu nombre"
+                  aria-label="Nombres del usuario"
+                />
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="w-full">
+                <mat-label>Apellidos</mat-label>
+                <input
+                  matInput
+                  type="text"
+                  name="apellido"
+                  [(ngModel)]="formApellido"
+                  maxlength="60"
+                  placeholder="Tus apellidos"
+                  aria-label="Apellidos del usuario"
+                />
+              </mat-form-field>
+
+              <!-- Teléfono con validación de Perú -->
+              <mat-form-field appearance="outline" class="w-full">
+                <mat-label>Número de WhatsApp (Perú)</mat-label>
+                <span
+                  matPrefix
+                  style="padding-right: 6px; font-weight: 700; color: var(--color-ink-700)"
+                >
+                  +51
+                </span>
+                <input
+                  matInput
+                  type="tel"
+                  name="telefono"
+                  [(ngModel)]="formTelefono"
+                  placeholder="987654321"
+                  maxlength="9"
+                  pattern="9[0-9]{8}"
+                  aria-label="Número de WhatsApp en Perú"
+                />
+                <mat-hint
+                  >9 dígitos iniciando en 9. Utilizado para recordatorios de partidos.</mat-hint
+                >
+              </mat-form-field>
+
+              <!-- Correo solo lectura -->
+              <mat-form-field appearance="outline" class="w-full">
+                <mat-label>Correo electrónico (solo lectura)</mat-label>
+                <input
+                  matInput
+                  type="email"
+                  [value]="user()?.correo || user()?.email || ''"
+                  readonly
+                  disabled
+                  aria-label="Correo electrónico asociado"
+                />
+                <mat-hint>Vinculado a tu método de autenticación.</mat-hint>
+              </mat-form-field>
+            </div>
+
+            @if (profileError()) {
+              <p role="alert" style="color: #dc2626; font-size: 13px; margin: 0 0 16px">
+                {{ profileError() }}
+              </p>
+            }
+
+            <button
+              mat-flat-button
+              type="submit"
+              class="btn-primary"
+              [disabled]="savingProfile()"
+              aria-label="Guardar cambios de perfil"
+            >
+              @if (savingProfile()) {
+                <span class="material-symbols-outlined icon-spin" aria-hidden="true">sync</span>
+                <span>Guardando cambios…</span>
+              } @else {
+                <span class="material-symbols-outlined" aria-hidden="true">check</span>
+                <span>Guardar cambios</span>
+              }
+            </button>
+          </form>
+        </section>
+
+        <!-- Apariencia y Tema Visual -->
+        <section class="account-card" aria-labelledby="appearance-title">
+          <h2 id="appearance-title" class="account-card-title">
+            <span class="material-symbols-outlined" style="color: #15803d" aria-hidden="true"
+              >palette</span
+            >
+            Apariencia visual
+          </h2>
+          <p class="account-card-desc">
+            Personaliza el tema de la plataforma. La preferencia se guarda automáticamente en este
+            dispositivo.
+          </p>
+
+          <mat-button-toggle-group
+            [value]="themeMode()"
+            (change)="onThemeChange($event.value)"
+            class="theme-toggle-group"
+            aria-label="Seleccionar tema visual"
+          >
+            <mat-button-toggle value="light" aria-label="Tema Claro">
+              <span class="material-symbols-outlined" aria-hidden="true">light_mode</span>
+              <span>Claro</span>
+            </mat-button-toggle>
+            <mat-button-toggle value="dark" aria-label="Tema Oscuro">
+              <span class="material-symbols-outlined" aria-hidden="true">dark_mode</span>
+              <span>Oscuro</span>
+            </mat-button-toggle>
+            <mat-button-toggle value="system" aria-label="Tema del Sistema">
+              <span class="material-symbols-outlined" aria-hidden="true">desktop_windows</span>
+              <span>Sistema</span>
+            </mat-button-toggle>
+          </mat-button-toggle-group>
+        </section>
+      </div>
+    }
+
+    <!-- ==================== PESTAÑA 2: NOTIFICACIONES ==================== -->
+    @if (activeTab() === 'notificaciones') {
+      <div id="panel-notificaciones" role="tabpanel" aria-labelledby="tab-notificaciones">
+        <section class="account-card" aria-labelledby="notif-channels-title">
+          <h2 id="notif-channels-title" class="account-card-title">
+            <span class="material-symbols-outlined" style="color: #15803d" aria-hidden="true"
+              >campaign</span
+            >
+            Canales de comunicación
+          </h2>
+          <p class="account-card-desc">
+            Selecciona por qué medios deseas recibir las notificaciones de tus partidos.
+          </p>
+
+          <!-- Toggle WhatsApp -->
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <span class="toggle-label">WhatsApp</span>
+              <span class="toggle-desc">
+                Mensajes directos con tu código de pase, recordatorios y cambios de turno.
+              </span>
+            </div>
+            <mat-slide-toggle
+              [(ngModel)]="notifWhatsApp"
+              (change)="onWhatsAppToggleChange($event.checked)"
+              color="primary"
+              aria-label="Activar notificaciones por WhatsApp"
+            ></mat-slide-toggle>
+          </div>
+
+          <!-- Si activa WhatsApp y no tiene teléfono registrado -->
+          @if (notifWhatsApp && !formTelefono) {
+            <div class="whatsapp-inline-prompt" role="alert">
+              <p>
+                <strong>Número de WhatsApp requerido:</strong> Aún no tienes un teléfono registrado
+                en tu perfil. Ingrésalo a continuación para recibir tus avisos:
+              </p>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap">
+                <mat-form-field
+                  appearance="outline"
+                  subscriptSizing="dynamic"
+                  style="max-width: 240px"
+                >
+                  <span matPrefix style="padding-right: 6px; font-weight: 700">+51</span>
+                  <input
+                    matInput
+                    type="tel"
+                    [(ngModel)]="formTelefono"
+                    placeholder="987654321"
+                    maxlength="9"
+                    aria-label="Ingresa tu número de WhatsApp"
+                  />
+                </mat-form-field>
+                <button
+                  mat-flat-button
+                  type="button"
+                  class="btn-primary"
+                  (click)="saveProfile()"
+                  [disabled]="!isPhoneValid()"
+                >
+                  Guardar número
+                </button>
+              </div>
+            </div>
+          }
+
+          <!-- Toggle Correo Electrónico -->
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <span class="toggle-label">Correo electrónico</span>
+              <span class="toggle-desc">
+                Comprobantes de pago, resumen de reserva y confirmaciones digitales.
+              </span>
+            </div>
+            <mat-slide-toggle
+              [(ngModel)]="notifEmail"
+              color="primary"
+              aria-label="Activar notificaciones por Correo electrónico"
+            ></mat-slide-toggle>
+          </div>
+        </section>
+
+        <!-- Tipos de Avisos -->
+        <section class="account-card" aria-labelledby="notif-types-title">
+          <h2 id="notif-types-title" class="account-card-title">
+            <span class="material-symbols-outlined" style="color: #15803d" aria-hidden="true"
+              >checklist</span
+            >
+            Tipos de aviso
+          </h2>
+          <p class="account-card-desc">Configura qué eventos generan una alerta en tu cuenta.</p>
+
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <span class="toggle-label">Confirmación de reserva</span>
+              <span class="toggle-desc"
+                >Aviso inmediato con tu código QR cuando el pago o reserva es validado.</span
+              >
+            </div>
+            <mat-slide-toggle
+              [(ngModel)]="notifBookingConfirmation"
+              color="primary"
+              aria-label="Confirmación de reserva"
+            ></mat-slide-toggle>
+          </div>
+
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <span class="toggle-label">Recordatorio antes del partido</span>
+              <span class="toggle-desc"
+                >Te recordamos tu turno 1 hora antes de que inicie tu partido.</span
+              >
+            </div>
+            <mat-slide-toggle
+              [(ngModel)]="notifMatchReminder"
+              color="primary"
+              aria-label="Recordatorio antes del partido"
+            ></mat-slide-toggle>
+          </div>
+
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <span class="toggle-label">Cambios o cancelaciones</span>
+              <span class="toggle-desc"
+                >Alertas urgentes si la sede reprograma el turno o por motivos de clima.</span
+              >
+            </div>
+            <mat-slide-toggle
+              [(ngModel)]="notifScheduleChanges"
+              color="primary"
+              aria-label="Cambios o cancelaciones"
+            ></mat-slide-toggle>
+          </div>
+
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <span class="toggle-label">Promociones y novedades</span>
+              <span class="toggle-desc"
+                >Descuentos en canchas de tu distrito y torneos especiales (desactivado por
+                defecto).</span
+              >
+            </div>
+            <mat-slide-toggle
+              [(ngModel)]="notifPromotions"
+              color="primary"
+              aria-label="Promociones y novedades"
+            ></mat-slide-toggle>
+          </div>
+
+          <div style="margin-top: 24px">
+            <button
+              mat-flat-button
+              type="button"
+              class="btn-primary"
+              (click)="saveNotifications()"
+              [disabled]="savingNotifications()"
+              aria-label="Guardar preferencias de notificación"
+            >
+              @if (savingNotifications()) {
+                <span class="material-symbols-outlined icon-spin" aria-hidden="true">sync</span>
+                <span>Guardando…</span>
+              } @else {
+                <span class="material-symbols-outlined" aria-hidden="true">check</span>
+                <span>Guardar notificaciones</span>
+              }
+            </button>
+          </div>
+        </section>
+      </div>
+    }
+
+    <!-- ==================== PESTAÑA 3: SEGURIDAD Y PRIVACIDAD ==================== -->
+    @if (activeTab() === 'seguridad') {
+      <div id="panel-seguridad" role="tabpanel" aria-labelledby="tab-seguridad">
+        <!-- Método de Autenticación -->
+        <section class="account-card" aria-labelledby="security-method-title">
+          <h2 id="security-method-title" class="account-card-title">
+            <span class="material-symbols-outlined" style="color: #15803d" aria-hidden="true"
+              >lock</span
+            >
+            Método de acceso
+          </h2>
+          <p class="account-card-desc">Gestiona cómo ingresas de forma segura a Canchero.</p>
+
+          <div class="session-item">
+            <div class="session-main">
+              <span class="material-symbols-outlined session-icon" aria-hidden="true">
+                {{ isGoogleAuth() ? 'account_circle' : 'key' }}
+              </span>
+              <div>
+                <h3 class="session-title">
+                  {{ isGoogleAuth() ? 'Acceso con Google' : 'Correo y contraseña' }}
+                </h3>
+                <p class="session-sub">
+                  {{ user()?.correo || user()?.email }}
+                </p>
+              </div>
+            </div>
+            @if (!isGoogleAuth()) {
+              <a
+                routerLink="/recuperar"
+                mat-stroked-button
+                aria-label="Cambiar contraseña de tu cuenta"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">lock_reset</span>
+                <span>Cambiar contraseña</span>
+              </a>
+            } @else {
+              <span class="session-badge">Gestionado por Google</span>
+            }
+          </div>
+        </section>
+
+        <!-- Sesión activa y dispositivos -->
+        <section class="account-card" aria-labelledby="sessions-title">
+          <h2 id="sessions-title" class="account-card-title">
+            <span class="material-symbols-outlined" style="color: #15803d" aria-hidden="true"
+              >devices</span
+            >
+            Sesiones activas
+          </h2>
+          <p class="account-card-desc">
+            Dispositivos con acceso autenticado a tu cuenta de reservas.
+          </p>
+
+          <div class="session-item">
+            <div class="session-main">
+              <span class="material-symbols-outlined session-icon" aria-hidden="true"
+                >laptop_mac</span
+              >
+              <div>
+                <h3 class="session-title">Este navegador web</h3>
+                <p class="session-sub">Sesión actual en uso · Canchero Web</p>
+              </div>
+            </div>
+            <span class="session-badge">Activo ahora</span>
+          </div>
+
+          <div style="margin-top: 16px">
+            <button
+              mat-stroked-button
+              type="button"
+              (click)="cerrarSesionOtrosDispositivos()"
+              aria-label="Cerrar sesión en otros dispositivos"
+            >
+              <span class="material-symbols-outlined" aria-hidden="true">logout</span>
+              <span>Cerrar sesión en otros dispositivos</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- Transparencia de Datos y Privacidad -->
+        <section class="account-card" aria-labelledby="privacy-data-title">
+          <h2 id="privacy-data-title" class="account-card-title">
+            <span class="material-symbols-outlined" style="color: #15803d" aria-hidden="true"
+              >shield</span
+            >
+            Transparencia: ¿Qué datos guardamos y para qué?
+          </h2>
+          <p class="account-card-desc">
+            Canchero almacena únicamente la información imprescindible para coordinar y validar tus
+            partidos.
+          </p>
+
+          <div class="data-table-list" role="list">
+            <div class="data-row" role="listitem">
+              <span class="data-name">Datos de perfil</span>
+              <span class="data-purpose"
+                >Nombre y correo electrónico para identificarte como titular de las reservas.</span
+              >
+            </div>
+            <div class="data-row" role="listitem">
+              <span class="data-name">Teléfono / WhatsApp</span>
+              <span class="data-purpose"
+                >Para coordinar el acceso a la cancha o avisarte si surge alguna eventualidad de
+                horario.</span
+              >
+            </div>
+            <div class="data-row" role="listitem">
+              <span class="data-name">Historial deportivo</span>
+              <span class="data-purpose"
+                >Fechas, canchas y horarios de tus partidos para generar tus pases digitales y
+                estadísticas.</span
+              >
+            </div>
+            <div class="data-row" role="listitem">
+              <span class="data-name">Pagos y transacciones</span>
+              <span class="data-purpose"
+                >Procesados a través de pasarelas de pago cifradas; Canchero no guarda el número de
+                tus tarjetas ni códigos CVV.</span
+              >
+            </div>
+          </div>
+
+          <div style="margin-top: 20px; display: flex; gap: 12px; flex-wrap: wrap">
+            <button
+              mat-stroked-button
+              type="button"
+              (click)="descargarMisDatos()"
+              aria-label="Descargar una copia de mis datos en formato JSON"
+            >
+              <span class="material-symbols-outlined" aria-hidden="true">download</span>
+              <span>Descargar mis datos (JSON)</span>
+            </button>
+            <a routerLink="/privacidad" mat-button style="color: var(--color-ink-700)">
+              <span class="material-symbols-outlined" aria-hidden="true">description</span>
+              <span>Política de privacidad</span>
+            </a>
+            <a routerLink="/terminos" mat-button style="color: var(--color-ink-700)">
+              <span class="material-symbols-outlined" aria-hidden="true">policy</span>
+              <span>Términos y condiciones</span>
+            </a>
+          </div>
+        </section>
+
+        <!-- Zona de Peligro: Eliminar Cuenta -->
+        <section class="danger-zone" aria-labelledby="danger-zone-title">
+          <h2 id="danger-zone-title" class="danger-title">
+            <span class="material-symbols-outlined" aria-hidden="true">warning</span>
+            Zona de peligro
+          </h2>
+          <p class="danger-desc">
+            Si eliminas tu cuenta, se borrará tu historial de reservas, pases y configuración. Esta
+            acción no se puede deshacer.
+          </p>
+          <button
+            mat-flat-button
+            type="button"
+            class="btn-danger"
+            (click)="abrirModalEliminarCuenta()"
+            aria-label="Eliminar mi cuenta definitivamente"
+          >
+            <span class="material-symbols-outlined" aria-hidden="true">delete_forever</span>
+            <span>Eliminar mi cuenta</span>
+          </button>
+        </section>
+      </div>
+    }
+  </mat-tab-nav-panel>
+</div>
+
+<!-- Diálogo de confirmación para eliminar cuenta -->
+@if (dialogEliminarOpen()) {
+  <div class="profile-modal-backdrop" (click)="dialogEliminarOpen.set(false)">
+    <div
+      class="profile-modal-card"
+      (click)="$event.stopPropagation()"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="dialog-delete-title"
+    >
+      <div class="profile-modal-header">
+        <h3 id="dialog-delete-title" class="profile-modal-title" style="color: #dc2626">
+          <span class="material-symbols-outlined" aria-hidden="true">delete_forever</span>
+          ¿Eliminar tu cuenta de Canchero?
+        </h3>
+        <button
+          mat-icon-button
+          type="button"
+          class="btn-close-modal"
+          (click)="dialogEliminarOpen.set(false)"
+          aria-label="Cerrar"
+        >
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+      <div
+        class="profile-modal-body"
+        style="display: flex; flex-direction: column; gap: 14px; font-size: 14px"
+      >
+        <p style="margin: 0; color: var(--color-ink-700)">
+          Para confirmar la eliminación permanente de tu cuenta y reservas asociadas, por favor
+          escribe <strong>ELIMINAR</strong> o tu correo electrónico (<strong>{{
+            user()?.correo || user()?.email
+          }}</strong
+          >):
+        </p>
+
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Escribe ELIMINAR o tu correo</mat-label>
+          <input
+            matInput
+            type="text"
+            [(ngModel)]="confirmTextEliminar"
+            placeholder="ELIMINAR"
+            aria-label="Confirmación de eliminación"
+          />
+        </mat-form-field>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px">
+          <button mat-button type="button" (click)="dialogEliminarOpen.set(false)">Cancelar</button>
+          <button
+            mat-flat-button
+            type="button"
+            class="btn-danger"
+            [disabled]="!canConfirmEliminar()"
+            (click)="ejecutarEliminarCuenta()"
+          >
+            Confirmar eliminación
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}

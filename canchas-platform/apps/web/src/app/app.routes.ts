@@ -54,6 +54,24 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/jugador/auth/registro/registro').then((m) => m.Registro),
       },
+      {
+        path: 'cuenta',
+        loadComponent: () =>
+          import('./features/jugador/cuenta/cuenta').then((m) => m.AccountSettingsPage),
+      },
+      {
+        path: 'ayuda',
+        loadComponent: () => import('./features/jugador/ayuda/ayuda').then((m) => m.HelpCenterPage),
+      },
+      {
+        path: 'terminos',
+        loadComponent: () => import('./features/jugador/legal/terminos').then((m) => m.TermsPage),
+      },
+      {
+        path: 'privacidad',
+        loadComponent: () =>
+          import('./features/jugador/legal/privacidad').then((m) => m.PrivacyPage),
+      },
     ],
   },
   {

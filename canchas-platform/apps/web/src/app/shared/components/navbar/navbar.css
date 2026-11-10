@@ -72,6 +72,123 @@
 }
 
 /* Menú desplegable flotante (Hamburguesa de Perfil) */
+/* ==========================================================================
+   MENÚ DE USUARIO (MatMenu)
+   ========================================================================== */
+::ng-deep .user-profile-mat-menu {
+  min-width: 250px !important;
+  max-width: 320px !important;
+  border-radius: var(--radius-lg, 16px) !important;
+  border: 1px solid var(--color-border, #e2e8f0) !important;
+  background: var(--color-surface, #ffffff) !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.14) !important;
+  padding: 0 !important;
+}
+
+:root.dark-theme ::ng-deep .user-profile-mat-menu,
+body.dark-theme ::ng-deep .user-profile-mat-menu {
+  background: #18181b !important;
+  border-color: #27272a !important;
+}
+
+.user-menu-header {
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--color-surface-muted, #f8fafc);
+  cursor: default;
+}
+
+:root.dark-theme .user-menu-header,
+body.dark-theme .user-menu-header {
+  background: #27272a;
+}
+
+.user-menu-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--color-brand-green, #15803d);
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 14px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.user-menu-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.user-menu-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.user-menu-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-ink-900, #0f172a);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
+.user-menu-email {
+  font-size: 12px;
+  color: var(--color-ink-500, #64748b);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+.user-menu-role {
+  margin-top: 3px;
+}
+
+.role-badge-chip {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  color: #15803d;
+  background: #dcfce7;
+  padding: 1px 8px;
+  border-radius: 9999px;
+  letter-spacing: 0.02em;
+}
+
+:root.dark-theme .role-badge-chip,
+body.dark-theme .role-badge-chip {
+  color: #4ade80;
+  background: rgba(34, 197, 94, 0.18);
+}
+
+.menu-item-logout {
+  color: var(--color-danger-600, #dc2626) !important;
+}
+
+.menu-item-logout span.material-symbols-outlined {
+  color: var(--color-danger-600, #dc2626) !important;
+}
+
+.menu-item-logout:hover {
+  background-color: var(--color-danger-50, #fef2f2) !important;
+}
+
+:root.dark-theme .menu-item-logout:hover,
+body.dark-theme .menu-item-logout:hover {
+  background-color: rgba(220, 38, 38, 0.15) !important;
+}
+
 .profile-dropdown-menu {
   position: absolute;
   top: calc(100% + 8px);
@@ -480,6 +597,123 @@ body.dark-theme .profile-menu-item:hover .menu-label {
   .avatar-arrow {
     display: none;
   }
+  /* ==========================================================================
+   MENÚ DE USUARIO (MatMenu)
+   ========================================================================== */
+  ::ng-deep .user-profile-mat-menu {
+    min-width: 250px !important;
+    max-width: 320px !important;
+    border-radius: var(--radius-lg, 16px) !important;
+    border: 1px solid var(--color-border, #e2e8f0) !important;
+    background: var(--color-surface, #ffffff) !important;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.14) !important;
+    padding: 0 !important;
+  }
+
+  :root.dark-theme ::ng-deep .user-profile-mat-menu,
+  body.dark-theme ::ng-deep .user-profile-mat-menu {
+    background: #18181b !important;
+    border-color: #27272a !important;
+  }
+
+  .user-menu-header {
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--color-surface-muted, #f8fafc);
+    cursor: default;
+  }
+
+  :root.dark-theme .user-menu-header,
+  body.dark-theme .user-menu-header {
+    background: #27272a;
+  }
+
+  .user-menu-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: var(--color-brand-green, #15803d);
+    color: #ffffff;
+    font-weight: 800;
+    font-size: 14px;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+
+  .user-menu-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .user-menu-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .user-menu-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--color-ink-900, #0f172a);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2;
+  }
+
+  .user-menu-email {
+    font-size: 12px;
+    color: var(--color-ink-500, #64748b);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 180px;
+  }
+
+  .user-menu-role {
+    margin-top: 3px;
+  }
+
+  .role-badge-chip {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    color: #15803d;
+    background: #dcfce7;
+    padding: 1px 8px;
+    border-radius: 9999px;
+    letter-spacing: 0.02em;
+  }
+
+  :root.dark-theme .role-badge-chip,
+  body.dark-theme .role-badge-chip {
+    color: #4ade80;
+    background: rgba(34, 197, 94, 0.18);
+  }
+
+  .menu-item-logout {
+    color: var(--color-danger-600, #dc2626) !important;
+  }
+
+  .menu-item-logout span.material-symbols-outlined {
+    color: var(--color-danger-600, #dc2626) !important;
+  }
+
+  .menu-item-logout:hover {
+    background-color: var(--color-danger-50, #fef2f2) !important;
+  }
+
+  :root.dark-theme .menu-item-logout:hover,
+  body.dark-theme .menu-item-logout:hover {
+    background-color: rgba(220, 38, 38, 0.15) !important;
+  }
+
   .profile-dropdown-menu {
     max-width: calc(100vw - 32px);
   }
