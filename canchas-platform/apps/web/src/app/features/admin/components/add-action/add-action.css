@@ -32,14 +32,14 @@
 }
 
 .add-action:focus-visible {
-  outline: 2px solid var(--primary, #3cb043);
+  outline: 2px solid var(--primary, #27802D);
   outline-offset: 2px;
 }
 
 .add-action > .icon {
   flex: 0 0 24px;
   font-size: 24px;
-  color: var(--primary, #3cb043);
+  color: var(--primary, #27802D);
 }
 
 .add-action-copy {

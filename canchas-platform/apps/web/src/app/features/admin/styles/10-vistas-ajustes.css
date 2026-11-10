@@ -24,7 +24,8 @@
 }
 
 .mat-admin-shell {
-  --radius-full: 10px;
+  --radius-full: 4px;
+  --ui-admin-radius: 4px;
 }
 
 .mat-admin-shell .avatar-placeholder,
@@ -35,12 +36,10 @@
 .mat-admin-shell .pulse-dot,
 .mat-admin-shell .status-dot-mini,
 .mat-admin-shell .btn-bell.mat-mdc-icon-button,
+.mat-admin-shell .btn-theme-toggle.mat-mdc-icon-button,
 .mat-admin-shell .profile-avatar-btn.mat-mdc-icon-button,
 .mat-admin-shell .card-icon-pill,
-.mat-admin-shell .kpi-icon-pill,
-.mat-admin-shell .brand-icon-admin,
 .mat-admin-shell .cancha-empty-add-icon,
-.mat-admin-shell .cancha-barra-foto-badge,
 .mat-admin-shell .notification-switch,
 .mat-admin-shell .notification-switch-thumb,
 .mat-admin-shell .w-2,
@@ -49,10 +48,10 @@
 .mat-admin-shell .w-8,
 .mat-admin-shell .w-10,
 .mat-admin-shell .w-14 {
-  border-radius: 999px !important;
+  border-radius: 50% !important;
 }
 
-.mat-admin-shell button:not(.mat-mdc-icon-button):not(.profile-avatar-btn):not(.btn-bell),
+.mat-admin-shell button:not(.mat-mdc-icon-button):not(.profile-avatar-btn):not(.btn-bell):not(.btn-theme-toggle),
 .mat-admin-shell a[class*='btn'],
 .mat-admin-shell .btn,
 .mat-admin-shell .mat-mdc-button,
@@ -60,7 +59,18 @@
 .mat-admin-shell .mat-mdc-outlined-button,
 .mat-admin-shell .mat-mdc-raised-button,
 .mat-admin-shell .mat-button-toggle,
+.mat-admin-shell mat-button-toggle,
+.mat-admin-shell .mat-button-toggle-group,
+.mat-admin-shell mat-button-toggle-group,
 .mat-admin-shell .chip-select-btn,
+.mat-admin-shell .chip-filter,
+.mat-admin-shell .filter-chip,
+.mat-admin-shell .filter-chip-btn,
+.mat-admin-shell .cancha-chip-format,
+.mat-admin-shell .cancha-chip-surface,
+.mat-admin-shell .cancha-chip-coverage,
+.mat-admin-shell .cancha-equip-pill,
+.mat-admin-shell .cancha-barra-foto-badge,
 .mat-admin-shell .period-pill,
 .mat-admin-shell .filter-pill,
 .mat-admin-shell .notification-channel-btn,
@@ -69,7 +79,15 @@
 .mat-admin-shell #view-qr button.rounded-full,
 .mat-admin-shell #view-configuracion a.rounded-full,
 .mat-admin-shell #view-configuracion button.rounded-full {
-  border-radius: var(--ui-admin-radius, 8px) !important;
+  border-radius: var(--ui-admin-radius, 4px) !important;
+  --mat-button-toggle-shape: 4px !important;
+  --mat-standard-button-toggle-shape: 4px !important;
+  --mat-sys-corner-extra-large: 4px !important;
+}
+
+.mat-admin-shell .mat-button-toggle-button::before,
+.mat-admin-shell .mat-button-toggle-button::after {
+  border-radius: 4px !important;
 }
 
 .mat-admin-shell input,
@@ -83,11 +101,12 @@
 .mat-admin-shell .mat-mdc-standard-chip,
 .mat-admin-shell .badge,
 .mat-admin-shell .rounded-full:not(.w-2):not(.w-2\.5):not(.w-5):not(.w-8):not(.w-10):not(.w-14) {
-  border-radius: var(--ui-admin-radius, 8px) !important;
+  border-radius: var(--ui-admin-radius, 4px) !important;
 }
 
 .mat-admin-shell .admin-card-box,
 .mat-admin-shell .kpi-card,
+.mat-admin-shell .kpi-icon-pill,
 .mat-admin-shell .sede-card,
 .mat-admin-shell .cancha-card,
 .mat-admin-shell .cash-card,
@@ -96,16 +115,116 @@
 .mat-admin-shell .mat-mdc-card,
 .mat-admin-shell .rounded-2xl,
 .mat-admin-shell .rounded-lg {
-  border-radius: var(--ui-admin-radius, 8px) !important;
+  border-radius: var(--ui-admin-radius, 4px) !important;
 }
 
 .mat-admin-shell .admin-public-link.mat-mdc-unelevated-button {
-  border-radius: 6px !important;
+  border-radius: 4px !important;
   background: var(--can-color-primary, #27802d);
 }
 
-.mat-admin-shell .sidebar-nav-item {
-  border-radius: 6px !important;
+.mat-admin-shell .admin-sidebar {
+  border-radius: 0 !important;
+}
+
+.mat-admin-shell .sidebar-nav-item,
+.mat-admin-shell .sidebar-nav-item.active,
+.sidebar-nav-item,
+.sidebar-nav-item.active,
+.mat-admin-shell .btn-logout-sidebar,
+.btn-logout-sidebar {
+  border-radius: 4px !important;
+}
+
+.mat-admin-shell .sidebar-footer,
+.sidebar-footer {
+  margin: 0 !important;
+  border-radius: 0 !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background: rgba(0, 0, 0, 0.35) !important;
+}
+
+.mat-admin-shell .sidebar-footer .user-avatar-sm,
+.mat-admin-shell .sidebar-footer .avatar-placeholder,
+.mat-admin-shell .sidebar-footer .admin-profile-photo {
+  border-radius: 50% !important;
+}
+
+.mat-admin-shell .sidebar-status-badge,
+.sidebar-status-badge {
+  border-radius: 4px !important;
+}
+
+.mat-admin-shell .sidebar-status-badge.is-closed,
+.sidebar-status-badge.is-closed {
+  background: #f1f5f9 !important;
+  color: #334155 !important;
+  border: none !important;
+  font-weight: 700 !important;
+}
+
+.mat-admin-shell .sidebar-status-badge.is-open,
+.sidebar-status-badge.is-open {
+  background: #dcfce7 !important;
+  color: #166534 !important;
+  border: none !important;
+  font-weight: 700 !important;
+}
+
+.mat-admin-shell .sidebar-status-badge.is-warning,
+.sidebar-status-badge.is-warning {
+  background: #fef3c7 !important;
+  color: #b45309 !important;
+  border: none !important;
+  font-weight: 700 !important;
+}
+
+/* Unificación de títulos de secciones admin: mismo tamaño, posición y sin iconos */
+.mat-admin-shell .admin-main-body h1,
+.mat-admin-shell .admin-main-body .view-title,
+.mat-admin-shell .admin-main-body .catalogo-title,
+.mat-admin-shell .admin-main-body .caja-title,
+.mat-admin-shell .admin-main-body .page-title h1,
+.mat-admin-shell .admin-main-body .header-titles h1,
+.mat-admin-shell .admin-main-body .section-header h1 {
+  font-size: 22px !important;
+  font-weight: 700 !important;
+  color: var(--ink, #191919) !important;
+  margin: 0 0 4px 0 !important;
+  padding: 0 !important;
+  line-height: 1.25 !important;
+  letter-spacing: -0.01em !important;
+  display: block !important;
+}
+
+.mat-admin-shell .admin-main-body header.section-header,
+.mat-admin-shell .admin-main-body header.view-header,
+.mat-admin-shell .admin-main-body header.catalogo-view-header,
+.mat-admin-shell .admin-main-body header.caja-view-header,
+.mat-admin-shell .admin-main-body header.admin-view-header,
+.mat-admin-shell .admin-main-body header.reportes-header {
+  margin-top: 0 !important;
+  margin-bottom: 24px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.mat-admin-shell .admin-main-body header p,
+.mat-admin-shell .admin-main-body .view-subtitle,
+.mat-admin-shell .admin-main-body .catalogo-subtitle,
+.mat-admin-shell .admin-main-body .caja-subtitle,
+.mat-admin-shell .admin-main-body .subtitle {
+  font-size: 13px !important;
+  color: var(--muted, #626a72) !important;
+  margin: 0 !important;
+  line-height: 1.4 !important;
+}
+
+.mat-admin-shell .admin-main-body h1 mat-icon,
+.mat-admin-shell .admin-main-body h1 .material-symbols-outlined,
+.mat-admin-shell .admin-main-body h1 .title-icon,
+.mat-admin-shell .admin-main-body h1 .view-title-icon {
+  display: none !important;
 }
 
 .mat-admin-shell .venue-map-frame,
@@ -123,7 +242,7 @@
 
 .mat-admin-shell .cancha-photo-dropzone {
   cursor: default !important;
-  border-radius: 8px !important;
+  border-radius: 4px !important;
 }
 
 .mat-admin-shell .cancha-photo-dropzone > button {
@@ -182,7 +301,7 @@
   padding: 0.85rem 1rem;
   border: 1px solid var(--color-warning-200);
   background: var(--color-surface-card);
-  border-radius: 8px;
+  border-radius: 4px;
   box-shadow: none;
 }
 
@@ -228,6 +347,17 @@
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06) !important;
 }
 
+:root.dark-theme .mat-admin-shell #view-finanzas .admin-alert-banner,
+body.dark-theme .mat-admin-shell #view-finanzas .admin-alert-banner,
+:root.dark-theme .mat-admin-shell #view-configuracion .bg-surface-light,
+body.dark-theme .mat-admin-shell #view-configuracion .bg-surface-light,
+:root.dark-theme .mat-admin-shell #view-qr .bg-surface-light,
+body.dark-theme .mat-admin-shell #view-qr .bg-surface-light {
+  background: #1e1e1e !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: none !important;
+}
+
 .mat-admin-shell #view-finanzas .admin-alert-banner[style*='gradient'] {
   color: var(--color-ink-900) !important;
 }
@@ -256,12 +386,12 @@
 .mat-admin-shell #view-qr .text-turf-green,
 .mat-admin-shell #view-qr .focus\:ring-turf-green,
 .mat-admin-shell #view-qr .accent-turf-green {
-  color: var(--qr-accent, #3cb043) !important;
-  accent-color: var(--qr-accent, #3cb043) !important;
+  color: var(--qr-accent, #27802D) !important;
+  accent-color: var(--qr-accent, #27802D) !important;
 }
 
 .mat-admin-shell #view-qr .bg-turf-green {
-  background-color: var(--qr-accent, #3cb043) !important;
+  background-color: var(--qr-accent, #27802D) !important;
   color: #ffffff !important;
 }
 
@@ -278,8 +408,8 @@
 }
 
 .mat-admin-shell #view-qr #preview-action-btn {
-  background-color: var(--qr-accent, #3cb043) !important;
-  border-radius: 8px !important;
+  background-color: var(--qr-accent, #27802D) !important;
+  border-radius: 4px !important;
 }
 
 .mat-admin-shell #view-configuracion section,
@@ -287,7 +417,7 @@
 .mat-admin-shell #view-configuracion .rounded-DEFAULT,
 .mat-admin-shell #view-configuracion .bg-surface-container-low,
 .mat-admin-shell #view-configuracion .bg-surface-container {
-  border-radius: 8px !important;
+  border-radius: 4px !important;
 }
 
 .mat-admin-shell #view-configuracion input {

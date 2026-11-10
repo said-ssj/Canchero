@@ -89,7 +89,7 @@ public class CourtOperationService {
                 where c.id_cancha = ? and s.estado = 'A' for update
                 """, String.class, courtId);
         if (owners.isEmpty()) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Cancha no encontrada");
-        if (!Roles.isOwnerOrAdmin(user.rol()) || !VenueAccessService.canManage(user, owners.get(0))) {
+        if (!new TenantPermissions(jdbc).has(user, jdbc.queryForObject("select id_sede from cancha where id_cancha=?", Integer.class, courtId), "cancha.gestionar")) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "La cancha no pertenece a tu cuenta");
         }
     }

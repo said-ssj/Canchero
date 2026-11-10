@@ -25,10 +25,10 @@
   } @else if (!venueId()) {
     <app-admin-venue-required title="Finanzas y liquidación" description="Alquileres, productos y devoluciones de esta sede." icon="account_balance" />
   } @else {
-    <!-- CONTENIDO COMPLETO DE FINANZAS & LIQUIDACIÓN -->
+    <!-- CONTENIDO COMPLETO DE FINANZAS & UTILIDAD NETA -->
     <div class="page-title">
-      <h1>Finanzas y liquidación</h1>
-      <p>Alquileres, productos y devoluciones de {{ venueName() }}</p>
+      <h1>Finanzas consolidadas y utilidad neta</h1>
+      <p>Alquileres, cantina, compras y balance contable de {{ venueName() }}</p>
     </div>
 
     <!-- Barra de Selección de Periodo (finanzas.html) -->
@@ -51,34 +51,36 @@
       </button>
     </div>
 
-    <!-- Métricas Operativas (op-metrics) -->
+    <!-- Métricas Operativas Consolidadas (op-metrics) -->
     <div class="stack">
       <div class="op-metrics">
         <div>
-          <small>Ingresos cobrados</small>
-          <strong id="kpiIngresosBrutos">{{ fmtPEN(metricas().ingresoBruto) }}</strong>
-          <span>{{ facturables().length }} reservas cobradas</span>
+          <small>Ingresos totales</small>
+          <strong id="kpiIngresosBrutos">{{ fmtPEN(utilidadConsolidada().ingresosTotales) }}</strong>
+          <span>{{ facturables().length }} reservas + {{ ventasProductos().length }} ventas cantina</span>
         </div>
         <div>
-          <small>Devoluciones</small>
-          <strong>S/ 0.00</strong>
-          <span>Sin devoluciones registradas</span>
+          <small>Compras y egresos</small>
+          <strong style="color: var(--color-danger, #dc2626)">- {{ fmtPEN(utilidadConsolidada().costosGastosTotales) }}</strong>
+          <span>{{ comprasMercaderia().length }} compras recibidas + caja</span>
         </div>
         <div>
           <small>Comisión Canchero</small>
-          <strong id="kpiComisionCanchero">- {{ fmtPEN(metricas().comisionApp) }}</strong>
+          <strong id="kpiComisionCanchero">- {{ fmtPEN(utilidadConsolidada().comisionAlquileres) }}</strong>
           <span>5% de alquileres netos cobrados</span>
         </div>
         <div>
-          <small>Neto del dueño</small>
-          <strong id="kpiNetoRecibir">{{ fmtPEN(metricas().ingresoNeto) }}</strong>
-          <span>{{ fmtPEN(metricas().ingresoBruto) }} − comisiones</span>
+          <small>Utilidad neta real</small>
+          <strong id="kpiNetoRecibir" [style.color]="utilidadConsolidada().utilidadNeta >= 0 ? 'var(--color-brand-green, #15803d)' : 'var(--color-danger, #dc2626)'">
+            {{ fmtPEN(utilidadConsolidada().utilidadNeta) }}
+          </strong>
+          <span>Margen operativo: {{ utilidadConsolidada().margenPorcentaje }}%</span>
         </div>
       </div>
 
       <!-- Resumen por origen -->
       <div class="row spread" style="align-items: center;">
-        <h2>Resumen por origen</h2>
+        <h2>Estado de pérdidas y ganancias (P&amp;L)</h2>
         <div class="row" style="align-items: center; gap: 8px;">
           <span class="tag-periodo" id="kpiTotalLiquidado">Liquidado: {{ fmtPEN(metricas().totalLiquidado) }}</span>
           <button matButton="outlined" disableRipple type="button" class="btn" disabled title="Devoluciones pendientes de integración">
@@ -88,34 +90,85 @@
         </div>
       </div>
 
-      <!-- Tabla de Origen (op-table) -->
+      <!-- Tabla de Origen Consolidada (op-table) -->
       <div class="op-table-wrap">
         <table class="op-table">
           <thead>
             <tr>
-              <th scope="col">Origen</th>
-              <th scope="col">Cobrado</th>
-              <th scope="col">Devuelto</th>
-              <th scope="col">Comisión</th>
-              <th scope="col">Neto</th>
+              <th scope="col">Rubro / Origen</th>
+              <th scope="col">Ingresos brutos</th>
+              <th scope="col">Comisión plataforma</th>
+              <th scope="col">Costos / Compras</th>
+              <th scope="col">Neto / Utilidad</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td>Alquileres</td>
-              <td>{{ fmtPEN(metricas().ingresoBruto) }}</td>
+              <td>
+                <strong>Alquileres de canchas</strong>
+                <br><small class="text-muted">{{ facturables().length }} reservas cobradas</small>
+              </td>
+              <td>{{ fmtPEN(utilidadConsolidada().alquileresBruto) }}</td>
+              <td style="color: var(--color-danger, #dc2626)">- {{ fmtPEN(utilidadConsolidada().comisionAlquileres) }}</td>
               <td>S/ 0.00</td>
-              <td>{{ fmtPEN(metricas().comisionApp) }}</td>
-              <td>{{ fmtPEN(metricas().ingresoNeto) }}</td>
+              <td style="font-weight: 600">{{ fmtPEN(utilidadConsolidada().alquileresNeto) }}</td>
             </tr>
             <tr>
-              <td>Productos</td>
+              <td>
+                <strong>Cantina &amp; Snacks (POS)</strong>
+                <br><small class="text-muted">{{ ventasProductos().length }} ventas completadas</small>
+              </td>
+              <td>{{ fmtPEN(utilidadConsolidada().cantinaBruto) }}</td>
+              <td style="color: var(--muted, #64748b)">S/ 0.00 (Exento)</td>
               <td>S/ 0.00</td>
-              <td>S/ 0.00</td>
-              <td>S/ 0.00</td>
-              <td>S/ 0.00</td>
+              <td style="font-weight: 600">{{ fmtPEN(utilidadConsolidada().cantinaBruto) }}</td>
             </tr>
+            @if (utilidadConsolidada().abonosCredito > 0) {
+              <tr>
+                <td>
+                  <strong>Abonos de créditos &amp; fiados</strong>
+                  <br><small class="text-muted">Cobros recaudados en el período</small>
+                </td>
+                <td>{{ fmtPEN(utilidadConsolidada().abonosCredito) }}</td>
+                <td style="color: var(--muted, #64748b)">S/ 0.00</td>
+                <td>S/ 0.00</td>
+                <td style="font-weight: 600">{{ fmtPEN(utilidadConsolidada().abonosCredito) }}</td>
+              </tr>
+            }
+            <tr>
+              <td>
+                <strong>Compras a proveedores (Mercadería)</strong>
+                <br><small class="text-muted">{{ comprasMercaderia().length }} compras recibidas en almacén</small>
+              </td>
+              <td>—</td>
+              <td>—</td>
+              <td style="color: var(--color-danger, #dc2626)">- {{ fmtPEN(utilidadConsolidada().compras) }}</td>
+              <td style="color: var(--color-danger, #dc2626)">- {{ fmtPEN(utilidadConsolidada().compras) }}</td>
+            </tr>
+            @if (utilidadConsolidada().egresosCaja > 0) {
+              <tr>
+                <td>
+                  <strong>Egresos operativos de caja</strong>
+                  <br><small class="text-muted">Gastos de turno (limpieza, insumos, servicios)</small>
+                </td>
+                <td>—</td>
+                <td>—</td>
+                <td style="color: var(--color-danger, #dc2626)">- {{ fmtPEN(utilidadConsolidada().egresosCaja) }}</td>
+                <td style="color: var(--color-danger, #dc2626)">- {{ fmtPEN(utilidadConsolidada().egresosCaja) }}</td>
+              </tr>
+            }
           </tbody>
+          <tfoot>
+            <tr style="background: var(--color-slate-50, #f8fafc); font-weight: 700; border-top: 2px solid var(--line, #dfe3e8)">
+              <td>RESULTADO / UTILIDAD NETA</td>
+              <td>{{ fmtPEN(utilidadConsolidada().ingresosTotales) }}</td>
+              <td style="color: var(--color-danger, #dc2626)">- {{ fmtPEN(utilidadConsolidada().comisionAlquileres) }}</td>
+              <td style="color: var(--color-danger, #dc2626)">- {{ fmtPEN(utilidadConsolidada().compras + utilidadConsolidada().egresosCaja) }}</td>
+              <td style="font-size: 14px" [style.color]="utilidadConsolidada().utilidadNeta >= 0 ? 'var(--color-brand-green, #15803d)' : 'var(--color-danger, #dc2626)'">
+                {{ fmtPEN(utilidadConsolidada().utilidadNeta) }}
+              </td>
+            </tr>
+          </tfoot>
         </table>
       </div>
 
@@ -267,9 +320,9 @@
                 @if (columnas().liquidado) {
                   <td style="text-align: center;">
                     @if (f.liquidado) {
-                      <span class="badge" style="background: #e6f4ea; color: #137333;">Liquidado</span>
+                      <span class="status-indicator status-liquidado">Liquidado</span>
                     } @else {
-                      <span class="badge" style="background: #fef7e0; color: #b06000;">Pendiente</span>
+                      <span class="status-indicator status-pendiente">Pendiente</span>
                     }
                   </td>
                 }

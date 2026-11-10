@@ -96,7 +96,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--radius-full);
+  border-radius: 4px;
   background: var(--color-slate-100);
   color: var(--color-ink-700);
   font-size: 0.72rem;
@@ -135,7 +135,7 @@
   --mdc-outlined-button-outline-color: var(--color-border);
   --mdc-outlined-button-label-text-color: var(--color-ink-700);
   --mdc-outlined-button-container-height: 36px;
-  border-radius: var(--radius-full);
+  border-radius: 4px;
 }
 
 .pos-chip-btn.mat-mdc-outlined-button.active {
@@ -176,7 +176,7 @@
 .pos-btn-checkout.mat-mdc-unelevated-button {
   --mdc-filled-button-container-color: var(--color-brand-green);
   --mdc-filled-button-label-text-color: #ffffff;
-  border-radius: var(--radius-full);
+  border-radius: 4px;
 }
 
 .pos-step-btn.mat-mdc-icon-button,

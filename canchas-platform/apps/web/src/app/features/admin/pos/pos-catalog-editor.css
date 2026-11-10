@@ -150,6 +150,221 @@ footer {
   color: #b91c1c;
   margin-bottom: 16px;
 }
+.category-icon-picker-mini {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.category-icon-picker-mini .icon-label {
+  font-size: 13px;
+  font-weight: 600;
+}
+.icon-options-scroll {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 6px;
+  max-height: 140px;
+  overflow-y: auto;
+  padding: 6px;
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-border, #d8dfe3);
+  border-radius: 4px;
+}
+.category-icon-picker-popover-field {
+  display: grid;
+  gap: 7px;
+  position: relative;
+}
+
+.category-icon-popover-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.category-icon-trigger-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: #ffffff;
+  border: 1px solid var(--color-border, #d8dfe3);
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.category-icon-trigger-btn:hover {
+  border-color: #27802D;
+  background: #f8fafc;
+}
+
+.category-icon-trigger-btn .current-icon {
+  font-size: 22px;
+  color: #27802D;
+}
+
+.category-icon-trigger-btn .preview-text {
+  font-size: 12px;
+  color: var(--ink);
+  flex: 1;
+}
+
+.category-icon-trigger-btn .trigger-chevron {
+  font-size: 18px;
+  color: var(--muted);
+}
+
+.icon-cloud-dialog {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border: 1.5px solid #1e293b;
+  border-radius: 4px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  padding: 10px;
+  z-index: 1050;
+  box-sizing: border-box;
+}
+
+.cloud-arrow {
+  position: absolute;
+  top: -6px;
+  left: 20px;
+  width: 10px;
+  height: 10px;
+  background: #ffffff;
+  border-top: 1.5px solid #1e293b;
+  border-left: 1.5px solid #1e293b;
+  transform: rotate(45deg);
+}
+
+.cloud-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.cloud-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.cloud-close-btn {
+  background: transparent;
+  border: none;
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 2px 4px;
+}
+
+.icon-selector-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(36px, 1fr));
+  gap: 4px;
+  max-height: 180px;
+  overflow-y: auto;
+  padding: 4px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+}
+
+.icon-option-btn {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.icon-option-btn .material-symbols-outlined {
+  font-size: 20px;
+  color: #475569;
+}
+
+.icon-option-btn:hover {
+  background: rgba(39, 128, 45, 0.08);
+}
+
+.icon-option-btn:hover .material-symbols-outlined {
+  color: #27802D;
+}
+
+.icon-option-btn.is-selected {
+  border: none;
+  background: rgba(39, 128, 45, 0.16);
+}
+
+.icon-option-btn.is-selected .material-symbols-outlined {
+  color: #27802D;
+}
+
+:root.dark-theme .category-icon-trigger-btn,
+body.dark-theme .category-icon-trigger-btn {
+  background: #1f1f1f;
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+:root.dark-theme .category-icon-trigger-btn .preview-text,
+body.dark-theme .category-icon-trigger-btn .preview-text {
+  color: #f1f5f9;
+}
+
+:root.dark-theme .icon-cloud-dialog,
+body.dark-theme .icon-cloud-dialog {
+  background: #1f1f1f;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+:root.dark-theme .cloud-arrow,
+body.dark-theme .cloud-arrow {
+  background: #1f1f1f;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+:root.dark-theme .icon-selector-grid,
+body.dark-theme .icon-selector-grid {
+  background: #171717;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+:root.dark-theme .icon-option-btn .material-symbols-outlined,
+body.dark-theme .icon-option-btn .material-symbols-outlined {
+  color: #cbd5e1;
+}
+
+:root.dark-theme .icon-option-btn:hover,
+body.dark-theme .icon-option-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+:root.dark-theme .icon-option-btn:hover .material-symbols-outlined,
+body.dark-theme .icon-option-btn:hover .material-symbols-outlined {
+  color: #4ade80;
+}
+
+:root.dark-theme .icon-option-btn.is-selected,
+body.dark-theme .icon-option-btn.is-selected {
+  background: rgba(39, 128, 45, 0.3);
+}
+
+:root.dark-theme .icon-option-btn.is-selected .material-symbols-outlined,
+body.dark-theme .icon-option-btn.is-selected .material-symbols-outlined {
+  color: #4ade80;
+}
 @media (max-width: 480px) {
   dialog {
     padding: 18px;

@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "name": "Canchero API & Catalog",
+  "description": "Catálogo público estructurado de canchas deportivas y servicios de Canchero para agentes autónomos y asistentes de IA.",
+  "version": "1.0.0",
+  "provider": {
+    "name": "Canchero",
+    "url": "https://canchero-iota.vercel.app",
+    "country": "PE",
+    "currency": "PEN"
+  },
+  "endpoints": {
+    "venues": "https://canchero-api-givn.onrender.com/api/venues",
+    "courts": "https://canchero-api-givn.onrender.com/api/courts",
+    "health": "https://canchero-api-givn.onrender.com/api/health"
+  },
+  "capabilities": [
+    "court_discovery",
+    "availability_lookup",
+    "realtime_pricing",
+    "amenities_filtering"
+  ],
+  "sports": [
+    "Fútbol 5",
+    "Fútbol 6",
+    "Fútbol 7",
+    "Fútbol 8",
+    "Fútbol 11",
+    "Grass Sintético"
+  ]
+}

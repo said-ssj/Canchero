@@ -1,0 +1,793 @@
+<div class="admin-catalogo-wrapper">
+  <!-- Cabecera de la vista -->
+  <header class="catalogo-view-header">
+    <div class="catalogo-header-info">
+      <h1 class="catalogo-title">Catálogo & Productos</h1>
+      <p class="catalogo-subtitle">
+        {{ currentSedeName() || 'Sede seleccionada' }} · Administración de productos de cantina, bebidas, snacks e indumentaria deportiva.
+      </p>
+    </div>
+
+    <!-- Navegación de Pestañas Principales -->
+    <div class="catalogo-tab-nav">
+      <mat-button-toggle-group
+        [value]="activeTab()"
+        (change)="activeTab.set($event.value)"
+        class="can-button-toggle-group"
+      >
+        <mat-button-toggle value="productos">
+          <span class="material-symbols-outlined nav-toggle-icon">shopping_bag</span>
+          Productos ({{ totalProductsCount() }})
+        </mat-button-toggle>
+        <mat-button-toggle value="categorias">
+          <span class="material-symbols-outlined nav-toggle-icon">category</span>
+          Categorías ({{ catalog.categories().length }})
+        </mat-button-toggle>
+      </mat-button-toggle-group>
+    </div>
+  </header>
+
+  <!-- Banner de Notificación -->
+  @if (notice()) {
+    <div class="catalogo-notice-banner" role="status">
+      <span class="material-symbols-outlined notice-icon">info</span>
+      <span class="notice-text">{{ notice() }}</span>
+      <button class="notice-close" (click)="notice.set('')" aria-label="Cerrar aviso">×</button>
+    </div>
+  }
+
+  <!-- Métricas Operativas (Estilo Canchero Simple) -->
+  <div class="management-stats catalogo-stats">
+    <div>
+      <span>Total Productos</span>
+      <strong>{{ totalProductsCount() }}</strong>
+      <small class="stat-sub">{{ activeProductsCount() }} activos en venta</small>
+    </div>
+    <div>
+      <span>Stock Crítico</span>
+      <strong [style.color]="lowStockCount() > 0 ? 'var(--color-danger, #dc2626)' : 'inherit'">{{ lowStockCount() }}</strong>
+      <small class="stat-sub">Por debajo del stock mínimo</small>
+    </div>
+    <div>
+      <span>Margen Promedio</span>
+      <strong style="color: var(--color-brand-green, #27802D)">+{{ averageMargin() }}%</strong>
+      <small class="stat-sub">Rentabilidad comercial estimada</small>
+    </div>
+    <div>
+      <span>Categorías</span>
+      <strong>{{ catalog.categories().length }}</strong>
+      <small class="stat-sub">Familias de producto</small>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       PESTAÑA 1: PRODUCTOS
+       ========================================================================= -->
+  @if (activeTab() === 'productos') {
+    <section class="catalogo-content-card">
+      <!-- Barra de Filtros y Acciones -->
+      <div class="catalogo-toolbar">
+        <div class="toolbar-search">
+          <span class="material-symbols-outlined search-icon">search</span>
+          <input
+            type="text"
+            class="search-input"
+            placeholder="Buscar por nombre, código o categoría..."
+            [ngModel]="searchQuery()"
+            (ngModelChange)="searchQuery.set($event)"
+          />
+          @if (searchQuery()) {
+            <button class="clear-search" (click)="searchQuery.set('')">✕</button>
+          }
+        </div>
+
+        <div class="toolbar-filters">
+          <!-- Filtro de Categoría -->
+          <select
+            class="filter-select"
+            [ngModel]="selectedCategory()"
+            (ngModelChange)="selectedCategory.set(+$event)"
+          >
+            <option [value]="0">Todas las categorías</option>
+            @for (cat of catalog.categories(); track cat.id) {
+              <option [value]="cat.id">{{ cat.nombre }}</option>
+            }
+          </select>
+
+          <!-- Filtro de Estado -->
+          <select
+            class="filter-select"
+            [ngModel]="statusFilter()"
+            (ngModelChange)="statusFilter.set($event)"
+          >
+            <option value="TODOS">Todos los estados</option>
+            <option value="A">Solo activos</option>
+            <option value="I">Solo inactivos</option>
+          </select>
+
+          <!-- Botón toggle Stock Bajo -->
+          <button
+            type="button"
+            class="filter-chip-btn"
+            [class.is-active]="onlyLowStock()"
+            (click)="onlyLowStock.set(!onlyLowStock())"
+          >
+            <span class="material-symbols-outlined chip-icon">warning</span>
+            Stock bajo
+          </button>
+
+          <!-- Toggle vista: Tarjetas / Tabla -->
+          <div class="view-mode-toggle">
+            <button
+              class="view-btn"
+              [class.is-active]="viewMode() === 'cards'"
+              (click)="viewMode.set('cards')"
+              title="Vista de cuadrícula"
+            >
+              <span class="material-symbols-outlined">grid_view</span>
+            </button>
+            <button
+              class="view-btn"
+              [class.is-active]="viewMode() === 'tabla'"
+              (click)="viewMode.set('tabla')"
+              title="Vista de tabla"
+            >
+              <span class="material-symbols-outlined">view_list</span>
+            </button>
+          </div>
+
+          <!-- Botón de Acción Principal -->
+          <button class="btn-primary" (click)="openNewProductModal()">
+            <span class="material-symbols-outlined">add</span>
+            <span>Nuevo Producto</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Estado de Carga -->
+      @if (catalog.loading()) {
+        <div class="loading-state">
+          <span class="material-symbols-outlined spin-icon">progress_activity</span>
+          <p>Cargando catálogo de productos...</p>
+        </div>
+      } @else if (filteredProducts().length === 0) {
+        <div class="empty-state">
+          <div class="empty-icon-wrap">
+            <span class="material-symbols-outlined">sports_bar</span>
+          </div>
+          <h3>No se encontraron productos</h3>
+          <p>No hay productos que coincidan con los filtros aplicados para esta sede.</p>
+          <button class="btn-primary" (click)="openNewProductModal()">
+            <span class="material-symbols-outlined">add</span>
+            <span>Registrar primer producto</span>
+          </button>
+        </div>
+      } @else {
+        <!-- Vista Cuadrícula de Tarjetas -->
+        @if (viewMode() === 'cards') {
+          <div class="products-grid">
+            @for (p of filteredProducts(); track p.id) {
+              <article class="product-card" [class.is-inactive]="p.estado === 'I'">
+                <!-- Cabecera de la tarjeta / Foto -->
+                <div class="card-media">
+                  @if (p.fotoUrl) {
+                    <img [src]="p.fotoUrl" [alt]="p.nombre" class="card-img" loading="lazy" />
+                  } @else {
+                    <div class="card-img-placeholder">
+                      <span class="material-symbols-outlined">{{ obtenerIconoProducto(p) }}</span>
+                    </div>
+                  }
+
+                  <!-- Badge de Stock -->
+                  <div class="stock-badge" [class.is-critical]="p.stock <= p.stockMinimo">
+                    <span class="material-symbols-outlined stock-badge-icon">
+                      {{ p.stock <= p.stockMinimo ? 'warning' : 'inventory_2' }}
+                    </span>
+                    <span>Stock: {{ p.stock }} {{ p.unidadMedida || 'und' }}</span>
+                  </div>
+
+                  <!-- Badge de Estado Inactivo -->
+                  @if (p.estado === 'I') {
+                    <div class="inactive-badge">Inactivo</div>
+                  }
+                </div>
+
+                <!-- Cuerpo de la tarjeta -->
+                <div class="card-body">
+                  <div class="card-meta">
+                    <span class="cat-pill">{{ p.categoriaNombre }}</span>
+                    @if (p.codigoBarras) {
+                      <span class="code-pill">{{ p.codigoBarras }}</span>
+                    }
+                  </div>
+
+                  <h3 class="product-name" [title]="p.nombre">{{ p.nombre }}</h3>
+
+                  @if (p.descripcion) {
+                    <p class="product-desc">{{ p.descripcion }}</p>
+                  }
+
+                  <div class="product-pricing">
+                    <div class="price-block">
+                      <span class="price-label">Precio Venta</span>
+                      <span class="price-value">S/ {{ p.precioVenta | number:'1.2-2' }}</span>
+                    </div>
+                    <div class="price-block">
+                      <span class="price-label">Costo</span>
+                      <span class="cost-value">S/ {{ p.precioCompra | number:'1.2-2' }}</span>
+                    </div>
+                    @if (p.margenPorcentaje !== undefined) {
+                      <div class="margin-pill" [class.is-good]="p.margenPorcentaje >= 30">
+                        +{{ p.margenPorcentaje }}%
+                      </div>
+                    }
+                  </div>
+                </div>
+
+                <!-- Acciones de la tarjeta -->
+                <footer class="card-actions">
+                  <button
+                    class="card-btn-action"
+                    (click)="openEditProductModal(p)"
+                    title="Editar producto"
+                  >
+                    <span class="material-symbols-outlined">edit</span>
+                    <span>Editar</span>
+                  </button>
+
+                  <button
+                    class="card-btn-action"
+                    (click)="openStockModal(p)"
+                    title="Ingresar o ajustar existencias"
+                  >
+                    <span class="material-symbols-outlined">add_box</span>
+                    <span>Stock</span>
+                  </button>
+
+                  <button
+                    class="card-btn-action text-danger"
+                    [class.text-success]="p.estado === 'I'"
+                    (click)="toggleProduct(p)"
+                    [title]="p.estado === 'I' ? 'Activar producto' : 'Desactivar producto'"
+                  >
+                    <span class="material-symbols-outlined">
+                      {{ p.estado === 'I' ? 'check_circle' : 'block' }}
+                    </span>
+                    <span>{{ p.estado === 'I' ? 'Activar' : 'Baja' }}</span>
+                  </button>
+                </footer>
+              </article>
+            }
+          </div>
+        }
+
+        <!-- Vista Tabla Detallada -->
+        @if (viewMode() === 'tabla') {
+          <div class="table-responsive">
+            <table class="catalogo-table">
+              <thead>
+                <tr>
+                  <th>Producto</th>
+                  <th>Categoría</th>
+                  <th>Código</th>
+                  <th>Presentación</th>
+                  <th class="text-right">Costo</th>
+                  <th class="text-right">P. Venta</th>
+                  <th class="text-center">Margen</th>
+                  <th class="text-center">Stock</th>
+                  <th class="text-center">Estado</th>
+                  <th class="text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (p of filteredProducts(); track p.id) {
+                  <tr [class.row-inactive]="p.estado === 'I'">
+                    <td>
+                      <div class="table-prod-info">
+                        <div class="table-thumb">
+                          @if (p.fotoUrl) {
+                            <img [src]="p.fotoUrl" [alt]="p.nombre" />
+                          } @else {
+                            <span class="material-symbols-outlined">sports_bar</span>
+                          }
+                        </div>
+                        <span class="table-prod-name">{{ p.nombre }}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <span class="cat-pill">{{ p.categoriaNombre }}</span>
+                    </td>
+                    <td>
+                      <span class="text-muted">{{ p.codigoBarras || '-' }}</span>
+                    </td>
+                    <td>{{ p.contenido }} {{ p.unidadMedida || 'und' }}</td>
+                    <td class="text-right">S/ {{ p.precioCompra | number:'1.2-2' }}</td>
+                    <td class="text-right font-semibold">S/ {{ p.precioVenta | number:'1.2-2' }}</td>
+                    <td class="text-center">
+                      <span class="margin-badge">+{{ p.margenPorcentaje ?? 0 }}%</span>
+                    </td>
+                    <td class="text-center">
+                      <span
+                        class="stock-pill"
+                        [class.is-warning]="p.stock <= p.stockMinimo"
+                      >
+                        {{ p.stock }} (mín. {{ p.stockMinimo }})
+                      </span>
+                    </td>
+                    <td class="text-center">
+                      <span
+                        class="status-pill"
+                        [class.is-active]="p.estado !== 'I'"
+                        [class.is-inactive]="p.estado === 'I'"
+                      >
+                        {{ p.estado === 'I' ? 'Inactivo' : 'Activo' }}
+                      </span>
+                    </td>
+                    <td class="text-right">
+                      <div class="table-action-group">
+                        <button class="tbl-btn" (click)="openEditProductModal(p)" title="Editar">
+                          <span class="material-symbols-outlined">edit</span>
+                        </button>
+                        <button class="tbl-btn" (click)="openStockModal(p)" title="Ajustar Stock">
+                          <span class="material-symbols-outlined">add_box</span>
+                        </button>
+                        <button
+                          class="tbl-btn"
+                          [class.text-success]="p.estado === 'I'"
+                          [class.text-danger]="p.estado !== 'I'"
+                          (click)="toggleProduct(p)"
+                          [title]="p.estado === 'I' ? 'Activar' : 'Desactivar'"
+                        >
+                          <span class="material-symbols-outlined">
+                            {{ p.estado === 'I' ? 'check_circle' : 'block' }}
+                          </span>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      }
+    </section>
+  }
+
+  <!-- =========================================================================
+       PESTAÑA 2: CATEGORÍAS
+       ========================================================================= -->
+  @if (activeTab() === 'categorias') {
+    <section class="catalogo-content-card">
+      <div class="catalogo-toolbar">
+        <div class="toolbar-search">
+          <span class="material-symbols-outlined search-icon">search</span>
+          <input
+            type="text"
+            class="search-input"
+            placeholder="Filtrar categorías..."
+            [ngModel]="categorySearch()"
+            (ngModelChange)="categorySearch.set($event)"
+          />
+        </div>
+
+        <button class="btn-primary" (click)="openNewCategoryModal()">
+          <span class="material-symbols-outlined">add</span>
+          <span>Nueva Categoría</span>
+        </button>
+      </div>
+
+      <div class="categories-grid">
+        @for (c of filteredCategories(); track c.id) {
+          <article class="category-card" [class.is-inactive]="c.estado === 'I'">
+            <div class="cat-card-header">
+              <div class="cat-icon-wrap">
+                <span class="material-symbols-outlined">{{ c.icono || 'category' }}</span>
+              </div>
+              <span
+                class="status-pill"
+                [class.is-active]="c.estado !== 'I'"
+                [class.is-inactive]="c.estado === 'I'"
+              >
+                {{ c.estado === 'I' ? 'Inactiva' : 'Activa' }}
+              </span>
+            </div>
+
+            <h3 class="cat-name">{{ c.nombre }}</h3>
+            <p class="cat-desc">{{ c.descripcion || 'Sin descripción adicional' }}</p>
+
+            <footer class="cat-card-footer">
+              <span class="cat-count">
+                {{ c.totalProductos ?? 0 }} productos vinculados
+              </span>
+              <div class="cat-actions">
+                <button class="tbl-btn" (click)="openEditCategoryModal(c)" title="Editar categoría">
+                  <span class="material-symbols-outlined">edit</span>
+                </button>
+                <button
+                  class="tbl-btn"
+                  [class.text-success]="c.estado === 'I'"
+                  [class.text-danger]="c.estado !== 'I'"
+                  (click)="toggleCategory(c)"
+                  [title]="c.estado === 'I' ? 'Activar' : 'Desactivar'"
+                >
+                  <span class="material-symbols-outlined">
+                    {{ c.estado === 'I' ? 'check_circle' : 'block' }}
+                  </span>
+                </button>
+              </div>
+            </footer>
+          </article>
+        }
+      </div>
+    </section>
+  }
+</div>
+
+<!-- =========================================================================
+     MODAL DE PRODUCTO (CREAR / EDITAR)
+     ========================================================================= -->
+@if (productModalOpen()) {
+  <div class="modal-backdrop" (click)="closeProductModal()">
+    <div class="modal-card modal-large" (click)="$event.stopPropagation()">
+      <header class="modal-header">
+        <div class="modal-title-wrap">
+          <span class="material-symbols-outlined modal-icon">inventory_2</span>
+          <h2>{{ editingProduct() ? 'Editar Producto' : 'Nuevo Producto' }}</h2>
+        </div>
+        <button class="modal-close-btn" (click)="closeProductModal()" aria-label="Cerrar">✕</button>
+      </header>
+
+      @if (formError()) {
+        <div class="form-error-banner">
+          <span class="material-symbols-outlined">error</span>
+          <span>{{ formError() }}</span>
+        </div>
+      }
+
+      <div class="modal-body">
+        <div class="form-grid">
+          <!-- Nombre -->
+          <div class="form-field full-width">
+            <label class="form-label">Nombre del producto *</label>
+            <input
+              type="text"
+              class="form-input"
+              placeholder="Ej. Gatorade Cool Blue 500ml"
+              [(ngModel)]="prodNombre"
+            />
+          </div>
+
+          <!-- Categoría -->
+          <div class="form-field">
+            <label class="form-label">Categoría *</label>
+            <select class="form-input" [(ngModel)]="prodCategoriaId">
+              <option [ngValue]="null">Selecciona una categoría</option>
+              @for (cat of catalog.categories(); track cat.id) {
+                <option [ngValue]="cat.id">{{ cat.nombre }}</option>
+              }
+            </select>
+          </div>
+
+          <!-- Código de Barras -->
+          <div class="form-field">
+            <label class="form-label">Código de barras (opcional)</label>
+            <input
+              type="text"
+              class="form-input"
+              placeholder="Ej. 775012345678"
+              [(ngModel)]="prodCodigoBarras"
+            />
+          </div>
+
+          <!-- Unidad de Medida -->
+          <div class="form-field">
+            <label class="form-label">Unidad de venta</label>
+            <select class="form-input" [(ngModel)]="prodUnidadMedida">
+              @for (u of unidades; track u.id) {
+                <option [value]="u.id">{{ u.nombre }}</option>
+              }
+            </select>
+          </div>
+
+          <!-- Contenido -->
+          <div class="form-field">
+            <label class="form-label">Contenido</label>
+            <input
+              type="number"
+              class="form-input"
+              step="0.01"
+              min="0.01"
+              [(ngModel)]="prodContenido"
+            />
+          </div>
+
+          <!-- Precios -->
+          <div class="form-field">
+            <label class="form-label">Precio de compra / costo (S/)</label>
+            <input
+              type="number"
+              class="form-input"
+              step="0.10"
+              min="0"
+              [(ngModel)]="prodPrecioCompra"
+            />
+          </div>
+
+          <div class="form-field">
+            <label class="form-label">Precio de venta público (S/) *</label>
+            <input
+              type="number"
+              class="form-input"
+              step="0.50"
+              min="0.10"
+              [(ngModel)]="prodPrecioVenta"
+            />
+          </div>
+
+          <!-- Preview de Margen -->
+          <div class="form-field full-width">
+            <div class="margin-preview-box">
+              <span>Margen estimado:</span>
+              <strong class="margin-preview-val">+{{ marginPreview() }}%</strong>
+              <span class="margin-preview-gain">
+                (Ganancia: S/ {{ ((prodPrecioVenta || 0) - (prodPrecioCompra || 0)) | number:'1.2-2' }} por unidad)
+              </span>
+            </div>
+          </div>
+
+          <!-- Stock Inicial (solo nuevo) -->
+          @if (!editingProduct()) {
+            <div class="form-field">
+              <label class="form-label">Stock inicial en almacén</label>
+              <input
+                type="number"
+                class="form-input"
+                min="0"
+                [(ngModel)]="prodStockInicial"
+              />
+            </div>
+          }
+
+          <!-- Stock Mínimo -->
+          <div class="form-field">
+            <label class="form-label">Stock mínimo (Alerta preventiva)</label>
+            <input
+              type="number"
+              class="form-input"
+              min="0"
+              [(ngModel)]="prodStockMinimo"
+            />
+          </div>
+
+          <!-- URL de Foto -->
+          <div class="form-field full-width">
+            <label class="form-label">URL de foto del producto (HTTPS)</label>
+            <input
+              type="url"
+              class="form-input"
+              placeholder="https://ejemplo.com/fotos/producto.jpg"
+              [(ngModel)]="prodFotoUrl"
+            />
+          </div>
+
+          <!-- Descripción -->
+          <div class="form-field full-width">
+            <label class="form-label">Descripción o notas</label>
+            <textarea
+              class="form-input form-textarea"
+              rows="2"
+              placeholder="Notas internas o detalle de sabor/marca..."
+              [(ngModel)]="prodDescripcion"
+            ></textarea>
+          </div>
+        </div>
+      </div>
+
+      <footer class="modal-footer">
+        <button class="btn-secondary" (click)="closeProductModal()" [disabled]="saving()">
+          Cancelar
+        </button>
+        <button class="btn-primary" (click)="saveProduct()" [disabled]="saving()">
+          @if (saving()) {
+            <span class="material-symbols-outlined spin-icon">progress_activity</span>
+            <span>Guardando...</span>
+          } @else {
+            <span class="material-symbols-outlined">save</span>
+            <span>{{ editingProduct() ? 'Guardar Cambios' : 'Crear Producto' }}</span>
+          }
+        </button>
+      </footer>
+    </div>
+  </div>
+}
+
+<!-- =========================================================================
+     MODAL DE CATEGORÍA (CREAR / EDITAR)
+     ========================================================================= -->
+@if (categoryModalOpen()) {
+  <div class="modal-backdrop" (click)="closeCategoryModal()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <header class="modal-header">
+        <div class="modal-title-wrap">
+          <span class="material-symbols-outlined modal-icon">category</span>
+          <h2>{{ editingCategory() ? 'Editar Categoría' : 'Nueva Categoría' }}</h2>
+        </div>
+        <button class="modal-close-btn" (click)="closeCategoryModal()" aria-label="Cerrar">✕</button>
+      </header>
+
+      @if (formError()) {
+        <div class="form-error-banner">
+          <span class="material-symbols-outlined">error</span>
+          <span>{{ formError() }}</span>
+        </div>
+      }
+
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-field full-width">
+            <label class="form-label">Nombre de categoría *</label>
+            <input
+              type="text"
+              class="form-input"
+              placeholder="Ej. Bebidas Rehidratantes, Cervezas, Pelotas"
+              [(ngModel)]="catNombre"
+            />
+          </div>
+
+          <!-- Selector de Iconos para la Categoría con Nube de Diálogo Recta (Sin emojis) -->
+          <div class="form-field full-width icon-picker-field">
+            <label class="form-label">Icono representativo de la categoría *</label>
+            <div class="category-icon-popover-wrapper">
+              <button
+                type="button"
+                class="category-icon-trigger-btn"
+                (click)="toggleIconPopover()"
+                aria-haspopup="dialog"
+                [attr.aria-expanded]="iconPopoverOpen()"
+              >
+                <span class="material-symbols-outlined current-icon" aria-hidden="true">{{ catIcono }}</span>
+                <span class="preview-text">Icono seleccionado (se mostrará en filtros y productos sin foto)</span>
+                <span class="material-symbols-outlined trigger-chevron" aria-hidden="true">{{
+                  iconPopoverOpen() ? 'expand_less' : 'expand_more'
+                }}</span>
+              </button>
+
+              @if (iconPopoverOpen()) {
+                <div class="icon-cloud-dialog" role="dialog" aria-label="Seleccionar icono de categoría">
+                  <div class="cloud-arrow"></div>
+                  <div class="cloud-header">
+                    <span class="cloud-title">Elige un icono para la categoría</span>
+                    <button type="button" class="cloud-close-btn" (click)="iconPopoverOpen.set(false)" aria-label="Cerrar">✕</button>
+                  </div>
+                  <div class="icon-selector-grid">
+                    @for (opt of iconOptions; track opt.icon) {
+                      <button
+                        type="button"
+                        class="icon-option-btn"
+                        [class.is-selected]="catIcono === opt.icon"
+                        [title]="opt.label"
+                        (click)="seleccionarIcono(opt.icon)"
+                      >
+                        <span class="material-symbols-outlined">{{ opt.icon }}</span>
+                      </button>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+
+          <div class="form-field full-width">
+            <label class="form-label">Descripción (opcional)</label>
+            <textarea
+              class="form-input form-textarea"
+              rows="3"
+              placeholder="Breve detalle de la categoría..."
+              [(ngModel)]="catDescripcion"
+            ></textarea>
+          </div>
+        </div>
+      </div>
+
+      <footer class="modal-footer">
+        <button class="btn-secondary" (click)="closeCategoryModal()" [disabled]="saving()">
+          Cancelar
+        </button>
+        <button class="btn-primary" (click)="saveCategory()" [disabled]="saving()">
+          @if (saving()) {
+            <span class="material-symbols-outlined spin-icon">progress_activity</span>
+            <span>Guardando...</span>
+          } @else {
+            <span class="material-symbols-outlined">save</span>
+            <span>{{ editingCategory() ? 'Guardar Cambios' : 'Crear Categoría' }}</span>
+          }
+        </button>
+      </footer>
+    </div>
+  </div>
+}
+
+<!-- =========================================================================
+     MODAL DE INGRESO / AJUSTE DE STOCK
+     ========================================================================= -->
+@if (stockModalOpen()) {
+  <div class="modal-backdrop" (click)="closeStockModal()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <header class="modal-header">
+        <div class="modal-title-wrap">
+          <span class="material-symbols-outlined modal-icon">add_box</span>
+          <h2>Ingreso de Mercadería</h2>
+        </div>
+        <button class="modal-close-btn" (click)="closeStockModal()" aria-label="Cerrar">✕</button>
+      </header>
+
+      @if (formError()) {
+        <div class="form-error-banner">
+          <span class="material-symbols-outlined">error</span>
+          <span>{{ formError() }}</span>
+        </div>
+      }
+
+      <div class="modal-body">
+        @if (adjustingProduct(); as p) {
+          <div class="stock-info-box">
+            <div class="stock-info-title">{{ p.nombre }}</div>
+            <div class="stock-info-meta">
+              <span>Stock actual: <strong>{{ p.stock }} {{ p.unidadMedida || 'und' }}</strong></span>
+              <span>Stock mínimo: <strong>{{ p.stockMinimo }}</strong></span>
+            </div>
+          </div>
+        }
+
+        <div class="form-grid">
+          <div class="form-field">
+            <label class="form-label">Cantidad a ingresar *</label>
+            <input
+              type="number"
+              class="form-input"
+              min="1"
+              [(ngModel)]="stockCantidad"
+            />
+          </div>
+
+          <div class="form-field">
+            <label class="form-label">Costo unitario de compra (S/)</label>
+            <input
+              type="number"
+              class="form-input"
+              step="0.10"
+              min="0"
+              [(ngModel)]="stockPrecioCompra"
+            />
+          </div>
+
+          <div class="form-field full-width">
+            <label class="form-label">Motivo del ingreso</label>
+            <input
+              type="text"
+              class="form-input"
+              placeholder="Ej. Compra proveedor Backus, reposición semanal"
+              [(ngModel)]="stockMotivo"
+            />
+          </div>
+        </div>
+      </div>
+
+      <footer class="modal-footer">
+        <button class="btn-secondary" (click)="closeStockModal()" [disabled]="saving()">
+          Cancelar
+        </button>
+        <button class="btn-primary" (click)="saveStockAdjustment()" [disabled]="saving()">
+          @if (saving()) {
+            <span class="material-symbols-outlined spin-icon">progress_activity</span>
+            <span>Registrando...</span>
+          } @else {
+            <span class="material-symbols-outlined">check</span>
+            <span>Confirmar Ingreso</span>
+          }
+        </button>
+      </footer>
+    </div>
+  </div>
+}

@@ -1,5 +1,11 @@
 # Perfiles personales, sedes y comunidad
 
+## Alcance del panel privado
+
+Mis sedes muestra por defecto únicamente las sedes cuyo propietario coincide con la cuenta autenticada, incluso si esa cuenta tiene rol administrativo. Solo superadmin puede seleccionar explícitamente Administración global; esa vista se identifica como Sedes de la plataforma. Los permisos de la API y los roles guardados no se modifican por cambiar de vista. Al cambiar de cuenta/rol se restablece Mis sedes. Los contadores corresponden a la sede seleccionada. La identidad UUID del propietario prevalece sobre alias numéricos antiguos y el creador no determina propiedad después de una transferencia.
+
+El modelo de negocio, miembros y permisos por sede aplicado el 2026-11-08 se documenta en [Roles y negocios](ROLES_Y_NEGOCIOS.md). Admin es un administrador contratado con asignaciones por sede; no tiene acceso global.
+
 ## Identidad y rutas
 
 - /perfil es la cuenta autenticada y muestra su perfil de comunidad; Editar perfil conserva el formulario privado existente.

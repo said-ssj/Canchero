@@ -1,4 +1,4 @@
-import { Injectable, computed, effect, inject, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { supabase } from '@core/supabase/client';
@@ -96,19 +96,41 @@ export class CajaService {
     return Number((apertura + cobrosEfectivo + ingresos - egresos).toFixed(2));
   });
 
+  private lastLoadedSedeId: number | null = null;
+  private lastLoadedUserId: string | null = null;
+
   constructor() {
     this.setupRealtimeSubscriptions();
     effect(() => {
-      this.auth.currentUser()?.id;
-      this.db.sedeOperativaId();
-      this.sesionActiva.set(null);
-      this.serverBalance.set(null);
-      this.paymentsReady.set(false);
-      this.movimientos.set([]);
-      this.historialSesiones.set([]);
-      this.historialArqueos.set([]);
-      this.cajasRegistradas.set([]);
-      void this.cargarDesdeBackendSiExiste();
+      const user = this.auth.currentUser();
+      const sede = typeof this.db?.sedeOperativaId === 'function' ? this.db.sedeOperativaId() : null;
+      untracked(() => {
+        if (!user?.id || !sede) {
+          this.sesionActiva.set(null);
+          this.serverBalance.set(null);
+          this.paymentsReady.set(false);
+          this.movimientos.set([]);
+          this.historialSesiones.set([]);
+          this.historialArqueos.set([]);
+          this.cajasRegistradas.set([]);
+          this.lastLoadedSedeId = null;
+          this.lastLoadedUserId = null;
+          return;
+        }
+        if (this.lastLoadedSedeId === sede && this.lastLoadedUserId === user.id) {
+          return;
+        }
+        this.sesionActiva.set(null);
+        this.serverBalance.set(null);
+        this.paymentsReady.set(false);
+        this.movimientos.set([]);
+        this.historialSesiones.set([]);
+        this.historialArqueos.set([]);
+        this.cajasRegistradas.set([]);
+        this.lastLoadedSedeId = sede;
+        this.lastLoadedUserId = user.id;
+        void this.cargarDesdeBackendSiExiste();
+      });
     });
   }
 
@@ -218,7 +240,11 @@ export class CajaService {
     this.realtimeReady = true;
 
     try {
-      const channelName = `canchero-caja-refresh-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      const channelName = 'canchero-caja-channel';
+      const existing = supabase.getChannels().find((c) => c.topic === `realtime:${channelName}`);
+      if (existing) {
+        supabase.removeChannel(existing);
+      }
       supabase
         .channel(channelName)
         .on('postgres_changes', { event: '*', schema: 'public', table: 'caja' }, () => this.scheduleBackendRefresh())

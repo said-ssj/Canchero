@@ -9,13 +9,20 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import pe.canchero.backend.web.dto.AuthUserDto;
+import pe.canchero.backend.web.dto.InventoryAdjustmentRequest;
 import pe.canchero.backend.web.dto.InventoryEntryRequest;
 import pe.canchero.backend.web.dto.InventoryMovementDto;
+import pe.canchero.backend.web.dto.InventorySummaryDto;
+import pe.canchero.backend.web.dto.InventoryTransferRequest;
+import pe.canchero.backend.web.dto.InventoryTransferResultDto;
 import pe.canchero.backend.web.dto.ProcessSaleRequest;
 import pe.canchero.backend.web.dto.ProductDto;
+import pe.canchero.backend.web.dto.ProductVelocityDto;
 import pe.canchero.backend.web.dto.ProductoResponse;
 import pe.canchero.backend.web.dto.SaleDto;
 import pe.canchero.backend.web.dto.SaleItemDto;
+import pe.canchero.backend.web.dto.TransformationRequest;
+import pe.canchero.backend.web.dto.TransformationResultDto;
 import pe.canchero.backend.web.dto.VentaDetalleResponse;
 import pe.canchero.backend.web.dto.VentaRequest;
 import pe.canchero.backend.web.dto.VentaResponse;
@@ -23,6 +30,9 @@ import java.math.BigDecimal;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -131,19 +141,16 @@ public class PosService extends JdbcSupport {
         int sedeId = requireExplicitVenue(request.sedeId());
         salePayments.requireSchema();
         UUID author = resolveOperationalUserId(request.usuarioId());
+        var actor = jdbc.query("select u.id_usuario,u.nombre,u.correo,u.telefono,r.nombre as rol from usuario u join rol r on r.id_rol=u.id_rol where u.id_usuario=? and u.estado='A'", (rs,n) -> new pe.canchero.backend.web.dto.AuthUserDto(rs.getString(1),rs.getString(2),rs.getString(3),rs.getString(4),rs.getString(5)), author);
+        if (actor.isEmpty()) throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+        new TenantPermissions(jdbc).require(actor.get(0), sedeId, "venta.crear");
+        var saleSession = new VenueAccessService(jdbc).requireOwnedSession(request.sesionCajaId(),actor.get(0));
+        if (saleSession.sedeId() != sedeId) throw new ResponseStatusException(HttpStatus.FORBIDDEN,"El turno no corresponde a la sede de la venta");
         String operationKey = salePayments.key(request);
         String operationHash = salePayments.fingerprint(request);
         Integer previous = salePayments.replay(request, operationKey, operationHash);
         if (previous != null) return getSale(previous, sedeId).orElseThrow();
         salePayments.lockSession(request.sesionCajaId());
-        Integer ownerMatches = jdbc.queryForObject("""
-                select count(*) from sesion_caja sc join caja c on c.id_caja=sc.id_caja
-                join sede s on s.id_sede=c.id_sede where sc.id_sesion_caja=? and c.id_sede=?
-                and c.estado='A' and s.estado='A'
-                and (s.id_dueno=? or exists (select 1 from usuario u join rol r on r.id_rol=u.id_rol
-                     where u.id_usuario=? and lower(trim(r.nombre)) in ('admin','administrador')))
-                """, Integer.class, request.sesionCajaId(), sedeId, author, author);
-        if (ownerMatches == null || ownerMatches != 1) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "El turno no pertenece a tu sede");
         previous = salePayments.replay(request, operationKey, operationHash);
         if (previous != null) return getSale(previous, sedeId).orElseThrow();
         if (request.items() == null || request.items().isEmpty()) {
@@ -243,6 +250,324 @@ public class PosService extends JdbcSupport {
                 .filter(k -> k.id() == movementId)
                 .findFirst()
                 .orElseThrow();
+    }
+
+    @Transactional
+    public InventoryMovementDto registerInventoryAdjustment(InventoryAdjustmentRequest request) {
+        if (request.cantidad() <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La cantidad debe ser mayor que cero");
+        }
+        int sedeId = requireExplicitVenue(request.sedeId());
+        jdbc.queryForList("select id_producto from producto where id_producto=? for update", request.productoId());
+        ProductDto product = getProduct(request.productoId(), sedeId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Producto no disponible en esta sede"));
+
+        String tipoAjuste = (request.tipoAjuste() == null ? "AJUSTE" : request.tipoAjuste().trim().toUpperCase(Locale.ROOT));
+        boolean esSalida = switch (tipoAjuste) {
+            case "MERMA", "ROTURA", "VENCIMIENTO", "CONTEO_FALTANTE", "FALTANTE", "PERDIDA" -> true;
+            case "CONTEO_SOBRANTE", "SOBRANTE", "INGRESO_AJUSTE" -> false;
+            default -> true;
+        };
+
+        int currentStock = stockForProduct(request.productoId(), sedeId);
+        int newStock;
+        int movementType;
+        if (esSalida) {
+            if (request.cantidad() > currentStock) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Stock insuficiente para realizar el ajuste negativo");
+            }
+            newStock = currentStock - request.cantidad();
+            movementType = 2; // Salida
+        } else {
+            newStock = currentStock + request.cantidad();
+            movementType = 1; // Entrada
+        }
+
+        String motivoDetalle = "Ajuste [" + tipoAjuste + "]: " + fallback(request.motivo(), "Ajuste de existencias");
+        if (motivoDetalle.length() > 200) {
+            motivoDetalle = motivoDetalle.substring(0, 200);
+        }
+
+        int movementId = insertKardex(
+                request.productoId(),
+                sedeId,
+                movementType,
+                request.cantidad(),
+                product.precioCompra(),
+                newStock,
+                motivoDetalle
+        );
+
+        return listInventoryMovements(sedeId).stream()
+                .filter(k -> k.id() == movementId)
+                .findFirst()
+                .orElseThrow();
+    }
+
+    @Transactional
+    public TransformationResultDto executeTransformation(TransformationRequest request) {
+        int sedeId = requireExplicitVenue(request.sedeId());
+        if (request.productoOrigenId() == request.productoDestinoId()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El producto origen y destino no pueden ser el mismo");
+        }
+        if (request.cantidadOrigen() <= 0 || request.cantidadDestino() <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Las cantidades de origen y destino deben ser mayores que cero");
+        }
+        int first = Math.min(request.productoOrigenId(), request.productoDestinoId());
+        int second = Math.max(request.productoOrigenId(), request.productoDestinoId());
+        jdbc.queryForList("select id_producto from producto where id_producto in (?, ?) for update", first, second);
+
+        ProductDto prodOrigen = getProduct(request.productoOrigenId(), sedeId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Producto origen no encontrado en esta sede"));
+        ProductDto prodDestino = getProduct(request.productoDestinoId(), sedeId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Producto destino no encontrado en esta sede"));
+
+        int currentStockOrigen = stockForProduct(request.productoOrigenId(), sedeId);
+        if (request.cantidadOrigen() > currentStockOrigen) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Stock insuficiente del producto origen (" + prodOrigen.nombre() + ")");
+        }
+
+        int currentStockDestino = stockForProduct(request.productoDestinoId(), sedeId);
+
+        BigDecimal totalCostOrigen = BigDecimal.valueOf(prodOrigen.precioCompra()).multiply(BigDecimal.valueOf(request.cantidadOrigen()));
+        double unitCostDestino = totalCostOrigen.divide(BigDecimal.valueOf(request.cantidadDestino()), 4, java.math.RoundingMode.HALF_UP).doubleValue();
+
+        int newStockOrigen = currentStockOrigen - request.cantidadOrigen();
+        int newStockDestino = currentStockDestino + request.cantidadDestino();
+
+        String userMotivo = fallback(request.motivo(), "Fraccionamiento de stock");
+        String motivoSalida = "Transformación: salida hacia " + prodDestino.nombre() + " (+" + request.cantidadDestino() + ") - " + userMotivo;
+        if (motivoSalida.length() > 200) motivoSalida = motivoSalida.substring(0, 200);
+
+        String motivoEntrada = "Transformación: entrada desde " + prodOrigen.nombre() + " (-" + request.cantidadOrigen() + ") - " + userMotivo;
+        if (motivoEntrada.length() > 200) motivoEntrada = motivoEntrada.substring(0, 200);
+
+        insertKardex(
+                request.productoOrigenId(),
+                sedeId,
+                2,
+                request.cantidadOrigen(),
+                prodOrigen.precioCompra(),
+                newStockOrigen,
+                motivoSalida
+        );
+
+        insertKardex(
+                request.productoDestinoId(),
+                sedeId,
+                1,
+                request.cantidadDestino(),
+                unitCostDestino,
+                newStockDestino,
+                motivoEntrada
+        );
+
+        return new TransformationResultDto(
+                prodOrigen.id(),
+                prodOrigen.nombre(),
+                request.cantidadOrigen(),
+                newStockOrigen,
+                prodDestino.id(),
+                prodDestino.nombre(),
+                request.cantidadDestino(),
+                newStockDestino,
+                unitCostDestino,
+                LocalDateTime.now().toString(),
+                userMotivo
+        );
+    }
+
+    @Transactional
+    public InventoryTransferResultDto transferInventory(InventoryTransferRequest request, AuthUserDto user) {
+        if (request == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Datos de traslado requeridos");
+        }
+        int sourceSede = requireExplicitVenue(request.sourceSedeId());
+        int targetSede = requireExplicitVenue(request.targetSedeId());
+        if (sourceSede == targetSede) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La sede de origen y la sede de destino deben ser distintas");
+        }
+        if (request.productoId() == null || request.productoId() <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Producto inválido");
+        }
+        if (request.cantidad() == null || request.cantidad() <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La cantidad a trasladar debe ser mayor que cero");
+        }
+
+        // Lock venues and product in DB
+        int firstVenue = Math.min(sourceSede, targetSede);
+        int secondVenue = Math.max(sourceSede, targetSede);
+        jdbc.queryForList("select id_sede from sede where id_sede in (?, ?) for update", firstVenue, secondVenue);
+        jdbc.queryForList("select id_producto from producto where id_producto = ? for update", request.productoId());
+
+        // Check if product exists in catalog
+        var prods = jdbc.query("""
+                select p.id_producto, p.nombre, p.precio_compra, p.precio_venta
+                from producto p
+                where p.id_producto = ? and p.estado = 'A'
+                """, (rs, rowNum) -> new Object[] {
+                    rs.getInt("id_producto"),
+                    rs.getString("nombre"),
+                    rs.getDouble("precio_compra"),
+                    rs.getDouble("precio_venta")
+                }, request.productoId());
+        if (prods.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Producto no disponible");
+        }
+        String prodNombre = (String) prods.get(0)[1];
+        double precioCompra = (Double) prods.get(0)[2];
+
+        // Stock in source venue
+        int currentStockSource = stockForProduct(request.productoId(), sourceSede);
+        if (request.cantidad() > currentStockSource) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Stock insuficiente en la sede de origen. Stock actual: " + currentStockSource + ", solicitado: " + request.cantidad());
+        }
+
+        int currentStockTarget = stockForProduct(request.productoId(), targetSede);
+
+        // Fetch venue names for readable kardex description
+        String sourceName = venueName(sourceSede);
+        String targetName = venueName(targetSede);
+
+        String userMotivo = (request.motivo() != null && !request.motivo().isBlank()) ? request.motivo().trim() : "";
+        String motivoSalida = "Traslado hacia " + targetName + " (#" + targetSede + ")" + (userMotivo.isEmpty() ? "" : ": " + userMotivo);
+        String motivoEntrada = "Traslado desde " + sourceName + " (#" + sourceSede + ")" + (userMotivo.isEmpty() ? "" : ": " + userMotivo);
+        if (motivoSalida.length() > 200) motivoSalida = motivoSalida.substring(0, 200);
+        if (motivoEntrada.length() > 200) motivoEntrada = motivoEntrada.substring(0, 200);
+
+        int newStockSource = currentStockSource - request.cantidad();
+        int newStockTarget = currentStockTarget + request.cantidad();
+
+        int sourceKardexId = insertKardex(
+                request.productoId(),
+                sourceSede,
+                2, // Salida
+                request.cantidad(),
+                precioCompra,
+                newStockSource,
+                motivoSalida
+        );
+
+        int targetKardexId = insertKardex(
+                request.productoId(),
+                targetSede,
+                1, // Entrada
+                request.cantidad(),
+                precioCompra,
+                newStockTarget,
+                motivoEntrada
+        );
+
+        return new InventoryTransferResultDto(
+                sourceSede,
+                targetSede,
+                request.productoId(),
+                request.cantidad(),
+                newStockSource,
+                newStockTarget,
+                sourceKardexId,
+                targetKardexId,
+                "Se trasladaron " + request.cantidad() + " unidades de " + prodNombre + " de " + sourceName + " hacia " + targetName
+        );
+    }
+
+    private String venueName(int venueId) {
+        List<String> names = jdbc.query("select nombre from sede where id_sede = ?", (rs, rowNum) -> rs.getString(1), venueId);
+        return names.isEmpty() ? "Sede #" + venueId : names.get(0);
+    }
+
+    public InventorySummaryDto getInventorySummary(Integer sedeId) {
+        int targetSedeId = requireExplicitVenue(sedeId);
+        List<ProductDto> products = listProducts(targetSedeId);
+
+        BigDecimal totalValorizado = BigDecimal.ZERO;
+        int totalUnidades = 0;
+        int bajoStock = 0;
+        int agotados = 0;
+
+        for (ProductDto p : products) {
+            int st = p.stock();
+            totalUnidades += Math.max(0, st);
+            if (st > 0) {
+                totalValorizado = totalValorizado.add(BigDecimal.valueOf(p.precioCompra()).multiply(BigDecimal.valueOf(st)));
+            }
+            if (st == 0) {
+                agotados++;
+            } else if (st <= p.stockMinimo()) {
+                bajoStock++;
+            }
+        }
+
+        Timestamp startOfMonth = Timestamp.valueOf(LocalDate.now().withDayOfMonth(1).atStartOfDay());
+        Integer movMes = jdbc.queryForObject("""
+                select count(*)
+                from kardex
+                where id_sede = ? and estado = 'A'
+                  and coalesce(fecha, feccre) >= ?
+                """, Integer.class, targetSedeId, startOfMonth);
+        int totalMovMes = movMes == null ? 0 : movMes;
+
+        Timestamp thirtyDaysAgo = Timestamp.valueOf(LocalDateTime.now().minusDays(30));
+        List<ProductVelocityDto> velocityList = new ArrayList<>();
+        for (ProductDto p : products) {
+            Integer soldLast30 = jdbc.queryForObject("""
+                    select coalesce(sum(cantidad), 0)
+                    from kardex
+                    where id_producto = ? and id_sede = ? and id_tipo_mov_inv = 2 and estado = 'A'
+                      and motivo like 'Venta POS%'
+                      and coalesce(fecha, feccre) >= ?
+                    """, Integer.class, p.id(), targetSedeId, thirtyDaysAgo);
+            int sold = soldLast30 == null ? 0 : soldLast30;
+            double dailyRate = round2(sold / 30.0);
+            Double daysRemaining = null;
+            String nivelAlerta = "OPTIMO";
+
+            if (p.stock() <= 0) {
+                nivelAlerta = "AGOTADO";
+                daysRemaining = 0.0;
+            } else if (dailyRate > 0) {
+                daysRemaining = round2(p.stock() / dailyRate);
+                if (daysRemaining <= 3.0) {
+                    nivelAlerta = "CRITICO";
+                } else if (daysRemaining <= 7.0 || p.stock() <= p.stockMinimo()) {
+                    nivelAlerta = "ADVERTENCIA";
+                }
+            } else if (p.stock() <= p.stockMinimo()) {
+                nivelAlerta = "ADVERTENCIA";
+            }
+
+            velocityList.add(new ProductVelocityDto(
+                    p.id(),
+                    p.nombre(),
+                    p.stock(),
+                    p.stockMinimo(),
+                    dailyRate,
+                    daysRemaining,
+                    nivelAlerta
+            ));
+        }
+
+        velocityList.sort((a, b) -> {
+            int scoreA = "AGOTADO".equals(a.nivelAlerta()) ? 0 : "CRITICO".equals(a.nivelAlerta()) ? 1 : "ADVERTENCIA".equals(a.nivelAlerta()) ? 2 : 3;
+            int scoreB = "AGOTADO".equals(b.nivelAlerta()) ? 0 : "CRITICO".equals(b.nivelAlerta()) ? 1 : "ADVERTENCIA".equals(b.nivelAlerta()) ? 2 : 3;
+            if (scoreA != scoreB) return Integer.compare(scoreA, scoreB);
+            if (a.diasRestantesEstimados() != null && b.diasRestantesEstimados() != null) {
+                return Double.compare(a.diasRestantesEstimados(), b.diasRestantesEstimados());
+            }
+            return a.nombre().compareToIgnoreCase(b.nombre());
+        });
+
+        return new InventorySummaryDto(
+                targetSedeId,
+                totalValorizado.setScale(2, java.math.RoundingMode.HALF_UP),
+                totalUnidades,
+                products.size(),
+                bajoStock,
+                agotados,
+                totalMovMes,
+                velocityList
+        );
     }
 
     private RowMapper<ProductDto> productRowMapper() {
@@ -433,8 +758,6 @@ public class PosService extends JdbcSupport {
     }
 
     public List<VentaResponse> listVentasForOwner(AuthUserDto user) {
-        UUID ownerUuid = resolveOperationalUserId(user.id());
-        boolean admin = Roles.isAdmin(user.rol()); // el admin de la plataforma ve todas las sedes
         return jdbc.query("""
                 select v.id_venta, v.id_sede, v.fecha_venta, v.id_sesion_caja,
                        v.cajero_nombre, v.tipo_comprobante, v.numero_comprobante,
@@ -466,9 +789,9 @@ public class PosService extends JdbcSupport {
                     left join caja c on c.id_caja = sc.id_caja
                 ) v
                 join sede s on s.id_sede = v.id_sede
-                where v.estado = 'A' and (? or s.id_dueno = ?)
+                where v.estado = 'A' and __SCOPE__
                 order by v.fecha_venta desc, v.id_venta desc
-                """, (rs, rowNum) -> mapSale(rs, saleItems(rs.getInt("id_venta"))), admin, ownerUuid).stream()
+                """.replace("__SCOPE__",new TenantPermissions(jdbc).scope("s.id_sede", user, "venta.ver")), (rs, rowNum) -> mapSale(rs, saleItems(rs.getInt("id_venta")))).stream()
                 .map(this::toVentaResponse)
                 .toList();
     }

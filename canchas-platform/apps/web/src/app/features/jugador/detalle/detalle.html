@@ -55,14 +55,23 @@
           <span class="material-symbols-outlined" aria-hidden="true">notifications</span>
         </button>
         <button
-          class="btn outline"
+          class="btn icon-only"
           type="button"
           [disabled]="!v.canchas.length"
+          title="Reportar problema"
           aria-label="Reportar incidencia en cancha"
           (click)="abrirModalReporteDesdeSede()"
         >
-          <span class="material-symbols-outlined" aria-hidden="true">report_problem</span>Reportar
-          incidencia
+          <span class="material-symbols-outlined" aria-hidden="true">report_problem</span>
+        </button>
+        <button
+          class="btn icon-only"
+          type="button"
+          title="Compartir sede"
+          aria-label="Compartir sede"
+          (click)="compartirSede(v)"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">share</span>
         </button>
         <a class="btn primary" [href]="'/sedes/' + v.id + '#canchas'"
           ><span class="material-symbols-outlined" aria-hidden="true">sports_soccer</span>Ver
@@ -246,14 +255,21 @@
                     </button>
                     <button
                       type="button"
-                      class="btn btn-outline btn-sm"
+                      class="btn icon-only"
                       (click)="abrirModalReporte(cancha)"
                       title="Reportar problema en esta cancha"
+                      aria-label="Reportar problema en esta cancha"
                     >
-                      <span class="material-symbols-outlined icon-16" aria-hidden="true"
-                        >report_problem</span
-                      >
-                      Reportar problema
+                      <span class="material-symbols-outlined" aria-hidden="true">report_problem</span>
+                    </button>
+                    <button
+                      type="button"
+                      class="btn icon-only"
+                      (click)="compartirCancha(cancha, v)"
+                      title="Compartir cancha"
+                      aria-label="Compartir cancha"
+                    >
+                      <span class="material-symbols-outlined" aria-hidden="true">share</span>
                     </button>
                   </div>
                 </div>

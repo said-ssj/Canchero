@@ -35,29 +35,73 @@ export class GoogleCallback {
   private async completeCallback(): Promise<void> {
     const query = this.route.snapshot.queryParamMap;
     const code = query.get('code');
-    this.location.replaceState('/auth/google/callback');
     try {
-      if (!environment.googleAuthEnabled) throw new Error();
+      if (!environment.googleAuthEnabled) {
+        throw new Error('La autenticación con Google está deshabilitada en la configuración');
+      }
+
       const pending = sessionStorage.getItem('canchero-google-pending');
       sessionStorage.removeItem('canchero-google-pending');
-      if (!pending || !code || query.has('error')) throw new Error();
-      const preferences = JSON.parse(pending);
-      this.remember = preferences.remember === true;
-      const target = preferences.returnUrl;
-      this.returnUrl =
-        typeof target === 'string' && /^\/(?![/\\])/.test(target) && !target.includes('\\')
-          ? target
-          : null;
-      const { data, error } = await googleOAuthClient().auth.exchangeCodeForSession(code);
-      if (this.destroyRef.destroyed) {
-        await googleOAuthClient().auth.signOut({ scope: 'local' });
-        return;
+
+      if (pending) {
+        try {
+          const preferences = JSON.parse(pending);
+          this.remember = preferences.remember === true;
+          const target = preferences.returnUrl;
+          this.returnUrl =
+            typeof target === 'string' && /^\/(?![/\\])/.test(target) && !target.includes('\\')
+              ? target
+              : null;
+        } catch {
+          this.remember = true;
+          this.returnUrl = null;
+        }
       }
-      if (error || !data.session) throw new Error();
-      this.accessToken = data.session.access_token;
+
+      if (query.has('error')) {
+        const desc = query.get('error_description') || query.get('error');
+        console.error('[GoogleCallback] OAuth error en query:', desc);
+        throw new Error(desc || 'Error reportado por el proveedor de autenticación');
+      }
+
+      let token = '';
+      if (code) {
+        const { data, error } = await googleOAuthClient().auth.exchangeCodeForSession(code);
+        if (this.destroyRef.destroyed) {
+          await googleOAuthClient().auth.signOut({ scope: 'local' });
+          return;
+        }
+        if (error || !data?.session) {
+          console.error('[GoogleCallback] Error en exchangeCodeForSession:', error);
+          throw new Error(error?.message || 'No se pudo intercambiar el código por una sesión');
+        }
+        token = data.session.access_token;
+      } else {
+        // Fallback: verificar fragmento hash (#access_token=... o #error=...)
+        const hash = window.location.hash.startsWith('#')
+          ? window.location.hash.substring(1)
+          : window.location.hash;
+        const hashParams = new URLSearchParams(hash);
+        const hashError = hashParams.get('error_description') || hashParams.get('error');
+        if (hashError) {
+          console.error('[GoogleCallback] OAuth error en hash:', hashError);
+          throw new Error(hashError);
+        }
+        const hashToken = hashParams.get('access_token');
+        if (hashToken) {
+          token = hashToken;
+        } else {
+          throw new Error('No se recibió código de autorización ni token de Google');
+        }
+      }
+
+      this.location.replaceState('/auth/google/callback');
+      this.accessToken = token;
       this.destroyRef.onDestroy(() => this.endExchange());
       this.exchange();
-    } catch {
+    } catch (err: any) {
+      console.error('[GoogleCallback] Falló completeCallback:', err);
+      this.location.replaceState('/auth/google/callback');
       this.busy.set(false);
       this.error.set(
         'No se completó el acceso con Google. Vuelve al inicio de sesión e inténtalo de nuevo.',

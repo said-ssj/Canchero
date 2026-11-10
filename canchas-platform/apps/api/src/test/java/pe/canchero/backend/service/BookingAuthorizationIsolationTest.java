@@ -129,7 +129,7 @@ class BookingAuthorizationIsolationTest {
                 """);
 
         // Seed roles
-        jdbc.update("insert into rol values (1, 'cliente', 'A'), (2, 'dueño', 'A'), (3, 'admin', 'A')");
+        jdbc.update("insert into rol values (1, 'cliente', 'A'), (2, 'dueño', 'A'), (3, 'superadmin', 'A')");
 
         // Seed users
         ownerAId = UUID.randomUUID();
@@ -266,7 +266,7 @@ class BookingAuthorizationIsolationTest {
     }
 
     @Test
-    void adminCanListAllAndFilterAnyVenue() throws Exception {
+    void superadminCanListAllAndFilterAnyVenue() throws Exception {
         mvc.perform(get("/api/bookings")
                 .header("Authorization", "Bearer " + tokenAdmin))
                 .andExpect(status().isOk())
@@ -447,7 +447,7 @@ class BookingAuthorizationIsolationTest {
     }
 
     @Test
-    void adminCanConfirmCompleteAndCancelAnyBooking() throws Exception {
+    void superadminCanConfirmCompleteAndCancelAnyBooking() throws Exception {
         // Admin confirms Booking 3 (Owner B's venue)
         mvc.perform(patch("/api/bookings/" + booking3Id + "/confirm")
                 .header("Authorization", "Bearer " + tokenAdmin))

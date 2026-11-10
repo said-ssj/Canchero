@@ -252,7 +252,7 @@ class CashAndLegacyOperationsIsolationTest {
         jdbc.execute("alter table arqueo_caja add ingresos_manuales numeric(12,2)");
         jdbc.execute("alter table arqueo_caja add egresos_manuales numeric(12,2)");
         // Seed roles
-        jdbc.update("insert into rol values (1, 'cliente', 'A'), (2, 'dueño', 'A'), (3, 'admin', 'A')");
+        jdbc.update("insert into rol values (1, 'cliente', 'A'), (2, 'dueño', 'A'), (3, 'superadmin', 'A')");
         jdbc.update("insert into metodo_pago values (1, 'Efectivo', 'A'), (2, 'Tarjeta', 'A'), (3, 'Yape', 'A'), (4, 'Plin', 'A')");
         jdbc.update("insert into estado_reserva values (1, 'Pendiente', 'A'), (2, 'Confirmada', 'A')");
         jdbc.update("insert into categoria_producto values (1, 'Bebidas')");
@@ -430,7 +430,7 @@ class CashAndLegacyOperationsIsolationTest {
         var ownerA = new pe.canchero.backend.web.dto.AuthUserDto(ownerAId.toString(), "Owner", "", "", "dueno");
         assertEquals(9, cashService.listCashAuditsForOwner(ownerA).get(0).totalPagosEfectivo());
         // El admin de la plataforma ve los arqueos de todas las sedes; un dueño ajeno no ve los de A.
-        var admin = new pe.canchero.backend.web.dto.AuthUserDto(adminId.toString(), "Admin", "", "", "admin");
+        var admin = new pe.canchero.backend.web.dto.AuthUserDto(adminId.toString(), "Admin", "", "", "superadmin");
         assertEquals(1, cashService.listCashAuditsForOwner(admin).size());
         assertTrue(cashService.listCashAuditsForOwner(
                 new pe.canchero.backend.web.dto.AuthUserDto(ownerBId.toString(), "B", "", "", "dueno")).isEmpty());
@@ -440,7 +440,7 @@ class CashAndLegacyOperationsIsolationTest {
     @Test
     void openSessionWithoutCajaIdOnlyLooksAtOwnVenuesEvenForAdmin() {
         var ownerA = new pe.canchero.backend.web.dto.AuthUserDto(ownerAId.toString(), "Owner", "", "", "dueno");
-        var admin = new pe.canchero.backend.web.dto.AuthUserDto(adminId.toString(), "Admin", "", "", "admin");
+        var admin = new pe.canchero.backend.web.dto.AuthUserDto(adminId.toString(), "Admin", "", "", "superadmin");
         assertTrue(cashService.getOpenCashSessionForOwner(ownerA).isPresent());
         // Sin cajaId, "la última caja abierta" de toda la plataforma podría ser de otra sede: el admin no la recibe.
         assertTrue(cashService.getOpenCashSessionForOwner(admin).isEmpty());
@@ -521,7 +521,7 @@ class CashAndLegacyOperationsIsolationTest {
         mvc.perform(get("/api/cash/boxes?sedeId=30")
                 .header("Authorization", "Bearer " + tokenOwnerA))
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.message").value("La sede no pertenece a tu cuenta"));
+                .andExpect(jsonPath("$.message").value("No tienes este permiso en la sede seleccionada"));
 
         // Legacy /api/cajas?sedeId=30
         mvc.perform(get("/api/cajas?sedeId=30")
@@ -532,7 +532,7 @@ class CashAndLegacyOperationsIsolationTest {
         mvc.perform(get("/api/cajas/3")
                 .header("Authorization", "Bearer " + tokenOwnerA))
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.message").value("La caja no pertenece a tu cuenta"));
+                .andExpect(jsonPath("$.message").value("No tienes este permiso en la sede seleccionada"));
     }
 
     @Test
@@ -548,7 +548,7 @@ class CashAndLegacyOperationsIsolationTest {
                         }
                         """))
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.message").value("La caja no pertenece a tu cuenta"));
+                .andExpect(jsonPath("$.message").value("No tienes este permiso en la sede seleccionada"));
 
         // Legacy /api/sesiones-caja/abrir
         mvc.perform(post("/api/sesiones-caja/abrir")
@@ -561,7 +561,7 @@ class CashAndLegacyOperationsIsolationTest {
                         }
                         """))
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.message").value("La caja no pertenece a tu cuenta"));
+                .andExpect(jsonPath("$.message").value("No tienes este permiso en la sede seleccionada"));
     }
 
     @Test
@@ -782,13 +782,13 @@ class CashAndLegacyOperationsIsolationTest {
         mvc.perform(get("/api/cash/sessions/30/movements")
                 .header("Authorization", "Bearer " + tokenOwnerA))
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.message").value("El turno no pertenece a tu cuenta"));
+                .andExpect(jsonPath("$.message").value("No tienes este permiso en la sede seleccionada"));
 
         // Legacy /api/movimientos-caja/sesion/30
         mvc.perform(get("/api/movimientos-caja/sesion/30")
                 .header("Authorization", "Bearer " + tokenOwnerA))
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.message").value("El turno no pertenece a tu cuenta"));
+                .andExpect(jsonPath("$.message").value("No tienes este permiso en la sede seleccionada"));
 
         // Owner A attempts to register movement on Session 30
         mvc.perform(post("/api/cash/movements")
@@ -802,7 +802,7 @@ class CashAndLegacyOperationsIsolationTest {
                         }
                         """))
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.message").value("El turno no pertenece a tu cuenta"));
+                .andExpect(jsonPath("$.message").value("No tienes este permiso en la sede seleccionada"));
 
         // Owner A attempts to close Session 30
         mvc.perform(patch("/api/cash/sessions/30/close")
@@ -810,7 +810,7 @@ class CashAndLegacyOperationsIsolationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"totalEfectivoFisico\": 200.0}"))
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.message").value("El turno no pertenece a tu cuenta"));
+                .andExpect(jsonPath("$.message").value("No tienes este permiso en la sede seleccionada"));
     }
 
     @Test

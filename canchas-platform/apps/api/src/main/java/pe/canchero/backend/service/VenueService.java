@@ -212,6 +212,12 @@ public class VenueService extends JdbcSupport {
         return jdbc.query(courtsSql("") + " order by c.nombre_numero", courtRowMapper());
     }
 
+    public List<CourtDto> listCourtsForVenues(List<Integer> venueIds) {
+        if (venueIds == null || venueIds.isEmpty()) return List.of();
+        String inClause = venueIds.stream().map(String::valueOf).collect(java.util.stream.Collectors.joining(","));
+        return jdbc.query(courtsSql(" where c.id_sede in (" + inClause + ") ") + " order by c.nombre_numero", courtRowMapper());
+    }
+
     public Optional<CourtDto> getCourt(String id) {
         return jdbc.query(courtsSql(" where c.id_cancha = ? "), courtRowMapper(), Integer.parseInt(id)).stream().findFirst();
     }
@@ -472,12 +478,11 @@ public class VenueService extends JdbcSupport {
 
     public Optional<CourtDto> updateCourt(String id, CourtRequest request) {
         int updated = jdbc.update(connection -> {
-            PreparedStatement ps = connection.prepareStatement("""
-                    update cancha
-                    set id_tipo_cancha = ?, nombre_numero = ?, techada = ?, foto_url = ?, superficie = ?,
-                        equipamiento = ?, estado = ?, fecmod = now(), usmod = 'API', pcmod = 'SPRING'
-                    where id_cancha = ?
-                    """);
+            boolean updateVenue = request.venueId() != null && !request.venueId().isBlank();
+            String sql = "update cancha set id_tipo_cancha = ?, nombre_numero = ?, techada = ?, foto_url = ?, superficie = ?,"
+                    + " equipamiento = ?, estado = ?" + (updateVenue ? ", id_sede = ?" : "")
+                    + ", fecmod = now(), usmod = 'API', pcmod = 'SPRING' where id_cancha = ?";
+            PreparedStatement ps = connection.prepareStatement(sql);
             ps.setInt(1, courtTypeId(request.tipo()));
             ps.setString(2, fallback(request.nombre(), "Cancha"));
             ps.setBoolean(3, request.techada());
@@ -485,7 +490,11 @@ public class VenueService extends JdbcSupport {
             ps.setString(5, request.superficie());
             ps.setArray(6, textArray(connection, request.equipamiento()));
             ps.setString(7, request.disponible() ? "A" : "I");
-            ps.setInt(8, Integer.parseInt(id));
+            int paramIdx = 8;
+            if (updateVenue) {
+                ps.setInt(paramIdx++, Integer.parseInt(request.venueId().trim()));
+            }
+            ps.setInt(paramIdx, Integer.parseInt(id));
             return ps;
         });
         if (updated == 0) return Optional.empty();

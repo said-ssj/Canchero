@@ -138,7 +138,7 @@ export class PlayerProfilePage {
       }
       this.districts = await firstValueFrom(
         this.http.get<District[]>(environment.apiUrl + '/catalog/districts'),
-      );
+      ).catch(() => []);
       this.departments = new Map(this.districts.map((d) => [d.id_departamento, d.departamento]));
       const savedDistrict = this.districts.find((d) => d.id_distrito === profile.idDistrito);
       this.departmentId = savedDistrict?.id_departamento ?? null;
@@ -216,6 +216,25 @@ export class PlayerProfilePage {
     } finally {
       if (url) URL.revokeObjectURL(url);
       this.readingPhoto.set(false);
+    }
+  }
+
+  /* ================= COMPARTIR PERFIL ================= */
+  protected async compartirPerfil(): Promise<void> {
+    const url = typeof window !== 'undefined' ? window.location.href : '';
+    const title = this.fullName ? `Perfil de ${this.fullName} en Canchero` : 'Perfil de jugador en Canchero';
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({ title, text: `Mira mi perfil en Canchero`, url });
+        return;
+      } catch {}
+    }
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      try {
+        await navigator.clipboard.writeText(url);
+        this.saved.set(true);
+        setTimeout(() => this.saved.set(false), 3000);
+      } catch {}
     }
   }
 

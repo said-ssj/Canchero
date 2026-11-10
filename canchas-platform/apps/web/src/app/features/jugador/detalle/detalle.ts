@@ -568,6 +568,50 @@ export class Detalle {
     this.toastTimer = setTimeout(() => this.toastVisible.set(false), 3000);
   }
 
+  /* ================= COMPARTIR SEDE Y CANCHAS ================= */
+  protected async compartirSede(venue: any): Promise<void> {
+    const url = typeof window !== 'undefined' ? window.location.href : '';
+    const title = venue?.nombre ? `Sede ${venue.nombre} en Canchero` : 'Sede deportiva en Canchero';
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({ title, text: `¡Reserva tu cancha en ${venue?.nombre || 'Canchero'}!`, url });
+        return;
+      } catch {
+        // Fallback al portapapeles si el usuario cancela o no es compatible
+      }
+    }
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      try {
+        await navigator.clipboard.writeText(url);
+        this.showToast('¡Enlace de la sede copiado al portapapeles!');
+      } catch {
+        this.showToast('No se pudo copiar el enlace.');
+      }
+    }
+  }
+
+  protected async compartirCancha(cancha: Court, venue: any): Promise<void> {
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+    const url = `${baseUrl}/sedes/${venue?.id || ''}?cancha=${cancha.id}`;
+    const title = `${cancha.nombre} - ${venue?.nombre || 'Canchero'}`;
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({ title, text: `¡Mira la cancha ${cancha.nombre} en ${venue?.nombre || 'Canchero'}!`, url });
+        return;
+      } catch {
+        // Fallback al portapapeles
+      }
+    }
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      try {
+        await navigator.clipboard.writeText(url);
+        this.showToast(`¡Enlace de la cancha ${cancha.nombre} copiado al portapapeles!`);
+      } catch {
+        this.showToast('No se pudo copiar el enlace.');
+      }
+    }
+  }
+
   /* ================= REPORTE DE INCIDENCIAS EN CANCHAS ================= */
   protected abrirModalReporteDesdeSede(): void {
     const v = this.venue();

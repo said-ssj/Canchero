@@ -6,8 +6,8 @@
   /* ==========================================================================
      Tokens Canónicos - Sistema de Diseño Canchero (tokens.css)
      ========================================================================== */
-  --brand: #3cb043;
-  --primary: #25832a;
+  --brand: #27802D;
+  --primary: #27802D;
   --orange: #f5821f;
   --ink: #191919;
   --muted: #626a72;
@@ -23,8 +23,8 @@
   --warning-bg: #fff7ed;
   --info: #2458cb;
   --info-bg: #eff5ff;
-  --radius: 6px;
-  --card-radius: 8px;
+  --radius: 4px;
+  --card-radius: 4px;
   --font: 'Plus Jakarta Sans', sans-serif;
   --s1: 4px;
   --s2: 8px;
@@ -34,8 +34,8 @@
   --s6: 32px;
 
   /* Paleta de Colores - Marca */
-  --color-brand-green: #3cb043;
-  --color-brand-green-dark: #25832a;
+  --color-brand-green: #27802D;
+  --color-brand-green-dark: #1e6624;
   --color-brand-green-light: #effbf2;
 
   --color-brand-orange: #f5821f;
@@ -104,8 +104,8 @@
   /* ==========================================================================
      Tokens Oficiales de Figma: Canchero - Sistema de diseno (39 familias / 175 variantes)
      ========================================================================== */
-  --can-color-primary: #27802d;
-  --can-color-brand-green: #3cb043;
+  --can-color-primary: #27802D;
+  --can-color-brand-green: #27802D;
   --can-color-brand-orange: #f5821f;
   --can-color-surface: #ffffff;
   --can-color-background: #f5f6f7;
@@ -117,8 +117,8 @@
   --can-color-selected-row: #f0fdf4;
 
   /* Escala de Radios (Controles 6px, Superficies 8px) */
-  --can-radius-control: 6px;
-  --can-radius-surface: 8px;
+  --can-radius-control: 4px;
+  --can-radius-surface: 4px;
 
   /* Escala de Espaciado (4, 8, 12, 16, 24, 32px) */
   --can-space-xs: 4px;
@@ -134,12 +134,15 @@
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 
-  /* Bordes Redondeados */
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
-  --radius-full: 9999px;
+  /* Bordes Redondeados (Diseño Canchero 4px) */
+  --radius-sm: 4px;
+  --radius-md: 4px;
+  --radius-lg: 4px;
+  --radius-xl: 4px;
+  --radius-full: 4px;
+  --mat-button-toggle-shape: 4px;
+  --mat-standard-button-toggle-shape: 4px;
+  --mat-sys-corner-extra-large: 4px;
 
   /* Transiciones */
   --transition-fast: 150ms ease-in-out;

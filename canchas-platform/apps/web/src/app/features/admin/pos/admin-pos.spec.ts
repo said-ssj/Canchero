@@ -2,6 +2,7 @@ import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
+import { provideRouter } from '@angular/router';
 import { vi, describe, beforeEach, afterEach, it, expect } from 'vitest';
 import { AdminPos } from './admin-pos';
 import { PosService } from '@core/services/pos.service';
@@ -124,6 +125,7 @@ describe('AdminPos Component - Etapa 6 (Punto de Venta POS & Kardex)', () => {
     await TestBed.configureTestingModule({
       imports: [AdminPos],
       providers: [
+        provideRouter([]),
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: AuthService, useValue: { currentUser: mockCurrentUser } },
@@ -504,5 +506,76 @@ describe('AdminPos Component - Etapa 6 (Punto de Venta POS & Kardex)', () => {
     expect(texto).toContain('TOTAL A PAGAR: S/ 13.00');
     expect(texto).toContain('IMPORTE RECIBIDO: S/ 20.00');
     expect(texto).toContain('VUELTO: S/ 7.00');
+  });
+
+  it('debe permitir escanear o presionar enter con código de barras y agregarlo directamente al carrito', async () => {
+    let aviso = '';
+    component.notice.subscribe((msg) => (aviso = msg));
+
+    const mockEvent = { target: { value: '775018200101' } } as any;
+    component.onEscanearOEnter(mockEvent);
+
+    expect(posService.carrito().length).toBe(1);
+    expect(posService.carrito()[0].producto.nombre).toBe('Gatorade Cool Blue 750ml');
+    expect(aviso).toContain('+1 Gatorade Cool Blue 750ml agregado al carrito');
+  });
+
+  it('debe alternar destino a "cancha" y vincular la cancha seleccionada al nombre del cliente', async () => {
+    expect(component.posDestino()).toBe('mostrador');
+    expect(component.posClienteNombre()).toBe('Cliente Mostrador');
+
+    component.setPosDestino('cancha');
+    expect(component.posDestino()).toBe('cancha');
+    expect(component.canchaSeleccionadaId()).toBe(10);
+    expect(component.posClienteNombre()).toContain('[Cancha 1]');
+
+    component.setPosDestino('mostrador');
+    expect(component.posDestino()).toBe('mostrador');
+    expect(component.posClienteNombre()).toBe('Cliente Mostrador');
+  });
+
+  it('debe alternar formato de ticket térmico entre 80mm y 58mm', async () => {
+    expect(component.ticketAncho()).toBe('80mm');
+    component.setTicketAncho('58mm');
+    expect(component.ticketAncho()).toBe('58mm');
+    component.setTicketAncho('80mm');
+    expect(component.ticketAncho()).toBe('80mm');
+  });
+
+  it('debe procesar cobro al presionar F2 cuando la caja está abierta y hay ítems', async () => {
+    const procesarSpy = vi.spyOn(component, 'procesarCobroPOS');
+    cajaService.sesionActiva.set({
+      id: 1,
+      cajaId: 1,
+      cajaNombre: 'Caja 1',
+      sedeId: 1,
+      cajeroNombre: 'Roberto Mendoza',
+      cajeroEmail: 'admin@canchero.pe',
+      fechaApertura: new Date().toISOString(),
+      montoApertura: 100,
+      estado: 'abierta',
+    });
+    posService.agregarAlCarrito(testProductos[0], 1);
+
+    const f2Event = new KeyboardEvent('keydown', { key: 'F2' });
+    component.onKeydown(f2Event);
+
+    expect(procesarSpy).toHaveBeenCalled();
+  });
+
+  it('resuelve el icono del producto heredándolo de su categoría o inferido', () => {
+    const prodSinFoto = {
+      id: 99,
+      categoriaId: 999,
+      categoriaNombre: 'Bebidas Rehidratantes',
+      codigoBarras: 'SEDE54-AGU-003',
+      nombre: 'Agua Mineral San Luis Con Gas 625 ml',
+      precioCompra: 1.5,
+      precioVenta: 2.5,
+      stock: 24,
+      stockMinimo: 5,
+    };
+    const icono = component.obtenerIconoProducto(prodSinFoto as any);
+    expect(icono).toBe('local_drink');
   });
 });

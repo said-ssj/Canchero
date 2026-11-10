@@ -19,15 +19,7 @@
     <!-- Cabecera de la Vista POS -->
     <header class="admin-view-header">
       <div>
-        <div class="pos-venue-tag">
-          <span class="pos-venue-badge">Control Comercial &amp; Almacén (Módulo 5.5)</span>
-          <span class="pos-venue-dot"></span>
-          <span class="pos-venue-name">{{ venueName() }}</span>
-        </div>
-        <h1 class="view-title">
-          <mat-icon class="view-title-icon" aria-hidden="true">shopping_cart</mat-icon>
-          Punto de Venta (POS) &amp; Kardex
-        </h1>
+                <h1 class="view-title">Punto de Venta (POS) &amp; Kardex</h1>
         <p class="view-subtitle">
           Catálogo visual de cafetería/tienda, carrito rápido con desglose de IGV (18%) y control de
           stock continuo.
@@ -36,6 +28,12 @@
 
       <!-- Botón de Acción Rápida -->
       <div class="pos-header-actions">
+        <a routerLink="/admin/inventario" mat-stroked-button class="pos-btn-action">
+          <mat-icon aria-hidden="true">inventory</mat-icon>Inventario &amp; Kardex
+        </a>
+        <a routerLink="/admin/catalogo" mat-stroked-button class="pos-btn-action">
+          <mat-icon aria-hidden="true">inventory_2</mat-icon>Gestionar catálogo
+        </a>
         <button type="button" mat-flat-button (click)="catalogVenueId.set(venueId())">
           <mat-icon aria-hidden="true">add</mat-icon>Agregar producto
         </button>
@@ -51,6 +49,32 @@
         </button>
       </div>
     </header>
+
+    <!-- Métricas Operativas POS (Estilo Canchero Simple) -->
+    <div class="management-stats pos-stats">
+      <div>
+        <span>Total Productos</span>
+        <strong>{{ posService.productos().length }}</strong>
+        <small class="stat-sub">Ítems disponibles en sede</small>
+      </div>
+      <div>
+        <span>Ventas Emitidas</span>
+        <strong style="color: var(--color-brand-green, #27802D)">{{ posService.ventas().length }}</strong>
+        <small class="stat-sub">Comprobantes generados</small>
+      </div>
+      <div>
+        <span>Total Recaudado</span>
+        <strong style="color: var(--color-brand-green, #27802D)">S/ {{ totalVendidoPOS().toFixed(2) }}</strong>
+        <small class="stat-sub">Ventas mostrador y canchas</small>
+      </div>
+      <div>
+        <span>Stock Crítico</span>
+        <strong [style.color]="posService.productosStockCritico().length > 0 ? 'var(--color-danger, #dc2626)' : 'inherit'">
+          {{ posService.productosStockCritico().length }}
+        </strong>
+        <small class="stat-sub">Alertas de reposición</small>
+      </div>
+    </div>
 
     <!-- Banner de Alerta de Stock Mínimo Crítico (si existen productos) -->
     @if (posService.productosStockCritico().length > 0) {
@@ -112,9 +136,10 @@
               <input
                 matInput
                 type="text"
-                placeholder="Buscar por nombre, código de barras o categoría"
+                placeholder="Buscar por nombre, código de barras o escanear (Enter para agregar)..."
                 [value]="posService.filtroBusqueda()"
                 (input)="onBuscarProductoPOS($event)"
+                (keydown.enter)="onEscanearOEnter($event)"
               />
               @if (posService.filtroBusqueda()) {
                 <button
@@ -228,7 +253,7 @@
                       (error)="productPhotoFailed(prod.id)"
                     />
                   } @else {
-                    <mat-icon aria-hidden="true">{{ prod.icono || 'inventory_2' }}</mat-icon>
+                    <mat-icon aria-hidden="true">{{ obtenerIconoProducto(prod) }}</mat-icon>
                   }
                 </div>
 
@@ -301,6 +326,51 @@
                 </button>
               }
             </div>
+
+            <!-- Selector de Destino de Comanda: Mostrador vs Cargar a Cancha -->
+            <div class="pos-destino-selector">
+              <span class="pos-destino-title">Destino del Consumo:</span>
+              <div class="pos-destino-buttons">
+                <button
+                  type="button"
+                  class="pos-dest-btn"
+                  [class.active]="posDestino() === 'mostrador'"
+                  (click)="setPosDestino('mostrador')"
+                >
+                  <mat-icon aria-hidden="true" class="icon-16">storefront</mat-icon>
+                  <span>Mostrador</span>
+                </button>
+                <button
+                  type="button"
+                  class="pos-dest-btn"
+                  [class.active]="posDestino() === 'cancha'"
+                  (click)="setPosDestino('cancha')"
+                >
+                  <mat-icon aria-hidden="true" class="icon-16">sports_soccer</mat-icon>
+                  <span>Cargar a Cancha</span>
+                </button>
+              </div>
+            </div>
+
+            @if (posDestino() === 'cancha') {
+              <div class="pos-cancha-target-card">
+                <label class="pos-cancha-select-label">Seleccionar Cancha en Juego:</label>
+                <select
+                  class="pos-cancha-select input-admin"
+                  [value]="canchaSeleccionadaId() ?? ''"
+                  (change)="seleccionarCanchaDestino(+($any($event.target).value))"
+                >
+                  @for (cancha of canchasSede(); track cancha.id) {
+                    <option [value]="cancha.id">
+                      {{ cancha.nombre }} ({{ cancha.tipo_futbol || cancha.deporte || 'Cancha' }})
+                    </option>
+                  }
+                </select>
+                <span class="pos-cancha-hint">
+                  El ticket identificará el consumo para el equipo/reserva de esta cancha.
+                </span>
+              </div>
+            }
 
             <!-- Lista de Ítems en Carrito -->
             <div class="pos-cart-items-list">
@@ -591,7 +661,7 @@
                 (click)="procesarCobroPOS()"
               >
                 <mat-icon aria-hidden="true">receipt</mat-icon>
-                <span>Cobrar S/ {{ posService.totalCarrito().toFixed(2) }}</span>
+                <span>Cobrar S/ {{ posService.totalCarrito().toFixed(2) }} (F2)</span>
               </button>
             </div>
           </mat-card>
@@ -825,8 +895,31 @@
             </button>
           </div>
 
-          <!-- Ticket Térmico 80mm Estilizado -->
-          <div class="pos-receipt-paper" id="posReceiptPrintable">
+          <!-- Selector de Ancho de Ticket -->
+          <div class="ticket-width-toggle">
+            <span class="ticket-toggle-label">Formato de Ticketera:</span>
+            <div class="ticket-width-buttons">
+              <button
+                type="button"
+                class="ticket-w-btn"
+                [class.active]="ticketAncho() === '80mm'"
+                (click)="setTicketAncho('80mm')"
+              >
+                80 mm (Estándar)
+              </button>
+              <button
+                type="button"
+                class="ticket-w-btn"
+                [class.active]="ticketAncho() === '58mm'"
+                (click)="setTicketAncho('58mm')"
+              >
+                58 mm (Compacta)
+              </button>
+            </div>
+          </div>
+
+          <!-- Ticket Térmico Estilizado -->
+          <div class="pos-receipt-paper" [class.paper-58mm]="ticketAncho() === '58mm'" id="posReceiptPrintable">
             <div class="pos-receipt-header">
               <h2 class="pos-receipt-brand">CANCHERO SPORT CLUB</h2>
               <div class="pos-receipt-ruc">RUC: 20608912345</div>
@@ -849,6 +942,13 @@
               <div><span>Cliente:</span> {{ v.clienteNombre }}</div>
               <div><span>Doc:</span> {{ v.clienteDocumento || 'DNI' }}</div>
             </div>
+
+            @if (v.clienteNombre && v.clienteNombre.includes('[')) {
+              <div class="pos-receipt-cancha-badge">
+                <span>DESTINO:</span>
+                <strong>{{ v.clienteNombre }}</strong>
+              </div>
+            }
 
             <div class="pos-receipt-divider">--------------------------------</div>
 

@@ -1,7 +1,8 @@
-import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, output, signal, HostListener } from '@angular/core';
 import { AdminContext } from '../admin-context.service';
 import { PosCatalogEditor } from './pos-catalog-editor';
 import { CommonModule, DatePipe, UpperCasePipe } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -17,7 +18,13 @@ import { PosService } from '@core/services/pos.service';
 import { CajaService } from '@core/services/caja.service';
 import { AuthService } from '@core/auth/auth.service';
 import { DatabaseService } from '@core/supabase/database.service';
-import type { MetodoPagoPOS, Producto, TipoComprobante, VentaPOS } from '@shared/models/pos.model';
+import {
+  MetodoPagoPOS,
+  Producto,
+  TipoComprobante,
+  VentaPOS,
+  inferirIconoCategoria,
+} from '@shared/models/pos.model';
 
 @Component({
   standalone: true,
@@ -25,6 +32,7 @@ import type { MetodoPagoPOS, Producto, TipoComprobante, VentaPOS } from '@shared
   imports: [
     PosCatalogEditor,
     CommonModule,
+    RouterLink,
     DatePipe,
     UpperCasePipe,
     FormsModule,
@@ -99,6 +107,31 @@ export class AdminPos {
   productPhotoFailed(id: number): void {
     this.failedProductPhotos.update((ids) => new Set([...ids, id]));
   }
+  obtenerIconoProducto(prod: Producto): string {
+    const cat = this.posService.categorias().find(
+      (c) =>
+        (prod.categoriaId != null && Number(c.id) === Number(prod.categoriaId)) ||
+        (c.nombre &&
+          prod.categoriaNombre &&
+          c.nombre.toLowerCase().trim() === prod.categoriaNombre.toLowerCase().trim()),
+    );
+    if (cat?.icono && cat.icono !== 'category') {
+      return cat.icono;
+    }
+    if (
+      prod.icono &&
+      prod.icono !== 'inventory_2' &&
+      prod.icono !== 'assignment_turned_in' &&
+      prod.icono !== 'shopping_bag' &&
+      prod.icono !== 'category'
+    ) {
+      return prod.icono;
+    }
+    if (cat?.icono) {
+      return cat.icono;
+    }
+    return inferirIconoCategoria(prod.categoriaNombre || prod.nombre);
+  }
   closeCatalog(): void {
     this.catalogVenueId.set(null);
     this.posService.recargar();
@@ -124,6 +157,115 @@ export class AdminPos {
     'total',
     'nota',
   ];
+
+  // Destino de la venta / consumo
+  readonly posDestino = signal<'mostrador' | 'cancha'>('mostrador');
+  readonly canchaSeleccionadaId = signal<number | null>(null);
+
+  // Canchas de la sede
+  readonly canchasSede = computed(() => {
+    const venueId = this.venueId();
+    if (!venueId) return [];
+    return this.db.getCanchasPorSede(venueId);
+  });
+
+  // Reservas activas de hoy en la sede
+  readonly reservasHoySede = computed(() => {
+    const canchas = this.canchasSede();
+    const canchaIds = new Set(canchas.map((c: any) => c.id));
+    const hoyStr = new Date().toISOString().slice(0, 10);
+    return (this.db.reservas?.() ?? []).filter(
+      (r: any) => canchaIds.has(r.cancha_id || r.id_cancha) && (!r.fecha || r.fecha === hoyStr)
+    );
+  });
+
+  // Formato de ticketera térmica (80mm vs 58mm)
+  readonly ticketAncho = signal<'80mm' | '58mm'>('80mm');
+  setTicketAncho(ancho: '80mm' | '58mm'): void {
+    this.ticketAncho.set(ancho);
+  }
+
+  setPosDestino(destino: 'mostrador' | 'cancha'): void {
+    this.posDestino.set(destino);
+    if (destino === 'mostrador') {
+      this.canchaSeleccionadaId.set(null);
+      this.posClienteNombre.set('Cliente Mostrador');
+    } else {
+      const primeraCancha = this.canchasSede()[0];
+      if (primeraCancha) {
+        this.seleccionarCanchaDestino(primeraCancha.id);
+      }
+    }
+  }
+
+  seleccionarCanchaDestino(canchaId: number): void {
+    this.canchaSeleccionadaId.set(canchaId);
+    const cancha = this.canchasSede().find((c: any) => c.id === canchaId);
+    if (!cancha) return;
+
+    const reserva = this.reservasHoySede().find(
+      (r: any) => (r.cancha_id || r.id_cancha) === canchaId
+    );
+    const clienteReserva = reserva?.cliente_nombre || reserva?.nombre_cliente || '';
+    if (clienteReserva) {
+      this.posClienteNombre.set(`[${cancha.nombre}] ${clienteReserva}`);
+    } else {
+      this.posClienteNombre.set(`[${cancha.nombre}] Consumo en Cancha`);
+    }
+  }
+
+  onEscanearOEnter(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const query = (input?.value || '').trim();
+    if (!query) return;
+
+    // 1. Coincidencia exacta por código de barras
+    const exactoBarcode = this.posService.productos().find(
+      (p) => p.codigoBarras && p.codigoBarras.trim() === query && p.stock > 0
+    );
+    if (exactoBarcode) {
+      this.agregarAlCarritoPOS(exactoBarcode);
+      this.posService.filtroBusqueda.set('');
+      if (input) input.value = '';
+      this.notice.emit(`+1 ${exactoBarcode.nombre} agregado al carrito`);
+      return;
+    }
+
+    // 2. Coincidencia única en el catálogo filtrado
+    const filtrados = this.posService.productosFiltrados().filter((p) => p.stock > 0);
+    if (filtrados.length === 1) {
+      const match = filtrados[0];
+      this.agregarAlCarritoPOS(match);
+      this.posService.filtroBusqueda.set('');
+      if (input) input.value = '';
+      this.notice.emit(`+1 ${match.nombre} agregado al carrito`);
+      return;
+    } else if (filtrados.length === 0) {
+      this.notice.emit(`No se encontró producto disponible para: "${query}"`);
+    } else {
+      this.notice.emit(`${filtrados.length} productos coincidentes. Selecciona uno en el catálogo.`);
+    }
+  }
+
+  @HostListener('window:keydown', ['$event'])
+  onKeydown(event: KeyboardEvent): void {
+    if (event.key === 'F2') {
+      event.preventDefault();
+      if (
+        this.posSubTab() === 'caja_pos' &&
+        this.posService.totalCarrito() > 0 &&
+        !this.posService.processing()
+      ) {
+        this.procesarCobroPOS();
+      }
+    } else if (event.key === 'Escape') {
+      if (this.modalTicketVentaOpen()) {
+        this.cerrarModalTicketVenta();
+      } else if (this.modalIngresoMercaderiaOpen()) {
+        this.cerrarModalIngresoMercaderia();
+      }
+    }
+  }
 
   // Formulario y estado de cobro
   readonly posTipoComprobante = signal<TipoComprobante>('boleta');
@@ -177,6 +319,10 @@ export class AdminPos {
       return Number(Math.max(0, total - pagado).toFixed(2));
     }
     return this.posVueltoCalculado();
+  });
+
+  readonly totalVendidoPOS = computed<number>(() => {
+    return this.posService.ventas().reduce((acc, v) => acc + (v.total || 0), 0);
   });
 
   readonly posTabIndex = computed<number>(() => {
@@ -367,6 +513,8 @@ export class AdminPos {
       return;
     }
 
+    const ancho = this.ticketAncho();
+    const papelWidth = ancho === '58mm' ? '48mm' : '72mm';
     const ventana = window.open('', '_blank', 'width=420,height=720');
     if (!ventana) {
       this.notice.emit('El navegador bloqueó la ventana de impresión.');
@@ -377,35 +525,35 @@ export class AdminPos {
       <!doctype html>
       <html>
         <head>
-          <title>Comprobante de venta</title>
+          <title>Comprobante de venta (${ancho})</title>
           <style>
-            @page { size: 80mm auto; margin: 4mm; }
+            @page { size: ${ancho} auto; margin: 3mm; }
             body { margin: 0; background: #ffffff; font-family: "Courier New", Courier, monospace; }
             .pos-receipt-paper {
-              width: 72mm;
+              width: ${papelWidth};
               box-sizing: border-box;
               color: #000000;
-              font-size: 11px;
-              line-height: 1.35;
+              font-size: ${ancho === '58mm' ? '10px' : '11px'};
+              line-height: 1.32;
               padding: 0;
               margin: 0 auto;
               border: 0;
             }
             .pos-receipt-header, .pos-receipt-voucher-info, .pos-receipt-disclaimer, .pos-receipt-footer-thanks { text-align: center; }
-            .pos-receipt-brand { font-size: 14px; margin: 0 0 2px; letter-spacing: 0.04em; }
-            .pos-receipt-ruc, .pos-receipt-address, .pos-receipt-phone, .pos-receipt-meta-grid, .pos-receipt-totals, .pos-receipt-payment-info { font-size: 10px; }
-            .pos-receipt-divider { text-align: center; white-space: nowrap; overflow: hidden; margin: 4px 0; }
-            .pos-receipt-voucher-type { font-size: 13px; font-weight: 900; }
-            .pos-receipt-voucher-num { font-size: 12px; font-weight: 800; }
-            .pos-receipt-meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 8px; }
+            .pos-receipt-brand { font-size: ${ancho === '58mm' ? '12px' : '14px'}; font-weight: bold; margin: 0 0 2px; letter-spacing: 0.04em; }
+            .pos-receipt-ruc, .pos-receipt-address, .pos-receipt-phone, .pos-receipt-meta-grid, .pos-receipt-totals, .pos-receipt-payment-info { font-size: ${ancho === '58mm' ? '9px' : '10px'}; }
+            .pos-receipt-divider { text-align: center; white-space: nowrap; overflow: hidden; margin: 3px 0; }
+            .pos-receipt-voucher-type { font-size: ${ancho === '58mm' ? '11px' : '13px'}; font-weight: 900; }
+            .pos-receipt-voucher-num { font-size: ${ancho === '58mm' ? '10px' : '12px'}; font-weight: 800; }
+            .pos-receipt-meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 6px; }
             .pos-receipt-meta-grid span { font-weight: 700; }
-            .pos-receipt-table { width: 100%; border-collapse: collapse; font-size: 10px; }
+            .pos-receipt-table { width: 100%; border-collapse: collapse; font-size: ${ancho === '58mm' ? '9px' : '10px'}; }
             .pos-receipt-table th { border-bottom: 1px dashed #000; padding: 2px 0; }
             .pos-receipt-table td { padding: 2px 0; vertical-align: top; }
-            .pos-r-row { display: flex; justify-content: space-between; gap: 8px; }
-            .pos-r-total-big { border-top: 1px solid #000; padding-top: 4px; margin-top: 3px; font-size: 13px; font-weight: 900; }
-            .pos-receipt-disclaimer { border: 1px dashed #000; padding: 5px; margin: 7px 0; font-weight: 800; }
-            .pos-receipt-footer-thanks { font-weight: 700; margin-top: 6px; }
+            .pos-r-row { display: flex; justify-content: space-between; gap: 6px; }
+            .pos-r-total-big { border-top: 1px solid #000; padding-top: 3px; margin-top: 3px; font-size: ${ancho === '58mm' ? '11px' : '13px'}; font-weight: 900; }
+            .pos-receipt-disclaimer { border: 1px dashed #000; padding: 4px; margin: 6px 0; font-weight: 800; font-size: 9px; }
+            .pos-receipt-footer-thanks { font-weight: 700; margin-top: 4px; font-size: 10px; }
           </style>
         </head>
         <body>${contenido}</body>

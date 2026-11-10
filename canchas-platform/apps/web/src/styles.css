@@ -439,6 +439,7 @@ textarea:not([matInput]):focus-visible {
   margin-bottom: 3rem;
 }
 
+.footer-column h3,
 .footer-column h4 {
   font-family: var(--font-heading);
   color: var(--color-brand-orange);
@@ -575,21 +576,105 @@ a:focus-visible {
   border-radius: var(--radius, 6px);
 }
 
-.btn.icon-only {
-  width: 36px;
-  min-width: 36px;
-  height: 36px;
-  padding: 6px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+.btn.icon-only,
+.btn-icon-only,
+.icon-only-btn,
+.btn-icon-action {
+  width: 28px !important;
+  min-width: 28px !important;
+  height: 28px !important;
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: var(--muted, #64748b) !important;
+  cursor: pointer;
+  transition: color 0.15s ease;
 }
 
 .btn.icon-only .icon,
-.btn.icon-only .material-symbols-outlined {
-  font-size: 18px !important;
-  width: 18px;
-  height: 18px;
+.btn.icon-only .material-symbols-outlined,
+.btn-icon-only .material-symbols-outlined,
+.icon-only-btn .material-symbols-outlined,
+.btn-icon-action .material-symbols-outlined {
+  font-size: 22px !important;
+  width: 22px !important;
+  height: 22px !important;
+  line-height: 22px !important;
+  color: inherit !important;
+}
+
+.btn.icon-only:hover,
+.btn.icon-only:active,
+.btn.icon-only:focus,
+.btn-icon-only:hover,
+.btn-icon-only:active,
+.btn-icon-only:focus,
+.icon-only-btn:hover,
+.icon-only-btn:active,
+.icon-only-btn:focus,
+.btn-icon-action:hover,
+.btn-icon-action:active,
+.btn-icon-action:focus {
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+  color: var(--can-color-primary, #27802D) !important;
+}
+
+.btn.icon-only:hover .material-symbols-outlined,
+.btn.icon-only:active .material-symbols-outlined,
+.btn.icon-only:focus .material-symbols-outlined,
+.btn-icon-only:hover .material-symbols-outlined,
+.btn-icon-only:active .material-symbols-outlined,
+.btn-icon-only:focus .material-symbols-outlined,
+.icon-only-btn:hover .material-symbols-outlined,
+.icon-only-btn:active .material-symbols-outlined,
+.icon-only-btn:focus .material-symbols-outlined,
+.btn-icon-action:hover .material-symbols-outlined,
+.btn-icon-action:active .material-symbols-outlined,
+.btn-icon-action:focus .material-symbols-outlined {
+  color: var(--can-color-primary, #27802D) !important;
+}
+
+/* Modo oscuro para botones de solo icono */
+:root.dark-theme .btn.icon-only,
+body.dark-theme .btn.icon-only,
+:root.dark-theme .btn-icon-only,
+body.dark-theme .btn-icon-only,
+:root.dark-theme .icon-only-btn,
+body.dark-theme .icon-only-btn,
+:root.dark-theme .btn-icon-action,
+body.dark-theme .btn-icon-action {
+  color: #cbd5e1 !important;
+  background: transparent !important;
+  border: none !important;
+}
+
+:root.dark-theme .btn.icon-only:hover,
+:root.dark-theme .btn.icon-only:active,
+body.dark-theme .btn.icon-only:hover,
+body.dark-theme .btn.icon-only:active,
+:root.dark-theme .btn-icon-only:hover,
+:root.dark-theme .btn-icon-only:active,
+body.dark-theme .btn-icon-only:hover,
+body.dark-theme .btn-icon-only:active,
+:root.dark-theme .icon-only-btn:hover,
+:root.dark-theme .icon-only-btn:active,
+body.dark-theme .icon-only-btn:hover,
+body.dark-theme .icon-only-btn:active,
+:root.dark-theme .btn-icon-action:hover,
+:root.dark-theme .btn-icon-action:active,
+body.dark-theme .btn-icon-action:hover,
+body.dark-theme .btn-icon-action:active {
+  background: transparent !important;
+  color: #4ade80 !important;
 }
 
 /* Deshabilitado unificado del sistema de diseno: gris, disabled nativo, sin sombra */
@@ -1605,15 +1690,15 @@ body.dark-theme .nav-login:hover {
 /* Botón y menú de perfil en Navbar */
 :root.dark-theme .profile-avatar-btn,
 body.dark-theme .profile-avatar-btn {
-  background: #181818;
-  border-color: #2e2e2e;
+  background: transparent !important;
+  border: none !important;
   color: #ffffff;
 }
 
 :root.dark-theme .profile-avatar-btn:hover,
 body.dark-theme .profile-avatar-btn:hover {
-  background: #2a2a2a;
-  border-color: var(--color-brand-green, #22c55e);
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: none !important;
 }
 
 :root.dark-theme .profile-dropdown-menu,
@@ -2744,4 +2829,712 @@ body.dark-theme .itinerario-subbar {
 
 .management-editor-section .field small:empty {
   display: none;
+}
+
+/* ==========================================================================
+   CANCHERO GLOBAL DESIGN SYSTEM: BORDES DE 4PX SIN PÍLDORAS
+   Alinea todos los grupos de alternancia, chips de filtro y pestañas
+   ========================================================================== */
+
+/* ==========================================================================
+   MAT-BUTTON-TOGGLE GLOBAL NORMALIZATION (4PX RADIUS, NO CHECKMARK, BRAND GREEN)
+   ========================================================================== */
+/* 1. Ocultar completamente el indicador de verificación / checkmark de Material MDC */
+.mat-button-toggle-checked-indicator,
+.mat-pseudo-checkbox,
+.mat-button-toggle-checked .mat-button-toggle-checked-indicator,
+mat-button-toggle .mat-button-toggle-checked-indicator {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  visibility: hidden !important;
+}
+
+:root,
+body,
+.mat-admin-shell,
+mat-button-toggle-group,
+.mat-button-toggle-group,
+.mat-button-toggle-group-appearance-standard {
+  --mat-button-toggle-shape: 4px !important;
+  --mat-standard-button-toggle-shape: 4px !important;
+  --mat-sys-corner-full: 4px !important;
+  --mat-sys-corner-extra-large: 4px !important;
+  --mat-standard-button-toggle-selected-state-background-color: #e4eee6 !important;
+  --mat-button-toggle-selected-state-background-color: #e4eee6 !important;
+  --mat-button-toggle-selected-state-text-color: #1e3a1e !important;
+  --mat-standard-button-toggle-selected-state-text-color: #1e3a1e !important;
+}
+
+:root.dark-theme,
+body.dark-theme,
+.dark-theme .mat-admin-shell {
+  --mat-standard-button-toggle-selected-state-background-color: rgba(39, 128, 45, 0.3) !important;
+  --mat-button-toggle-selected-state-background-color: rgba(39, 128, 45, 0.3) !important;
+  --mat-button-toggle-selected-state-text-color: #4ade80 !important;
+  --mat-standard-button-toggle-selected-state-text-color: #4ade80 !important;
+  --mat-button-toggle-text-color: #cbd5e1 !important;
+}
+
+/* Modo claro por defecto */
+.mat-button-toggle-group,
+mat-button-toggle-group,
+.mat-button-toggle-group-appearance-standard,
+.mat-button-toggle-standalone {
+  border-radius: 4px !important;
+  --mat-button-toggle-shape: 4px !important;
+  --mat-standard-button-toggle-shape: 4px !important;
+  --mat-sys-corner-full: 4px !important;
+  --mat-sys-corner-extra-large: 4px !important;
+  --mat-button-toggle-selected-state-background-color: #e4eee6 !important;
+  --mat-button-toggle-selected-state-text-color: #1e3a1e !important;
+  border: 1px solid var(--line, #dfe3e8) !important;
+  background: #ffffff !important;
+  overflow: hidden !important;
+}
+
+.mat-button-toggle-group .mat-button-toggle,
+mat-button-toggle-group mat-button-toggle,
+.mat-button-toggle,
+.mat-button-toggle-appearance-standard,
+.mat-button-toggle-button,
+.mat-button-toggle-focus-overlay,
+.mat-button-toggle .mat-button-toggle-label-content {
+  border-radius: 0 !important;
+}
+
+.mat-button-toggle-group-appearance-standard:not(.mat-button-toggle-vertical) .mat-button-toggle:first-of-type,
+.mat-button-toggle-group-appearance-standard:not(.mat-button-toggle-vertical) .mat-button-toggle:first-of-type .mat-button-toggle-button,
+.mat-button-toggle-group-appearance-standard:not(.mat-button-toggle-vertical) .mat-button-toggle:first-of-type .mat-button-toggle-button::before,
+.mat-button-toggle-group-appearance-standard:not(.mat-button-toggle-vertical) .mat-button-toggle:first-of-type .mat-button-toggle-focus-overlay,
+.mat-button-toggle-group-appearance-standard.mat-button-toggle-vertical .mat-button-toggle:first-of-type,
+.mat-button-toggle-group-appearance-standard.mat-button-toggle-vertical .mat-button-toggle:first-of-type .mat-button-toggle-button,
+.mat-button-toggle-group-appearance-standard.mat-button-toggle-vertical .mat-button-toggle:first-of-type .mat-button-toggle-button::before {
+  border-top-left-radius: 4px !important;
+  border-bottom-left-radius: 4px !important;
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+
+.mat-button-toggle-group-appearance-standard:not(.mat-button-toggle-vertical) .mat-button-toggle:last-of-type,
+.mat-button-toggle-group-appearance-standard:not(.mat-button-toggle-vertical) .mat-button-toggle:last-of-type .mat-button-toggle-button,
+.mat-button-toggle-group-appearance-standard:not(.mat-button-toggle-vertical) .mat-button-toggle:last-of-type .mat-button-toggle-button::before,
+.mat-button-toggle-group-appearance-standard:not(.mat-button-toggle-vertical) .mat-button-toggle:last-of-type .mat-button-toggle-focus-overlay,
+.mat-button-toggle-group-appearance-standard.mat-button-toggle-vertical .mat-button-toggle:last-of-type,
+.mat-button-toggle-group-appearance-standard.mat-button-toggle-vertical .mat-button-toggle:last-of-type .mat-button-toggle-button,
+.mat-button-toggle-group-appearance-standard.mat-button-toggle-vertical .mat-button-toggle:last-of-type .mat-button-toggle-button::before {
+  border-top-right-radius: 4px !important;
+  border-bottom-right-radius: 4px !important;
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+}
+
+.mat-admin-shell .mat-button-toggle-checked,
+.mat-button-toggle-checked,
+.mat-button-toggle-checked .mat-button-toggle-button,
+.mat-admin-shell .mat-button-toggle-checked .mat-button-toggle-button {
+  background-color: #e4eee6 !important;
+  color: #1e3a1e !important;
+}
+
+.mat-admin-shell .mat-button-toggle-checked .mat-button-toggle-label-content,
+.mat-button-toggle-checked .mat-button-toggle-label-content {
+  color: #1e3a1e !important;
+  font-weight: 700 !important;
+}
+
+.mat-admin-shell .mat-button-toggle-checked mat-icon,
+.mat-button-toggle-checked mat-icon,
+.mat-admin-shell .mat-button-toggle-checked .material-symbols-outlined,
+.mat-button-toggle-checked .material-symbols-outlined {
+  color: #27802D !important;
+}
+
+.chip-filter,
+.tipo-chips button,
+.filter-chip,
+.filter-chip-btn,
+.chip-select-btn,
+.pos-chip-btn {
+  border-radius: 4px !important;
+}
+
+/* ==========================================================================
+   MODO OSCURO: GRUPOS DE BOTONES / CONTROLES SEGMENTADOS / PESTAÑAS (DARK THEME)
+   Aplica fondo oscuro, bordes tenues, texto legible y selección verde esmeralda
+   en todas las vistas del panel de administración (Reservas, Caja, POS,
+   Catálogo, Inventario, Compras, Créditos, Finanzas, Personalización,
+   Reportes y Configuración).
+   ========================================================================== */
+:root.dark-theme .mat-button-toggle-group,
+body.dark-theme .mat-button-toggle-group,
+.dark-theme mat-button-toggle-group,
+.dark-theme .mat-button-toggle-group-appearance-standard,
+.dark-theme .mat-button-toggle-standalone,
+.dark-theme .can-button-toggle-group,
+.dark-theme .caja-tabs-nav,
+.dark-theme .pos-tabs-nav,
+.dark-theme .pos-payment-toggle-group,
+.dark-theme .catalogo-tab-nav,
+.dark-theme .tipo-filter-group,
+.dark-theme .tabs-bar mat-button-toggle-group,
+.dark-theme .tabs-bar .mat-button-toggle-group,
+.dark-theme .filterbar mat-button-toggle-group,
+.dark-theme .filterbar .mat-button-toggle-group,
+.dark-theme .client-toggle mat-button-toggle-group,
+.dark-theme .payment-type-toggle mat-button-toggle-group,
+.dark-theme .payment-toggle-group mat-button-toggle-group,
+.dark-theme .config-toggle-wrapper mat-button-toggle-group,
+:root.dark-theme mat-button-toggle-group,
+body.dark-theme mat-button-toggle-group {
+  background: #171717 !important;
+  background-color: #171717 !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  --mat-button-toggle-selected-state-background-color: rgba(39, 128, 45, 0.3) !important;
+  --mat-button-toggle-selected-state-text-color: #4ade80 !important;
+  --mat-button-toggle-text-color: #cbd5e1 !important;
+}
+
+/* Botones inactivos en modo oscuro */
+:root.dark-theme .mat-button-toggle,
+body.dark-theme .mat-button-toggle,
+.dark-theme mat-button-toggle,
+.dark-theme .mat-button-toggle .mat-button-toggle-button,
+:root.dark-theme .mat-button-toggle-button,
+body.dark-theme .mat-button-toggle-button {
+  background: transparent !important;
+  background-color: transparent !important;
+  color: #cbd5e1 !important;
+}
+
+:root.dark-theme .mat-button-toggle .mat-button-toggle-label-content,
+body.dark-theme .mat-button-toggle .mat-button-toggle-label-content,
+.dark-theme mat-button-toggle .mat-button-toggle-label-content {
+  color: #cbd5e1 !important;
+}
+
+/* Separadores internos entre botones en modo oscuro */
+:root.dark-theme .mat-button-toggle + .mat-button-toggle,
+body.dark-theme .mat-button-toggle + .mat-button-toggle,
+.dark-theme .mat-button-toggle + .mat-button-toggle,
+:root.dark-theme .mat-button-toggle-group-appearance-standard .mat-button-toggle + .mat-button-toggle,
+body.dark-theme .mat-button-toggle-group-appearance-standard .mat-button-toggle + .mat-button-toggle {
+  border-left: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+/* Hover de botones en modo oscuro */
+:root.dark-theme .mat-button-toggle:hover:not(.mat-button-toggle-checked),
+body.dark-theme .mat-button-toggle:hover:not(.mat-button-toggle-checked),
+.dark-theme mat-button-toggle:hover:not(.mat-button-toggle-checked) {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+  color: #ffffff !important;
+}
+
+:root.dark-theme .mat-button-toggle:hover:not(.mat-button-toggle-checked) .mat-button-toggle-label-content,
+body.dark-theme .mat-button-toggle:hover:not(.mat-button-toggle-checked) .mat-button-toggle-label-content,
+.dark-theme mat-button-toggle:hover:not(.mat-button-toggle-checked) .mat-button-toggle-label-content {
+  color: #ffffff !important;
+}
+
+/* Botón ACTIVO / SELECCIONADO en modo oscuro */
+:root.dark-theme .mat-admin-shell .mat-button-toggle-checked,
+body.dark-theme .mat-admin-shell .mat-button-toggle-checked,
+:root.dark-theme .mat-button-toggle-checked,
+body.dark-theme .mat-button-toggle-checked,
+.dark-theme .mat-button-toggle-checked,
+.dark-theme mat-button-toggle.mat-button-toggle-checked,
+.dark-theme .mat-button-toggle.mat-button-toggle-checked .mat-button-toggle-button {
+  background: rgba(39, 128, 45, 0.3) !important;
+  background-color: rgba(39, 128, 45, 0.3) !important;
+  color: #4ade80 !important;
+}
+
+:root.dark-theme .mat-admin-shell .mat-button-toggle-checked .mat-button-toggle-label-content,
+body.dark-theme .mat-admin-shell .mat-button-toggle-checked .mat-button-toggle-label-content,
+:root.dark-theme .mat-button-toggle-checked .mat-button-toggle-label-content,
+body.dark-theme .mat-button-toggle-checked .mat-button-toggle-label-content,
+.dark-theme .mat-button-toggle-checked .mat-button-toggle-label-content {
+  color: #4ade80 !important;
+  font-weight: 700 !important;
+}
+
+.dark-theme .mat-button-toggle-checked .material-symbols-outlined,
+.dark-theme .mat-button-toggle-checked mat-icon {
+  color: #4ade80 !important;
+}
+
+/* Finanzas & Personalización: botones contiguos .segmented */
+:root.dark-theme .segmented,
+body.dark-theme .segmented,
+.dark-theme .segmented {
+  background: transparent;
+}
+
+:root.dark-theme .segmented button,
+body.dark-theme .segmented button,
+.dark-theme .segmented button {
+  background: #171717 !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  color: #cbd5e1 !important;
+}
+
+:root.dark-theme .segmented button:hover:not(.active),
+body.dark-theme .segmented button:hover:not(.active),
+.dark-theme .segmented button:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: #ffffff !important;
+}
+
+:root.dark-theme .segmented button.active,
+body.dark-theme .segmented button.active,
+.dark-theme .segmented button.active {
+  background: rgba(39, 128, 45, 0.3) !important;
+  border-color: #27802D !important;
+  color: #4ade80 !important;
+  font-weight: 700 !important;
+}
+
+/* Reportes & Canchas: pestañas .tabs-nav .tab-btn */
+:root.dark-theme .tabs-nav,
+body.dark-theme .tabs-nav,
+.dark-theme .tabs-nav {
+  border-bottom-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+:root.dark-theme .tab-btn,
+body.dark-theme .tab-btn,
+.dark-theme .tab-btn {
+  color: #cbd5e1 !important;
+  background: transparent !important;
+}
+
+:root.dark-theme .tab-btn:hover:not(.active),
+body.dark-theme .tab-btn:hover:not(.active),
+.dark-theme .tab-btn:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: #ffffff !important;
+}
+
+:root.dark-theme .tab-btn.active,
+body.dark-theme .tab-btn.active,
+.dark-theme .tab-btn.active {
+  background: rgba(39, 128, 45, 0.3) !important;
+  color: #4ade80 !important;
+  font-weight: 700 !important;
+}
+
+/* Caja: botones contiguos .toggle-btn en modal de ingresos/egresos */
+:root.dark-theme .toggle-btn,
+body.dark-theme .toggle-btn,
+.dark-theme .toggle-btn {
+  background: #171717 !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  color: #cbd5e1 !important;
+}
+
+:root.dark-theme .toggle-btn:hover:not(.is-active-ingreso):not(.is-active-egreso),
+body.dark-theme .toggle-btn:hover:not(.is-active-ingreso):not(.is-active-egreso),
+.dark-theme .toggle-btn:hover:not(.is-active-ingreso):not(.is-active-egreso) {
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: #ffffff !important;
+}
+
+/* Configuración: botones contiguos .freq-btn en liquidación */
+:root.dark-theme .freq-btn,
+body.dark-theme .freq-btn,
+.dark-theme .freq-btn {
+  background: #171717 !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  color: #cbd5e1 !important;
+}
+
+:root.dark-theme .freq-btn:hover:not(.active),
+body.dark-theme .freq-btn:hover:not(.active),
+.dark-theme .freq-btn:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: #ffffff !important;
+}
+
+:root.dark-theme .freq-btn.active,
+body.dark-theme .freq-btn.active,
+.dark-theme .freq-btn.active {
+  background: rgba(39, 128, 45, 0.3) !important;
+  border-color: #27802D !important;
+  color: #4ade80 !important;
+  font-weight: 700 !important;
+}
+
+/* Catálogo, Inventario, Compras: Barras de filtros y tarjetas de tabla en modo oscuro */
+:root.dark-theme .filter-toolbar,
+body.dark-theme .filter-toolbar,
+.dark-theme .filter-toolbar,
+:root.dark-theme .catalogo-filter-bar,
+body.dark-theme .catalogo-filter-bar,
+.dark-theme .catalogo-filter-bar {
+  background-color: #171717 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+:root.dark-theme .kardex-table-card,
+body.dark-theme .kardex-table-card,
+.dark-theme .kardex-table-card,
+:root.dark-theme .compras-table-card,
+body.dark-theme .compras-table-card,
+.dark-theme .compras-table-card,
+:root.dark-theme .content-table-card,
+body.dark-theme .content-table-card,
+.dark-theme .content-table-card,
+:root.dark-theme .op-table-wrap,
+body.dark-theme .op-table-wrap,
+.dark-theme .op-table-wrap {
+  background-color: #1a1a1a !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* Créditos: Botón secundario de historial en modo oscuro */
+:root.dark-theme .btn-historial,
+body.dark-theme .btn-historial,
+.dark-theme .btn-historial {
+  background-color: #171717 !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  color: #cbd5e1 !important;
+}
+
+:root.dark-theme .btn-historial:hover,
+body.dark-theme .btn-historial:hover,
+.dark-theme .btn-historial:hover {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+  color: #ffffff !important;
+}
+
+/* ==========================================================================
+   CANCHERO MANAGEMENT STATS (Métricas Operativas Simples sin Tarjetas Pesadas)
+   ========================================================================== */
+.management-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px;
+  padding: 0 0 20px;
+  border-bottom: 1px solid var(--line, #dfe3e8);
+  margin-bottom: 24px;
+  width: 100%;
+}
+
+.management-stats.five-cols {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.management-stats > div {
+  display: grid;
+  gap: 4px;
+}
+
+.management-stats span {
+  font-size: 12px;
+  color: var(--muted, #626a72);
+  font-weight: 500;
+}
+
+.management-stats strong {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ink, #1f2937);
+  letter-spacing: -0.01em;
+}
+
+.management-stats .stat-sub {
+  font-size: 11px;
+  color: var(--muted, #626a72);
+}
+
+@media (max-width: 900px) {
+  .management-stats,
+  .management-stats.five-cols {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+}
+
+/* Barra lateral: items con esquinas de 4px según estándar Canchero */
+.mat-admin-shell .admin-sidebar {
+  border-radius: 0 !important;
+}
+
+.mat-admin-shell .sidebar-nav-item,
+.mat-admin-shell .sidebar-nav-item.active,
+.sidebar-nav-item,
+.sidebar-nav-item.active,
+.mat-admin-shell .btn-logout-sidebar,
+.btn-logout-sidebar {
+  border-radius: 4px !important;
+}
+
+.mat-admin-shell .sidebar-footer,
+.sidebar-footer {
+  margin: 0 !important;
+  border-radius: 0 !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background: rgba(0, 0, 0, 0.35) !important;
+}
+
+.mat-admin-shell .sidebar-footer .user-avatar-sm,
+.mat-admin-shell .sidebar-footer .avatar-placeholder,
+.mat-admin-shell .sidebar-footer .admin-profile-photo {
+  border-radius: 50% !important;
+}
+
+.mat-admin-shell .sidebar-status-badge,
+.sidebar-status-badge {
+  border-radius: 4px !important;
+}
+
+.mat-admin-shell .sidebar-status-badge.is-closed,
+.sidebar-status-badge.is-closed {
+  background: #f1f5f9 !important;
+  color: #334155 !important;
+  border: none !important;
+  font-weight: 700 !important;
+}
+
+.mat-admin-shell .sidebar-status-badge.is-open,
+.sidebar-status-badge.is-open {
+  background: #dcfce7 !important;
+  color: #166534 !important;
+  border: none !important;
+  font-weight: 700 !important;
+}
+
+.mat-admin-shell .sidebar-status-badge.is-warning,
+.sidebar-status-badge.is-warning {
+  background: #fef3c7 !important;
+  color: #b45309 !important;
+  border: none !important;
+  font-weight: 700 !important;
+}
+
+/* Unificación de títulos de secciones admin */
+.mat-admin-shell .admin-main-body h1,
+.mat-admin-shell .admin-main-body .view-title,
+.mat-admin-shell .admin-main-body .catalogo-title,
+.mat-admin-shell .admin-main-body .caja-title,
+.mat-admin-shell .admin-main-body .page-title h1,
+.mat-admin-shell .admin-main-body .header-titles h1,
+.mat-admin-shell .admin-main-body .section-header h1 {
+  font-size: 22px !important;
+  font-weight: 700 !important;
+  color: var(--ink, #191919) !important;
+  margin: 0 0 4px 0 !important;
+  padding: 0 !important;
+  line-height: 1.25 !important;
+  letter-spacing: -0.01em !important;
+  display: block !important;
+}
+
+.mat-admin-shell .admin-main-body header.section-header,
+.mat-admin-shell .admin-main-body header.view-header,
+.mat-admin-shell .admin-main-body header.catalogo-view-header,
+.mat-admin-shell .admin-main-body header.caja-view-header,
+.mat-admin-shell .admin-main-body header.admin-view-header,
+.mat-admin-shell .admin-main-body header.reportes-header {
+  margin-top: 0 !important;
+  margin-bottom: 24px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.mat-admin-shell .admin-main-body header p,
+.mat-admin-shell .admin-main-body .view-subtitle,
+.mat-admin-shell .admin-main-body .catalogo-subtitle,
+.mat-admin-shell .admin-main-body .caja-subtitle,
+.mat-admin-shell .admin-main-body .subtitle {
+  font-size: 13px !important;
+  color: var(--muted, #626a72) !important;
+  margin: 0 !important;
+  line-height: 1.4 !important;
+}
+
+.mat-admin-shell .admin-main-body h1 mat-icon,
+.mat-admin-shell .admin-main-body h1 .material-symbols-outlined,
+.mat-admin-shell .admin-main-body h1 .title-icon,
+.mat-admin-shell .admin-main-body h1 .view-title-icon {
+  display: none !important;
+}
+
+
+/* ==========================================================================
+   PROFILE HERO COVER ACTIONS (GLOBAL)
+   ========================================================================== */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.btn-cover {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+  white-space: nowrap;
+}
+.btn-cover-primary {
+  background: #15803d !important;
+  color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+.btn-cover-primary:hover:not(:disabled) {
+  background: #166534 !important;
+}
+.btn-cover-secondary {
+  background: #ffffff !important;
+  color: #1e293b !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+.btn-cover-secondary:hover:not(:disabled) {
+  background: #f8fafc !important;
+  color: #0f172a !important;
+}
+.btn-cover-icon {
+  width: 38px !important;
+  height: 38px !important;
+  padding: 0 !important;
+  background: #ffffff !important;
+  color: #334155 !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  border-radius: 8px !important;
+  display: grid !important;
+  place-items: center !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+.btn-cover-icon:hover:not(:disabled) {
+  background: #f8fafc !important;
+  color: #15803d !important;
+}
+
+[data-theme="dark"] .btn-cover-secondary,
+.dark-theme .btn-cover-secondary {
+  background: #1e293b !important;
+  color: #f1f5f9 !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+}
+[data-theme="dark"] .btn-cover-secondary:hover:not(:disabled),
+.dark-theme .btn-cover-secondary:hover:not(:disabled) {
+  background: #334155 !important;
+}
+[data-theme="dark"] .btn-cover-icon,
+.dark-theme .btn-cover-icon {
+  background: #1e293b !important;
+  color: #f1f5f9 !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+}
+[data-theme="dark"] .btn-cover-icon:hover:not(:disabled),
+.dark-theme .btn-cover-icon:hover:not(:disabled) {
+  background: #334155 !important;
+  color: #4ade80 !important;
+}
+
+/* ==========================================================================
+   BOTONES DE ICONO DEL HEADER (LUPA, MODO OSCURO, CAMPANA, PERFIL)
+   - Sin marcos ni bordes exteriores (border: none !important)
+   - Fondo siempre transparente (sin caja gris al hacer hover o clic)
+   - Área clickeable exactamente del tamaño del icono o del círculo
+   - Al pasar el cursor por encima se tiñe de verde Canchero (#27802D)
+   ========================================================================== */
+.admin-top-actions .btn-bell,
+.admin-top-actions .btn-theme-toggle,
+.admin-top-actions .profile-avatar-btn,
+.btn-bell,
+.btn-theme-toggle,
+.profile-avatar-btn,
+.nav-search-btn,
+button.btn-bell,
+button.btn-theme-toggle,
+button.profile-avatar-btn,
+button.nav-search-btn {
+  border: none !important;
+  border-radius: 50% !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  cursor: pointer !important;
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  min-height: 36px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: color 0.15s ease, transform 0.15s ease !important;
+}
+
+.admin-top-actions .btn-bell:hover,
+.admin-top-actions .btn-theme-toggle:hover,
+.admin-top-actions .profile-avatar-btn:hover,
+.btn-bell:hover,
+.btn-theme-toggle:hover,
+.profile-avatar-btn:hover,
+.nav-search-btn:hover,
+button.btn-bell:hover,
+button.btn-theme-toggle:hover,
+button.profile-avatar-btn:hover,
+button.nav-search-btn:hover {
+  border: none !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  color: var(--color-brand-green, #27802D) !important;
+}
+
+.admin-top-actions .btn-bell mat-icon,
+.admin-top-actions .btn-theme-toggle mat-icon,
+.btn-bell mat-icon,
+.btn-theme-toggle mat-icon,
+.nav-search-btn .material-symbols-outlined,
+.btn-theme-toggle .material-symbols-outlined {
+  font-size: 22px !important;
+  width: 22px !important;
+  height: 22px !important;
+  line-height: 22px !important;
+  transition: color 0.15s ease !important;
+}
+
+.admin-top-actions .btn-bell:hover mat-icon,
+.admin-top-actions .btn-theme-toggle:hover mat-icon,
+.btn-bell:hover mat-icon,
+.btn-theme-toggle:hover mat-icon,
+.nav-search-btn:hover .material-symbols-outlined,
+.btn-theme-toggle:hover .material-symbols-outlined {
+  color: var(--color-brand-green, #27802D) !important;
+}
+
+/* El círculo del avatar de perfil es el único elemento visible sin recuadro cuadrado */
+.profile-avatar-btn .user-avatar-badge,
+.user-avatar-badge {
+  border: none !important;
+  border-radius: 50% !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 34px !important;
+  height: 34px !important;
+}
+
+.profile-avatar-btn:hover .user-avatar-badge {
+  outline: 2px solid var(--color-brand-green, #27802D) !important;
+  outline-offset: 1px !important;
 }

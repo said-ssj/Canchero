@@ -374,13 +374,20 @@
     gap: 6px;
     justify-content: flex-end;
   }
-  .business-actions .btn {
+  .business-actions .btn:not(.icon-only) {
     font-size: 11px;
     padding: 7px 9px;
     min-height: 32px;
   }
-  .business-actions .material-symbols-outlined {
+  .business-actions .btn:not(.icon-only) .material-symbols-outlined {
     display: none;
+  }
+  .business-actions .btn.icon-only {
+    width: 28px !important;
+    min-width: 28px !important;
+    height: 28px !important;
+    min-height: 28px !important;
+    padding: 0 !important;
   }
   .business-tabs {
     padding-inline: 6px;

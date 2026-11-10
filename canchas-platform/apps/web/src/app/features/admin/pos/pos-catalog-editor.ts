@@ -12,7 +12,11 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '@env/environment';
-import { CategoriaProducto } from '@shared/models/pos.model';
+import {
+  CategoriaProducto,
+  CATEGORY_ICON_OPTIONS,
+  encodeCategoryDescription,
+} from '@shared/models/pos.model';
 
 @Component({
   selector: 'app-pos-catalog-editor',
@@ -38,6 +42,18 @@ export class PosCatalogEditor implements AfterViewInit {
   photoMode: 'upload' | 'url' = 'upload';
   categoryName = '';
   categoryDescription = '';
+  categoryIcon = 'local_drink';
+  readonly iconOptions = CATEGORY_ICON_OPTIONS;
+  readonly iconPopoverOpen = signal(false);
+
+  toggleIconPopover(): void {
+    this.iconPopoverOpen.update((v) => !v);
+  }
+
+  selectIcon(icon: string): void {
+    this.categoryIcon = icon;
+    this.iconPopoverOpen.set(false);
+  }
   product = {
     nombre: '',
     codigoBarras: '',
@@ -125,11 +141,12 @@ export class PosCatalogEditor implements AfterViewInit {
     this.busy.set(true);
     this.error.set('');
     try {
+      const finalDesc = encodeCategoryDescription(this.categoryIcon, this.categoryDescription);
       const category = await firstValueFrom(
         this.http.post<CategoriaProducto>(this.url + '/categories', {
           sedeId: this.sedeId(),
           nombre: this.categoryName.trim(),
-          descripcion: this.categoryDescription.trim(),
+          descripcion: finalDesc,
         }),
       );
       this.categories.update((list) =>
@@ -138,6 +155,7 @@ export class PosCatalogEditor implements AfterViewInit {
       this.product.categoriaId = category.id;
       this.categoryName = '';
       this.categoryDescription = '';
+      this.categoryIcon = 'local_drink';
       this.categoryMode.set(false);
     } catch (e: any) {
       this.error.set(e?.error?.message || 'No se pudo crear la categoría.');

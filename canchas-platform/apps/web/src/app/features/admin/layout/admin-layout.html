@@ -22,18 +22,9 @@
           </div>
           <div class="sidebar-brand-text">
             <span class="sidebar-brand-name">Canchero<span class="brand-accent">.MVP</span></span>
-            <span class="sidebar-brand-tag">Admin Sede</span>
+            <span class="sidebar-brand-tag">Panel de sedes</span>
           </div>
         </div>
-        <button
-          mat-icon-button
-          id="closeMobileSidebar"
-          (click)="closeMobileSidebar()"
-          aria-label="Cerrar menú lateral"
-          class="sidebar-close-btn"
-        >
-          <mat-icon aria-hidden="true">close</mat-icon>
-        </button>
       </div>
 
       <!-- Menú de Navegación del Administrador -->
@@ -49,7 +40,7 @@
           <span class="material-symbols-outlined icon sidebar-nav-icon" aria-hidden="true"
             >stadium</span
           >
-          <span>Mi Sede</span>
+          <span>{{ allVenuesMode() ? 'Sedes de plataforma' : 'Mis sedes' }}</span>
         </a>
 
         <!-- 2. Mis Canchas -->
@@ -117,6 +108,65 @@
           @if (stockCriticoCount() > 0) {
             <span class="sidebar-status-badge is-warning">{{ stockCriticoCount() }}</span>
           }
+        </a>
+
+        <!-- 4.6. Catálogo & Productos -->
+        <a
+          class="sidebar-nav-item"
+          routerLink="/admin/catalogo"
+          routerLinkActive="active"
+          (click)="closeMobileSidebar()"
+          matRipple
+        >
+          <span class="material-symbols-outlined icon sidebar-nav-icon" aria-hidden="true"
+            >inventory_2</span
+          >
+          <span>Catálogo & Productos</span>
+        </a>
+
+        <!-- 4.7. Inventario & Kardex -->
+        <a
+          class="sidebar-nav-item"
+          routerLink="/admin/inventario"
+          routerLinkActive="active"
+          (click)="closeMobileSidebar()"
+          matRipple
+        >
+          <span class="material-symbols-outlined icon sidebar-nav-icon" aria-hidden="true"
+            >inventory</span
+          >
+          <span>Inventario & Kardex</span>
+          @if (stockCriticoCount() > 0) {
+            <span class="sidebar-status-badge is-warning">{{ stockCriticoCount() }}</span>
+          }
+        </a>
+
+        <!-- 4.8. Compras & Proveedores -->
+        <a
+          class="sidebar-nav-item"
+          routerLink="/admin/compras"
+          routerLinkActive="active"
+          (click)="closeMobileSidebar()"
+          matRipple
+        >
+          <span class="material-symbols-outlined icon sidebar-nav-icon" aria-hidden="true"
+            >local_shipping</span
+          >
+          <span>Compras & Proveedores</span>
+        </a>
+
+        <!-- 4.9. Créditos & Fiados -->
+        <a
+          class="sidebar-nav-item"
+          routerLink="/admin/creditos"
+          routerLinkActive="active"
+          (click)="closeMobileSidebar()"
+          matRipple
+        >
+          <span class="material-symbols-outlined icon sidebar-nav-icon" aria-hidden="true"
+            >account_balance_wallet</span
+          >
+          <span>Créditos &amp; Fiados</span>
         </a>
 
         <!-- 5. Finanzas & Liquidación -->
@@ -207,7 +257,7 @@
         </div>
         <div class="user-profile-info">
           <strong>{{ nombreAdmin() }}</strong>
-          <span>Dueño Sede</span>
+          <span>{{ accountRoleLabel() }}</span>
         </div>
       </div>
       <button type="button" class="btn-logout-sidebar" (click)="cerrarSesionAdmin()" matRipple>
@@ -235,25 +285,86 @@
         </button>
 
         <!-- Selector de Sede con mat-select -->
-        <mat-form-field class="venue-picker-field" appearance="outline" subscriptSizing="dynamic">
-          <mat-label>{{
-            context.loading()
-              ? 'Cargando sedes'
-              : sedesDelDueno().length
-                ? 'Sede'
-                : 'Sin sedes disponibles'
-          }}</mat-label>
-          <mat-icon matPrefix aria-hidden="true">location_on</mat-icon>
-          <mat-select
-            [disabled]="context.loading() || !sedesDelDueno().length"
-            [value]="sedeDelDueno()?.id || ''"
-            (selectionChange)="seleccionarSede($event.value)"
-          >
-            @for (sedeOpt of sedesDelDueno(); track sedeOpt.id) {
-              <mat-option [value]="sedeOpt.id">{{ sedeOpt.nombre }}</mat-option>
+        @if (canBrowseAllVenues()) {
+          <label class="management-scope"
+            >Vista
+            <select
+              aria-label="Alcance de administración"
+              [value]="allVenuesMode() ? 'all' : 'owned'"
+              (change)="cambiarAlcance($any($event.target).value)"
+            >
+              <option value="owned">Mis sedes</option>
+              <option value="all">Administración global</option>
+            </select>
+          </label>
+        }
+        <!-- Buscador en vivo de Sedes -->
+        @if (!isSedesRoute()) {
+          <div class="venue-live-search-wrapper" (click)="$event.stopPropagation()">
+            <div class="venue-search-input-box" [class.is-focused]="sedeSearchOpen()">
+              <mat-icon class="venue-search-icon" aria-hidden="true">location_on</mat-icon>
+              <input
+                type="text"
+                class="venue-search-input"
+                [placeholder]="sedeDelDueno()?.nombre || 'Buscar sede...'"
+                [value]="sedeSearchQuery() || (sedeSearchOpen() ? '' : (sedeDelDueno()?.nombre || ''))"
+                (focus)="onSedeSearchFocus()"
+                (input)="onSedeSearchInput($any($event.target).value)"
+                (keydown.escape)="cerrarSedeSearch()"
+                aria-label="Buscar sede en vivo"
+                aria-autocomplete="list"
+              />
+              @if (sedeSearchQuery()) {
+                <button
+                  type="button"
+                  class="btn-clear-search"
+                  (click)="limpiarSedeSearch($event)"
+                  title="Limpiar búsqueda"
+                  aria-label="Limpiar búsqueda"
+                >
+                  <mat-icon aria-hidden="true">close</mat-icon>
+                </button>
+              } @else {
+                <mat-icon class="venue-search-arrow" aria-hidden="true">{{
+                  sedeSearchOpen() ? 'arrow_drop_up' : 'arrow_drop_down'
+                }}</mat-icon>
+              }
+            </div>
+
+            @if (sedeSearchOpen()) {
+              <div class="venue-live-dropdown" role="listbox">
+                @if (sedesFiltradas().length === 0) {
+                  <div class="venue-dropdown-empty">
+                    <mat-icon aria-hidden="true">search_off</mat-icon>
+                    <span>Sin coincidencias para "{{ sedeSearchQuery() }}"</span>
+                  </div>
+                } @else {
+                  @for (s of sedesFiltradas(); track s.id) {
+                    <button
+                      type="button"
+                      class="venue-dropdown-item"
+                      [class.is-selected]="s.id === sedeDelDueno()?.id"
+                      (click)="seleccionarSede(s.id)"
+                      role="option"
+                      [attr.aria-selected]="s.id === sedeDelDueno()?.id"
+                    >
+                      <mat-icon class="venue-item-icon" aria-hidden="true">stadium</mat-icon>
+                      <div class="venue-item-info">
+                        <strong class="venue-item-name">{{ s.nombre }}</strong>
+                        @if (s.direccion) {
+                          <span class="venue-item-address">{{ s.direccion }}</span>
+                        }
+                      </div>
+                      @if (s.id === sedeDelDueno()?.id) {
+                        <mat-icon class="venue-item-check" aria-hidden="true">check</mat-icon>
+                      }
+                    </button>
+                  }
+                }
+              </div>
             }
-          </mat-select>
-        </mat-form-field>
+          </div>
+        }
 
         <!-- Estado de las canchas -->
         <div class="status-live-chip">
@@ -278,21 +389,128 @@
           <span>Ver mi página pública</span>
         </button>
 
-        <!-- Notificaciones con mat-badge -->
+        <!-- Botón de Modo Oscuro (Icono toggle idéntico al navbar público) -->
         <button
           mat-icon-button
-          class="btn-bell"
-          [matBadge]="pendientesBadgeText()"
-          [matBadgeHidden]="pendientesCount() <= 0"
-          matBadgeColor="warn"
-          matBadgeSize="small"
-          matBadgeOverlap="false"
-          [routerLink]="['/admin/reservas']"
-          matTooltip="{{ pendientesCount() }} notificaciones operativas"
-          aria-label="Notificaciones"
+          class="btn-theme-toggle"
+          (click)="toggleDarkMode()"
+          [matTooltip]="isDarkMode() ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
+          aria-label="Cambiar tema visual"
         >
-          <mat-icon aria-hidden="true">notifications</mat-icon>
+          <mat-icon aria-hidden="true">{{ isDarkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
         </button>
+
+        <!-- Notificaciones estilo Facebook con popover -->
+        <div class="bell-notifications-wrapper">
+          <button
+            mat-icon-button
+            class="btn-bell"
+            [matBadge]="unreadNotificationsCount() > 0 ? '' + unreadNotificationsCount() : ''"
+            [matBadgeHidden]="unreadNotificationsCount() <= 0"
+            matBadgeColor="warn"
+            matBadgeSize="small"
+            matBadgeOverlap="false"
+            (click)="toggleNotifications()"
+            matTooltip="Notificaciones operativas"
+            aria-label="Notificaciones"
+          >
+            <mat-icon aria-hidden="true">notifications</mat-icon>
+          </button>
+
+          @if (notificationsOpen()) {
+            <!-- Backdrop para cerrar al hacer clic fuera -->
+            <div class="fb-notif-backdrop" (click)="notificationsOpen.set(false)"></div>
+
+            <div class="fb-notifications-popover" role="dialog" aria-label="Notificaciones">
+              <div class="fb-notif-header">
+                <div class="fb-notif-title-row">
+                  <h3 class="fb-notif-title">Notificaciones</h3>
+                  <button
+                    type="button"
+                    class="fb-notif-action-icon"
+                    (click)="marcarTodasLeidas()"
+                    title="Marcar todas como leídas"
+                    aria-label="Marcar todas como leídas"
+                  >
+                    <mat-icon aria-hidden="true">done_all</mat-icon>
+                  </button>
+                </div>
+                <div class="fb-notif-tabs">
+                  <button
+                    type="button"
+                    class="fb-notif-tab"
+                    [class.active]="notifFilter() === 'todas'"
+                    (click)="notifFilter.set('todas')"
+                  >
+                    Todas
+                  </button>
+                  <button
+                    type="button"
+                    class="fb-notif-tab"
+                    [class.active]="notifFilter() === 'no_leidas'"
+                    (click)="notifFilter.set('no_leidas')"
+                  >
+                    No leídas ({{ unreadNotificationsCount() }})
+                  </button>
+                </div>
+              </div>
+
+              <div class="fb-notif-section-row">
+                <span class="fb-notif-section-title">Anteriores</span>
+                <button type="button" class="fb-notif-link-btn" (click)="marcarTodasLeidas()">
+                  Marcar todo leído
+                </button>
+              </div>
+
+              <div class="fb-notif-list">
+                @for (item of filteredNotifications(); track item.id) {
+                  <div
+                    class="fb-notif-item"
+                    [class.unread]="!item.leida"
+                    (click)="abrirNotificacion(item)"
+                    role="button"
+                    tabindex="0"
+                  >
+                    <div class="fb-notif-avatar-container">
+                      <div class="fb-notif-avatar" [style.background-color]="item.avatarBg">
+                        <mat-icon aria-hidden="true">{{ item.icono }}</mat-icon>
+                      </div>
+                      <span class="fb-notif-badge" [style.background-color]="item.badgeColor">
+                        <mat-icon aria-hidden="true">{{ item.badgeIcon }}</mat-icon>
+                      </span>
+                    </div>
+
+                    <div class="fb-notif-content">
+                      <p class="fb-notif-desc">
+                        <strong class="fb-notif-module">{{ item.modulo }}:</strong> {{ item.detalle }}
+                      </p>
+                      <span class="fb-notif-time">{{ item.tiempo }}</span>
+                    </div>
+
+                    @if (!item.leida) {
+                      <span class="fb-notif-dot" aria-hidden="true"></span>
+                    }
+                  </div>
+                } @empty {
+                  <div class="fb-notif-empty">
+                    <mat-icon aria-hidden="true">notifications_none</mat-icon>
+                    <p>No tienes notificaciones pendientes.</p>
+                  </div>
+                }
+              </div>
+
+              <div class="fb-notif-footer">
+                <button
+                  type="button"
+                  class="fb-notif-footer-btn"
+                  (click)="marcarTodasLeidas(); notificationsOpen.set(false)"
+                >
+                  Marcar todas como leídas
+                </button>
+              </div>
+            </div>
+          }
+        </div>
 
         <!-- Perfil con mat-menu -->
         <button

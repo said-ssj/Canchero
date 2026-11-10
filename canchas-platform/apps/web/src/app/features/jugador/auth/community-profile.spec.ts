@@ -46,7 +46,11 @@ describe('Perfil personal de dueño con varias sedes', () => {
         { provide: CommunityProfileService, useValue: api },
         {
           provide: AuthService,
-          useValue: { user: signal({ id: 'owner-a' }), isLoggedIn: signal(true) },
+          useValue: {
+            user: signal({ id: 'owner-a' }),
+            isLoggedIn: signal(true),
+            playerProfile: signal(null),
+          },
         },
         {
           provide: DatabaseService,
@@ -54,6 +58,8 @@ describe('Perfil personal de dueño con varias sedes', () => {
             catalogLoading: signal(false),
             catalogError: signal(false),
             getVenueDetalle: () => ({ canchas: [] }),
+            getSedesPorDueno: () => [],
+            sedes: signal([]),
           },
         },
       ],

@@ -86,6 +86,26 @@ export const routes: Routes = [
         loadComponent: () => import('./features/admin/pos/admin-pos').then((m) => m.AdminPos),
       },
       {
+        path: 'catalogo',
+        loadComponent: () =>
+          import('./features/admin/catalogo/admin-catalogo').then((m) => m.AdminCatalogo),
+      },
+      {
+        path: 'inventario',
+        loadComponent: () =>
+          import('./features/admin/inventario/admin-inventario').then((m) => m.AdminInventario),
+      },
+      {
+        path: 'compras',
+        loadComponent: () =>
+          import('./features/admin/compras/admin-compras').then((m) => m.AdminCompras),
+      },
+      {
+        path: 'creditos',
+        loadComponent: () =>
+          import('./features/admin/creditos/admin-creditos').then((m) => m.AdminCreditos),
+      },
+      {
         path: 'finanzas',
         loadComponent: () =>
           import('./features/admin/finanzas/admin-finanzas').then((m) => m.AdminFinanzas),

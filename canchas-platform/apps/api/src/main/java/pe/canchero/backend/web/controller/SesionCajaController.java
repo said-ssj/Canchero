@@ -45,11 +45,11 @@ public class SesionCajaController {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Caja inválida");
             }
             access.requireOwnedBox(cId, user);
-            return ResponseEntity.ok(data.listSesionesCaja(cId));
+            return ResponseEntity.ok(data.visibleSessions(data.listSesionesCaja(cId),user));
         }
         if (sedeId != null) {
-            access.requireOwnedVenue(sedeId, user);
-            return ResponseEntity.ok(data.listSesionesCajaForVenue(sedeId));
+            access.requirePermission(sedeId, user, "caja.operar");
+            return ResponseEntity.ok(data.visibleSessions(data.listSesionesCajaForVenue(sedeId),user));
         }
         return ResponseEntity.ok(data.listSesionesCajaForOwner(user));
     }

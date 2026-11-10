@@ -31,7 +31,7 @@
         (click)="menuOpen.set(false)"
         >Mi Itinerario</a
       >
-      <span class="nav-link" style="opacity: 0.6; cursor: default">Torneos (Próximamente)</span>
+      <span class="nav-link" style="opacity: 0.85; cursor: default">Torneos (Próximamente)</span>
       @if (isOwner()) {
         <a
           routerLink="/admin"
@@ -45,9 +45,20 @@
     </nav>
 
     <div class="nav-actions">
+      <!-- Botón de Búsqueda (Lupa sin bordes, área clickable circular del tamaño del icono) -->
+      <button
+        type="button"
+        class="nav-search-btn"
+        (click)="openSearch()"
+        title="Buscar canchas, sedes y otros usuarios"
+        aria-label="Buscar canchas, sedes y otros usuarios"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">search</span>
+      </button>
+
       <app-theme-toggle />
       @if (user(); as u) {
-        <!-- Perfil Compacto (Solo 2 iniciales / letras) con Menú Desplegable -->
+        <!-- Perfil Compacto (Solo iniciales en círculo sin marco exterior) -->
         <div class="user-profile-menu-wrapper" (click)="$event.stopPropagation()">
           <button
             type="button"
@@ -63,9 +74,6 @@
                 {{ initials(profileName()) }}
               }
             </span>
-            <span class="material-symbols-outlined avatar-arrow" [class.rotated]="profileMenuOpen()"
-              >expand_more</span
-            >
           </button>
 
           <!-- Menú desplegable hamburguesa de perfil -->
@@ -420,6 +428,106 @@
         >
           Cerrar
         </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- =========================================================================
+     MODAL DE BÚSQUEDA GENERAL (INSPIRADO EN IMAGEN 5)
+     ========================================================================= -->
+@if (searchOverlayOpen()) {
+  <div class="search-overlay-backdrop" (click)="closeSearch()">
+    <div class="search-overlay-card" (click)="$event.stopPropagation()">
+      <!-- Barra Superior de Búsqueda -->
+      <div class="search-overlay-bar">
+        <div class="search-input-pill">
+          <span class="material-symbols-outlined search-pill-icon" aria-hidden="true">search</span>
+          <input
+            type="text"
+            class="search-pill-input"
+            placeholder="¿Qué estás buscando?"
+            [(ngModel)]="searchQuery"
+            (keydown.enter)="ejecutarBusqueda()"
+            autofocus
+          />
+          @if (searchQuery.trim()) {
+            <button
+              type="button"
+              class="search-clear-btn"
+              (click)="searchQuery = ''"
+              aria-label="Limpiar búsqueda"
+            >
+              ✕
+            </button>
+          }
+          <button
+            type="button"
+            class="search-submit-icon-btn"
+            (click)="ejecutarBusqueda()"
+            aria-label="Buscar"
+          >
+            <span class="material-symbols-outlined">search</span>
+          </button>
+        </div>
+
+        <button
+          type="button"
+          class="search-close-btn"
+          (click)="closeSearch()"
+        >
+          Cerrar
+        </button>
+      </div>
+
+      <!-- Mensaje guiado solicitado -->
+      <p class="search-guidance-msg">Busca canchas deportivas, sedes, y otros usuarios.</p>
+
+      <!-- Búsquedas Principales & Sugerencias -->
+      <div class="search-suggestions-container">
+        <h4 class="search-section-title">Búsquedas principales</h4>
+        <div class="search-quick-links">
+          <button
+            type="button"
+            class="search-quick-item"
+            (click)="buscarRapido('Fútbol 7')"
+          >
+            <span class="material-symbols-outlined">sports_soccer</span>
+            <span>Canchas de Fútbol 7</span>
+          </button>
+          <button
+            type="button"
+            class="search-quick-item"
+            (click)="buscarRapido('Fútbol 5')"
+          >
+            <span class="material-symbols-outlined">sports_soccer</span>
+            <span>Canchas de Fútbol 5</span>
+          </button>
+          <button
+            type="button"
+            class="search-quick-item"
+            (click)="buscarRapido('Sintético')"
+          >
+            <span class="material-symbols-outlined">stadium</span>
+            <span>Gras Sintético y Complejos</span>
+          </button>
+          <button
+            type="button"
+            class="search-quick-item"
+            (click)="buscarRapido('Lima')"
+          >
+            <span class="material-symbols-outlined">location_on</span>
+            <span>Sedes en Lima Metropolitana</span>
+          </button>
+          <button
+            type="button"
+            class="search-quick-item"
+            (click)="irAUsuariosComunidad()"
+          >
+            <span class="material-symbols-outlined">group</span>
+            <span>Comunidad y otros usuarios</span>
+          </button>
+        </div>
       </div>
     </div>
   </div>

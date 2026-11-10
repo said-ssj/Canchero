@@ -2,6 +2,7 @@ package pe.canchero.backend.service;
 
 import java.math.BigDecimal;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import org.springframework.http.HttpStatus;
@@ -13,26 +14,60 @@ import pe.canchero.backend.web.dto.AuthUserDto;
 
 @Service
 public class PosCatalogService {
-    public record Category(int id, String nombre, String descripcion) {}
+    public record Category(int id, String nombre, String descripcion, String estado, int totalProductos) {
+        public Category(int id, String nombre, String descripcion) {
+            this(id, nombre, descripcion, "A", 0);
+        }
+    }
     public record CategoryRequest(Integer sedeId, String nombre, String descripcion) {}
     public record ProductRequest(Integer sedeId, Integer categoriaId, String nombre, String codigoBarras,
             String descripcion, BigDecimal contenido, String unidadMedida, BigDecimal precioCompra,
             BigDecimal precioVenta, Integer stockInicial, Integer stockMinimo, String fotoUrl) {}
+    public record ProductDetail(
+            int id,
+            int categoriaId,
+            String categoriaNombre,
+            String codigoBarras,
+            String nombre,
+            String descripcion,
+            BigDecimal contenido,
+            String unidadMedida,
+            BigDecimal precioCompra,
+            BigDecimal precioVenta,
+            int stock,
+            int stockMinimo,
+            String fotoUrl,
+            String estado,
+            double margenPorcentaje
+    ) {}
     private final JdbcTemplate jdbc;
     private final VenueAccessService access;
     public PosCatalogService(JdbcTemplate jdbc, VenueAccessService access) { this.jdbc = jdbc; this.access = access; }
 
     public List<Category> categories(Integer venue, AuthUserDto user) {
-        int sede = access.requireOwnedVenue(venue, user);
+        return categories(venue, user, false);
+    }
+
+    public List<Category> categories(Integer venue, AuthUserDto user, boolean includeInactive) {
+        int sede = access.requirePermission(venue, user, "producto.ver");
+        String estadoSql = includeInactive ? "" : "and cp.estado='A'";
         return jdbc.query("""
-                select id_categoria, nombre, descripcion from categoria_producto
-                where estado='A' and (id_sede is null or id_sede=?) order by nombre
-                """, (r,n) -> new Category(r.getInt(1), r.getString(2), r.getString(3)), sede);
+                select cp.id_categoria, cp.nombre, cp.descripcion, cp.estado,
+                       coalesce((
+                           select count(distinct p.id_producto)
+                           from producto p
+                           join kardex k on k.id_producto = p.id_producto and k.id_sede = ? and k.estado = 'A'
+                           where p.id_categoria = cp.id_categoria and p.estado = 'A'
+                       ), 0) as total_prod
+                from categoria_producto cp
+                where (cp.id_sede is null or cp.id_sede=?) """ + estadoSql + """
+                order by cp.nombre
+                """, (r,n) -> new Category(r.getInt(1), r.getString(2), r.getString(3), r.getString(4), r.getInt(5)), sede, sede);
     }
 
     @Transactional
     public Category createCategory(CategoryRequest request, AuthUserDto user) {
-        int sede = access.requireOwnedVenue(request.sedeId(), user);
+        int sede = access.requirePermission(request.sedeId(), user, "producto.gestionar");
         String nombre = required(request.nombre(), 100, "Nombre de categoría");
         String descripcion = optional(request.descripcion(), 1000, "Descripción");
         lockVenue(sede);
@@ -44,19 +79,174 @@ public class PosCatalogService {
                 insert into categoria_producto(nombre,descripcion,id_sede,estado,usucre,pccre)
                 values (?,?,?,'A',?,'SPRING') returning id_categoria
                 """, Integer.class, nombre, descripcion, sede, "API");
-        return new Category(id, nombre, descripcion);
+        return new Category(id, nombre, descripcion, "A", 0);
     }
 
     @Transactional
-    public int createProduct(ProductRequest r, AuthUserDto user) {
-        int sede = access.requireOwnedVenue(r.sedeId(), user);
+    public Category updateCategory(int id, CategoryRequest request, AuthUserDto user) {
+        int sede = access.requirePermission(request.sedeId(), user, "producto.gestionar");
+        String nombre = required(request.nombre(), 100, "Nombre de categoría");
+        String descripcion = optional(request.descripcion(), 1000, "Descripción");
+        lockVenue(sede);
+        if (jdbc.queryForObject("""
+                select count(*) from categoria_producto where id_categoria != ? and estado='A'
+                and (id_sede is null or id_sede=?) and lower(btrim(nombre))=lower(?)
+                """, Integer.class, id, sede, nombre) > 0) throw conflict("Ya existe otra categoría con ese nombre");
+        int updated = jdbc.update("""
+                update categoria_producto set nombre = ?, descripcion = ?
+                where id_categoria = ? and (id_sede is null or id_sede = ?)
+                """, nombre, descripcion, id, sede);
+        if (updated == 0) throw bad("Categoría no encontrada o no editable para esta sede");
+        return new Category(id, nombre, descripcion, "A", 0);
+    }
+
+    @Transactional
+    public String toggleCategoryStatus(int id, Integer venueId, AuthUserDto user) {
+        int sede = access.requirePermission(venueId, user, "producto.gestionar");
+        lockVenue(sede);
+        List<String> current = jdbc.query("select estado from categoria_producto where id_categoria=? and (id_sede is null or id_sede=?)",
+                (rs, rowNum) -> rs.getString(1), id, sede);
+        if (current.isEmpty()) throw bad("Categoría no encontrada");
+        String nuevoEstado = "A".equalsIgnoreCase(current.get(0)) ? "I" : "A";
+        jdbc.update("update categoria_producto set estado=? where id_categoria=? and (id_sede is null or id_sede=?)",
+                nuevoEstado, id, sede);
+        return nuevoEstado;
+    }
+
+    public List<ProductDetail> listProducts(Integer venue, AuthUserDto user, String estado, Integer categoriaId, String buscar) {
+        int sede = access.requirePermission(venue, user, "producto.ver");
+        StringBuilder sql = new StringBuilder("""
+                select p.id_producto, p.id_categoria, coalesce(cp.nombre, 'General') as categoria_nombre,
+                       p.codigo_barras, p.nombre, p.descripcion, p.contenido, p.unidad_medida,
+                       p.precio_compra, p.precio_venta, p.stock_minimo, p.foto_url, p.estado,
+                       coalesce((
+                           select latest.saldo_stock
+                           from kardex latest
+                           where latest.id_producto = p.id_producto and latest.id_sede = ? and latest.estado = 'A'
+                           order by coalesce(latest.fecha, latest.feccre) desc, latest.id_kardex desc
+                           limit 1
+                       ), 0) as stock
+                from producto p
+                left join categoria_producto cp on cp.id_categoria = p.id_categoria
+                where exists (select 1 from kardex k where k.id_producto = p.id_producto and k.id_sede = ? and k.estado = 'A')
+                """);
+        List<Object> params = new ArrayList<>();
+        params.add(sede);
+        params.add(sede);
+
+        if (estado != null && !estado.isBlank() && !"TODOS".equalsIgnoreCase(estado)) {
+            sql.append(" and p.estado = ?");
+            params.add(estado.trim().toUpperCase());
+        }
+        if (categoriaId != null && categoriaId > 0) {
+            sql.append(" and p.id_categoria = ?");
+            params.add(categoriaId);
+        }
+        if (buscar != null && !buscar.isBlank()) {
+            sql.append(" and (lower(p.nombre) like lower(?) or lower(coalesce(p.codigo_barras,'')) like lower(?))");
+            String pattern = "%" + buscar.trim() + "%";
+            params.add(pattern);
+            params.add(pattern);
+        }
+        sql.append(" order by p.nombre");
+
+        return jdbc.query(sql.toString(), (rs, rowNum) -> {
+            BigDecimal pc = rs.getBigDecimal("precio_compra");
+            BigDecimal pv = rs.getBigDecimal("precio_venta");
+            double margen = 0.0;
+            if (pv != null && pv.signum() > 0 && pc != null) {
+                margen = ((pv.doubleValue() - pc.doubleValue()) / pv.doubleValue()) * 100.0;
+            }
+            return new ProductDetail(
+                    rs.getInt("id_producto"),
+                    rs.getInt("id_categoria"),
+                    rs.getString("categoria_nombre"),
+                    rs.getString("codigo_barras"),
+                    rs.getString("nombre"),
+                    rs.getString("descripcion"),
+                    rs.getBigDecimal("contenido"),
+                    rs.getString("unidad_medida"),
+                    pc == null ? BigDecimal.ZERO : pc,
+                    pv == null ? BigDecimal.ZERO : pv,
+                    rs.getInt("stock"),
+                    rs.getInt("stock_minimo"),
+                    rs.getString("foto_url"),
+                    rs.getString("estado"),
+                    Math.round(margen * 10.0) / 10.0
+            );
+        }, params.toArray());
+    }
+
+    public ProductDetail getProduct(int id, Integer venue, AuthUserDto user) {
+        int sede = access.requirePermission(venue, user, "producto.ver");
+        List<ProductDetail> list = listProducts(venue, user, "TODOS", null, null).stream()
+                .filter(p -> p.id() == id).toList();
+        if (list.isEmpty()) throw bad("Producto no encontrado en esta sede");
+        return list.get(0);
+    }
+
+    @Transactional
+    public void updateProduct(int id, ProductRequest r, AuthUserDto user) {
+        int sede = access.requirePermission(r.sedeId(), user, "producto.gestionar");
         String nombre = required(r.nombre(), 150, "Nombre");
         String codigo = optional(r.codigoBarras(), 50, "Código de barras");
         String descripcion = optional(r.descripcion(), 1000, "Descripción");
         if (r.categoriaId() == null) throw bad("Selecciona una categoría");
         if (r.contenido() == null || r.contenido().signum() <= 0 || r.contenido().compareTo(new BigDecimal("999999999")) > 0 || r.contenido().scale() > 3)
             throw bad("Indica un contenido mayor que cero, con hasta tres decimales");
-        if (!Set.of("und","ml","l","g","kg","pack","caja").contains(r.unidadMedida() == null ? "" : r.unidadMedida()))
+        if (!Set.of("und","ml","l","g","kg","pack","caja","bot","lata").contains(r.unidadMedida() == null ? "" : r.unidadMedida()))
+            throw bad("Unidad de medida inválida");
+        money(r.precioCompra(), false); money(r.precioVenta(), true);
+        if (r.stockMinimo() == null || r.stockMinimo() < 0 || r.stockMinimo() > 1000000) throw bad("Stock mínimo inválido");
+        String foto = validatePhoto(r.fotoUrl());
+        lockVenue(sede);
+        if (jdbc.queryForObject("""
+                select count(*) from kardex where id_producto=? and id_sede=? and estado='A'
+                """, Integer.class, id, sede) == 0) throw bad("El producto no pertenece al inventario de esta sede");
+        if (jdbc.queryForObject("""
+                select count(*) from categoria_producto where id_categoria=? and estado='A'
+                and (id_sede is null or id_sede=?)
+                """, Integer.class, r.categoriaId(), sede) != 1) throw bad("La categoría no está disponible en esta sede");
+        if (codigo != null && jdbc.queryForObject("""
+                select count(*) from producto p where p.id_producto != ? and p.estado='A' and lower(p.codigo_barras)=lower(?)
+                and exists (select 1 from kardex k where k.id_producto=p.id_producto and k.id_sede=? and k.estado='A')
+                """, Integer.class, id, codigo, sede) > 0) throw conflict("El código ya está registrado en esta sede");
+
+        int updated = jdbc.update("""
+                update producto set id_categoria=?, nombre=?, codigo_barras=?, descripcion=?,
+                       contenido=?, unidad_medida=?, precio_compra=?, precio_venta=?,
+                       stock_minimo=?, foto_url=?
+                where id_producto=?
+                """, r.categoriaId(), nombre, codigo, descripcion, r.contenido(), r.unidadMedida(),
+                r.precioCompra(), r.precioVenta(), r.stockMinimo(), foto, id);
+        if (updated == 0) throw bad("Producto no encontrado");
+    }
+
+    @Transactional
+    public String toggleProductStatus(int id, Integer venueId, AuthUserDto user) {
+        int sede = access.requirePermission(venueId, user, "producto.gestionar");
+        lockVenue(sede);
+        if (jdbc.queryForObject("""
+                select count(*) from kardex where id_producto=? and id_sede=? and estado='A'
+                """, Integer.class, id, sede) == 0) throw bad("El producto no pertenece al inventario de esta sede");
+        List<String> current = jdbc.query("select estado from producto where id_producto=?",
+                (rs, rowNum) -> rs.getString(1), id);
+        if (current.isEmpty()) throw bad("Producto no encontrado");
+        String nuevoEstado = "A".equalsIgnoreCase(current.get(0)) ? "I" : "A";
+        jdbc.update("update producto set estado=? where id_producto=?", nuevoEstado, id);
+        return nuevoEstado;
+    }
+
+    @Transactional
+    public int createProduct(ProductRequest r, AuthUserDto user) {
+        int sede = access.requirePermission(r.sedeId(), user, "producto.gestionar");
+        String nombre = required(r.nombre(), 150, "Nombre");
+        String codigo = optional(r.codigoBarras(), 50, "Código de barras");
+        String descripcion = optional(r.descripcion(), 1000, "Descripción");
+        if (r.categoriaId() == null) throw bad("Selecciona una categoría");
+        if (r.contenido() == null || r.contenido().signum() <= 0 || r.contenido().compareTo(new BigDecimal("999999999")) > 0 || r.contenido().scale() > 3)
+            throw bad("Indica un contenido mayor que cero, con hasta tres decimales");
+        if (!Set.of("und","ml","l","g","kg","pack","caja","bot","lata").contains(r.unidadMedida() == null ? "" : r.unidadMedida()))
             throw bad("Unidad de medida inválida");
         money(r.precioCompra(), false); money(r.precioVenta(), true);
         if (r.stockInicial() == null || r.stockMinimo() == null || r.stockInicial() < 0 || r.stockMinimo() < 0

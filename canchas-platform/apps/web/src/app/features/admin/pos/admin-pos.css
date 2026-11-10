@@ -30,7 +30,7 @@
   max-width: 100px;
   height: 64px;
   object-fit: contain;
-  border-radius: 6px;
+  border-radius: 4px;
 }
 .pos-product-measure {
   display: block;
@@ -40,9 +40,7 @@
 }
 
 /* Scoped to this feature, including Material's internal animation elements. */
-:host ::ng-deep *,
-:host ::ng-deep *::before,
-:host ::ng-deep *::after {
+:host, :host * {
   animation: none !important;
   transition: none !important;
 }
@@ -110,13 +108,11 @@ button:disabled {
 }
 
 .view-title {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: var(--color-ink-900, #0f172a);
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0 0 4px 0;
+  color: var(--ink, #191919);
+  line-height: 1.25;
 }
 
 .view-title-icon {
@@ -140,9 +136,54 @@ button:disabled {
 }
 
 .pos-btn-action {
-  border-radius: 6px;
+  border-radius: 4px;
   font-size: 0.85rem;
-  font-weight: 600;
+  font-weight: 700;
+  color: #000000 !important;
+  border-color: #cbd5e1;
+  transition: all 0.15s ease;
+}
+
+.pos-btn-action mat-icon,
+.pos-btn-action span {
+  color: #000000 !important;
+}
+
+.pos-btn-action:hover {
+  border-color: #27802D !important;
+  color: #27802D !important;
+}
+
+.pos-btn-action:hover mat-icon,
+.pos-btn-action:hover span {
+  color: #27802D !important;
+}
+
+:root.dark-theme .pos-btn-action,
+body.dark-theme .pos-btn-action {
+  color: #f1f5f9 !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  background-color: transparent !important;
+}
+
+:root.dark-theme .pos-btn-action mat-icon,
+body.dark-theme .pos-btn-action mat-icon,
+:root.dark-theme .pos-btn-action span,
+body.dark-theme .pos-btn-action span {
+  color: #f1f5f9 !important;
+}
+
+:root.dark-theme .pos-btn-action:hover,
+body.dark-theme .pos-btn-action:hover {
+  border-color: #4ade80 !important;
+  color: #4ade80 !important;
+}
+
+:root.dark-theme .pos-btn-action:hover mat-icon,
+body.dark-theme .pos-btn-action:hover mat-icon,
+:root.dark-theme .pos-btn-action:hover span,
+body.dark-theme .pos-btn-action:hover span {
+  color: #4ade80 !important;
 }
 
 /* Banner de Alerta de Stock Mínimo Crítico */
@@ -150,7 +191,7 @@ button:disabled {
   background: var(--color-warning-50);
   border: 1px solid var(--color-warning-200);
   border-left: 4px solid #b45309;
-  border-radius: 6px;
+  border-radius: 4px;
   padding: 0.85rem 1.25rem;
   display: flex;
   justify-content: space-between;
@@ -203,7 +244,7 @@ button:disabled {
   align-self: flex-start;
   max-width: 100%;
   flex-wrap: wrap;
-  border-radius: 6px;
+  border-radius: 4px;
 }
 
 .pos-tabs-nav mat-button-toggle {
@@ -238,7 +279,7 @@ button:disabled {
 .pos-search-card {
   background: var(--color-surface-card);
   border: 1px solid var(--color-border, #e2e8f0);
-  border-radius: 8px;
+  border-radius: 4px;
   padding: 0.85rem;
   display: flex;
   flex-direction: column;
@@ -261,7 +302,7 @@ button:disabled {
   justify-content: flex-start;
   width: 100%;
   min-width: 0;
-  border-radius: 6px;
+  border-radius: 4px;
   font-size: 0.78rem;
   font-weight: 600;
   padding: 0 10px;
@@ -312,7 +353,7 @@ button:disabled {
   box-shadow: none;
   background: var(--color-surface-card);
   border: 1px solid var(--pos-product-border, var(--color-border, #e2e8f0));
-  border-radius: 8px;
+  border-radius: 4px;
   padding: 0.85rem;
   display: flex;
   flex-direction: column;
@@ -451,7 +492,7 @@ button:disabled {
 }
 
 .pos-add-btn {
-  border-radius: 6px;
+  border-radius: 4px;
   font-size: 0.75rem;
   font-weight: 700;
   height: 32px;
@@ -470,7 +511,7 @@ button:disabled {
   padding: 3rem 1rem;
   background: var(--color-surface-card);
   border: 1px dashed var(--color-border, #e2e8f0);
-  border-radius: 8px;
+  border-radius: 4px;
 }
 
 .empty-icon {
@@ -499,7 +540,7 @@ button:disabled {
 .pos-cart-card {
   background: var(--color-surface-card);
   border: 1px solid var(--color-border, #e2e8f0);
-  border-radius: 8px;
+  border-radius: 4px;
   padding: 1rem;
   display: flex;
   flex-direction: column;
@@ -666,7 +707,7 @@ button:disabled {
 .pos-tax-summary-box {
   background: var(--color-slate-50);
   border: 1px solid var(--color-border, #e2e8f0);
-  border-radius: 6px;
+  border-radius: 4px;
   padding: 0.75rem;
   display: flex;
   flex-direction: column;
@@ -715,11 +756,13 @@ button:disabled {
 
 .pos-internal-badge {
   font-size: 0.68rem;
-  font-weight: 700;
-  color: var(--color-warning-700);
-  background: var(--color-warning-100);
-  padding: 2px 6px;
+  font-weight: 800;
+  color: var(--color-warning-700, #b45309);
+  background: transparent;
+  border: 1px solid var(--color-warning-700, #b45309);
+  padding: 1px 6px;
   border-radius: 4px;
+  text-transform: uppercase;
 }
 
 .pos-voucher-types-grid {
@@ -734,7 +777,7 @@ button:disabled {
   align-items: center;
   padding: 6px 4px;
   border: 1px solid var(--color-border, #e2e8f0);
-  border-radius: 6px;
+  border-radius: 4px;
   background: var(--color-surface-card);
   cursor: pointer;
 }
@@ -770,7 +813,7 @@ button:disabled {
   width: 100%;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  border-radius: 6px;
+  border-radius: 4px;
 }
 
 @media (max-width: 480px) {
@@ -796,7 +839,7 @@ button:disabled {
 .pos-cash-calc-card {
   background: var(--color-surface-card);
   border: 1px solid var(--color-border, #e2e8f0);
-  border-radius: 6px;
+  border-radius: 4px;
 }
 
 .pos-cash-input-field {
@@ -864,7 +907,7 @@ button:disabled {
 
 .pos-btn-checkout {
   height: 44px;
-  border-radius: 6px;
+  border-radius: 4px;
   font-size: 0.95rem;
   font-weight: 800;
 }
@@ -879,7 +922,7 @@ button:disabled {
 
 .kardex-header-card,
 .ventas-header-card {
-  border-radius: 8px;
+  border-radius: 4px;
 }
 
 .kardex-header-content,
@@ -907,7 +950,7 @@ button:disabled {
 }
 
 .pos-table-card {
-  border-radius: 8px;
+  border-radius: 4px;
   overflow: hidden;
 }
 
@@ -962,36 +1005,43 @@ button:disabled {
   color: var(--color-ink-500, #64748b);
 }
 
-/* Badges comunes */
+/* Badges comunes (sin marcos de píldora) */
 .badge {
   display: inline-flex;
   align-items: center;
-  padding: 2px 8px;
-  border-radius: 4px;
+  gap: 4px;
+  padding: 0;
+  border: none;
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.02em;
+  background: transparent;
 }
 
 .badge-brand {
-  background: #e0f2fe;
-  color: #0369a1;
+  background: transparent;
+  border: none;
+  color: #0284c7;
 }
 .badge-success {
-  background: var(--color-success-100);
-  color: var(--color-success-600);
+  background: transparent;
+  border: none;
+  color: #16a34a;
 }
 .badge-warning {
-  background: var(--color-warning-100);
-  color: var(--color-warning-700);
+  background: transparent;
+  border: none;
+  color: #d97706;
 }
 .badge-error {
-  background: var(--color-danger-50);
-  color: var(--color-danger-600);
+  background: transparent;
+  border: none;
+  color: #dc2626;
 }
 .badge-neutral {
-  background: var(--color-slate-100);
-  color: var(--color-ink-600);
+  background: transparent;
+  border: none;
+  color: var(--color-ink-600, #475569);
 }
 
 /* Modales */
@@ -1008,7 +1058,7 @@ button:disabled {
 
 .caja-modal-card {
   background: var(--color-surface-card);
-  border-radius: 8px;
+  border-radius: 4px;
   max-width: 500px;
   width: 100%;
   max-height: 90vh;
@@ -1207,7 +1257,7 @@ button:disabled {
   width: 100%;
   padding: 0.5rem 0.75rem;
   border: 1px solid var(--color-border, #e2e8f0);
-  border-radius: 6px;
+  border-radius: 4px;
   font-size: 0.85rem;
   font-family: inherit;
   box-sizing: border-box;
@@ -1228,7 +1278,7 @@ button:disabled {
   background: var(--color-success-50);
   border: 1px solid var(--color-success-200);
   padding: 0.65rem 0.75rem;
-  border-radius: 6px;
+  border-radius: 4px;
   font-size: 0.75rem;
   color: var(--color-success-700);
 }
@@ -1241,7 +1291,7 @@ button:disabled {
 }
 
 .btn-sm {
-  border-radius: 6px;
+  border-radius: 4px;
   font-size: 0.8rem;
   font-weight: 600;
 }
@@ -1265,7 +1315,7 @@ button:disabled {
 .pos-view-options {
   display: flex;
   border: 1px solid var(--color-border);
-  border-radius: 6px;
+  border-radius: 4px;
   overflow: hidden;
 }
 .pos-view-options button {
@@ -1315,4 +1365,137 @@ button:disabled {
   .is-list .pos-product-footer {
     grid-column: 1 / -1;
   }
+}
+
+/* ==========================================================================
+   DESTINO DE LA VENTA: MOSTRADOR VS CARGAR A CANCHA
+   ========================================================================== */
+.pos-destino-selector {
+  padding: 0.65rem 0.85rem;
+  border-bottom: 1px solid var(--color-border, #e2e8f0);
+  background: var(--color-slate-50, #f8fafc);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pos-destino-title {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--color-ink-700, #334155);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.pos-destino-buttons {
+  display: flex;
+  gap: 6px;
+}
+
+.pos-dest-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 1px solid var(--color-border, #cbd5e1);
+  background: transparent;
+  color: var(--color-ink-700, #334155);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.pos-dest-btn.active {
+  border-color: #27802D;
+  color: #27802D;
+  background: transparent;
+}
+
+.pos-cancha-target-card {
+  padding: 0.65rem 0.85rem;
+  background: var(--color-surface-card);
+  border-bottom: 1px solid var(--color-border, #e2e8f0);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pos-cancha-select-label {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--color-ink-600, #475569);
+  text-transform: uppercase;
+}
+
+.pos-cancha-select {
+  height: 34px;
+  border-radius: 4px;
+  border: 1px solid var(--color-border, #cbd5e1);
+  padding: 0 8px;
+  font-size: 0.82rem;
+  color: var(--color-ink-900, #0f172a);
+  background: var(--color-surface-card);
+}
+
+.pos-cancha-hint {
+  font-size: 0.7rem;
+  color: var(--color-ink-500, #64748b);
+}
+
+/* ==========================================================================
+   FORMATO DE TICKET TÉRMICO (80MM VS 58MM)
+   ========================================================================== */
+.ticket-width-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--color-border, #e2e8f0);
+}
+
+.ticket-toggle-label {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--color-ink-700, #334155);
+  text-transform: uppercase;
+}
+
+.ticket-width-buttons {
+  display: flex;
+  gap: 6px;
+}
+
+.ticket-w-btn {
+  padding: 3px 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border: 1px solid var(--color-border, #cbd5e1);
+  background: transparent;
+  color: var(--color-ink-700, #334155);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.ticket-w-btn.active {
+  border-color: #27802D;
+  color: #27802D;
+}
+
+.pos-receipt-paper.paper-58mm {
+  width: 48mm;
+  font-size: 10px;
+}
+
+.pos-receipt-cancha-badge {
+  display: flex;
+  justify-content: space-between;
+  margin: 4px 0;
+  padding: 3px 0;
+  border-top: 1px dashed #000;
+  border-bottom: 1px dashed #000;
+  font-size: 10px;
 }

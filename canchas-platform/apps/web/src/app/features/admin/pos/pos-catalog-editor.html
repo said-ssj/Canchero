@@ -28,6 +28,47 @@
             [(ngModel)]="categoryName"
             placeholder="Ej. Bebidas"
         /></label>
+        <div class="category-icon-picker-popover-field">
+          <span class="icon-label">Icono representativo *</span>
+          <div class="category-icon-popover-wrapper">
+            <button
+              type="button"
+              class="category-icon-trigger-btn"
+              (click)="toggleIconPopover()"
+              aria-haspopup="dialog"
+              [attr.aria-expanded]="iconPopoverOpen()"
+            >
+              <span class="material-symbols-outlined current-icon" aria-hidden="true">{{ categoryIcon }}</span>
+              <span class="preview-text">Icono seleccionado (se mostrará en filtros y productos sin foto)</span>
+              <span class="material-symbols-outlined trigger-chevron" aria-hidden="true">{{
+                iconPopoverOpen() ? 'expand_less' : 'expand_more'
+              }}</span>
+            </button>
+
+            @if (iconPopoverOpen()) {
+              <div class="icon-cloud-dialog" role="dialog" aria-label="Seleccionar icono">
+                <div class="cloud-arrow"></div>
+                <div class="cloud-header">
+                  <span class="cloud-title">Elige un icono</span>
+                  <button type="button" class="cloud-close-btn" (click)="iconPopoverOpen.set(false)" aria-label="Cerrar">✕</button>
+                </div>
+                <div class="icon-selector-grid">
+                  @for (opt of iconOptions; track opt.icon) {
+                    <button
+                      type="button"
+                      class="icon-option-btn"
+                      [class.is-selected]="categoryIcon === opt.icon"
+                      [title]="opt.label"
+                      (click)="selectIcon(opt.icon)"
+                    >
+                      <span class="material-symbols-outlined">{{ opt.icon }}</span>
+                    </button>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        </div>
         <label
           >Descripción (opcional)<textarea
             name="categoryDescription"

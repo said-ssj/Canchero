@@ -42,7 +42,7 @@
 .mat-admin-shell .sidebar-nav-item {
   min-height: 44px;
   padding: 0.55rem 0.65rem;
-  border-radius: 6px;
+  border-radius: 4px;
   display: grid;
   grid-template-columns: 28px minmax(0, 1fr) auto;
   align-items: center;
@@ -53,7 +53,7 @@
 }
 
 .mat-admin-shell .sidebar-nav-item:focus-visible {
-  outline: 2px solid var(--can-color-brand-green, #3cb043);
+  outline: 2px solid var(--can-color-brand-green, #27802D);
   outline-offset: 2px;
 }
 
@@ -77,31 +77,42 @@
   min-width: 22px;
   height: 22px;
   padding: 0 7px;
-  border-radius: 8px;
+  border-radius: 4px;
   margin-left: auto;
   font-size: 0.72rem;
   line-height: 1;
   letter-spacing: 0;
 }
 
-.mat-admin-shell .sidebar-status-badge.is-open,
+.mat-admin-shell .sidebar-status-badge.is-open {
+  min-width: 64px;
+  height: 24px;
+  font-size: 0.68rem;
+  background: #dcfce7 !important;
+  color: #166534 !important;
+  border: none !important;
+}
+
 .mat-admin-shell .sidebar-status-badge.is-closed {
   min-width: 64px;
   height: 24px;
   font-size: 0.68rem;
+  background: #f1f5f9 !important;
+  color: #334155 !important;
+  border: none !important;
 }
 
 .mat-admin-shell .sidebar-status-badge.is-warning {
   min-width: 22px;
-  background: rgba(245, 130, 31, 0.18);
-  color: #ffbd6b;
-  border-color: rgba(245, 130, 31, 0.35);
+  background: #fef3c7 !important;
+  color: #b45309 !important;
+  border: none !important;
 }
 
 .mat-admin-shell .sidebar-nav-item.active .sidebar-status-badge.is-warning {
-  background: rgba(255, 255, 255, 0.18);
-  color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.36);
+  background: #fef3c7 !important;
+  color: #b45309 !important;
+  border: none !important;
 }
 
 .mat-admin-shell .sidebar-footer {
@@ -166,7 +177,7 @@
 
 .mat-admin-shell .admin-public-link.mat-mdc-unelevated-button {
   height: 42px;
-  border-radius: 8px;
+  border-radius: 4px;
   padding: 0 1.25rem;
   background: var(--admin-green);
   color: #ffffff;
@@ -180,16 +191,43 @@
 }
 
 .mat-admin-shell .btn-bell.mat-mdc-icon-button,
+.mat-admin-shell .btn-theme-toggle.mat-mdc-icon-button,
 .mat-admin-shell .profile-avatar-btn.mat-mdc-icon-button {
-  width: 42px;
-  height: 42px;
-  border-radius: 8px;
-  background: var(--color-slate-100);
-  border: 1px solid var(--color-border);
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  border-radius: 50% !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
-.mat-admin-shell .profile-avatar-btn.mat-mdc-icon-button {
-  background: var(--color-surface-card);
+.mat-admin-shell .btn-bell.mat-mdc-icon-button:hover,
+.mat-admin-shell .btn-theme-toggle.mat-mdc-icon-button:hover,
+.mat-admin-shell .profile-avatar-btn.mat-mdc-icon-button:hover {
+  background: transparent !important;
+  color: var(--color-brand-green, #27802D) !important;
+  border: none !important;
+}
+
+.mat-admin-shell .btn-bell.mat-mdc-icon-button:hover mat-icon,
+.mat-admin-shell .btn-theme-toggle.mat-mdc-icon-button:hover mat-icon {
+  color: var(--color-brand-green, #27802D) !important;
+}
+
+.mat-admin-shell .profile-avatar-btn.mat-mdc-icon-button:hover .user-avatar-badge {
+  outline: 2px solid var(--color-brand-green, #27802D) !important;
+  outline-offset: 1px !important;
+}
+
+.mat-admin-shell .profile-avatar-btn.mat-mdc-icon-button .user-avatar-badge {
+  width: 34px !important;
+  height: 34px !important;
+  border-radius: 50% !important;
 }
 
 .mat-admin-shell .admin-main-body {
@@ -229,7 +267,7 @@
 .mat-admin-shell .alert-card,
 .mat-admin-shell .mat-mdc-card {
   border: 1px solid var(--admin-border);
-  border-radius: 8px;
+  border-radius: 4px;
   background: var(--color-surface-card);
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
 }
@@ -238,7 +276,7 @@
 .mat-admin-shell .mat-mdc-unelevated-button,
 .mat-admin-shell .mat-mdc-outlined-button,
 .mat-admin-shell .mat-mdc-raised-button {
-  border-radius: 8px;
+  border-radius: 4px;
   font-family: inherit;
   font-weight: 800;
   letter-spacing: 0;
@@ -258,13 +296,13 @@
 
 .mat-admin-shell .mat-mdc-chip,
 .mat-admin-shell .mat-mdc-standard-chip {
-  border-radius: 8px;
+  border-radius: 4px;
   font-family: inherit;
   font-weight: 800;
 }
 
 .mat-admin-shell .pos-mat-tabs {
-  border-radius: 8px;
+  border-radius: 4px;
   overflow: hidden;
   background: var(--color-surface-card);
   border: 1px solid var(--admin-border);
@@ -336,7 +374,7 @@
   height: 34px;
   min-width: auto;
   padding: 0 0.85rem;
-  border-radius: 8px;
+  border-radius: 4px;
   font-size: 0.76rem;
   line-height: 1;
 }
@@ -355,7 +393,7 @@
 
 .mat-admin-shell .pos-product-card.mat-mdc-card {
   min-height: 0;
-  border-radius: 8px;
+  border-radius: 4px;
   box-shadow: none;
 }
 
@@ -373,7 +411,7 @@
 .mat-admin-shell .qty-btn,
 .mat-admin-shell .icon-btn,
 .mat-admin-shell .mat-mdc-icon-button {
-  border-radius: 8px;
+  border-radius: 4px;
 }
 
 .mat-admin-shell .pos-cart-card {
@@ -410,7 +448,7 @@
 
 .mat-admin-shell .pos-pay-methods .mat-button-toggle-group {
   width: 100%;
-  border-radius: 8px;
+  border-radius: 4px;
   border-color: var(--admin-border);
   overflow: hidden;
 }
@@ -427,7 +465,7 @@
 }
 
 .mat-admin-shell .mat-mdc-table {
-  border-radius: 8px;
+  border-radius: 4px;
   overflow: hidden;
   border: 1px solid var(--admin-border);
   background: var(--color-surface-card);

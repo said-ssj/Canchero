@@ -1,8 +1,7 @@
-@if (!firstAccess && !editing() && profile && account()?.id) {
+@if (!firstAccess && profile && account()?.id) {
   <app-community-profile
     [userId]="account()!.id"
     [embedded]="true"
-    (editAccount)="editing.set(true); saved.set(false)"
   />
 } @else {
   <main class="container profile-page">
@@ -27,14 +26,24 @@
             : 'Completa tus nombres y apellidos para personalizar tu experiencia en Canchero.'
         "
       >
-        <div profileActions>
+        <div profileActions class="header-actions">
           @if (!firstAccess && !editing()) {
             <button
               type="button"
-              class="btn primary edit-profile"
+              class="btn-cover btn-cover-primary edit-profile"
               (click)="editing.set(true); saved.set(false)"
             >
-              <span class="material-symbols-outlined" aria-hidden="true">edit</span>Editar perfil
+              <span class="material-symbols-outlined" aria-hidden="true">edit</span>
+              <span>Editar perfil</span>
+            </button>
+            <button
+              type="button"
+              class="btn-cover btn-cover-icon"
+              (click)="compartirPerfil()"
+              title="Compartir perfil"
+              aria-label="Compartir perfil"
+            >
+              <span class="material-symbols-outlined" aria-hidden="true">share</span>
             </button>
           }
         </div>

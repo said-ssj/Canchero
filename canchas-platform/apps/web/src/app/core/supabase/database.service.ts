@@ -1,4 +1,4 @@
-import { Injectable, inject, signal, computed } from '@angular/core';
+import { Injectable, inject, signal, computed, effect } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom, timeout } from 'rxjs';
 import { supabase } from './client';
@@ -64,10 +64,27 @@ export class DatabaseService {
   );
   private catalogRequest: Promise<void> | null = null;
   readonly sedeOperativaId = signal<number | null>(null);
+  readonly managementScope = signal<'owned' | 'all'>('owned');
+  readonly canBrowseAllVenues = computed(() =>
+    this.auth.currentUser()?.rol === 'superadmin',
+  );
+  private scopeIdentity = '';
   private realtimeReady = false;
 
   constructor() {
+    effect(() => {
+      const user = this.auth.currentUser();
+      const identity = `${user?.id ?? ''}:${user?.rol ?? ''}`;
+      if (identity !== this.scopeIdentity) {
+        this.scopeIdentity = identity;
+        this.managementScope.set('owned');
+      }
+    });
     void this.refreshCatalogo();
+  }
+
+  setManagementScope(scope: string): void {
+    this.managementScope.set(scope === 'all' && this.canBrowseAllVenues() ? 'all' : 'owned');
   }
 
   private async cargarDatosIniciales() {
@@ -246,6 +263,7 @@ export class DatabaseService {
       activo: true,
       estado: 'A',
       dueno_id: ownerId,
+      id_dueno: v.ownerId ?? null,
       creado_por: ownerId,
       porcentaje_adelanto_minimo: Number(
         v.porcentajeAdelantoMinimo || v.porcentaje_adelanto_minimo || 50,
@@ -850,21 +868,30 @@ export class DatabaseService {
   // ===== SEPARACIÓN POR DUEÑO =====
   getSedesPorDueno(duenoId: string | number) {
     if (duenoId === '' || duenoId == null) return [];
-    // El administrador de la plataforma gestiona todas las sedes (la API también se lo permite).
+    // Vista global explícita; el rol administrativo no convierte todas las sedes en propias.
     const user = this.auth.currentUser();
-    if (user?.rol === 'admin' && String(duenoId) === String(user.id)) return this.sedes();
+    if (
+      this.managementScope() === 'all' &&
+      this.canBrowseAllVenues() &&
+      String(duenoId) === String(user?.id)
+    )
+      return this.sedes();
     // Existing catalog adapters expose numeric aliases for UUID owners.
     const legacyId = typeof duenoId === 'string' ? this.uuidToNumber(duenoId) : duenoId;
     const belongsToOwner = (s: {
       dueno_id?: string | number;
       creado_por?: string | number;
       id_dueno?: string;
-    }) =>
-      s.id_dueno === duenoId ||
-      s.dueno_id === duenoId ||
-      s.creado_por === duenoId ||
-      s.dueno_id === legacyId ||
-      s.creado_por === legacyId;
+      ownerId?: string;
+    }) => {
+      const canonical = [s.id_dueno, s.ownerId].find(
+        (value) => value != null && String(value).trim() !== '',
+      );
+      if (canonical != null)
+        return String(canonical).trim().toLowerCase() === String(duenoId).trim().toLowerCase();
+      // Compatibilidad con catálogos antiguos sin UUID: nunca autorizar por el creador.
+      return s.dueno_id === duenoId || s.dueno_id === legacyId;
+    };
     const list = this.sedes().filter(belongsToOwner);
     if (list.length > 0) return list;
     const local = this.getLocalSedes();

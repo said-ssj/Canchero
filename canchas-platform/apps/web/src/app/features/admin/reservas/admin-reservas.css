@@ -87,7 +87,7 @@ mat-form-field {
   max-width: 100%;
 }
 mat-button-toggle-group {
-  border-radius: 6px;
+  border-radius: 4px;
   flex-wrap: wrap;
   max-width: 100%;
 }
@@ -104,7 +104,7 @@ button:focus-visible,
   outline-offset: 3px;
 }
 button {
-  border-radius: 6px;
+  border-radius: 4px;
 }
 mat-dialog-content,
 [mat-dialog-title],
@@ -242,7 +242,7 @@ td .status.completed {
 .skeleton-row {
   height: 64px;
   background: var(--color-slate-100);
-  border-radius: 6px;
+  border-radius: 4px;
 }
 .details {
   display: grid;
@@ -279,7 +279,7 @@ td .status.completed {
   padding: 12px;
   background: var(--color-warning-50);
   border: 1px solid var(--color-warning-200);
-  border-radius: 6px;
+  border-radius: 4px;
   color: var(--color-warning-700);
   margin-top: 14px;
 }
@@ -308,7 +308,7 @@ td .status.completed {
 .pricing-card {
   background: var(--color-surface-card);
   border: 1px solid var(--color-border);
-  border-radius: 6px;
+  border-radius: 4px;
   padding: 14px;
   margin-bottom: 16px;
 }
@@ -369,7 +369,7 @@ td .status.completed {
   padding: 12px;
   background: var(--color-danger-50);
   border: 1px solid var(--color-danger-200);
-  border-radius: 6px;
+  border-radius: 4px;
   color: var(--color-danger-600);
   margin-bottom: 16px;
 }
@@ -407,7 +407,7 @@ td .status.completed {
 .saldo-preview-box {
   background: var(--color-warning-50);
   border: 1px solid var(--color-warning-200);
-  border-radius: 6px;
+  border-radius: 4px;
   padding: 8px 12px;
   display: flex;
   flex-direction: column;
@@ -431,7 +431,7 @@ td .status.completed {
 .balance-dialog-summary {
   background: var(--color-surface-card);
   border: 1px solid var(--color-border);
-  border-radius: 6px;
+  border-radius: 4px;
   padding: 14px;
   font-size: 13px;
 }
@@ -459,7 +459,7 @@ td .status.completed {
 /* Verifiable Pass Card */
 .verifiable-pass-card {
   border: 2px solid #246b3a;
-  border-radius: 8px;
+  border-radius: 4px;
   background: var(--color-surface-card);
   padding: 16px;
 }
@@ -491,7 +491,7 @@ td .status.completed {
   align-items: center;
   gap: 8px;
   padding: 10px;
-  border-radius: 6px;
+  border-radius: 4px;
   margin-bottom: 14px;
   font-size: 12px;
 }

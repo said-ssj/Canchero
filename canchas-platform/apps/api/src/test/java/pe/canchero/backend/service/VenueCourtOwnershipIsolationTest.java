@@ -45,7 +45,7 @@ class VenueCourtOwnershipIsolationTest {
         var auth = mock(AuthService.class);
         when(auth.currentUser(any())).thenAnswer(call -> {
             UUID id = call.getArgument(0);
-            return Optional.of(new AuthUserDto(id.toString(), "Usuario", id + "@test", null, id.equals(admin) ? "administrador" : "dueno"));
+            return Optional.of(new AuthUserDto(id.toString(), "Usuario", id + "@test", null, id.equals(admin) ? "superadmin" : "dueno"));
         });
         var access = new VenueAccessService(jdbc);
         mvc = MockMvcBuilders.standaloneSetup(
@@ -90,7 +90,7 @@ class VenueCourtOwnershipIsolationTest {
     }
 
     @Test
-    void elAdministradorGestionaCualquierSede() throws Exception {
+    void elSuperadministradorGestionaCualquierSede() throws Exception {
         String adm = bearer(admin);
         when(data.deleteVenue("2")).thenReturn(true);
         when(data.deleteCourt("10")).thenReturn(true);

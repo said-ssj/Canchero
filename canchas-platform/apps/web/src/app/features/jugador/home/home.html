@@ -1,7 +1,15 @@
 <main id="inicio" class="flex-1">
   <section class="hero-section">
     <div class="hero-background" aria-hidden="true">
-      <img src="/images/IMAGEN_FUTBOL.webp" alt="" />
+      <img
+        src="/images/IMAGEN_FUTBOL.webp"
+        alt="Fútbol en césped sintético en Canchero"
+        fetchpriority="high"
+        loading="eager"
+        decoding="async"
+        width="1920"
+        height="702"
+      />
     </div>
     <div class="container hero-content">
       <h1 class="hero-title">
@@ -61,7 +69,11 @@
           <img
             [src]="heroImage()"
             (error)="onImageError($event)"
-            alt="Cancha destacada"
+            alt="Cancha destacada en Canchero"
+            loading="lazy"
+            decoding="async"
+            width="600"
+            height="350"
             style="
               width: 100%;
               border-radius: var(--radius-lg);

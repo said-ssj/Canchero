@@ -886,7 +886,7 @@
 .skeleton-badge {
   height: 1.5rem;
   width: 6rem;
-  border-radius: var(--radius-full);
+  border-radius: 4px;
 }
 
 .skeleton-table-row {

@@ -2,8 +2,14 @@
   @if (!formularioSedeAbierto()) {
     <!-- Título de Página Oficial Canchero -->
     <div class="page-title">
-      <h1>Mis Sedes</h1>
-      <p>Tus complejos deportivos, en un solo lugar.</p>
+      <h1>{{ globalView() ? 'Sedes de la plataforma' : 'Mis sedes' }}</h1>
+      <p>
+        {{
+          globalView()
+            ? 'Administración global: estas sedes pertenecen a distintos dueños.'
+            : 'Tus complejos deportivos, en un solo lugar.'
+        }}
+      </p>
     </div>
 
     @if (isLoading()) {

@@ -16,11 +16,11 @@
 .tag-periodo {
   display: inline-flex;
   align-items: center;
-  padding: 3px 8px;
-  border-radius: var(--radius, 6px);
-  background: var(--soft, #f0f3f5);
-  font-size: 11px;
-  font-weight: 600;
+  padding: 0;
+  background: transparent;
+  border: none;
+  font-size: 12px;
+  font-weight: 500;
   color: var(--muted, #556771);
 }
 
@@ -28,12 +28,38 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 3px 8px;
-  border-radius: 4px;
-  font-size: 11px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0;
   text-transform: none;
+}
+
+.status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+.status-indicator::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.status-liquidado {
+  color: #15803d;
+}
+.status-pendiente {
+  color: #b45309;
 }
 
 /* --- Backdrop para Dialogs --- */
@@ -83,7 +109,7 @@
 }
 .admin-finanzas .btn {
   min-height: 36px;
-  border-radius: 6px;
+  border-radius: 4px;
   font-size: 13px;
   gap: 8px;
   letter-spacing: 0;
@@ -127,7 +153,7 @@
   min-height: 38px;
   padding: 8px 10px;
   border: 1px solid var(--color-border);
-  border-radius: 6px;
+  border-radius: 4px;
   font-size: 13px;
 }
 .op-period .field > span {
@@ -167,7 +193,7 @@
   overflow: auto;
   max-width: 100%;
   border: 1px solid var(--color-border);
-  border-radius: 6px;
+  border-radius: 4px;
 }
 .op-table {
   width: 100%;
@@ -204,7 +230,7 @@
   align-items: center;
   min-width: 0;
   border: 1px solid var(--color-border);
-  border-radius: 6px;
+  border-radius: 4px;
   padding: 0 10px;
   background: var(--color-surface-card);
 }
@@ -223,7 +249,7 @@
 }
 .segmented button {
   border: 1px solid var(--color-border);
-  border-radius: 6px;
+  border-radius: 4px;
   padding: 8px 10px;
   background: var(--color-surface-card);
   color: var(--color-ink-600);
@@ -255,7 +281,7 @@
   overflow: auto;
   padding: 0;
   border: 1px solid var(--color-border);
-  border-radius: 8px;
+  border-radius: 4px;
   background: var(--color-surface-card);
   color: var(--color-ink-900);
 }

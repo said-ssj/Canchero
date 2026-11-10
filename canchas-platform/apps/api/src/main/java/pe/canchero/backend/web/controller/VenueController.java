@@ -54,6 +54,7 @@ public class VenueController {
     @PostMapping
     public ResponseEntity<VenueResponse> create(@RequestAttribute("auth.user") AuthUserDto user,
             @Valid @RequestBody VenueRequest request) {
+        if (!Roles.isOwner(user.rol()) && !Roles.isSuperAdmin(user.rol())) throw new org.springframework.web.server.ResponseStatusException(HttpStatus.FORBIDDEN, "Solo el propietario puede crear sedes");
         return ResponseEntity.status(HttpStatus.CREATED).body(data.createVenue(request, UUID.fromString(user.id())));
     }
 
@@ -71,7 +72,7 @@ public class VenueController {
     @PutMapping("/{id}/owner")
     public ResponseEntity<?> assignOwner(@PathVariable int id, @RequestAttribute("auth.user") AuthUserDto user,
             @RequestBody OwnerRequest request) {
-        if (!Roles.isAdmin(user.rol())) {
+        if (!Roles.isSuperAdmin(user.rol())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ErrorResponse("Solo el administrador puede cambiar el dueño de una sede"));
         }
         return data.assignOwner(id, request == null ? null : request.email())
@@ -81,7 +82,7 @@ public class VenueController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> delete(@PathVariable int id, @RequestAttribute("auth.user") AuthUserDto user) {
-        access.requireOwnedVenue(id, user);
+        access.requirePermission(id, user, "sede.eliminar");
         if (!data.deleteVenue(String.valueOf(id))) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse("Sede no encontrada"));
         }

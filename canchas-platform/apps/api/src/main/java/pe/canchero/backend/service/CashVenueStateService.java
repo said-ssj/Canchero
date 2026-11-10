@@ -34,22 +34,22 @@ public class CashVenueStateService {
         if (user == null) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         var owners = jdbc.queryForList("select id_dueno from sede where id_sede = ?", String.class, sedeId);
         if (owners.isEmpty()) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Sede no encontrada");
-        if (!VenueAccessService.canManage(user, owners.get(0))) {
+        if (!new TenantPermissions(jdbc).has(user, sedeId, "caja.operar")) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "La sede no pertenece a tu cuenta");
         }
         var cajas = data.listCashBoxes(sedeId);
+        boolean supervisor = new TenantPermissions(jdbc).has(user, sedeId, "caja.supervisar");
         CashSessionDto session = null;
         for (var caja : cajas) {
             var open = data.getOpenCashSession(caja.id());
-            if (open.isPresent() && open.get().sedeId() == sedeId) {
+            if (open.isPresent() && open.get().sedeId() == sedeId && (supervisor || user.email().equalsIgnoreCase(open.get().cajeroEmail()))) {
                 session = open.get();
                 break;
             }
         }
-        var ids = new HashSet<>(jdbc.queryForList("""
-                select sc.id_sesion_caja from sesion_caja sc
-                join caja c on c.id_caja = sc.id_caja where c.id_sede = ?
-                """, Integer.class, sedeId));
+        var ids = new HashSet<>(supervisor
+                ? jdbc.queryForList("select sc.id_sesion_caja from sesion_caja sc join caja c on c.id_caja=sc.id_caja where c.id_sede=?",Integer.class,sedeId)
+                : jdbc.queryForList("select sc.id_sesion_caja from sesion_caja sc join caja c on c.id_caja=sc.id_caja where c.id_sede=? and sc.id_usuario=?",Integer.class,sedeId,java.util.UUID.fromString(user.id())));
         var audits = ids.isEmpty() ? List.<CashAuditDto>of()
                 : data.listCashAudits().stream().filter(audit -> ids.contains(audit.sesionId())).toList();
         var movements = session == null ? List.<CashMovementDto>of() : data.listCashMovements(session.id());

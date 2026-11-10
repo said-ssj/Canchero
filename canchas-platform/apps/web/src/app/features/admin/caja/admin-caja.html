@@ -109,88 +109,29 @@
 
     <!-- PESTAÑA 1: TURNO EN CURSO & MOVIMIENTOS -->
     @if (cajaSubTab() === 'operacion') {
-      <!-- 4 KPI Cards Grid -->
-      <div class="kpi-grid">
-        <!-- Card 1: Monto Apertura -->
-        <div class="kpi-card">
-          <div>
-            <div class="kpi-header">
-              <span class="kpi-title">Fondo de Apertura</span>
-              <div class="kpi-icon-pill icon-green">
-                <span class="material-symbols-outlined icon" aria-hidden="true">savings</span>
-              </div>
-            </div>
-            <div class="kpi-value">S/ {{ (cajaService.sesionActiva()?.montoApertura || 0).toFixed(2) }}</div>
-            <div class="kpi-description">Sencillo inicial en efectivo</div>
-          </div>
-          <div class="kpi-footer">
-            <span class="kpi-footer-text">
-              {{ cajaService.tieneSesionActiva() ? 'Verificado en apertura' : 'Sin turno activo' }}
-            </span>
-          </div>
+      <!-- Métricas Operativas de Caja (Estilo Canchero Simple) -->
+      <div class="management-stats caja-stats">
+        <div>
+          <span>Fondo de Apertura</span>
+          <strong>S/ {{ (cajaService.sesionActiva()?.montoApertura || 0).toFixed(2) }}</strong>
+          <small class="stat-sub">{{ cajaService.tieneSesionActiva() ? 'Verificado en apertura' : 'Sin turno activo' }}</small>
         </div>
-
-        <!-- Card 2: Cobros Efectivo -->
-        <div class="kpi-card">
-          <div>
-            <div class="kpi-header">
-              <span class="kpi-title">Pagos en Efectivo</span>
-              <div class="kpi-icon-pill icon-blue">
-                <span class="material-symbols-outlined icon" aria-hidden="true">payments</span>
-              </div>
-            </div>
-            <div class="kpi-value">S/ {{ cajaService.pagosEfectivoTurno().toFixed(2) }}</div>
-            <div class="kpi-description">Cobrado en ventanilla en este turno</div>
-          </div>
-          <div class="kpi-footer">
-            <span class="kpi-footer-info">+ Ingresos directos de cancha</span>
-          </div>
+        <div>
+          <span>Pagos en Efectivo</span>
+          <strong style="color: var(--color-brand-green, #27802D)">S/ {{ cajaService.pagosEfectivoTurno().toFixed(2) }}</strong>
+          <small class="stat-sub">Cobrado en ventanilla en este turno</small>
         </div>
-
-        <!-- Card 3: Movimientos Manuales Netos -->
-        <div class="kpi-card">
-          <div>
-            <div class="kpi-header">
-              <span class="kpi-title">Movimientos Manuales</span>
-              <div class="kpi-icon-pill icon-amber">
-                <span class="material-symbols-outlined icon" aria-hidden="true">receipt_long</span>
-              </div>
-            </div>
-            <div class="kpi-value" [class.value-positive]="cajaService.balanceMovimientosManuales() >= 0" [class.value-negative]="cajaService.balanceMovimientosManuales() < 0">
-              {{ cajaService.balanceMovimientosManuales() >= 0 ? '+' : '' }}S/ {{ cajaService.balanceMovimientosManuales().toFixed(2) }}
-            </div>
-            <div class="kpi-description">
-              +{{ cajaService.totalIngresosManuales().toFixed(2) }} ing &bull; -{{ cajaService.totalEgresosManuales().toFixed(2) }} egr
-            </div>
-          </div>
-          <div class="kpi-footer">
-            <span class="kpi-footer-text">
-              {{ cajaService.movimientos().length }} movimientos registrados
-            </span>
-          </div>
+        <div>
+          <span>Movimientos Manuales</span>
+          <strong [style.color]="cajaService.balanceMovimientosManuales() < 0 ? 'var(--color-danger, #dc2626)' : 'inherit'">
+            {{ cajaService.balanceMovimientosManuales() >= 0 ? '+' : '' }}S/ {{ cajaService.balanceMovimientosManuales().toFixed(2) }}
+          </strong>
+          <small class="stat-sub">+{{ cajaService.totalIngresosManuales().toFixed(2) }} ing · -{{ cajaService.totalEgresosManuales().toFixed(2) }} egr</small>
         </div>
-
-        <!-- Card 4: Monto Sistema (Saldo Teórico) -->
-        <div class="kpi-card kpi-card-highlight">
-          <div>
-            <div class="kpi-header">
-              <span class="kpi-title highlight-title">Saldo Teórico en Gaveta</span>
-              <div class="kpi-icon-pill icon-highlight">
-                <span class="material-symbols-outlined icon" aria-hidden="true">account_balance_wallet</span>
-              </div>
-            </div>
-            <div class="kpi-value highlight-value">
-              S/ {{ cajaService.montoSistemaEsperado().toFixed(2) }}
-            </div>
-            <div class="kpi-description highlight-desc">
-              Fórmula Oficial 5.4 (Monto Sistema)
-            </div>
-          </div>
-          <div class="kpi-footer">
-            <span class="kpi-footer-formula">
-              Apertura + Cobros + Ingresos - Egresos
-            </span>
-          </div>
+        <div>
+          <span>Saldo Teórico en Gaveta</span>
+          <strong>S/ {{ cajaService.montoSistemaEsperado().toFixed(2) }}</strong>
+          <small class="stat-sub">Apertura + Cobros + Ingresos - Egresos</small>
         </div>
       </div>
 

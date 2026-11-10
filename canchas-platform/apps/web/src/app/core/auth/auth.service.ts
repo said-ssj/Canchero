@@ -273,7 +273,22 @@ export class AuthService {
   });
 
   loadPlayerProfile(): Observable<PlayerProfile> {
-    return this.trackProfile(this.http.get<PlayerProfile>(`${this.apiUrl}/auth/profile`));
+    return this.trackProfile(this.http.get<PlayerProfile>(`${this.apiUrl}/auth/profile`)).pipe(
+      catchError(() => {
+        const u = this.user();
+        const fallback: PlayerProfile = {
+          nombre: u?.nombre ?? '',
+          apellido: '',
+          telefono: u?.telefono ?? null,
+          direccion: null,
+          idDistrito: null,
+          foto: null,
+          completo: !!u?.nombre,
+        };
+        if (u?.id) this.profileState.set({ id: u.id, data: fallback });
+        return of(fallback);
+      }),
+    );
   }
 
   savePlayerProfile(profile: PlayerProfile): Observable<PlayerProfile> {

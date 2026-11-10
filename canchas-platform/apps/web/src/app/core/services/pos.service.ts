@@ -1,12 +1,12 @@
-import { Injectable, computed, effect, inject, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
+import { catchError, firstValueFrom, of, throwError, timeout } from 'rxjs';
 import { supabase } from '@core/supabase/client';
 import { DatabaseService } from '@core/supabase/database.service';
 import { environment } from '@env/environment';
 import { CajaService } from './caja.service';
 import { AuthService } from '@core/auth/auth.service';
-import type {
+import {
   CategoriaProducto,
   ItemCarritoPOS,
   MetodoPagoPOS,
@@ -14,6 +14,8 @@ import type {
   Producto,
   TipoComprobante,
   VentaPOS,
+  inferirIconoCategoria,
+  parseCategoryIconAndDescription,
 } from '@shared/models/pos.model';
 
 const STORAGE_KEY_PRODUCTOS = 'canchero_pos_productos';
@@ -113,18 +115,39 @@ export class PosService {
     return this.carrito().reduce((acc, item) => acc + item.cantidad, 0);
   });
 
+  private lastLoadedSedeId: number | null = null;
+  private lastLoadedUserId: string | null = null;
+
   constructor() {
     this.setupRealtimeSubscriptions();
     effect(() => {
-      this.auth.currentUser()?.id;
-      this.db.sedeOperativaId();
-      this.productos.set([]);
-      this.categorias.set(CATEGORIAS_DEFAULT);
-      this.categoriaSeleccionada.set(0);
-      this.ventas.set([]);
-      this.kardex.set([]);
-      this.carrito.set([]);
-      void this.cargarDesdeBackendSiExiste();
+      const user = this.auth.currentUser();
+      const sede = typeof this.db?.sedeOperativaId === 'function' ? this.db.sedeOperativaId() : null;
+      untracked(() => {
+        if (!user?.id || !sede) {
+          this.productos.set([]);
+          this.categorias.set(CATEGORIAS_DEFAULT);
+          this.categoriaSeleccionada.set(0);
+          this.ventas.set([]);
+          this.kardex.set([]);
+          this.carrito.set([]);
+          this.lastLoadedSedeId = null;
+          this.lastLoadedUserId = null;
+          return;
+        }
+        if (this.lastLoadedSedeId === sede && this.lastLoadedUserId === user.id) {
+          return;
+        }
+        this.productos.set([]);
+        this.categorias.set(CATEGORIAS_DEFAULT);
+        this.categoriaSeleccionada.set(0);
+        this.ventas.set([]);
+        this.kardex.set([]);
+        this.carrito.set([]);
+        this.lastLoadedSedeId = sede;
+        this.lastLoadedUserId = user.id;
+        void this.cargarDesdeBackendSiExiste();
+      });
     });
   }
 
@@ -478,7 +501,11 @@ export class PosService {
     this.realtimeReady = true;
 
     try {
-      const channelName = `canchero-pos-refresh-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      const channelName = 'canchero-pos-channel';
+      const existing = supabase.getChannels().find((c) => c.topic === `realtime:${channelName}`);
+      if (existing) {
+        supabase.removeChannel(existing);
+      }
       supabase
         .channel(channelName)
         .on('postgres_changes', { event: '*', schema: 'public', table: 'producto' }, () =>
@@ -521,18 +548,30 @@ export class PosService {
     }
     this.loading.set(true);
     try {
+      const withTimeout = <T>(obs$: import('rxjs').Observable<T>) =>
+        firstValueFrom(
+          obs$.pipe(
+            timeout({ each: 4000, with: () => throwError(() => new Error('Tiempo de espera agotado')) }),
+          ),
+        );
+      const safeGet = <T>(url: string, fallback: T): Promise<T> =>
+        firstValueFrom(
+          this.http
+            .get<T>(url)
+            .pipe(
+              timeout({ each: 4000, with: () => of(fallback) }),
+              catchError(() => of(fallback)),
+            ),
+        );
+
       const [productos, kardex, ventas, capabilities, categorias] = await Promise.all([
-        firstValueFrom(this.http.get<Producto[]>(`${this.apiUrl}/products?sedeId=${sedeId}`)),
-        firstValueFrom(
-          this.http.get<MovimientoKardex[]>(`${this.apiUrl}/inventory?sedeId=${sedeId}`),
-        ),
-        firstValueFrom(this.http.get<VentaPOS[]>(`${this.apiUrl}/sales?sedeId=${sedeId}`)),
-        firstValueFrom(
-          this.http.get<{ ready: boolean }>(`${this.apiUrl}/payment-capabilities?sedeId=${sedeId}`),
-        ),
-        firstValueFrom(
-          this.http.get<CategoriaProducto[]>(`${this.apiUrl}/catalog/categories?sedeId=${sedeId}`),
-        ),
+        withTimeout(this.http.get<Producto[]>(`${this.apiUrl}/products?sedeId=${sedeId}`)),
+        withTimeout(this.http.get<MovimientoKardex[]>(`${this.apiUrl}/inventory?sedeId=${sedeId}`)),
+        withTimeout(this.http.get<VentaPOS[]>(`${this.apiUrl}/sales?sedeId=${sedeId}`)),
+        safeGet<{ ready: boolean }>(`${this.apiUrl}/payment-capabilities?sedeId=${sedeId}`, {
+          ready: true,
+        }),
+        safeGet<CategoriaProducto[]>(`${this.apiUrl}/catalog/categories?sedeId=${sedeId}`, []),
       ]);
       if (
         request !== this.loadRequest ||
@@ -541,8 +580,52 @@ export class PosService {
       )
         return;
       const belongs = (item: { sedeId?: number | null }) => Number(item.sedeId) === sedeId;
-      this.productos.set((productos ?? []).filter(belongs));
-      this.categorias.set([...CATEGORIAS_DEFAULT, ...categorias]);
+      const categoriasProcesadas: CategoriaProducto[] = (categorias ?? []).map((cat) => {
+        const parsed = parseCategoryIconAndDescription(cat.descripcion, cat.nombre);
+        return {
+          ...cat,
+          icono: parsed.icono,
+          descripcion: parsed.descripcion,
+        };
+      });
+
+      const catMap = new Map<number, string>();
+      const catNameMap = new Map<string, string>();
+      categoriasProcesadas.forEach((c) => {
+        const idNum = Number(c.id);
+        if (!isNaN(idNum)) catMap.set(idNum, c.icono || 'category');
+        if (c.nombre) catNameMap.set(c.nombre.toLowerCase().trim(), c.icono || 'category');
+      });
+
+      const productosProcesados: Producto[] = (productos ?? []).filter(belongs).map((p) => {
+        const catIdNum = p.categoriaId != null ? Number(p.categoriaId) : NaN;
+        const catIconById = !isNaN(catIdNum) ? catMap.get(catIdNum) : undefined;
+        const catIconByName = p.categoriaNombre
+          ? catNameMap.get(p.categoriaNombre.toLowerCase().trim())
+          : undefined;
+        const catIcon = catIconById || catIconByName;
+
+        // Si el producto no tiene foto, debe adoptar el icono de su categoría
+        const icono =
+          (catIcon && catIcon !== 'category' ? catIcon : undefined) ||
+          (p.icono &&
+          p.icono !== 'inventory_2' &&
+          p.icono !== 'assignment_turned_in' &&
+          p.icono !== 'shopping_bag' &&
+          p.icono !== 'category'
+            ? p.icono
+            : undefined) ||
+          catIcon ||
+          inferirIconoCategoria(p.categoriaNombre || p.nombre);
+
+        return {
+          ...p,
+          icono,
+        };
+      });
+
+      this.productos.set(productosProcesados);
+      this.categorias.set([...CATEGORIAS_DEFAULT, ...categoriasProcesadas]);
       if (!this.categorias().some((c) => c.id === this.categoriaSeleccionada()))
         this.categoriaSeleccionada.set(0);
       this.kardex.set((kardex ?? []).filter(belongs));

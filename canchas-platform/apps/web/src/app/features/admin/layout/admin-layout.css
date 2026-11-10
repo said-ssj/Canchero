@@ -39,23 +39,57 @@
   font-size: 0.7rem;
   font-weight: 700;
   padding: 2px 7px;
-  border-radius: 9999px;
+  border-radius: 4px;
   line-height: 1.2;
 }
 
 .sidebar-status-badge.is-warning {
-  background: var(--color-warning-100);
-  color: #d97706;
+  background: #fef3c7 !important;
+  color: #b45309 !important;
+  border: none !important;
 }
 
 .sidebar-status-badge.is-open {
-  background: var(--color-success-100);
-  color: #16a34a;
+  background: #dcfce7 !important;
+  color: #166534 !important;
+  border: none !important;
 }
 
 .sidebar-status-badge.is-closed {
-  background: var(--color-slate-100);
-  color: var(--color-slate-500);
+  background: #f1f5f9 !important;
+  color: #334155 !important;
+  border: none !important;
+  font-weight: 700 !important;
+}
+
+/* Barra lateral: items con esquinas de 4px según estándar Canchero */
+.mat-admin-shell .admin-sidebar {
+  border-radius: 0 !important;
+}
+
+.mat-admin-shell .sidebar-nav-item,
+.mat-admin-shell .sidebar-nav-item.active,
+.sidebar-nav-item,
+.sidebar-nav-item.active,
+.mat-admin-shell .btn-logout-sidebar,
+.btn-logout-sidebar {
+  border-radius: 4px !important;
+}
+
+.mat-admin-shell .sidebar-footer {
+  margin: 0 !important;
+  border-radius: 0 !important;
+}
+
+/* Conservar únicamente la foto/avatar circular del usuario y los badges */
+.mat-admin-shell .sidebar-footer .user-avatar-sm,
+.mat-admin-shell .sidebar-footer .avatar-placeholder,
+.mat-admin-shell .sidebar-footer .admin-profile-photo {
+  border-radius: 50% !important;
+}
+
+.mat-admin-shell .sidebar-status-badge {
+  border-radius: 4px !important;
 }
 
 /* Modal de perfil (Privacidad / Ayuda) */
@@ -196,4 +230,628 @@
     min-height: calc(100dvh - 64px);
     padding-top: 18px !important;
   }
+}
+
+/* ==========================================================================
+   BOTONES DEL HEADER ADMIN (CAMPANA, MODO OSCURO, PERFIL AVATAR)
+   - Sin marcos ni recuadros (border: none !important)
+   - Fondo transparente (no gris)
+   - Área del tamaño del icono
+   - Hover verde #27802D
+   ========================================================================== */
+.btn-bell,
+.btn-theme-toggle,
+.profile-avatar-btn,
+button.btn-bell,
+button.btn-theme-toggle,
+button.profile-avatar-btn {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+  border-radius: 50% !important;
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  transition: color 0.15s ease !important;
+}
+
+.btn-bell:hover,
+.btn-theme-toggle:hover,
+.profile-avatar-btn:hover,
+button.btn-bell:hover,
+button.btn-theme-toggle:hover,
+button.profile-avatar-btn:hover {
+  background: transparent !important;
+  color: var(--color-brand-green, #27802D) !important;
+}
+
+.btn-bell:hover mat-icon,
+.btn-theme-toggle:hover mat-icon,
+button.btn-bell:hover mat-icon,
+button.btn-theme-toggle:hover mat-icon {
+  color: var(--color-brand-green, #27802D) !important;
+}
+
+.profile-avatar-btn .user-avatar-badge {
+  border-radius: 50% !important;
+  border: none !important;
+  width: 34px !important;
+  height: 34px !important;
+}
+
+.profile-avatar-btn:hover .user-avatar-badge {
+  outline: 2px solid var(--color-brand-green, #27802D) !important;
+  outline-offset: 1px !important;
+}
+.management-scope {
+  display: grid;
+  gap: 4px;
+  flex-shrink: 0;
+  font-size: 10px;
+  color: var(--muted);
+}
+.management-scope select {
+  width: 168px;
+  max-width: 100%;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+}
+.management-scope select:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+@media (max-width: 640px) {
+  .admin-top-left {
+    flex-wrap: wrap;
+  }
+  .management-scope select {
+    width: 136px;
+  }
+}
+
+/* Buscador en vivo de Sedes en Admin Header */
+.venue-live-search-wrapper {
+  position: relative;
+  width: clamp(240px, 24vw, 360px);
+}
+
+.venue-search-input-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 42px;
+  padding: 0 10px;
+  background: var(--color-surface, #ffffff);
+  border: 1px solid var(--color-border, #cbd5e1);
+  border-radius: 4px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.venue-search-input-box.is-focused,
+.venue-search-input-box:focus-within {
+  border-color: var(--color-brand-green, #27802D);
+  box-shadow: 0 0 0 1px var(--color-brand-green, #27802D);
+}
+
+.venue-search-icon {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  line-height: 20px;
+  color: var(--color-brand-green, #27802D);
+  flex-shrink: 0;
+}
+
+.venue-search-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-ink-900, #0f172a);
+  padding: 0;
+}
+
+.venue-search-input::placeholder {
+  color: #64748b;
+  font-weight: 400;
+}
+
+.btn-clear-search {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  border-radius: 50%;
+}
+
+.btn-clear-search:hover {
+  color: var(--color-danger, #dc2626);
+}
+
+.btn-clear-search .mat-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  line-height: 16px;
+}
+
+.venue-search-arrow {
+  font-size: 22px;
+  width: 22px;
+  height: 22px;
+  line-height: 22px;
+  color: #94a3b8;
+  flex-shrink: 0;
+}
+
+/* Dropdown flotante en vivo */
+.venue-live-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 280px;
+  overflow-y: auto;
+  background: var(--color-surface, #ffffff);
+  border: 1px solid var(--color-border, #cbd5e1);
+  border-radius: 4px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.15);
+  z-index: 1100;
+  padding: 4px;
+}
+
+.venue-dropdown-empty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.venue-dropdown-empty .mat-icon {
+  font-size: 20px;
+  color: #94a3b8;
+}
+
+.venue-dropdown-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.12s ease;
+}
+
+.venue-dropdown-item:hover {
+  background-color: var(--color-slate-100, #f1f5f9);
+}
+
+.venue-dropdown-item.is-selected {
+  background-color: rgba(39, 128, 45, 0.08);
+}
+
+.venue-item-icon {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  line-height: 20px;
+  color: #64748b;
+  flex-shrink: 0;
+}
+
+.venue-dropdown-item.is-selected .venue-item-icon {
+  color: var(--color-brand-green, #27802D);
+}
+
+.venue-item-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.venue-item-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-ink-900, #0f172a);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.venue-dropdown-item.is-selected .venue-item-name {
+  color: var(--color-brand-green, #27802D);
+}
+
+.venue-item-address {
+  font-size: 11px;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.venue-item-check {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  line-height: 18px;
+  color: var(--color-brand-green, #27802D);
+  flex-shrink: 0;
+}
+
+/* ==========================================================================
+   VENTANA FLOTANTE DE NOTIFICACIONES (ESTILO FACEBOOK)
+   ========================================================================== */
+.bell-notifications-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.fb-notif-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  background: transparent;
+}
+
+.fb-notifications-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: -60px;
+  width: 380px;
+  max-width: 90vw;
+  max-height: 520px;
+  background: #ffffff;
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 8px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18), 0 2px 6px rgba(0, 0, 0, 0.08);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: fbFadeIn 0.15s ease-out;
+}
+
+@keyframes fbFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fb-notif-header {
+  padding: 12px 16px 8px;
+  border-bottom: 1px solid var(--color-border, #e2e8f0);
+  background: var(--color-surface, #ffffff);
+}
+
+.fb-notif-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.fb-notif-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-ink-900, #0f172a);
+}
+
+.fb-notif-action-icon {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #64748b;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.fb-notif-action-icon:hover {
+  color: var(--color-brand-green, #27802D);
+  background: rgba(39, 128, 45, 0.08);
+}
+
+.fb-notif-tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.fb-notif-tab {
+  border: none;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.fb-notif-tab.active {
+  background: rgba(39, 128, 45, 0.15);
+  color: var(--color-brand-green, #27802D);
+}
+
+.fb-notif-section-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px 4px;
+}
+
+.fb-notif-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-ink-800, #334155);
+}
+
+.fb-notif-link-btn {
+  border: none;
+  background: transparent;
+  color: var(--color-brand-green, #27802D);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+
+.fb-notif-link-btn:hover {
+  text-decoration: underline;
+}
+
+.fb-notif-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fb-notif-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+  position: relative;
+  text-align: left;
+}
+
+.fb-notif-item:hover {
+  background-color: #f8fafc;
+}
+
+.fb-notif-item.unread {
+  background-color: rgba(39, 128, 45, 0.04);
+}
+
+.fb-notif-item.unread:hover {
+  background-color: rgba(39, 128, 45, 0.08);
+}
+
+.fb-notif-avatar-container {
+  position: relative;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+}
+
+.fb-notif-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+}
+
+.fb-notif-avatar mat-icon {
+  font-size: 24px;
+  width: 24px;
+  height: 24px;
+  line-height: 24px;
+}
+
+.fb-notif-badge {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #ffffff;
+  color: #ffffff;
+}
+
+.fb-notif-badge mat-icon {
+  font-size: 12px;
+  width: 12px;
+  height: 12px;
+  line-height: 12px;
+}
+
+.fb-notif-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.fb-notif-desc {
+  margin: 0 0 4px;
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--color-ink-800, #1e293b);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.fb-notif-module {
+  color: var(--color-ink-900, #0f172a);
+}
+
+.fb-notif-time {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-brand-green, #27802D);
+}
+
+.fb-notif-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #2563eb;
+  flex-shrink: 0;
+  margin-top: 10px;
+}
+
+.fb-notif-empty {
+  padding: 32px 16px;
+  text-align: center;
+  color: #64748b;
+}
+
+.fb-notif-empty mat-icon {
+  font-size: 40px;
+  width: 40px;
+  height: 40px;
+  margin-bottom: 8px;
+  opacity: 0.5;
+}
+
+.fb-notif-footer {
+  padding: 8px 16px;
+  border-top: 1px solid var(--color-border, #e2e8f0);
+  text-align: center;
+  background: var(--color-surface, #ffffff);
+}
+
+.fb-notif-footer-btn {
+  border: none;
+  background: transparent;
+  color: var(--color-brand-green, #27802D);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.fb-notif-footer-btn:hover {
+  text-decoration: underline;
+}
+
+/* Modo oscuro para la ventana de notificaciones */
+:root.dark-theme .fb-notifications-popover,
+body.dark-theme .fb-notifications-popover {
+  background: #242526;
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+}
+
+:root.dark-theme .fb-notif-header,
+body.dark-theme .fb-notif-header,
+:root.dark-theme .fb-notif-footer,
+body.dark-theme .fb-notif-footer {
+  background: #242526;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+:root.dark-theme .fb-notif-title,
+body.dark-theme .fb-notif-title {
+  color: #ffffff;
+}
+
+:root.dark-theme .fb-notif-tab,
+body.dark-theme .fb-notif-tab {
+  background: #3a3b3c;
+  color: #e4e6eb;
+}
+
+:root.dark-theme .fb-notif-tab.active,
+body.dark-theme .fb-notif-tab.active {
+  background: rgba(39, 128, 45, 0.3);
+  color: #4ade80;
+}
+
+:root.dark-theme .fb-notif-section-title,
+body.dark-theme .fb-notif-section-title {
+  color: #e4e6eb;
+}
+
+:root.dark-theme .fb-notif-item:hover,
+body.dark-theme .fb-notif-item:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+:root.dark-theme .fb-notif-item.unread,
+body.dark-theme .fb-notif-item.unread {
+  background-color: rgba(39, 128, 45, 0.12);
+}
+
+:root.dark-theme .fb-notif-badge,
+body.dark-theme .fb-notif-badge {
+  border-color: #242526;
+}
+
+:root.dark-theme .fb-notif-desc,
+body.dark-theme .fb-notif-desc {
+  color: #e4e6eb;
+}
+
+:root.dark-theme .fb-notif-module,
+body.dark-theme .fb-notif-module {
+  color: #ffffff;
+}
+
+:root.dark-theme .fb-notif-time,
+body.dark-theme .fb-notif-time {
+  color: #4ade80;
+}
+
+:root.dark-theme .fb-notif-dot,
+body.dark-theme .fb-notif-dot {
+  background-color: #3b82f6;
 }

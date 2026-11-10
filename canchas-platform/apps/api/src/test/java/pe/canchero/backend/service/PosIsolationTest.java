@@ -52,7 +52,7 @@ class PosIsolationTest {
 
     @Test
     void rejectsForeignVenueForOwnersButAllowsPlatformAdmin() {
-        assertEquals(3, access.requireOwnedVenue(3, new AuthUserDto("admin-x", "Admin", "", "", "administrador")));
+        assertEquals(3, access.requireOwnedVenue(3, new AuthUserDto("admin-x", "Admin", "", "", "superadmin")));
         assertEquals(1, access.requireOwnedVenue(1, owner));
         assertEquals(2, access.requireOwnedVenue(2, owner));
         assertEquals(403, assertThrows(ResponseStatusException.class, () -> access.requireOwnedVenue(3, owner)).getStatusCode().value());

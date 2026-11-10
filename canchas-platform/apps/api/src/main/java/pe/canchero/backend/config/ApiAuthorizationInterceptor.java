@@ -38,7 +38,7 @@ public class ApiAuthorizationInterceptor implements HandlerInterceptor {
         }
 
         AuthUserDto user = currentUser(request);
-        if (requiresOwnerOrAdmin(path, method) && !Roles.isOwnerOrAdmin(user.rol())) {
+        if (requiresOwnerOrAdmin(path, method) && !Roles.isOwnerOrAdmin(user.rol()) && !data.hasStaffAssignment(user)) {
             writeError(response, HttpStatus.FORBIDDEN, "No tienes permisos para realizar esta operación");
             return false;
         }

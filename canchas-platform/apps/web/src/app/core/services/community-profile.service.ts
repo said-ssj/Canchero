@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '@env/environment';
+
 export interface CommunityVenue {
   id: string;
   name: string;
@@ -9,7 +10,9 @@ export interface CommunityVenue {
   photo?: string;
   district?: string;
   city?: string;
+  rating?: number;
 }
+
 export interface CommunityReview {
   venueId: string;
   venueName: string;
@@ -17,19 +20,29 @@ export interface CommunityReview {
   rating: number;
   text: string;
   date: string;
+  authorInitials?: string;
+  reservedHere?: boolean;
+  response?: string | null;
 }
+
 export interface CommunityPost {
   id: string;
   authorId: string;
   text: string;
   photos: string[];
   createdAt: string;
+  badge?: string;
+  likes?: number;
+  liked?: boolean;
+  commentCount?: number;
 }
+
 export interface CommunitySettings {
   biography: string;
   whatsapp: string;
   cover: string | null;
 }
+
 export interface CommunityProfile extends CommunitySettings {
   id: string;
   name: string;
@@ -42,11 +55,23 @@ export interface CommunityProfile extends CommunitySettings {
   reviewCount: number;
   rating: number | null;
   reviews: CommunityReview[];
+  phone?: string;
+  address?: string;
+  isPhonePublic?: boolean;
+  isAddressPublic?: boolean;
+  verified?: boolean;
+  canchasCount?: number;
+  ruc?: string;
+  rucValidated?: boolean;
+  matchesPlayed?: number;
+  favoriteVenue?: string;
 }
+
 @Injectable({ providedIn: 'root' })
 export class CommunityProfileService {
   private readonly http = inject(HttpClient);
   private readonly url = environment.apiUrl + '/community';
+
   profile(id: string) {
     return this.http.get<CommunityProfile>(this.url + '/profiles/' + encodeURIComponent(id));
   }

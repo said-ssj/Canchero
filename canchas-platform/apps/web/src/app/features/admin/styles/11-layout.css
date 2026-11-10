@@ -56,12 +56,23 @@
 }
 
 .mat-admin-shell.sidebar-collapsed .sidebar-brand-text,
-.mat-admin-shell.sidebar-collapsed .sidebar-close-btn,
-.mat-admin-shell.sidebar-collapsed .sidebar-nav-item > span:not(.sidebar-status-badge),
+.mat-admin-shell.sidebar-collapsed .sidebar-nav-item > span:not(.sidebar-nav-icon):not(.material-symbols-outlined),
 .mat-admin-shell.sidebar-collapsed .sidebar-status-badge,
 .mat-admin-shell.sidebar-collapsed .user-profile-info,
 .mat-admin-shell.sidebar-collapsed .btn-logout-sidebar span {
   display: none !important;
+}
+
+.mat-admin-shell.sidebar-collapsed .sidebar-nav-item .sidebar-nav-icon,
+.mat-admin-shell.sidebar-collapsed .sidebar-nav-item .material-symbols-outlined {
+  display: inline-flex !important;
+  font-size: 22px !important;
+  width: 22px !important;
+  height: 22px !important;
+  line-height: 22px !important;
+  margin: 0 !important;
+  align-items: center;
+  justify-content: center;
 }
 
 .mat-admin-shell.sidebar-collapsed .sidebar-nav {
@@ -69,15 +80,22 @@
 }
 
 .mat-admin-shell.sidebar-collapsed .sidebar-nav-item {
-  min-height: 50px !important;
+  width: 100% !important;
+  min-height: 48px !important;
+  height: 48px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
   padding: 0 !important;
+  border-radius: 4px !important;
 }
 
-.mat-admin-shell.sidebar-collapsed .sidebar-nav-icon {
-  margin: 0 !important;
+.mat-admin-shell.sidebar-collapsed ::ng-deep #adminSidebar > .mat-drawer-inner-container {
+  scrollbar-width: none !important;
+}
+.mat-admin-shell.sidebar-collapsed ::ng-deep #adminSidebar > .mat-drawer-inner-container::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
 }
 
 .mat-admin-shell.sidebar-collapsed .user-profile-row,
@@ -117,7 +135,7 @@
   min-width: 42px !important;
   flex: 0 0 42px !important;
   margin: 0 !important;
-  border-radius: 8px !important;
+  border-radius: 4px !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -218,8 +236,7 @@
   }
 
   .mat-admin-shell.sidebar-collapsed .sidebar-brand-text,
-  .mat-admin-shell.sidebar-collapsed .sidebar-close-btn,
-  .mat-admin-shell.sidebar-collapsed .sidebar-nav-item > span:not(.sidebar-status-badge),
+  .mat-admin-shell.sidebar-collapsed .sidebar-nav-item > span:not(.sidebar-nav-icon):not(.material-symbols-outlined),
   .mat-admin-shell.sidebar-collapsed .sidebar-status-badge,
   .mat-admin-shell.sidebar-collapsed .user-profile-info,
   .mat-admin-shell.sidebar-collapsed .btn-logout-sidebar span {
@@ -257,7 +274,11 @@
 
   .mat-admin-shell .btn-bell.mat-mdc-icon-button,
   .mat-admin-shell .profile-avatar-btn.mat-mdc-icon-button {
-    width: 38px !important;
-    height: 38px !important;
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 50% !important;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
   }
 }

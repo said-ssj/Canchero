@@ -71,8 +71,23 @@ public class CourtController {
     }
 
     @GetMapping
-    public ResponseEntity<List<CourtDto>> list(@RequestParam(required = false) String venueId) {
-        return ResponseEntity.ok(data.listCourts(venueId));
+    public ResponseEntity<List<CourtDto>> list(
+            @RequestParam(required = false) String venueId,
+            @RequestAttribute(value = "auth.user", required = false) AuthUserDto user) {
+        if (venueId != null && !venueId.isBlank()) {
+            return ResponseEntity.ok(data.listCourts(venueId));
+        }
+        if (user != null) {
+            List<Integer> allowedVenues = access.authorizedVenues(user, "cancha.gestionar");
+            if (allowedVenues.isEmpty()) {
+                allowedVenues = access.authorizedVenues(user, "sede.ver");
+            }
+            if (allowedVenues.isEmpty()) {
+                return ResponseEntity.ok(List.of());
+            }
+            return ResponseEntity.ok(data.listCourtsForVenues(allowedVenues));
+        }
+        return ResponseEntity.ok(List.of());
     }
 
     @GetMapping("/{id}")
@@ -108,6 +123,11 @@ public class CourtController {
     public ResponseEntity<?> update(@PathVariable int id, @RequestAttribute("auth.user") AuthUserDto user,
             @RequestBody CourtRequest request) {
         access.requireOwnedCourt(id, user);
+        if (request.venueId() != null && !request.venueId().isBlank()) {
+            Integer targetVenueId = parseId(request.venueId());
+            access.requireOwnedVenue(targetVenueId, user);
+            access.validateSameBusinessCourtMove(id, targetVenueId);
+        }
         return data.updateCourt(String.valueOf(id), request)
                 .<ResponseEntity<?>>map(ResponseEntity::ok)
                 .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse("Cancha no encontrada")));

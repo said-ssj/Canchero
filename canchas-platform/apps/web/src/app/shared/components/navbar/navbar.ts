@@ -1,11 +1,13 @@
 import { ThemeService } from '@core/theme/theme.service';
 import { ThemeToggle } from '../theme-toggle/theme-toggle';
 import { Component, HostListener, computed, effect, inject, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '@core/auth/auth.service';
 
 @Component({
-  imports: [RouterLink, RouterLinkActive, ThemeToggle],
+  imports: [CommonModule, FormsModule, RouterLink, RouterLinkActive, ThemeToggle],
   selector: 'app-navbar',
   styleUrl: './navbar.css',
   templateUrl: './navbar.html',
@@ -16,6 +18,10 @@ export class Navbar {
 
   protected readonly menuOpen = signal(false);
   protected readonly profileMenuOpen = signal(false);
+
+  // Modal de Búsqueda General (Lupa)
+  protected readonly searchOverlayOpen = signal(false);
+  protected searchQuery = '';
 
   // Modales de Perfil
   protected readonly modalConfigOpen = signal(false);
@@ -57,6 +63,46 @@ export class Navbar {
     if (this.profileMenuOpen()) {
       this.profileMenuOpen.set(false);
     }
+  }
+
+  @HostListener('window:keydown.escape')
+  onEscape(): void {
+    if (this.searchOverlayOpen()) {
+      this.closeSearch();
+    }
+  }
+
+  protected openSearch(): void {
+    this.searchQuery = '';
+    this.searchOverlayOpen.set(true);
+    setTimeout(() => {
+      const input = document.querySelector('.search-pill-input') as HTMLInputElement;
+      input?.focus();
+    }, 50);
+  }
+
+  protected closeSearch(): void {
+    this.searchOverlayOpen.set(false);
+    this.searchQuery = '';
+  }
+
+  protected ejecutarBusqueda(query?: string): void {
+    const q = (query !== undefined ? query : this.searchQuery).trim();
+    this.closeSearch();
+    if (q) {
+      void this.router.navigate(['/sedes'], { queryParams: { buscar: q } });
+    } else {
+      void this.router.navigate(['/sedes']);
+    }
+  }
+
+  protected buscarRapido(termino: string): void {
+    this.ejecutarBusqueda(termino);
+  }
+
+  protected irAUsuariosComunidad(): void {
+    this.closeSearch();
+    void this.router.navigate(['/perfil']);
   }
 
   protected toggleProfileMenu(): void {

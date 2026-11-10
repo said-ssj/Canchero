@@ -1,8 +1,10 @@
 import { ThemeService } from '@core/theme/theme.service';
-import { Component, computed, effect, inject, signal, OnInit, OnDestroy } from '@angular/core';
+import { Component, computed, effect, inject, signal, untracked, OnInit, OnDestroy, HostListener } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { AdminContext } from '../admin-context.service';
 import { CommonModule } from '@angular/common';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet, NavigationEnd } from '@angular/router';
+import { filter, map } from 'rxjs';
 import { AuthService } from '@core/auth/auth.service';
 import { DatabaseService } from '@core/supabase/database.service';
 import { CajaService } from '@core/services/caja.service';
@@ -66,11 +68,33 @@ export class AdminLayout implements OnInit, OnDestroy {
 
   readonly sidebarCollapsed = signal(false);
   readonly mobileSidebarOpen = signal(false);
+  readonly isSedesRoute = toSignal(
+    this.router.events.pipe(
+      filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+      map((e) => (e.urlAfterRedirects || e.url).includes('/admin/sedes')),
+    ),
+    { initialValue: this.router.url.includes('/admin/sedes') },
+  );
   private readonly theme = inject(ThemeService);
   readonly isDarkMode = this.theme.isDark;
   readonly adminModalPrivacidadOpen = signal(false);
   readonly adminModalAyudaOpen = signal(false);
   readonly isSuperAdmin = computed(() => this.auth.isSuperAdmin());
+  readonly canBrowseAllVenues = computed(() =>
+    this.auth.currentUser()?.rol === 'superadmin',
+  );
+  readonly allVenuesMode = computed(() => this.db.managementScope?.() === 'all');
+  readonly accountRoleLabel = computed(() => {
+    const role = this.auth.currentUser()?.rol;
+    if (role === 'superadmin') return 'Superadministrador';
+    if (role === 'admin') return 'Administrador';
+    if (role === 'operador') return 'Operador';
+    if (role === 'caja') return 'Cajero';
+    return 'Dueño de sedes';
+  });
+  cambiarAlcance(value: string): void {
+    this.db.setManagementScope?.(value);
+  }
 
   readonly navItems: AdminNavItem[] = [
     { label: 'Mi Sede', route: '/admin/sedes', icon: 'stadium' },
@@ -128,13 +152,11 @@ export class AdminLayout implements OnInit, OnDestroy {
       onCleanup(() => request.unsubscribe());
     });
     effect(() => {
-      if (!this.auth.currentUser() && !this.auth.restoring?.())
-        void this.router.navigate(['/login']);
-    });
-    effect(() => {
       if (this.context.loading()) return;
       const id = this.context.venue()?.id ?? null;
-      if (this.db.sedeOperativaId() !== id) this.db.setSedeOperativaId(id);
+      untracked(() => {
+        if (this.db.sedeOperativaId() !== id) this.db.setSedeOperativaId(id);
+      });
     });
   }
 
@@ -149,9 +171,230 @@ export class AdminLayout implements OnInit, OnDestroy {
     }
   }
 
+  readonly sedeSearchQuery = signal('');
+  readonly sedeSearchOpen = signal(false);
+
+  /* ================= NOTIFICACIONES OPERATIVAS ESTILO FACEBOOK ================= */
+  readonly notificationsOpen = signal(false);
+  readonly notifFilter = signal<'todas' | 'no_leidas'>('todas');
+
+  readonly notificationsList = signal([
+    {
+      id: 'notif-1',
+      modulo: 'Reservas & Operaciones',
+      detalle: 'Tienes reservas pendientes por verificar y confirmar abono.',
+      ruta: '/admin/reservas',
+      icono: 'event_available',
+      avatarBg: '#3b82f6',
+      badgeIcon: 'schedule',
+      badgeColor: '#1d4ed8',
+      tiempo: 'Hace 15 min',
+      leida: false,
+    },
+    {
+      id: 'notif-2',
+      modulo: 'Inventario & Kardex',
+      detalle: 'Alerta de existencias: Hay productos con saldo cerca del stock mínimo.',
+      ruta: '/admin/inventario',
+      icono: 'inventory',
+      avatarBg: '#f59e0b',
+      badgeIcon: 'warning',
+      badgeColor: '#b45309',
+      tiempo: 'Hace 30 min',
+      leida: false,
+    },
+    {
+      id: 'notif-3',
+      modulo: 'Caja Operativa & Turnos',
+      detalle: 'Turno activo en sede. Recuerda registrar los movimientos manuales antes del arqueo.',
+      ruta: '/admin/caja',
+      icono: 'point_of_sale',
+      avatarBg: '#10b981',
+      badgeIcon: 'payments',
+      badgeColor: '#047857',
+      tiempo: 'Hace 1 h',
+      leida: false,
+    },
+    {
+      id: 'notif-4',
+      modulo: 'Créditos & Fiados',
+      detalle: 'Cuentas deudoras con saldos pendientes requieren revisión de abonos.',
+      ruta: '/admin/creditos',
+      icono: 'account_balance_wallet',
+      avatarBg: '#ef4444',
+      badgeIcon: 'credit_card',
+      badgeColor: '#b91c1c',
+      tiempo: 'Hace 2 h',
+      leida: false,
+    },
+    {
+      id: 'notif-5',
+      modulo: 'Reportes & Opiniones',
+      detalle: 'Se ha registrado una nueva incidencia o reseña en una cancha de tu sede.',
+      ruta: '/admin/reportes',
+      icono: 'flag',
+      avatarBg: '#ec4899',
+      badgeIcon: 'report_problem',
+      badgeColor: '#be185d',
+      tiempo: 'Hace 3 h',
+      leida: true,
+    },
+    {
+      id: 'notif-6',
+      modulo: 'Compras & Proveedores',
+      detalle: 'Recepción y órdenes de compra con conservación de costo registradas.',
+      ruta: '/admin/compras',
+      icono: 'local_shipping',
+      avatarBg: '#14b8a6',
+      badgeIcon: 'check_circle',
+      badgeColor: '#0f766e',
+      tiempo: 'Ayer',
+      leida: true,
+    },
+    {
+      id: 'notif-7',
+      modulo: 'Punto de Venta (POS)',
+      detalle: 'Mostrador operativo listo para cobros rápidos y emisión de comprobantes.',
+      ruta: '/admin/pos',
+      icono: 'storefront',
+      avatarBg: '#8b5cf6',
+      badgeIcon: 'shopping_cart',
+      badgeColor: '#6d28d9',
+      tiempo: 'Ayer',
+      leida: true,
+    },
+    {
+      id: 'notif-8',
+      modulo: 'Catálogo & Productos',
+      detalle: 'Categorías configuradas con iconos asignados a productos sin foto.',
+      ruta: '/admin/catalogo',
+      icono: 'category',
+      avatarBg: '#06b6d4',
+      badgeIcon: 'sell',
+      badgeColor: '#0e7490',
+      tiempo: 'Hace 2 días',
+      leida: true,
+    },
+    {
+      id: 'notif-9',
+      modulo: 'Mis Sedes & Canchas',
+      detalle: 'Revisa la disponibilidad, descansos y tarifas de tus losas deportivas.',
+      ruta: '/admin/canchas',
+      icono: 'sports_soccer',
+      avatarBg: '#22c55e',
+      badgeIcon: 'sports',
+      badgeColor: '#15803d',
+      tiempo: 'Hace 3 días',
+      leida: true,
+    },
+    {
+      id: 'notif-10',
+      modulo: 'Finanzas & Liquidación',
+      detalle: 'Historial contable y recaudaciones consolidadas listas para conciliación.',
+      ruta: '/admin/finanzas',
+      icono: 'account_balance',
+      avatarBg: '#64748b',
+      badgeIcon: 'trending_up',
+      badgeColor: '#334155',
+      tiempo: 'Hace 5 días',
+      leida: true,
+    },
+    {
+      id: 'notif-11',
+      modulo: 'Personalización & QR',
+      detalle: 'QR vectorial de reserva y fichas de marca disponibles para impresión.',
+      ruta: '/admin/personalizacion',
+      icono: 'qr_code_2',
+      avatarBg: '#0ea5e9',
+      badgeIcon: 'download',
+      badgeColor: '#0369a1',
+      tiempo: 'Hace 1 sem',
+      leida: true,
+    },
+    {
+      id: 'notif-12',
+      modulo: 'Configuración',
+      detalle: 'Ajustes generales, seguridad y datos de cuenta sincronizados.',
+      ruta: '/admin/configuracion',
+      icono: 'settings',
+      avatarBg: '#475569',
+      badgeIcon: 'verified_user',
+      badgeColor: '#1e293b',
+      tiempo: 'Hace 2 sem',
+      leida: true,
+    },
+  ]);
+
+  readonly unreadNotificationsCount = computed(() => {
+    return this.notificationsList().filter((n) => !n.leida).length;
+  });
+
+  readonly filteredNotifications = computed(() => {
+    const list = this.notificationsList();
+    if (this.notifFilter() === 'no_leidas') {
+      return list.filter((n) => !n.leida);
+    }
+    return list;
+  });
+
+  toggleNotifications(): void {
+    this.notificationsOpen.update((v) => !v);
+  }
+
+  abrirNotificacion(item: any): void {
+    this.notificationsList.update((list) =>
+      list.map((n) => (n.id === item.id ? { ...n, leida: true } : n)),
+    );
+    this.notificationsOpen.set(false);
+    void this.router.navigateByUrl(item.ruta);
+  }
+
+  marcarTodasLeidas(): void {
+    this.notificationsList.update((list) => list.map((n) => ({ ...n, leida: true })));
+  }
+
+  readonly sedesFiltradas = computed(() => {
+    const q = this.sedeSearchQuery().toLowerCase().trim();
+    const list = this.sedesDelDueno();
+    if (!q) return list;
+    return list.filter(
+      (s) =>
+        s.nombre?.toLowerCase().includes(q) ||
+        s.direccion?.toLowerCase().includes(q),
+    );
+  });
+
+  @HostListener('document:click')
+  onDocumentClick(): void {
+    if (this.sedeSearchOpen()) {
+      this.cerrarSedeSearch();
+    }
+  }
+
+  onSedeSearchFocus(): void {
+    this.sedeSearchOpen.set(true);
+  }
+
+  onSedeSearchInput(val: string): void {
+    this.sedeSearchQuery.set(val);
+    this.sedeSearchOpen.set(true);
+  }
+
+  limpiarSedeSearch(event?: Event): void {
+    event?.stopPropagation();
+    this.sedeSearchQuery.set('');
+  }
+
+  cerrarSedeSearch(): void {
+    this.sedeSearchOpen.set(false);
+    this.sedeSearchQuery.set('');
+  }
+
   seleccionarSede(sedeId: number | string | null | undefined): void {
     if (sedeId == null || sedeId === '') return;
     this.context.selectVenue(sedeId);
+    this.sedeSearchOpen.set(false);
+    this.sedeSearchQuery.set('');
   }
 
   abrirPaginaPublica(): void {

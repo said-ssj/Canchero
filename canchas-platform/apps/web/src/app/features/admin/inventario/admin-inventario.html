@@ -1,0 +1,547 @@
+<div class="admin-inventario">
+  @if (!currentSedeId()) {
+    <div class="empty-venue-state">
+      <mat-icon class="empty-icon" aria-hidden="true">storefront</mat-icon>
+      <h2>Selecciona una sede</h2>
+      <p>Debes seleccionar una sede en el panel superior para gestionar su inventario y kardex.</p>
+    </div>
+  } @else {
+    <!-- Cabecera -->
+    <header class="view-header">
+      <div class="header-titles">
+        <h1 class="view-title">Inventario, Kardex &amp; Transformaciones</h1>
+        <p class="view-subtitle">
+          {{ currentSedeName() || 'Sede seleccionada' }} · Existencias continuas, kardex, mermas operativas y fraccionamiento de packs con conservación de costo.
+        </p>
+      </div>
+
+      <div class="header-actions">
+        @if (canTransfer()) {
+          <button type="button" mat-stroked-button class="action-btn" (click)="openTransferModal()">
+            <mat-icon aria-hidden="true">sync_alt</mat-icon>
+            Trasladar a Otra Sede
+          </button>
+        }
+        <button type="button" mat-stroked-button class="action-btn" (click)="openAdjustmentModal()">
+          <mat-icon aria-hidden="true">tune</mat-icon>
+          Ajuste / Merma
+        </button>
+        <button type="button" mat-stroked-button class="action-btn" (click)="openTransformationModal()">
+          <mat-icon aria-hidden="true">call_split</mat-icon>
+          Fraccionar Pack
+        </button>
+        <button type="button" mat-flat-button class="action-btn-primary" (click)="openEntryModal()">
+          <mat-icon aria-hidden="true">add_shopping_cart</mat-icon>
+          Registrar Ingreso
+        </button>
+      </div>
+    </header>
+
+    <!-- Métricas Operativas Inventario (Estilo Canchero Simple) -->
+    <div class="management-stats five-cols inventario-stats">
+      <div>
+        <span>Valorización Total</span>
+        <strong>S/ {{ (summary()?.totalValorizado || 0) | number:'1.2-2' }}</strong>
+        <small class="stat-sub">Costo de mercadería en almacén</small>
+      </div>
+      <div>
+        <span>Unidades Físicas</span>
+        <strong>{{ summary()?.totalUnidades || 0 }}</strong>
+        <small class="stat-sub">{{ summary()?.totalProductos || 0 }} productos registrados</small>
+      </div>
+      <div>
+        <span>Stock Crítico</span>
+        <strong [style.color]="(summary()?.productosBajoStock || 0) > 0 ? 'var(--color-danger, #dc2626)' : 'inherit'">
+          {{ summary()?.productosBajoStock || 0 }}
+        </strong>
+        <small class="stat-sub">Por debajo del umbral mínimo</small>
+      </div>
+      <div>
+        <span>Agotados</span>
+        <strong [style.color]="(summary()?.productosAgotados || 0) > 0 ? 'var(--color-danger, #dc2626)' : 'inherit'">
+          {{ summary()?.productosAgotados || 0 }}
+        </strong>
+        <small class="stat-sub">Quiebres de stock sin saldo</small>
+      </div>
+      <div>
+        <span>Movimientos del Mes</span>
+        <strong>{{ summary()?.movimientosMes || 0 }}</strong>
+        <small class="stat-sub">Entradas, salidas y ajustes</small>
+      </div>
+    </div>
+
+    <!-- Selector de Pestaña -->
+    <div class="tabs-bar">
+      <mat-button-toggle-group [value]="activeTab()" (change)="activeTab.set($event.value)">
+        <mat-button-toggle value="kardex">
+          <mat-icon aria-hidden="true">receipt_long</mat-icon>
+          Kardex Continuo ({{ filteredMovements().length }})
+        </mat-button-toggle>
+        <mat-button-toggle value="velocidad">
+          <mat-icon aria-hidden="true">speed</mat-icon>
+          Velocidad &amp; Proyección de Stock ({{ summary()?.proyeccionesAgotamiento?.length || 0 }})
+        </mat-button-toggle>
+      </mat-button-toggle-group>
+    </div>
+
+    <!-- ================= PESTAÑA 1: KARDEX CONTINUO ================= -->
+    @if (activeTab() === 'kardex') {
+      <div class="tab-panel">
+        <!-- Barra de filtros -->
+        <div class="filter-toolbar">
+          <mat-form-field appearance="outline" class="search-field" subscriptSizing="dynamic">
+            <mat-icon matPrefix aria-hidden="true">search</mat-icon>
+            <input
+              matInput
+              placeholder="Buscar por producto o motivo..."
+              [ngModel]="searchQuery()"
+              (ngModelChange)="searchQuery.set($event)"
+            />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="select-field" subscriptSizing="dynamic">
+            <mat-label>Producto</mat-label>
+            <mat-select [ngModel]="selectedProductFilter()" (ngModelChange)="selectedProductFilter.set($event)">
+              <mat-option [value]="0">Todos los productos</mat-option>
+              @for (p of products(); track p.id) {
+                <mat-option [value]="p.id">{{ p.nombre }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <mat-button-toggle-group
+            aria-label="Filtro de tipo de movimiento"
+            [value]="tipoFilter()"
+            (change)="tipoFilter.set($event.value)"
+          >
+            <mat-button-toggle value="TODOS">Todos</mat-button-toggle>
+            <mat-button-toggle value="+">+ Entradas</mat-button-toggle>
+            <mat-button-toggle value="-">- Salidas</mat-button-toggle>
+            <mat-button-toggle value="MERMA">Mermas / Ajustes</mat-button-toggle>
+            <mat-button-toggle value="TRANSFORMACION">Transformaciones</mat-button-toggle>
+          </mat-button-toggle-group>
+        </div>
+
+        <!-- Tabla de Kardex -->
+        @if (filteredMovements().length === 0) {
+          <div class="empty-table-state">
+            <mat-icon class="empty-icon" aria-hidden="true">receipt</mat-icon>
+            <h3>No se encontraron movimientos</h3>
+            <p>No hay registros que coincidan con los filtros seleccionados para esta sede.</p>
+          </div>
+        } @else {
+          <div class="table-responsive">
+            <table class="kardex-table">
+              <thead>
+                <tr>
+                  <th>Fecha &amp; Hora</th>
+                  <th>Producto</th>
+                  <th>Operación</th>
+                  <th class="text-right">Cantidad</th>
+                  <th class="text-right">Precio / Costo</th>
+                  <th class="text-right">Saldo Final</th>
+                  <th>Motivo / Justificación</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (m of filteredMovements(); track m.id) {
+                  <tr>
+                    <td class="td-fecha">
+                      {{ m.fecha | date:'dd/MM/yyyy HH:mm' }}
+                    </td>
+                    <td class="td-producto">
+                      <strong>{{ m.productoNombre }}</strong>
+                    </td>
+                    <td>
+                      @if (m.tipo === '+') {
+                        <span class="op-badge entrada">+ ENTRADA</span>
+                      } @else {
+                        <span class="op-badge salida">- SALIDA</span>
+                      }
+                    </td>
+                    <td class="td-cantidad text-right font-mono">
+                      {{ m.cantidad }}
+                    </td>
+                    <td class="td-precio text-right font-mono">
+                      S/ {{ m.precioUnitario | number:'1.2-2' }}
+                    </td>
+                    <td class="td-saldo text-right font-mono">
+                      <span class="saldo-pill">{{ m.saldoStock }}</span>
+                    </td>
+                    <td class="td-motivo">
+                      {{ m.motivo || 'Movimiento operativo' }}
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- ================= PESTAÑA 2: VELOCIDAD Y PREDICCIÓN ================= -->
+    @if (activeTab() === 'velocidad') {
+      <div class="tab-panel">
+        <div class="projection-banner">
+          <mat-icon aria-hidden="true" class="banner-icon">insights</mat-icon>
+          <div class="banner-text">
+            <h4>Pronóstico Dinámico de Agotamiento de Stock</h4>
+            <p>
+              El sistema analiza el ritmo diario de consumo en base a las ventas de los últimos 30 días en esta sede. 
+              Anticípate al desabastecimiento en horas pico reponiendo o fraccionando unidades antes de la rotura de stock.
+            </p>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="kardex-table velocity-table">
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th class="text-right">Stock Actual</th>
+                <th class="text-right">Stock Mínimo</th>
+                <th class="text-right">Ritmo Diario</th>
+                <th class="text-right">Días Restantes</th>
+                <th>Nivel Preventivo</th>
+                <th class="text-center">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of filteredVelocity(); track item.productoId) {
+                <tr>
+                  <td class="td-producto">
+                    <strong>{{ item.nombre }}</strong>
+                  </td>
+                  <td class="text-right font-mono" [class.text-danger]="item.stockActual <= 0">
+                    {{ item.stockActual }} unid.
+                  </td>
+                  <td class="text-right font-mono text-muted">
+                    {{ item.stockMinimo }} unid.
+                  </td>
+                  <td class="text-right font-mono">
+                    {{ item.promedioDiarioVenta | number:'1.1-1' }} /día
+                  </td>
+                  <td class="text-right font-mono">
+                    @if (item.diasRestantesEstimados === null) {
+                      <span class="text-muted">Sin rotación reciente</span>
+                    } @else if (item.stockActual <= 0) {
+                      <strong class="text-danger">0 días</strong>
+                    } @else {
+                      <strong [class.text-danger]="item.diasRestantesEstimados <= 3" [class.text-warning]="item.diasRestantesEstimados <= 7">
+                        {{ item.diasRestantesEstimados | number:'1.0-0' }} días
+                      </strong>
+                    }
+                  </td>
+                  <td>
+                    @if (item.nivelAlerta === 'AGOTADO') {
+                      <span class="status-badge badge-danger">AGOTADO</span>
+                    } @else if (item.nivelAlerta === 'CRITICO') {
+                      <span class="status-badge badge-danger">CRÍTICO (&lt;= 3 DÍAS)</span>
+                    } @else if (item.nivelAlerta === 'ADVERTENCIA') {
+                      <span class="status-badge badge-warning">ALERTA PREVENTIVA</span>
+                    } @else {
+                      <span class="status-badge badge-success">ÓPTIMO</span>
+                    }
+                  </td>
+                  <td class="text-center">
+                    <button
+                      type="button"
+                      mat-button
+                      class="btn-sm"
+                      (click)="openEntryModal(products().find(p => p.id === item.productoId))"
+                    >
+                      <mat-icon aria-hidden="true">add</mat-icon> Reponer
+                    </button>
+                    <button
+                      type="button"
+                      mat-button
+                      class="btn-sm"
+                      (click)="openTransformationModal(products().find(p => p.id === item.productoId))"
+                    >
+                      <mat-icon aria-hidden="true">call_split</mat-icon> Fraccionar
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+
+    <!-- ================= MODAL: INGRESO DE MERCADERÍA ================= -->
+    @if (showEntryModal()) {
+      <div class="modal-backdrop" (click)="showEntryModal.set(false)">
+        <div class="modal-card" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <h3>
+              <mat-icon aria-hidden="true">add_shopping_cart</mat-icon>
+              Registrar Entrada de Mercadería (Kardex +)
+            </h3>
+            <button type="button" class="close-btn" (click)="showEntryModal.set(false)">
+              <mat-icon aria-hidden="true">close</mat-icon>
+            </button>
+          </div>
+
+          <div class="modal-body">
+            <mat-form-field appearance="outline" class="w-full">
+              <mat-label>Producto a Reponer</mat-label>
+              <mat-select [ngModel]="entryProduct()" (ngModelChange)="onEntryProductChange($event)">
+                @for (p of products(); track p.id) {
+                  <mat-option [value]="p.id">{{ p.nombre }} (Stock: {{ p.stock }})</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+
+            <div class="form-row">
+              <mat-form-field appearance="outline" class="w-half">
+                <mat-label>Cantidad</mat-label>
+                <input matInput type="number" min="1" [ngModel]="entryQuantity()" (ngModelChange)="entryQuantity.set($event)" />
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="w-half">
+                <mat-label>Precio de Compra Unitario (S/)</mat-label>
+                <input matInput type="number" step="0.10" [ngModel]="entryPrice()" (ngModelChange)="entryPrice.set($event)" />
+              </mat-form-field>
+            </div>
+
+            <mat-form-field appearance="outline" class="w-full">
+              <mat-label>Proveedor / Motivo / Documento</mat-label>
+              <input matInput placeholder="Ej. Factura F001-8493 / Reposición distribuidor" [ngModel]="entryReason()" (ngModelChange)="entryReason.set($event)" />
+            </mat-form-field>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" mat-stroked-button (click)="showEntryModal.set(false)" [disabled]="saving()">
+              Cancelar
+            </button>
+            <button type="button" mat-flat-button class="action-btn-primary" (click)="submitEntry()" [disabled]="saving()">
+              {{ saving() ? 'Guardando...' : 'Confirmar Ingreso en Kardex' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- ================= MODAL: AJUSTE / MERMA ================= -->
+    @if (showAdjustmentModal()) {
+      <div class="modal-backdrop" (click)="showAdjustmentModal.set(false)">
+        <div class="modal-card" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <h3>
+              <mat-icon aria-hidden="true">tune</mat-icon>
+              Registrar Ajuste de Stock / Mermas
+            </h3>
+            <button type="button" class="close-btn" (click)="showAdjustmentModal.set(false)">
+              <mat-icon aria-hidden="true">close</mat-icon>
+            </button>
+          </div>
+
+          <div class="modal-body">
+            <mat-form-field appearance="outline" class="w-full">
+              <mat-label>Producto Afectado</mat-label>
+              <mat-select [ngModel]="adjProduct()" (ngModelChange)="adjProduct.set($event)">
+                @for (p of products(); track p.id) {
+                  <mat-option [value]="p.id">{{ p.nombre }} (Stock actual: {{ p.stock }})</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+
+            <div class="form-row">
+              <mat-form-field appearance="outline" class="w-half">
+                <mat-label>Tipo de Ajuste</mat-label>
+                <mat-select [ngModel]="adjType()" (ngModelChange)="adjType.set($event)">
+                  <mat-option value="MERMA">Merma / Deterioro (-)</mat-option>
+                  <mat-option value="ROTURA">Rotura o Daño en Sede (-)</mat-option>
+                  <mat-option value="VENCIMIENTO">Vencimiento de Lote (-)</mat-option>
+                  <mat-option value="FALTANTE">Faltante en Conteo Físico (-)</mat-option>
+                  <mat-option value="SOBRANTE">Sobrante en Conteo Físico (+)</mat-option>
+                </mat-select>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="w-half">
+                <mat-label>Cantidad Afectada</mat-label>
+                <input matInput type="number" min="1" [ngModel]="adjQuantity()" (ngModelChange)="adjQuantity.set($event)" />
+              </mat-form-field>
+            </div>
+
+            <mat-form-field appearance="outline" class="w-full">
+              <mat-label>Motivo y Justificación</mat-label>
+              <textarea matInput rows="3" placeholder="Detalle la causa del ajuste para la bitácora auditora..." [ngModel]="adjReason()" (ngModelChange)="adjReason.set($event)"></textarea>
+            </mat-form-field>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" mat-stroked-button (click)="showAdjustmentModal.set(false)" [disabled]="saving()">
+              Cancelar
+            </button>
+            <button type="button" mat-flat-button class="action-btn-primary" (click)="submitAdjustment()" [disabled]="saving()">
+              {{ saving() ? 'Guardando...' : 'Asentar Ajuste en Kardex' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- ================= MODAL: FRACCIONAMIENTO (TRANSFORMACIÓN) ================= -->
+    @if (showTransformationModal()) {
+      <div class="modal-backdrop" (click)="showTransformationModal.set(false)">
+        <div class="modal-card wide" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <h3>
+              <mat-icon aria-hidden="true">call_split</mat-icon>
+              Fraccionamiento de Existencias (Transformación Neta Cero)
+            </h3>
+            <button type="button" class="close-btn" (click)="showTransformationModal.set(false)">
+              <mat-icon aria-hidden="true">close</mat-icon>
+            </button>
+          </div>
+
+          <div class="modal-body">
+            <div class="transform-info-box">
+              <mat-icon aria-hidden="true">sync_alt</mat-icon>
+              <div>
+                <strong>Conversión física sin pérdida de valor</strong>
+                <p>
+                  Permite convertir paquetes o cajas (ej. Pack x 6 o Fardo x 12) en unidades individuales para venta al por menor.
+                  El costo total se transfiere proporcionalmente a las unidades resultantes.
+                </p>
+              </div>
+            </div>
+
+            <div class="transform-grid">
+              <!-- Columna Origen -->
+              <div class="transform-col origen">
+                <h4><mat-icon aria-hidden="true">arrow_upward</mat-icon> Producto Origen (Se Descuenta)</h4>
+                <mat-form-field appearance="outline" class="w-full">
+                  <mat-label>Seleccionar Pack / Bulto</mat-label>
+                  <mat-select [ngModel]="transOriginProduct()" (ngModelChange)="transOriginProduct.set($event)">
+                    @for (p of products(); track p.id) {
+                      <mat-option [value]="p.id">{{ p.nombre }} (Stock: {{ p.stock }})</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="w-full">
+                  <mat-label>Cantidad de Bultos a Desarmar</mat-label>
+                  <input matInput type="number" min="1" [ngModel]="transOriginQuantity()" (ngModelChange)="transOriginQuantity.set($event)" />
+                </mat-form-field>
+
+                @if (originProductDetail(); as orig) {
+                  <div class="detail-box">
+                    <span>Stock actual: <strong>{{ orig.stock }} unid.</strong></span>
+                    <span>Costo unitario: <strong>S/ {{ orig.precioCompra | number:'1.2-2' }}</strong></span>
+                    <span>Costo total a transferir: <strong>S/ {{ (orig.precioCompra * transOriginQuantity()) | number:'1.2-2' }}</strong></span>
+                  </div>
+                }
+              </div>
+
+              <!-- Flecha central -->
+              <div class="transform-divider">
+                <mat-icon aria-hidden="true">trending_flat</mat-icon>
+              </div>
+
+              <!-- Columna Destino -->
+              <div class="transform-col destino">
+                <h4><mat-icon aria-hidden="true">arrow_downward</mat-icon> Producto Destino (Se Incrementa)</h4>
+                <mat-form-field appearance="outline" class="w-full">
+                  <mat-label>Seleccionar Unidad Individual</mat-label>
+                  <mat-select [ngModel]="transDestProduct()" (ngModelChange)="transDestProduct.set($event)">
+                    @for (p of products(); track p.id) {
+                      <mat-option [value]="p.id">{{ p.nombre }} (Stock: {{ p.stock }})</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="w-full">
+                  <mat-label>Unidades Resultantes a Generar</mat-label>
+                  <input matInput type="number" min="1" [ngModel]="transDestQuantity()" (ngModelChange)="transDestQuantity.set($event)" />
+                </mat-form-field>
+
+                @if (destProductDetail(); as dest) {
+                  <div class="detail-box">
+                    <span>Stock actual: <strong>{{ dest.stock }} unid.</strong></span>
+                    <span>Stock posterior estimado: <strong>{{ dest.stock + transDestQuantity() }} unid.</strong></span>
+                    <span>Nuevo costo unitario calculado: <strong>S/ {{ estimatedCostPerDestUnit() | number:'1.2-2' }}</strong></span>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <mat-form-field appearance="outline" class="w-full mt-3">
+              <mat-label>Motivo del Fraccionamiento</mat-label>
+              <input matInput placeholder="Ej. Desarmar packs para venta de unidades sueltas en cafetería" [ngModel]="transReason()" (ngModelChange)="transReason.set($event)" />
+            </mat-form-field>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" mat-stroked-button (click)="showTransformationModal.set(false)" [disabled]="saving()">
+              Cancelar
+            </button>
+            <button type="button" mat-flat-button class="action-btn-primary" (click)="submitTransformation()" [disabled]="saving()">
+              {{ saving() ? 'Procesando...' : 'Confirmar Transformación' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- ================= MODAL TRASLADO ENTRE SEDES DEL MISMO DUEÑO ================= -->
+    @if (showTransferModal()) {
+      <div class="modal-backdrop" (click)="showTransferModal.set(false)">
+        <div class="modal-card" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <h3><mat-icon aria-hidden="true">sync_alt</mat-icon> Trasladar Mercadería entre Sedes</h3>
+            <button type="button" class="close-btn" (click)="showTransferModal.set(false)">
+              <mat-icon aria-hidden="true">close</mat-icon>
+            </button>
+          </div>
+
+          <div class="modal-body">
+            <p class="modal-description">
+              Descuenta existencias de esta sede (<strong>{{ currentSedeName() }}</strong>) y las añade al kardex de la sede seleccionada. Ambas sedes deben pertenecer a tu cuenta o negocio.
+            </p>
+
+            <mat-form-field appearance="outline" class="w-full">
+              <mat-label>Sede de Destino</mat-label>
+              <mat-select [ngModel]="transferTargetVenue()" (ngModelChange)="transferTargetVenue.set($event)">
+                @for (v of otherVenues(); track v.id) {
+                  <mat-option [value]="v.id">{{ v.nombre }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="w-full">
+              <mat-label>Producto a Trasladar</mat-label>
+              <mat-select [ngModel]="transferProduct()" (ngModelChange)="transferProduct.set($event)">
+                @for (p of products(); track p.id) {
+                  <mat-option [value]="p.id">{{ p.nombre }} (Stock disponible: {{ p.stock }})</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="w-full">
+              <mat-label>Cantidad de Unidades a Trasladar</mat-label>
+              <input matInput type="number" min="1" [ngModel]="transferQuantity()" (ngModelChange)="transferQuantity.set($event)" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="w-full">
+              <mat-label>Motivo o Nota de Despacho (Opcional)</mat-label>
+              <input matInput placeholder="Ej. Reposición de stock fin de semana" [ngModel]="transferReason()" (ngModelChange)="transferReason.set($event)" />
+            </mat-form-field>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" mat-stroked-button (click)="showTransferModal.set(false)" [disabled]="saving()">
+              Cancelar
+            </button>
+            <button type="button" mat-flat-button class="action-btn-primary" (click)="submitTransfer()" [disabled]="saving()">
+              {{ saving() ? 'Trasladando...' : 'Confirmar Traslado' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+  }
+</div>

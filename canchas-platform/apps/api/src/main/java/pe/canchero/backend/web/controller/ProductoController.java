@@ -31,13 +31,13 @@ public class ProductoController {
     @GetMapping
     public ResponseEntity<List<ProductoResponse>> list(@RequestParam(required = false) String estado, @RequestParam(required = false) Integer sedeId,
             @RequestAttribute(value = "auth.user", required = false) AuthUserDto user) {
-        return ResponseEntity.ok(data.listProductos(estado, access.requireOwnedVenue(sedeId, user)));
+        return ResponseEntity.ok(data.listProductos(estado, access.requirePermission(sedeId, user, "producto.ver")));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<?> get(@PathVariable int id, @RequestParam(required = false) Integer sedeId,
             @RequestAttribute(value = "auth.user", required = false) AuthUserDto user) {
-        return data.listProductos(null, access.requireOwnedVenue(sedeId, user)).stream().filter(p -> p.id().equals(String.valueOf(id))).findFirst()
+        return data.listProductos(null, access.requirePermission(sedeId, user, "producto.ver")).stream().filter(p -> p.id().equals(String.valueOf(id))).findFirst()
                 .<ResponseEntity<?>>map(ResponseEntity::ok)
                 .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse("Producto no encontrado")));
     }

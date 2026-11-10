@@ -95,6 +95,8 @@ describe('AdminFinanzas Component - Etapa 7 (Finanzas y Liquidación)', () => {
     reservas: signal<any[]>(mockReservas),
     getPagosPorDueno: vi.fn(() => mockPagos),
     refreshCatalogo: vi.fn(),
+    sedeOperativaId: signal<number | null>(1),
+    getSedeOperativaId: vi.fn(() => 1),
   };
 
   beforeEach(async () => {

@@ -51,10 +51,20 @@ public class CashController {
     public List<CashBoxDto> boxes(@RequestParam(required = false) Integer sedeId,
             @RequestAttribute("auth.user") AuthUserDto user) {
         if (sedeId != null) {
-            int verifiedSedeId = access.requireOwnedVenue(sedeId, user);
+            int verifiedSedeId = access.requirePermission(sedeId, user, "caja.operar");
             return dataService.listCashBoxes(verifiedSedeId);
         }
         return dataService.listCashBoxesForOwner(user);
+    }
+
+    @PostMapping("/boxes")
+    public CashBoxDto createBox(@RequestBody pe.canchero.backend.web.dto.CajaRequest request,
+            @RequestParam(required = false) Integer sedeId,
+            @RequestAttribute("auth.user") AuthUserDto user) {
+        Integer targetSedeId = request.sedeId() != null ? request.sedeId() : sedeId;
+        int verifiedSedeId = access.requirePermission(targetSedeId, user, "caja.supervisar");
+        var created = dataService.createCaja(request, verifiedSedeId);
+        return new CashBoxDto(Integer.parseInt(created.id()), created.nombre(), verifiedSedeId);
     }
 
     @GetMapping("/sessions/open")
@@ -63,11 +73,11 @@ public class CashController {
         if (cajaId != null) {
             access.requireOwnedBox(cajaId, user);
             return dataService.getOpenCashSession(cajaId)
-                    .map(ResponseEntity::ok)
+                    .map(session -> { access.requireOwnedSession(session.id(),user); return ResponseEntity.ok(session); })
                     .orElseGet(() -> ResponseEntity.noContent().build());
         }
         return dataService.getOpenCashSessionForOwner(user)
-                .map(ResponseEntity::ok)
+                .map(session -> { access.requireOwnedSession(session.id(),user); return ResponseEntity.ok(session); })
                 .orElseGet(() -> ResponseEntity.noContent().build());
     }
 
@@ -104,10 +114,19 @@ public class CashController {
     public List<CashAuditDto> audits(@RequestParam(required = false) Integer sedeId,
             @RequestAttribute("auth.user") AuthUserDto user) {
         if (sedeId != null) {
-            access.requireOwnedVenue(sedeId, user);
+            access.requirePermission(sedeId, user, "caja.supervisar");
             return dataService.listCashAuditsForVenue(sedeId);
         }
         return dataService.listCashAuditsForOwner(user);
+    }
+
+    @GetMapping("/audits/{id}")
+    public CashAuditDto auditDetail(@PathVariable String id,
+            @RequestAttribute("auth.user") AuthUserDto user) {
+        return dataService.listCashAuditsForOwner(user).stream()
+                .filter(a -> a.id().equals(id))
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Arqueo no encontrado"));
     }
 
     @ExceptionHandler(ResponseStatusException.class)

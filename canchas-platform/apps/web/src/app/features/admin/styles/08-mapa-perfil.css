@@ -38,26 +38,32 @@
 .profile-avatar-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  background: var(--color-surface-muted, #f8fafc);
-  border: 1.5px solid var(--color-border, #e2e8f0);
-  border-radius: var(--radius-full, 9999px);
-  padding: 0.2rem 0.55rem 0.2rem 0.2rem;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  padding: 0;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  font-family: inherit;
   outline: none;
+  box-shadow: none;
 }
 
 .profile-avatar-btn:hover {
-  background: var(--color-brand-green-light, #dcfce7);
-  border-color: var(--color-brand-green, #229e04);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(34, 158, 4, 0.15);
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+.profile-avatar-btn:hover .user-avatar-badge {
+  outline: 2px solid var(--color-brand-green, #27802D);
+  outline-offset: 1px;
 }
 
 .profile-avatar-btn:active {
-  transform: translateY(0);
+  transform: scale(0.96);
 }
 
 /* Círculo con 2 letras / iniciales */
@@ -362,7 +368,7 @@
   align-items: center;
   gap: 0.25rem;
   padding: 0.25rem 1rem;
-  border-radius: var(--radius-full);
+  border-radius: 4px;
   color: var(--color-text-secondary, #64748b);
   font-size: 0.82rem;
   font-weight: 700;
@@ -411,7 +417,7 @@
 
 .notification-channel-btn {
   padding: 0.25rem 0.75rem;
-  border-radius: 999px;
+  border-radius: 4px;
   color: var(--color-text-secondary, #64748b);
   font-size: 0.82rem;
   font-weight: 700;
@@ -434,7 +440,7 @@
   padding: 0.35rem;
   background: var(--color-surface-container-low, #f8fafc);
   border: 1px solid var(--color-border, #e2e8f0);
-  border-radius: var(--radius-lg, 16px);
+  border-radius: 4px;
 }
 
 .caja-subtab-btn {
@@ -445,7 +451,7 @@
   min-height: 38px;
   padding: 0.5rem 0.85rem;
   border: 1px solid transparent;
-  border-radius: var(--radius-full, 999px);
+  border-radius: 4px;
   background: transparent;
   color: var(--color-ink-600, #475569);
   font-size: 0.82rem;

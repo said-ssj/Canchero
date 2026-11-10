@@ -77,3 +77,8 @@ Credenciales solo en configuracion privada. Nunca en este archivo.
 
 Metadatos JDBC de solo lectura confirman que venta no guarda metodo/desglose y pago_reserva tiene id_sesion_caja. Se prepara [migracion aditiva](sql/2026-10-19_pagos_venta.sql) para venta_pago, venta_operacion y snapshots nullable de arqueo_caja. NO aplicada en Supabase; no reconstruye pagos historicos ni modifica reservas/clientes. Validacion aislada PostgreSQL WASM, no certificacion del esquema completo. Ver [guia](PAGOS_Y_CAJA.md).
 Actualizacion 2026-10-19: migracion de pagos aplicada con autorizacion explicita. Verificadas dos tablas nuevas, tres snapshots nullable, FK, triggers, RLS y revocaciones de acceso navegador antes/despues del COMMIT. Sin datos sinteticos ni cambios en conteos de ventas/turnos/arqueos. No volver a ejecutar en el mismo entorno; ver [estado y limites](PAGOS_Y_CAJA.md).
+
+
+## Negocios y roles por sede: aplicado 2026-11-08
+
+Aplicada `sql/2026-11-07_negocios_roles_sede.sql`: negocio, miembro_negocio, asignacion_sede y tres catalogos de permisos. Todas las 44 sedes tienen propietario y negocio; 12 duenos, con Santo Domingo (1) y sede54 en el propietario original. Claves compuestas, RLS y revocacion de acceso directo desde navegador. La funcion de permisos se invoca desde la API con la identidad autenticada. Admin ya no implica acceso global; se requiere asignacion por sede. [Modelo, permisos, limites y endpoints](ROLES_Y_NEGOCIOS.md). Cuentas/reparto y respaldo previo solo locales en backups/, excluido de Git. No volver a ejecutar la migracion en Supabase.

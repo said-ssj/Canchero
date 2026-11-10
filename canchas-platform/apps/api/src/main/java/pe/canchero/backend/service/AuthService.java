@@ -33,6 +33,10 @@ public class AuthService extends JdbcSupport {
         this.authTokenService = authTokenService;
     }
 
+    public boolean hasStaffAssignment(AuthUserDto user) {
+        return !new TenantPermissions(jdbc).venues(user, "sede.ver").isEmpty();
+    }
+
     private int roleId(String rawRole) {
         String normalized = normalize(rawRole);
         if (normalized.isEmpty()) {
@@ -200,8 +204,8 @@ public class AuthService extends JdbcSupport {
                                     join public.rol r on r.id_rol = u.id_rol
                                     where u.id_usuario = ? and u.usucre = 'AUTH_SIGNUP'
                                       and u.pccre = 'WEBAPP' and u.estado = 'A'
-                                      and r.nombre = 'user' and r.estado = 'A'
-                                      and coalesce(u.password_hash, '') = ''
+                                      and lower(r.nombre) in ('user', 'cliente', 'jugador') and r.estado = 'A'
+                                      and coalesce(u.password_hash, '') in ('', 'oauth:google')
                                 )
                                 """, Boolean.class, userId));
                 if (!provisionedBySupabase) {

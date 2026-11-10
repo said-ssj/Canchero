@@ -14,29 +14,81 @@ public class VenueAccessService {
     private final JdbcTemplate jdbc;
     public VenueAccessService(JdbcTemplate jdbc) { this.jdbc = jdbc; }
 
-    /** El administrador de la plataforma gestiona cualquier sede; el dueño solo las suyas. */
-    public static boolean canManage(AuthUserDto user, String ownerId) {
-        return isAdmin(user) || (ownerId != null && user.id().equals(ownerId));
+    private static boolean isSuperAdmin(AuthUserDto user) {
+        return Roles.isSuperAdmin(user.rol());
     }
 
-    public static boolean isAdmin(AuthUserDto user) {
-        return Roles.isAdmin(user.rol());
+    public int requirePermission(Integer sedeId, AuthUserDto user, String permission) {
+        return new TenantPermissions(jdbc).require(user, sedeId, permission);
+    }
+
+    public boolean hasPermission(Integer sedeId, AuthUserDto user, String permission) {
+        return sedeId != null && new TenantPermissions(jdbc).has(user, sedeId, permission);
     }
 
     public int requireOwnedVenue(Integer sedeId, AuthUserDto user) {
-        if (user == null) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Sesión inválida o expirada");
-        if (sedeId == null || sedeId <= 0) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Selecciona una sede");
-        var owners = jdbc.queryForList("select id_dueno from sede where id_sede = ? and estado = 'A'", String.class, sedeId);
-        if (owners.isEmpty()) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Sede no encontrada");
-        if (!canManage(user, owners.get(0))) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "La sede no pertenece a tu cuenta");
-        return sedeId;
+        return requirePermission(sedeId,user,"sede.editar");
+    }
+
+    public java.util.List<Integer> authorizedVenues(AuthUserDto user, String permission) {
+        return new TenantPermissions(jdbc).venues(user, permission);
+    }
+
+    public void validateSameBusiness(int venueId1, int venueId2) {
+        if (venueId1 == venueId2) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Las sedes de origen y destino deben ser distintas");
+        }
+        boolean hasNegocio = isColumnPresent("sede", "id_negocio");
+        String sql = hasNegocio
+                ? """
+                  select count(*) from sede s1, sede s2
+                  where s1.id_sede = ? and s2.id_sede = ?
+                    and s1.estado = 'A' and s2.estado = 'A'
+                    and (
+                      (s1.id_negocio is not null and s1.id_negocio = s2.id_negocio)
+                      or (s1.id_dueno is not null and s1.id_dueno = s2.id_dueno)
+                    )
+                  """
+                : """
+                  select count(*) from sede s1, sede s2
+                  where s1.id_sede = ? and s2.id_sede = ?
+                    and s1.estado = 'A' and s2.estado = 'A'
+                    and s1.id_dueno is not null and s1.id_dueno = s2.id_dueno
+                  """;
+        Integer match = jdbc.queryForObject(sql, Integer.class, venueId1, venueId2);
+        if (match == null || match == 0) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "La operación solo está permitida entre sedes que pertenecen al mismo dueño o negocio");
+        }
+    }
+
+    public void validateSameBusinessCourtMove(int courtId, Integer targetVenueId) {
+        if (targetVenueId == null || targetVenueId <= 0) return;
+        var currentVenues = jdbc.queryForList("select id_sede from cancha where id_cancha = ?", Integer.class, courtId);
+        if (currentVenues.isEmpty()) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Cancha no encontrada");
+        int sourceVenueId = currentVenues.get(0);
+        if (sourceVenueId != targetVenueId) {
+            validateSameBusiness(sourceVenueId, targetVenueId);
+        }
+    }
+
+    private boolean isColumnPresent(String table, String column) {
+        try {
+            Integer count = jdbc.queryForObject("""
+                    select count(*) from information_schema.columns
+                    where lower(table_name) = lower(?) and lower(column_name) = lower(?)
+                    """, Integer.class, table, column);
+            return count != null && count > 0;
+        } catch (Exception ex) {
+            return false;
+        }
     }
 
     public void requireOwnedCourt(Integer canchaId, AuthUserDto user) {
         if (canchaId == null || canchaId <= 0) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cancha inválida");
         var sedes = jdbc.queryForList("select id_sede from cancha where id_cancha = ?", Integer.class, canchaId);
         if (sedes.isEmpty()) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Cancha no encontrada");
-        requireOwnedVenue(sedes.get(0), user);
+        requirePermission(sedes.get(0), user, "cancha.gestionar");
     }
 
     public void requireOpenSession(Integer sessionId, int sedeId) {
@@ -60,9 +112,7 @@ public class VenueAccessService {
                 """, (rs, rowNum) -> new BoxVenueInfo(rs.getInt("id_caja"), rs.getInt("id_sede"), rs.getString("id_dueno")), cajaId);
         if (list.isEmpty()) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Caja no encontrada");
         BoxVenueInfo info = list.get(0);
-        if (!canManage(user, info.ownerId())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "La caja no pertenece a tu cuenta");
-        }
+        requirePermission(info.sedeId(), user, "caja.operar");
         return info;
     }
 
@@ -84,8 +134,11 @@ public class VenueAccessService {
                         rs.getBoolean("is_open")), sessionId);
         if (list.isEmpty()) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Turno de caja no encontrado");
         SessionVenueInfo info = list.get(0);
-        if (!canManage(user, info.ownerId())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "El turno no pertenece a tu cuenta");
+        requirePermission(info.sedeId(), user, "caja.operar");
+        if (!hasPermission(info.sedeId(), user, "caja.supervisar")) {
+            Integer own = jdbc.queryForObject("select count(*) from sesion_caja where id_sesion_caja=? and id_usuario=?",
+                    Integer.class, sessionId, java.util.UUID.fromString(user.id()));
+            if (own == null || own != 1) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Solo puedes operar tu propio turno");
         }
         return info;
     }
@@ -102,7 +155,7 @@ public class VenueAccessService {
         if (user == null) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Sesión inválida o expirada");
         if (reservaId == null || reservaId <= 0) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Reserva inválida");
         var list = jdbc.query("""
-                select r.id_reserva, r.id_usuario, r.id_cliente, cl.id_usuario as cliente_usuario_id, s.id_dueno
+                select r.id_reserva, r.id_usuario, r.id_cliente, cl.id_usuario as cliente_usuario_id, s.id_dueno, s.id_sede
                 from reserva r
                 join cancha ca on ca.id_cancha = r.id_cancha
                 join sede s on s.id_sede = ca.id_sede
@@ -111,12 +164,12 @@ public class VenueAccessService {
                 """, (rs, rowNum) -> new String[] {
                     rs.getString("id_usuario"),
                     rs.getString("cliente_usuario_id"),
-                    rs.getString("id_dueno")
+                    rs.getString("id_dueno"), rs.getString("id_sede")
                 }, reservaId);
         if (list.isEmpty()) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Reserva no encontrada");
         String[] row = list.get(0);
-        boolean isAdmin = isAdmin(user);
-        boolean isOwner = user.id().equals(row[2]);
+        boolean isAdmin = isSuperAdmin(user);
+        boolean isOwner = hasPermission(Integer.parseInt(row[3]), user, "caja.operar");
         boolean isTitular = user.id().equals(row[0]) || user.id().equals(row[1]);
         if (!isAdmin && !isOwner && !isTitular) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tienes acceso a los pagos de esta reserva");
@@ -127,17 +180,17 @@ public class VenueAccessService {
         if (user == null) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Sesión inválida o expirada");
         if (saleId <= 0) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Venta inválida");
         var list = jdbc.query("""
-                select v.id_venta, s.id_dueno
+                select v.id_venta, s.id_sede
                 from venta v
                 left join sesion_caja sc on sc.id_sesion_caja = v.id_sesion_caja
                 left join caja c on c.id_caja = sc.id_caja
                 left join sede s on s.id_sede = c.id_sede
                 where v.id_venta = ?
-                """, (rs, rowNum) -> rs.getString("id_dueno"), saleId);
+                """, (rs, rowNum) -> rs.getString("id_sede"), saleId);
         if (list.isEmpty()) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Venta no encontrada");
-        String ownerId = list.get(0);
-        boolean isAdmin = isAdmin(user);
-        if (!isAdmin && (ownerId == null || !user.id().equals(ownerId))) {
+        String venueId = list.get(0);
+        boolean isAdmin = isSuperAdmin(user);
+        if (!isAdmin && (venueId == null || !hasPermission(Integer.parseInt(venueId), user, "venta.ver"))) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "La venta no pertenece a tu cuenta");
         }
     }

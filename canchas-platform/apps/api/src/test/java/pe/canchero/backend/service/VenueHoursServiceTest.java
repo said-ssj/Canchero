@@ -31,6 +31,7 @@ class VenueHoursServiceTest {
                 apertura time, cierre time, estado char(1), usucre varchar(30), pccre varchar(30))
                 """);
         jdbc.update("insert into sede values (1, 'owner-1'), (2, 'owner-2')");
+        jdbc.execute("alter table sede add estado char(1) default 'A'");
         service = new VenueHoursService(jdbc);
     }
 

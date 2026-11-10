@@ -1,0 +1,590 @@
+<div class="admin-compras">
+  @if (!currentSedeId()) {
+    <div class="empty-venue-state">
+      <mat-icon class="empty-icon" aria-hidden="true">storefront</mat-icon>
+      <h2>Selecciona una sede</h2>
+      <p>Debes seleccionar una sede en el panel superior para gestionar compras y proveedores.</p>
+    </div>
+  } @else {
+    <!-- Cabecera -->
+    <header class="view-header">
+      <div class="header-titles">
+        <h1 class="view-title">Compras &amp; Proveedores</h1>
+        <p class="view-subtitle">
+          {{ currentSedeName() || 'Sede seleccionada' }} · Órdenes de compra, catálogo de proveedores y recepción de mercadería con ingreso a Kardex.
+        </p>
+      </div>
+
+      <div class="header-actions">
+        <a routerLink="/admin/inventario" mat-stroked-button class="action-btn">
+          <mat-icon aria-hidden="true">inventory</mat-icon>
+          Kardex &amp; Existencias
+        </a>
+        <button type="button" mat-stroked-button class="action-btn" (click)="openNewSupplierModal()">
+          <mat-icon aria-hidden="true">person_add</mat-icon>
+          Nuevo Proveedor
+        </button>
+        <button type="button" mat-flat-button class="action-btn-primary" (click)="openNewPurchaseModal()">
+          <mat-icon aria-hidden="true">add_shopping_cart</mat-icon>
+          Nueva Compra / Ingreso
+        </button>
+      </div>
+    </header>
+
+    <!-- Métricas Operativas Compras (Estilo Canchero Simple) -->
+    <div class="management-stats compras-stats">
+      <div>
+        <span>Compras Recibidas</span>
+        <strong style="color: var(--color-brand-green, #27802D)">S/ {{ totalCompras() | number:'1.2-2' }}</strong>
+        <small class="stat-sub">Total invertido en mercadería</small>
+      </div>
+      <div>
+        <span>Ingresos Concretados</span>
+        <strong>{{ recibidasCount() }}</strong>
+        <small class="stat-sub">Cargados en Kardex de almacén</small>
+      </div>
+      <div>
+        <span>Órdenes Pendientes</span>
+        <strong [style.color]="pendientesCount() > 0 ? 'var(--color-warning, #d97706)' : 'inherit'">{{ pendientesCount() }}</strong>
+        <small class="stat-sub">Por recibir del proveedor</small>
+      </div>
+      <div>
+        <span>Proveedores Activos</span>
+        <strong>{{ proveedoresActivosCount() }}</strong>
+        <small class="stat-sub">Empresas registradas</small>
+      </div>
+    </div>
+
+    <!-- Selector de Pestañas -->
+    <div class="tabs-bar">
+      <mat-button-toggle-group [value]="activeTab()" (change)="activeTab.set($event.value)">
+        <mat-button-toggle value="compras">
+          <mat-icon aria-hidden="true">shopping_bag</mat-icon>
+          Compras &amp; Recepción ({{ filteredPurchases().length }})
+        </mat-button-toggle>
+        <mat-button-toggle value="proveedores">
+          <mat-icon aria-hidden="true">store</mat-icon>
+          Directorio de Proveedores ({{ filteredSuppliers().length }})
+        </mat-button-toggle>
+      </mat-button-toggle-group>
+    </div>
+
+    <!-- ================= PESTAÑA 1: COMPRAS ================= -->
+    @if (activeTab() === 'compras') {
+      <div class="tab-panel">
+        <div class="filter-toolbar">
+          <mat-form-field appearance="outline" class="search-field" subscriptSizing="dynamic">
+            <mat-icon matPrefix aria-hidden="true">search</mat-icon>
+            <input
+              matInput
+              placeholder="Buscar por comprobante, razón social o RUC..."
+              [ngModel]="purchaseSearch()"
+              (ngModelChange)="purchaseSearch.set($event)"
+            />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="select-field" subscriptSizing="dynamic">
+            <mat-label>Proveedor</mat-label>
+            <mat-select [ngModel]="purchaseSupplierFilter()" (ngModelChange)="purchaseSupplierFilter.set($event)">
+              <mat-option [value]="0">Todos los proveedores</mat-option>
+              @for (s of suppliers(); track s.id) {
+                <mat-option [value]="s.id">{{ s.razonSocial }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <mat-button-toggle-group
+            aria-label="Filtro de compras"
+            [value]="purchaseStatusFilter()"
+            (change)="purchaseStatusFilter.set($event.value)"
+          >
+            <mat-button-toggle value="TODAS">Todas</mat-button-toggle>
+            <mat-button-toggle value="RECIBIDA">Recibidas</mat-button-toggle>
+            <mat-button-toggle value="EMITIDA">Pendientes</mat-button-toggle>
+            <mat-button-toggle value="ANULADA">Anuladas</mat-button-toggle>
+          </mat-button-toggle-group>
+        </div>
+
+        @if (filteredPurchases().length === 0) {
+          <div class="empty-table-state">
+            <mat-icon class="empty-icon" aria-hidden="true">inventory_2</mat-icon>
+            <h3>No se encontraron registros de compra</h3>
+            <p>Puedes emitir una nueva orden o registrar un ingreso directo de mercadería con el botón superior.</p>
+          </div>
+        } @else {
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Fecha Emisión</th>
+                  <th>Comprobante</th>
+                  <th>Proveedor</th>
+                  <th class="text-center">Partidas</th>
+                  <th class="text-right">Subtotal</th>
+                  <th class="text-right">Total</th>
+                  <th>Estado</th>
+                  <th class="text-center">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (c of filteredPurchases(); track c.id) {
+                  <tr>
+                    <td class="td-fecha">
+                      {{ c.fechaEmision | date:'dd/MM/yyyy HH:mm' }}
+                    </td>
+                    <td>
+                      <span class="tipo-tag">{{ c.tipoComprobante | uppercase }}</span>
+                      <strong>{{ c.numeroComprobante }}</strong>
+                    </td>
+                    <td class="td-proveedor">
+                      <div class="prov-name">{{ c.proveedorNombre }}</div>
+                      <span class="prov-ruc">RUC: {{ c.proveedorRuc }}</span>
+                    </td>
+                    <td class="text-center">
+                      <span class="items-count-badge">{{ c.items.length }} prod.</span>
+                    </td>
+                    <td class="text-right font-mono">
+                      S/ {{ c.subtotal | number:'1.2-2' }}
+                    </td>
+                    <td class="text-right font-mono font-bold">
+                      S/ {{ c.total | number:'1.2-2' }}
+                    </td>
+                    <td>
+                      @if (c.estado === 'RECIBIDA') {
+                        <span class="status-badge badge-success">RECIBIDA EN ALMACÉN</span>
+                      } @else if (c.estado === 'EMITIDA') {
+                        <span class="status-badge badge-warning">ORDEN PENDIENTE</span>
+                      } @else if (c.estado === 'ANULADA') {
+                        <span class="status-badge badge-danger">ANULADA</span>
+                      } @else {
+                        <span class="status-badge badge-muted">BORRADOR</span>
+                      }
+                    </td>
+                    <td class="text-center">
+                      <div class="table-actions">
+                        <button type="button" mat-button class="btn-sm" (click)="viewPurchaseDetail(c)">
+                          <mat-icon aria-hidden="true">visibility</mat-icon> Ver
+                        </button>
+                        @if (c.estado === 'EMITIDA') {
+                          <button
+                            type="button"
+                            mat-button
+                            class="btn-sm btn-receive"
+                            (click)="viewPurchaseDetail(c)"
+                          >
+                            <mat-icon aria-hidden="true">move_to_inbox</mat-icon> Recepcionar
+                          </button>
+                        }
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- ================= PESTAÑA 2: PROVEEDORES ================= -->
+    @if (activeTab() === 'proveedores') {
+      <div class="tab-panel">
+        <div class="filter-toolbar">
+          <mat-form-field appearance="outline" class="search-field" subscriptSizing="dynamic">
+            <mat-icon matPrefix aria-hidden="true">search</mat-icon>
+            <input
+              matInput
+              placeholder="Buscar proveedor por RUC, razón social o contacto..."
+              [ngModel]="supplierSearch()"
+              (ngModelChange)="supplierSearch.set($event)"
+            />
+          </mat-form-field>
+
+          <div class="tipo-chips">
+            <button
+              type="button"
+              class="chip-filter"
+              [class.active]="supplierStatusFilter() === 'TODOS'"
+              (click)="supplierStatusFilter.set('TODOS')"
+            >
+              Todos
+            </button>
+            <button
+              type="button"
+              class="chip-filter recibida"
+              [class.active]="supplierStatusFilter() === 'A'"
+              (click)="supplierStatusFilter.set('A')"
+            >
+              Activos
+            </button>
+            <button
+              type="button"
+              class="chip-filter anulada"
+              [class.active]="supplierStatusFilter() === 'I'"
+              (click)="supplierStatusFilter.set('I')"
+            >
+              Inactivos
+            </button>
+          </div>
+        </div>
+
+        @if (filteredSuppliers().length === 0) {
+          <div class="empty-table-state">
+            <mat-icon class="empty-icon" aria-hidden="true">contacts</mat-icon>
+            <h3>No se encontraron proveedores</h3>
+            <p>Registra un nuevo proveedor distribuidor con el botón superior.</p>
+          </div>
+        } @else {
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>RUC</th>
+                  <th>Razón Social</th>
+                  <th>Contacto</th>
+                  <th>Teléfono &amp; Correo</th>
+                  <th>Dirección</th>
+                  <th>Estado</th>
+                  <th class="text-center">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (s of filteredSuppliers(); track s.id) {
+                  <tr>
+                    <td class="font-mono font-bold">{{ s.ruc }}</td>
+                    <td>
+                      <div class="prov-name font-bold">{{ s.razonSocial }}</div>
+                    </td>
+                    <td>{{ s.contacto || 'Sin contacto registrado' }}</td>
+                    <td>
+                      <div class="contact-info">
+                        @if (s.telefono) { <span><mat-icon aria-hidden="true">phone</mat-icon> {{ s.telefono }}</span> }
+                        @if (s.correo) { <span><mat-icon aria-hidden="true">email</mat-icon> {{ s.correo }}</span> }
+                      </div>
+                    </td>
+                    <td class="td-direccion">{{ s.direccion || '—' }}</td>
+                    <td>
+                      <span class="status-badge" [class.badge-success]="s.estado === 'A'" [class.badge-muted]="s.estado === 'I'">
+                        {{ s.estado === 'A' ? 'ACTIVO' : 'INACTIVO' }}
+                      </span>
+                    </td>
+                    <td class="text-center">
+                      <div class="table-actions">
+                        <button type="button" mat-button class="btn-sm" (click)="openEditSupplierModal(s)">
+                          <mat-icon aria-hidden="true">edit</mat-icon> Editar
+                        </button>
+                        <button type="button" mat-button class="btn-sm" (click)="toggleSupplier(s)">
+                          {{ s.estado === 'A' ? 'Desactivar' : 'Activar' }}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- ================= MODAL: NUEVA COMPRA ================= -->
+    @if (showPurchaseModal()) {
+      <div class="modal-backdrop" (click)="showPurchaseModal.set(false)">
+        <div class="modal-card wide" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <h3>
+              <mat-icon aria-hidden="true">add_shopping_cart</mat-icon>
+              Registrar Compra / Orden de Abastecimiento
+            </h3>
+            <button type="button" class="close-btn" (click)="showPurchaseModal.set(false)">
+              <mat-icon aria-hidden="true">close</mat-icon>
+            </button>
+          </div>
+
+          <div class="modal-body">
+            @if (purchaseError()) {
+              <div class="alert-banner-error" role="alert">
+                <mat-icon aria-hidden="true">error</mat-icon>
+                <span>{{ purchaseError() }}</span>
+              </div>
+            }
+
+            <div class="form-row">
+              <mat-form-field appearance="outline" class="w-half">
+                <mat-label>Proveedor Distribuidor</mat-label>
+                <mat-select [ngModel]="purchaseSupplierId()" (ngModelChange)="purchaseSupplierId.set($event)">
+                  @for (s of suppliers(); track s.id) {
+                    <mat-option [value]="s.id">{{ s.razonSocial }} (RUC: {{ s.ruc }})</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="w-quarter">
+                <mat-label>Tipo Comprobante</mat-label>
+                <mat-select [ngModel]="purchaseTipo()" (ngModelChange)="purchaseTipo.set($event)">
+                  <mat-option value="factura">Factura</mat-option>
+                  <mat-option value="boleta">Boleta</mat-option>
+                  <mat-option value="guia">Guía de Remisión</mat-option>
+                  <mat-option value="orden">Orden de Compra</mat-option>
+                </mat-select>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="w-quarter">
+                <mat-label>N° Comprobante</mat-label>
+                <input matInput placeholder="Ej. F001-00892" [ngModel]="purchaseNumero()" (ngModelChange)="purchaseNumero.set($event)" />
+              </mat-form-field>
+            </div>
+
+            <!-- Sección Partidas -->
+            <div class="partidas-box">
+              <h4><mat-icon aria-hidden="true">playlist_add</mat-icon> Partidas de Compra</h4>
+              
+              <div class="partida-inputs">
+                <mat-form-field appearance="outline" class="flex-2">
+                  <mat-label>Producto del Catálogo</mat-label>
+                  <mat-select [ngModel]="itemProductId()" (ngModelChange)="onProductPickerChange($event)">
+                    @for (p of products(); track p.id) {
+                      <mat-option [value]="p.id">{{ p.nombre }} (Stock: {{ p.stock }})</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="flex-1">
+                  <mat-label>Cantidad</mat-label>
+                  <input matInput type="number" min="1" [ngModel]="itemQuantity()" (ngModelChange)="itemQuantity.set($event)" />
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="flex-1">
+                  <mat-label>Costo Unit. (S/)</mat-label>
+                  <input matInput type="number" step="0.10" [ngModel]="itemUnitCost()" (ngModelChange)="itemUnitCost.set($event)" />
+                </mat-form-field>
+
+                <button type="button" mat-flat-button class="action-btn-primary add-partida-btn" (click)="addPartida()">
+                  <mat-icon aria-hidden="true">add</mat-icon> Añadir
+                </button>
+              </div>
+
+              <!-- Lista de Partidas -->
+              @if (purchaseItems().length === 0) {
+                <p class="partidas-empty">No hay productos agregados a la lista de compra.</p>
+              } @else {
+                <table class="partidas-table">
+                  <thead>
+                    <tr>
+                      <th>Producto</th>
+                      <th class="text-right">Cantidad</th>
+                      <th class="text-right">Costo Unit.</th>
+                      <th class="text-right">Subtotal</th>
+                      <th class="text-center">Eliminar</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (item of purchaseItems(); track $index) {
+                      <tr>
+                        <td><strong>{{ item.productoNombre }}</strong></td>
+                        <td class="text-right font-mono">{{ item.cantidad }} unid.</td>
+                        <td class="text-right font-mono">S/ {{ item.costoUnitario | number:'1.2-2' }}</td>
+                        <td class="text-right font-mono font-bold">S/ {{ item.subtotal | number:'1.2-2' }}</td>
+                        <td class="text-center">
+                          <button type="button" class="btn-delete-row" (click)="removePartida($index)">
+                            <mat-icon aria-hidden="true">delete</mat-icon>
+                          </button>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              }
+            </div>
+
+            <!-- Resumen de Totales -->
+            <div class="purchase-summary-row">
+              <div class="immediate-receive">
+                <mat-checkbox [ngModel]="purchaseRecibirInmediato()" (ngModelChange)="purchaseRecibirInmediato.set($event)">
+                  <strong>Ingresar mercadería inmediatamente al almacén</strong>
+                  <span class="chk-hint">Incrementa el stock físico y registra los movimientos de entrada en Kardex.</span>
+                </mat-checkbox>
+              </div>
+
+              <div class="totals-box">
+                <div class="total-line">
+                  <span>Subtotal:</span>
+                  <strong>S/ {{ newPurchaseSubtotal() | number:'1.2-2' }}</strong>
+                </div>
+                <div class="total-line">
+                  <span>IGV (18%):</span>
+                  <strong>S/ {{ newPurchaseIgv() | number:'1.2-2' }}</strong>
+                </div>
+                <div class="total-line main-total">
+                  <span>Total a Pagar:</span>
+                  <strong>S/ {{ newPurchaseTotal() | number:'1.2-2' }}</strong>
+                </div>
+              </div>
+            </div>
+
+            <mat-form-field appearance="outline" class="w-full">
+              <mat-label>Observación / Nota de Compra</mat-label>
+              <input matInput placeholder="Ej. Pago con transferencia BCP / Vía distribuidor zona sur" [ngModel]="purchaseObservacion()" (ngModelChange)="purchaseObservacion.set($event)" />
+            </mat-form-field>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" mat-stroked-button (click)="showPurchaseModal.set(false)" [disabled]="saving()">
+              Cancelar
+            </button>
+            <button type="button" mat-flat-button class="action-btn-primary" (click)="savePurchase()" [disabled]="saving()">
+              {{ saving() ? 'Guardando...' : (purchaseRecibirInmediato() ? 'Recepcionar y Cargar a Kardex' : 'Emitir Orden de Compra') }}
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- ================= MODAL: DETALLE DE COMPRA ================= -->
+    @if (showDetailModal(); as comp) {
+      @if (selectedPurchase(); as p) {
+        <div class="modal-backdrop" (click)="showDetailModal.set(false)">
+          <div class="modal-card wide" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+              <h3>
+                <mat-icon aria-hidden="true">description</mat-icon>
+                Documento de Compra: {{ p.tipoComprobante | uppercase }} {{ p.numeroComprobante }}
+              </h3>
+              <button type="button" class="close-btn" (click)="showDetailModal.set(false)">
+                <mat-icon aria-hidden="true">close</mat-icon>
+              </button>
+            </div>
+
+            <div class="modal-body">
+              <div class="detail-header-info">
+                <div>
+                  <span class="lbl">Proveedor:</span>
+                  <strong>{{ p.proveedorNombre }}</strong> (RUC: {{ p.proveedorRuc }})
+                </div>
+                <div>
+                  <span class="lbl">Fecha Emisión:</span>
+                  <span>{{ p.fechaEmision | date:'dd/MM/yyyy HH:mm' }}</span>
+                </div>
+                <div>
+                  <span class="lbl">Estado:</span>
+                  <span class="status-badge" [class.badge-success]="p.estado === 'RECIBIDA'" [class.badge-warning]="p.estado === 'EMITIDA'">
+                    {{ p.estado }}
+                  </span>
+                </div>
+              </div>
+
+              <table class="partidas-table mt-3">
+                <thead>
+                  <tr>
+                    <th>Producto</th>
+                    <th class="text-right">Cantidad</th>
+                    <th class="text-right">Costo Unit.</th>
+                    <th class="text-right">Subtotal</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (it of p.items; track $index) {
+                    <tr>
+                      <td><strong>{{ it.productoNombre }}</strong></td>
+                      <td class="text-right font-mono">{{ it.cantidad }} unid.</td>
+                      <td class="text-right font-mono">S/ {{ it.costoUnitario | number:'1.2-2' }}</td>
+                      <td class="text-right font-mono font-bold">S/ {{ it.subtotal | number:'1.2-2' }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+
+              <div class="detail-totals-box">
+                <div>Subtotal: <strong>S/ {{ p.subtotal | number:'1.2-2' }}</strong></div>
+                <div>IGV: <strong>S/ {{ p.igv | number:'1.2-2' }}</strong></div>
+                <div class="main">Total: <strong>S/ {{ p.total | number:'1.2-2' }}</strong></div>
+              </div>
+            </div>
+
+            <div class="modal-footer">
+              @if (p.estado === 'EMITIDA') {
+                <button type="button" mat-stroked-button color="warn" (click)="cancelCurrentPurchase()" [disabled]="saving()">
+                  Anular Orden
+                </button>
+                <button type="button" mat-flat-button class="action-btn-primary" (click)="receiveCurrentPurchase()" [disabled]="saving()">
+                  <mat-icon aria-hidden="true">move_to_inbox</mat-icon>
+                  Confirmar Recepción en Almacén (Kardex +)
+                </button>
+              }
+              <button type="button" mat-stroked-button (click)="showDetailModal.set(false)">
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+    }
+
+    <!-- ================= MODAL: PROVEEDOR ================= -->
+    @if (showSupplierModal()) {
+      <div class="modal-backdrop" (click)="showSupplierModal.set(false)">
+        <div class="modal-card" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <h3>
+              <mat-icon aria-hidden="true">store</mat-icon>
+              {{ editingSupplierId() ? 'Editar Proveedor' : 'Nuevo Proveedor Distribuidor' }}
+            </h3>
+            <button type="button" class="close-btn" (click)="showSupplierModal.set(false)">
+              <mat-icon aria-hidden="true">close</mat-icon>
+            </button>
+          </div>
+
+          <div class="modal-body">
+            @if (supError()) {
+              <div class="alert-banner-error" role="alert">
+                <mat-icon aria-hidden="true">error</mat-icon>
+                <span>{{ supError() }}</span>
+              </div>
+            }
+
+            <mat-form-field appearance="outline" class="w-full">
+              <mat-label>RUC (11 dígitos)</mat-label>
+              <input matInput maxlength="11" placeholder="Ej. 20100113610" [ngModel]="supRuc()" (ngModelChange)="supRuc.set($event)" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="w-full">
+              <mat-label>Razón Social / Nombre Comercial</mat-label>
+              <input matInput placeholder="Ej. Cervecerías Peruanas Backus S.A.A." [ngModel]="supRazonSocial()" (ngModelChange)="supRazonSocial.set($event)" />
+            </mat-form-field>
+
+            <div class="form-row">
+              <mat-form-field appearance="outline" class="w-half">
+                <mat-label>Persona de Contacto</mat-label>
+                <input matInput placeholder="Ej. Juan Pérez" [ngModel]="supContacto()" (ngModelChange)="supContacto.set($event)" />
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="w-half">
+                <mat-label>Teléfono / Celular</mat-label>
+                <input matInput placeholder="Ej. 987654321" [ngModel]="supTelefono()" (ngModelChange)="supTelefono.set($event)" />
+              </mat-form-field>
+            </div>
+
+            <mat-form-field appearance="outline" class="w-full">
+              <mat-label>Correo Electrónico</mat-label>
+              <input matInput type="email" placeholder="pedidos@proveedor.com" [ngModel]="supCorreo()" (ngModelChange)="supCorreo.set($event)" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="w-full">
+              <mat-label>Dirección / Centro de Distribución</mat-label>
+              <input matInput placeholder="Ej. Av. Javier Prado Este 6210, La Molina" [ngModel]="supDireccion()" (ngModelChange)="supDireccion.set($event)" />
+            </mat-form-field>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" mat-stroked-button (click)="showSupplierModal.set(false)" [disabled]="saving()">
+              Cancelar
+            </button>
+            <button type="button" mat-flat-button class="action-btn-primary" (click)="saveSupplier()" [disabled]="saving()">
+              {{ saving() ? 'Guardando...' : 'Guardar Proveedor' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+  }
+</div>

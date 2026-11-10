@@ -112,7 +112,7 @@
 }
 
 .balance-result-card.is-cuadrada {
-  border-color: #10b981;
+  border-color: #27802D;
   background: var(--color-success-50);
   color: var(--color-success-700);
 }
@@ -175,7 +175,7 @@
 }
 
 .ticket-balance-box.is-cuadrada {
-  border-color: #10b981;
+  border-color: #27802D;
   background: #ecfdf5;
   color: #065f46;
 }

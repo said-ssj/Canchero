@@ -59,15 +59,13 @@ public class CashService extends JdbcSupport {
     }
 
     public List<CashBoxDto> listCashBoxesForOwner(AuthUserDto user) {
-        UUID ownerUuid = resolveOperationalUserId(user.id());
-        boolean admin = Roles.isAdmin(user.rol()); // el admin de la plataforma ve todas las sedes
         return jdbc.query("""
                 select c.id_caja, c.nombre_identificador, c.id_sede
                 from caja c
                 join sede s on s.id_sede = c.id_sede
-                where c.estado = 'A' and s.estado = 'A' and (? or s.id_dueno = ?)
+                where c.estado = 'A' and s.estado = 'A' and __SCOPE__
                 order by c.id_sede, c.id_caja
-                """, cashBoxRowMapper(), admin, ownerUuid);
+                """.replace("__SCOPE__",new TenantPermissions(jdbc).scope("s.id_sede", user, "caja.operar")), cashBoxRowMapper());
     }
 
     public Optional<CashSessionDto> getOpenCashSession(Integer cajaId) {
@@ -89,9 +87,9 @@ public class CashService extends JdbcSupport {
         // plataforma podría ser de otra sede. Para una sede ajena el admin pide la caja con ?cajaId=.
         return jdbc.query(cashSessionSql() + """
                 join sede s on s.id_sede = c.id_sede
-                where sc.estado = 'A' and sc.fecha_cierre is null and s.id_dueno = ?
-                order by sc.fecha_apertura desc limit 1
-                """, cashSessionRowMapper(), ownerUuid).stream().findFirst();
+                where sc.estado = 'A' and sc.fecha_cierre is null and __SCOPE__
+                order by sc.fecha_apertura desc
+                """.replace("__SCOPE__",new TenantPermissions(jdbc).scope("s.id_sede", user, "caja.operar")), cashSessionRowMapper()).stream().filter(session -> (!Roles.isSuperAdmin(user.rol()) || jdbc.queryForObject("select count(*) from sede where id_sede=? and id_dueno=?",Integer.class,session.sedeId(),ownerUuid)>0) && (new TenantPermissions(jdbc).has(user, session.sedeId(), "caja.supervisar") || user.email().equalsIgnoreCase(session.cajeroEmail()))).findFirst();
     }
 
     public List<CashMovementDto> listCashMovements(int sessionId) {
@@ -134,8 +132,6 @@ public class CashService extends JdbcSupport {
     }
 
     public List<CashAuditDto> listCashAuditsForOwner(AuthUserDto user) {
-        UUID ownerUuid = resolveOperationalUserId(user.id());
-        boolean admin = Roles.isAdmin(user.rol()); // el admin de la plataforma ve todas las sedes
         return jdbc.query("""
                 select a.*, a.id_arqueo, a.id_sesion_caja, coalesce(c.nombre_identificador, 'Caja ' || sc.id_caja) as caja_nombre,
                        coalesce(u.nombre, 'Cajero') as cajero_nombre, a.fecha_arqueo,
@@ -146,9 +142,9 @@ public class CashService extends JdbcSupport {
                 left join caja c on c.id_caja = sc.id_caja
                 left join sede s on s.id_sede = c.id_sede
                 left join usuario u on u.id_usuario = a.id_usuario
-                where a.estado = 'A' and (? or s.id_dueno = ?)
+                where a.estado = 'A' and __SCOPE__
                 order by a.fecha_arqueo desc nulls last, a.id_arqueo desc
-                """, cashAuditRowMapper(), admin, ownerUuid);
+                """.replace("__SCOPE__",new TenantPermissions(jdbc).scope("s.id_sede", user, "caja.supervisar")), cashAuditRowMapper());
     }
 
     public CashSessionDto openCashSession(OpenCashSessionRequest request) {
@@ -493,14 +489,20 @@ public class CashService extends JdbcSupport {
     }
 
     public List<SesionCajaResponse> listSesionesCajaForOwner(AuthUserDto user) {
-        UUID ownerUuid = resolveOperationalUserId(user.id());
-        boolean admin = Roles.isAdmin(user.rol()); // el admin de la plataforma ve todas las sedes
         String sql = cashSessionSql() + """
                 join sede s on s.id_sede = c.id_sede
-                where (? or s.id_dueno = ?)
+                where __SCOPE__
                 order by sc.fecha_apertura desc
                 """;
-        return jdbc.query(sql, sesionCajaRowMapper(), admin, ownerUuid);
+        return visibleSessions(jdbc.query(sql.replace("__SCOPE__",new TenantPermissions(jdbc).scope("s.id_sede", user, "caja.operar")), sesionCajaRowMapper()),user);
+    }
+
+    public List<SesionCajaResponse> visibleSessions(List<SesionCajaResponse> sessions, AuthUserDto user) {
+        var access=new VenueAccessService(jdbc);
+        return sessions.stream().filter(session -> {
+            try { access.requireOwnedSession(Integer.parseInt(session.id()),user); return true; }
+            catch(ResponseStatusException ex) { if(ex.getStatusCode().value()==403)return false; throw ex; }
+        }).toList();
     }
 
     private RowMapper<SesionCajaResponse> sesionCajaRowMapper() {

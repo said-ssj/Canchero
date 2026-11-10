@@ -100,7 +100,7 @@ public class CourtReportService extends JdbcSupport {
     }
 
     public List<CourtReportResponse> listAllReports(AuthUserDto authUser) {
-        if (authUser == null || !Roles.isAdmin(authUser.rol())) {
+        if (authUser == null || !Roles.isSuperAdmin(authUser.rol())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Acceso restringido a administradores");
         }
         return jdbc.query("""
@@ -118,7 +118,7 @@ public class CourtReportService extends JdbcSupport {
     }
 
     public List<CourtReportResponse> listReportsByVenue(int sedeId, AuthUserDto authUser) {
-        venueAccess.requireOwnedVenue(sedeId, authUser);
+        venueAccess.requirePermission(sedeId, authUser, "reporte.ver");
         return jdbc.query("""
                 select r.id_reporte, r.id_cancha, c.nombre_numero as nombre_cancha,
                        r.id_sede, s.nombre as nombre_sede,
@@ -135,7 +135,7 @@ public class CourtReportService extends JdbcSupport {
     }
 
     public List<CourtReportResponse> listReportsByCourt(int canchaId, AuthUserDto authUser) {
-        venueAccess.requireOwnedCourt(canchaId, authUser);
+        venueAccess.requirePermission(jdbc.queryForObject("select id_sede from cancha where id_cancha=?", Integer.class, canchaId), authUser, "reporte.ver");
         return jdbc.query("""
                 select r.id_reporte, r.id_cancha, c.nombre_numero as nombre_cancha,
                        r.id_sede, s.nombre as nombre_sede,
@@ -189,7 +189,7 @@ public class CourtReportService extends JdbcSupport {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Reporte no encontrado");
         }
         int sedeId = sedes.get(0);
-        venueAccess.requireOwnedVenue(sedeId, authUser);
+        venueAccess.requirePermission(sedeId, authUser, "reporte.gestionar");
 
         UUID operatorId = resolveOperationalUserId(authUser.id());
         String resolucion = request.resolucion() != null ? request.resolucion().trim() : null;

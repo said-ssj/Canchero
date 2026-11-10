@@ -7,7 +7,6 @@ let googleClient: ReturnType<typeof createClient> | undefined;
 
 export function googleOAuthClient() {
   if (googleClient) return googleClient;
-  const transient = new Map<string, string>();
   googleClient = createClient(environment.supabaseUrl, environment.supabaseAnonKey, {
     auth: {
       flowType: 'pkce',
@@ -15,18 +14,9 @@ export function googleOAuthClient() {
       detectSessionInUrl: false,
       autoRefreshToken: false,
       storage: {
-        getItem: (key) =>
-          key.endsWith('-code-verifier')
-            ? sessionStorage.getItem(key)
-            : (transient.get(key) ?? null),
-        setItem: (key, value) => {
-          if (key.endsWith('-code-verifier')) sessionStorage.setItem(key, value);
-          else transient.set(key, value);
-        },
-        removeItem: (key) => {
-          if (key.endsWith('-code-verifier')) sessionStorage.removeItem(key);
-          else transient.delete(key);
-        },
+        getItem: (key) => sessionStorage.getItem(key),
+        setItem: (key, value) => sessionStorage.setItem(key, value),
+        removeItem: (key) => sessionStorage.removeItem(key),
       },
     },
   });

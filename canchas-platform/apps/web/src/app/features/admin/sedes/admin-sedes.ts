@@ -65,6 +65,7 @@ export class AdminSedes implements OnInit, OnDestroy {
 
   // Estado del Dueño y Sedes
   protected readonly duenoId = computed(() => this.auth.currentUser()?.id ?? null);
+  protected readonly globalView = computed(() => this.db.managementScope?.() === 'all');
 
   protected readonly sedesDelDueno = computed(() => {
     const duenoId = this.duenoId();

@@ -38,6 +38,7 @@ class CashVenueStateServiceTest {
         jdbc.update("insert into sede values (1, 'owner-a'), (2, 'owner-b')");
         jdbc.update("insert into caja values (1, 1), (2, 2)");
         jdbc.update("insert into sesion_caja values (10, 1), (20, 2)");
+        jdbc.execute("alter table sede add estado char(1) default 'A'");
         data = new StubData();
         service = new CashVenueStateService(jdbc, data);
     }

@@ -1,0 +1,15 @@
+# Canchero · Plataforma de Reserva de Canchas Deportivas en Perú
+
+> Canchero es la plataforma web para la búsqueda, comparación y reserva en tiempo real de canchas deportivas (fútbol 5, 7, 8, 11, grass sintético y losas polideportivas) en Lima y provincias del Perú.
+
+## Capacidades y Servicios
+- **Reserva en Tiempo Real**: Horarios diurnos y nocturnos disponibles al instante con confirmación transparente.
+- **Sedes y Complejos Deportivos**: Información detallada con fotografías, ubicación GPS y comodidades (estacionamiento, camarines, duchas, cantina, iluminación LED).
+- **Pagos Transparentes**: Métodos de pago locales seguros (Yape, Plin, tarjetas de crédito/débito).
+- **Gestión para Dueños**: Panel administrativo integral con control de turnos de caja chica, punto de venta (POS), kardex de almacén, compras a proveedores y cuentas por cobrar.
+
+## Enlaces Principales
+- Web Principal: https://canchero-iota.vercel.app/
+- Catálogo de Sedes: https://canchero-iota.vercel.app/sedes
+- API Backend: https://canchero-api-givn.onrender.com/api/venues
+- Catálogo IA: https://canchero-iota.vercel.app/ai-catalog.json

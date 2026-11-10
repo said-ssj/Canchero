@@ -11,18 +11,16 @@ describe('DatabaseService catalog lifecycle', () => {
 
   it('recovers through the API using the confirmed identity and preserves failure as an error', async () => {
     vi.spyOn(loader, 'cargarDatosIniciales').mockResolvedValue(undefined);
-    const post = vi
-      .fn()
-      .mockReturnValue(
-        of({
-          id: '701',
-          venueId: 54,
-          nombre: 'Grass',
-          disponible: true,
-          precioHora: 50,
-          precioHoraNoche: 60,
-        }),
-      );
+    const post = vi.fn().mockReturnValue(
+      of({
+        id: '701',
+        venueId: 54,
+        nombre: 'Grass',
+        disponible: true,
+        precioHora: 50,
+        precioHoraNoche: 60,
+      }),
+    );
     TestBed.configureTestingModule({ providers: [{ provide: HttpClient, useValue: { post } }] });
     const service = TestBed.inject(DatabaseService);
     const draft = {
@@ -131,5 +129,49 @@ describe('DatabaseService catalog lifecycle', () => {
     ]);
     expect(service.getSedesPorDueno(uuid).map((sede) => sede.id)).toEqual([10]);
     expect(service.getSedesPorDueno('')).toEqual([]);
+  });
+
+  it('preserves the API owner UUID and excludes stale creator or numeric aliases after a transfer', () => {
+    vi.spyOn(loader, 'cargarDatosIniciales').mockResolvedValue(undefined);
+    TestBed.configureTestingModule({ providers: [{ provide: HttpClient, useValue: {} }] });
+    const service = TestBed.inject(DatabaseService);
+    const own = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+    const other = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
+    vi.spyOn((service as any).auth, 'currentUser').mockReturnValue({ id: own, rol: 'dueno' });
+    const legacy = service['uuidToNumber'](own);
+    const mapped = service['mapBackendVenueToSede']({ id: 54, ownerId: own, nombre: 'Mi sede' });
+    expect(mapped.id_dueno).toBe(own);
+    service.sedes.set([
+      mapped,
+      { id: 43, id_dueno: other, dueno_id: legacy, creado_por: own },
+      { id: 99, creado_por: own },
+    ]);
+    expect(service.getSedesPorDueno(own).map((venue) => venue.id)).toEqual([54]);
+  });
+
+  it('a superadmin sees owned venues by default and global venues only after explicitly changing scope', () => {
+    vi.spyOn(loader, 'cargarDatosIniciales').mockResolvedValue(undefined);
+    TestBed.configureTestingModule({ providers: [{ provide: HttpClient, useValue: {} }] });
+    const service = TestBed.inject(DatabaseService);
+    const own = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+    vi.spyOn((service as any).auth, 'currentUser').mockReturnValue({ id: own, rol: 'superadmin' });
+    service.sedes.set([
+      { id: 54, id_dueno: own },
+      { id: 43, id_dueno: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb' },
+    ]);
+    expect(service.getSedesPorDueno(own).map((venue) => venue.id)).toEqual([54]);
+    service.setManagementScope('all');
+    expect(service.getSedesPorDueno(own).map((venue) => venue.id)).toEqual([54, 43]);
+    service.setManagementScope('owned');
+    expect(service.getSedesPorDueno(own).map((venue) => venue.id)).toEqual([54]);
+  });
+
+  it('an owner cannot turn on the global admin view', () => {
+    vi.spyOn(loader, 'cargarDatosIniciales').mockResolvedValue(undefined);
+    TestBed.configureTestingModule({ providers: [{ provide: HttpClient, useValue: {} }] });
+    const service = TestBed.inject(DatabaseService);
+    vi.spyOn((service as any).auth, 'currentUser').mockReturnValue({ id: 'owner-a', rol: 'dueno' });
+    service.setManagementScope('all');
+    expect(service.managementScope()).toBe('owned');
   });
 });

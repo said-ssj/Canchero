@@ -1,4 +1,4 @@
-import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { AdminContext } from '../admin-context.service';
 import { AdminVenueRequired } from '../components/venue-required/venue-required';
 import { CommonModule } from '@angular/common';
@@ -12,6 +12,10 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { DatabaseService } from '@core/supabase/database.service';
 import { AuthService } from '@core/auth/auth.service';
+import { PosService } from '@core/services/pos.service';
+import { PurchaseService } from '@core/services/purchase.service';
+import { CajaService } from '@core/services/caja.service';
+import { CreditService } from '@core/services/credit.service';
 import type { Venue } from '@shared/models/venue.model';
 import { limaDate, addCalendarDays } from '../reservas/admin-reservas.utils';
 import type {
@@ -45,6 +49,10 @@ export class AdminFinanzas {
   protected readonly db = inject(DatabaseService);
   protected readonly auth = inject(AuthService);
   protected readonly router = inject(Router, { optional: true });
+  protected readonly posService = inject(PosService, { optional: true });
+  protected readonly purchaseService = inject(PurchaseService, { optional: true });
+  protected readonly cashService = inject(CajaService, { optional: true });
+  protected readonly creditService = inject(CreditService, { optional: true });
 
   irAConfiguracion(): void {
     this.navigateConfig.emit();
@@ -128,13 +136,19 @@ export class AdminFinanzas {
 
   constructor() {
     effect(() => {
-      this.venueId();
+      const vId = this.venueId();
       this.detalleModalOpen.set(false);
       this.detalleFacturable.set(null);
       this.reembolsoModalOpen.set(false);
       this.desgloseGeneralModalOpen.set(false);
       this.selectedCanchaFilter.set('all');
       this.paginaActualFacturables.set(1);
+      if (vId) {
+        untracked(() => {
+          this.purchaseService?.loadPurchases?.(vId)?.catch(() => {});
+          this.creditService?.cargarCuentas?.(vId)?.catch(() => {});
+        });
+      }
     });
   }
 
@@ -218,6 +232,82 @@ export class AdminFinanzas {
       ingresoNeto,
       totalLiquidado,
       liquidacionesPendientes,
+    };
+  });
+
+  // Ventas de Productos / Cantina (POS)
+  protected readonly ventasProductos = computed(() => {
+    const vId = this.venueId();
+    const ventas = typeof this.posService?.ventas === 'function' ? this.posService.ventas() : [];
+    if (!vId) return ventas.filter((v) => v.estado === 'completada');
+    return ventas.filter(
+      (v) => v.estado === 'completada' && (v.sedeId ? Number(v.sedeId) === Number(vId) : true),
+    );
+  });
+
+  protected readonly totalVentasProductos = computed(() => {
+    const sum = this.ventasProductos().reduce((acc, v) => acc + (v.total || 0), 0);
+    return Math.round(sum * 100) / 100;
+  });
+
+  // Compras de Mercadería a Proveedores
+  protected readonly comprasMercaderia = computed(() => {
+    const vId = this.venueId();
+    const compras = typeof this.purchaseService?.purchases === 'function' ? this.purchaseService.purchases() : [];
+    if (!vId) return compras.filter((c) => c.estado === 'RECIBIDA');
+    return compras.filter(
+      (c) => c.estado === 'RECIBIDA' && (c.sedeId ? Number(c.sedeId) === Number(vId) : true),
+    );
+  });
+
+  protected readonly totalComprasMercaderia = computed(() => {
+    const sum = this.comprasMercaderia().reduce((acc, c) => acc + (c.total || 0), 0);
+    return Math.round(sum * 100) / 100;
+  });
+
+  // Egresos Operativos de Caja
+  protected readonly egresosOperativosCaja = computed(() => {
+    const movs = typeof this.cashService?.movimientos === 'function' ? this.cashService.movimientos() : [];
+    const sum = movs
+      .filter((m) => String(m.tipo).toLowerCase() === 'egreso' || (m as any).tipo === 2)
+      .reduce((acc, m) => acc + (m.monto || 0), 0);
+    return Math.round(sum * 100) / 100;
+  });
+
+  // Total Abonos de Créditos y Fiados
+  protected readonly totalAbonosCreditos = computed(() => {
+    const resumen = typeof this.creditService?.resumen === 'function' ? this.creditService.resumen() : null;
+    return Math.round((resumen?.totalCobradoMes ?? 0) * 100) / 100;
+  });
+
+  // Finanzas Consolidadas & Utilidad Neta
+  protected readonly utilidadConsolidada = computed(() => {
+    const alquileresBruto = this.metricas().ingresoBruto;
+    const comisionAlquileres = this.metricas().comisionApp;
+    const alquileresNeto = this.metricas().ingresoNeto; // 95%
+    const cantinaBruto = this.totalVentasProductos(); // 100% para el dueño
+    const abonosCredito = this.totalAbonosCreditos();
+    const compras = this.totalComprasMercaderia();
+    const egresosCaja = this.egresosOperativosCaja();
+
+    const ingresosTotales = Math.round((alquileresBruto + cantinaBruto + abonosCredito) * 100) / 100;
+    const costosGastosTotales = Math.round((compras + egresosCaja + comisionAlquileres) * 100) / 100;
+    const utilidadNeta = Math.round((ingresosTotales - costosGastosTotales) * 100) / 100;
+    const margenPorcentaje =
+      ingresosTotales > 0 ? Math.round((utilidadNeta / ingresosTotales) * 1000) / 10 : 0;
+
+    return {
+      alquileresBruto,
+      alquileresNeto,
+      comisionAlquileres,
+      cantinaBruto,
+      abonosCredito,
+      compras,
+      egresosCaja,
+      ingresosTotales,
+      costosGastosTotales,
+      utilidadNeta,
+      margenPorcentaje,
     };
   });
 

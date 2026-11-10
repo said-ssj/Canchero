@@ -30,6 +30,11 @@ const THEMES = {
       background: transparent;
       color: inherit;
       cursor: pointer;
+      transition: color 0.15s ease;
+    }
+    button:hover {
+      background: transparent !important;
+      color: var(--color-brand-green, #27802D) !important;
     }
     button span {
       font-size: 24px;

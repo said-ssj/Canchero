@@ -11,17 +11,30 @@
   resize: vertical !important;
   overflow-x: hidden !important;
   border: 1px solid #d7dde5 !important;
-  border-radius: 8px !important;
+  border-radius: 4px !important;
   background: #ffffff !important;
   box-shadow: none !important;
   outline: none !important;
+}
+
+:root.dark-theme .mat-admin-shell textarea,
+body.dark-theme .mat-admin-shell textarea,
+:root.dark-theme .mat-admin-shell .admin-view-panel textarea,
+body.dark-theme .mat-admin-shell .admin-view-panel textarea,
+:root.dark-theme .mat-admin-shell #view-qr textarea,
+body.dark-theme .mat-admin-shell #view-qr textarea,
+:root.dark-theme .mat-admin-shell #view-configuracion textarea,
+body.dark-theme .mat-admin-shell #view-configuracion textarea {
+  background: #171717 !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  color: #f1f5f9 !important;
 }
 
 .mat-admin-shell textarea:focus,
 .mat-admin-shell .admin-view-panel textarea:focus,
 .mat-admin-shell #view-qr textarea:focus,
 .mat-admin-shell #view-configuracion textarea:focus {
-  border-color: #3cb043 !important;
+  border-color: #27802D !important;
   box-shadow: 0 0 0 2px rgba(60, 176, 67, 0.12) !important;
 }
 

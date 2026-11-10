@@ -37,7 +37,7 @@ public class CajaController {
     public ResponseEntity<List<CajaResponse>> list(@RequestParam(required = false) Integer sedeId,
             @RequestAttribute("auth.user") AuthUserDto user) {
         if (sedeId != null) {
-            access.requireOwnedVenue(sedeId, user);
+            access.requirePermission(sedeId, user, "caja.operar");
             return ResponseEntity.ok(data.listCajas(sedeId));
         }
         return ResponseEntity.ok(data.listCajasForOwner(user));
@@ -57,7 +57,7 @@ public class CajaController {
             @RequestParam(required = false) Integer sedeId,
             @RequestAttribute("auth.user") AuthUserDto user) {
         Integer targetSedeId = request.sedeId() != null ? request.sedeId() : sedeId;
-        int verifiedSedeId = access.requireOwnedVenue(targetSedeId, user);
+        int verifiedSedeId = access.requirePermission(targetSedeId, user, "caja.supervisar");
         return ResponseEntity.status(HttpStatus.CREATED).body(data.createCaja(request, verifiedSedeId));
     }
 
