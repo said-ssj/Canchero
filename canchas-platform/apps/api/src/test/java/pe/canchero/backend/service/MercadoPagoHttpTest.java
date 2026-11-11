@@ -24,4 +24,11 @@ class MercadoPagoHttpTest {
  @Test void checkoutAndRefreshStillRequireAuthenticatedPlayer() throws Exception {
   mvc.perform(post("/api/payments/mercadopago/checkout").contentType(MediaType.APPLICATION_JSON).content("{}" )).andExpect(status().isUnauthorized());
   mvc.perform(post("/api/payments/mercadopago/checkouts/11111111-1111-1111-1111-111111111111/refresh").contentType(MediaType.APPLICATION_JSON).content("{}" )).andExpect(status().isUnauthorized());verifyNoInteractions(payments);}
+ @Test void returnsActionableConflictReasonInsteadOfOnlyHttpTitle() throws Exception {
+  doThrow(new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.CONFLICT,"La reserva temporal ya finalizó"))
+    .when(webhooks).accept(any(),any(),any());
+  mvc.perform(post("/api/payments/mercadopago/webhook").param("data.id","123").contentType(MediaType.APPLICATION_JSON).content("{\"type\":\"payment\",\"data\":{\"id\":\"123\"}}"))
+   .andExpect(status().isConflict()).andExpect(jsonPath("$.message").value("La reserva temporal ya finalizó"));
+ }
+
 }

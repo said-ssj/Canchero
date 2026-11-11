@@ -34,4 +34,12 @@ public class MercadoPagoController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Notificacion no compatible");
         webhooks.accept(signature,requestId,id);return Map.of("received",true);
     }
+    @ExceptionHandler(ResponseStatusException.class)
+    public org.springframework.http.ResponseEntity<pe.canchero.backend.web.dto.ErrorResponse> handlePaymentError(ResponseStatusException ex) {
+        String message=ex.getReason();
+        if(message==null || message.isBlank())message="No se pudo completar la operación de pago. Intenta nuevamente.";
+        return org.springframework.http.ResponseEntity.status(ex.getStatusCode())
+                .body(new pe.canchero.backend.web.dto.ErrorResponse(message));
+    }
+
 }

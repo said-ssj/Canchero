@@ -146,4 +146,26 @@ class MercadoPagoPostgresTest {
         void advance(Duration duration){now=now.plus(duration);}void set(Instant instant){now=instant;}
         public ZoneId getZone(){return ZoneOffset.UTC;}public Clock withZone(ZoneId zone){return this;}public Instant instant(){return now;}
     }
+    @Test void returningFromProviderWithNewKeyResumesOnlySameUsersActiveSelection(){
+        UUID existing=start();
+        assertEquals(existing,service.start(request("new-tab-after-return",2),PLAYER_1).id());
+        assertEquals(1,jdbc.queryForObject("select count(*) from reserva",Integer.class));
+        verify(client,times(1)).preference(anyMap());
+        assertThrows(ResponseStatusException.class,()->service.start(request("other-user-attempt",2),PLAYER_2));
+        assertThrows(ResponseStatusException.class,()->service.start(request("different-capacity",3),PLAYER_1));
+    }
+    @Test void expiredHoldIsNeverResumedWhenReturningWithANewKey(){
+        UUID expired=start();clock.advance(Duration.ofMinutes(11));service.expire();
+        UUID fresh=service.start(request("new-selection-after-expiry",2),PLAYER_1).id();
+        assertNotEquals(expired,fresh);assertEquals("expirado",service.state(expired,PLAYER_1).estado());
+        assertEquals(2,jdbc.queryForObject("select count(*) from reserva",Integer.class));
+    }
+
+    @Test void alreadyConfirmedBookingIsNotResumedAsPendingPayment(){
+        UUID existing=start();
+        jdbc.update("update reserva set id_estado_reserva=2 where id_reserva=(select id_reserva from mp_checkout where id=?)",existing);
+        assertThrows(ResponseStatusException.class,()->service.start(request("new-key-confirmed",2),PLAYER_1));
+        verify(client,times(1)).preference(anyMap());
+    }
+
 }

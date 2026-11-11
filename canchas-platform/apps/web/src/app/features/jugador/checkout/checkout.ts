@@ -856,7 +856,6 @@ export class Checkout {
     if (this.lastIdempotencySignature === signature && this.lastIdempotencyKey) {
       return this.lastIdempotencyKey;
     }
-    const randomSuffix = Math.random().toString(36).substring(2, 10);
     const key = `chk-${courtId}-${dateStr}-${crypto.randomUUID()}`.slice(0, 96);
     this.lastIdempotencySignature = signature;
     this.lastIdempotencyKey = key;
@@ -898,7 +897,7 @@ export class Checkout {
 
     if (!this.canSubmitReservation()) {
       this.confirmError.set(
-        'El pago todav�a no est� disponible. Revisa la configuraci�n y la cantidad de participantes.',
+        'El pago todavía no está disponible. Revisa la configuraci�n y la cantidad de participantes.',
       );
       return;
     }
@@ -928,10 +927,28 @@ export class Checkout {
       this.mp.open(result.checkoutUrl);
     } catch (err: any) {
       const status = err?.status;
-      const serverMsg =
-        err?.error?.message ||
-        err?.error?.error ||
-        (typeof err?.error === 'string' ? err.error : null);
+      const genericErrors = new Set([
+        'conflict',
+        'bad request',
+        'unauthorized',
+        'forbidden',
+        'not found',
+        'internal server error',
+        'bad gateway',
+        'service unavailable',
+        'gateway timeout',
+      ]);
+      const serverMsg = [
+        err?.error?.message,
+        err?.error?.detail,
+        err?.error?.error,
+        typeof err?.error === 'string' ? err.error : null,
+      ].find(
+        (message) =>
+          typeof message === 'string' &&
+          message.trim() &&
+          !genericErrors.has(message.trim().toLowerCase()),
+      );
 
       if (status === 402) {
         this.confirmError.set(

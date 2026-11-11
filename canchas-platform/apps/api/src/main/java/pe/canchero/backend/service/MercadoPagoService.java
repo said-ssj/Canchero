@@ -51,6 +51,9 @@ public class MercadoPagoService {
         UUID userId=UUID.fromString(user.id());
         expire();
         UUID checkout=tx.execute(status->{
+            // Dos pestañas o un retorno del proveedor pueden traer otra clave para el mismo bloque.
+            // Serializar por cuenta y selección evita crear retenciones duplicadas.
+            jdbc.queryForList("select pg_advisory_xact_lock(hashtextextended(?,0))",user.id()+":selection:"+fingerprint);
             jdbc.queryForList("select pg_advisory_xact_lock(hashtextextended(?,0))",user.id()+":"+request.idempotencyKey());
             var existing=jdbc.queryForList("select id,payload_hash,estado from mp_checkout where id_usuario=? and clave_idempotencia=?",userId,request.idempotencyKey());
             if(!existing.isEmpty()){
@@ -59,6 +62,14 @@ public class MercadoPagoService {
                 if(!"pendiente".equals(row.get("estado")))throw error(HttpStatus.CONFLICT,"Esta operacion ya termino; consulta su resultado");
                 return (UUID)row.get("id");
             }
+            var retained=jdbc.queryForList("""
+                select x.id from mp_checkout x join reserva r on r.id_reserva=x.id_reserva
+                join estado_reserva er on er.id_estado_reserva=r.id_estado_reserva
+                where x.id_usuario=? and x.payload_hash=? and x.estado='pendiente'
+                  and x.vence_en>? and r.estado='A' and lower(er.nombre) like 'pend%'
+                order by x.creado_en desc limit 1 for update of x
+                """,UUID.class,userId,fingerprint,OffsetDateTime.now(clock));
+            if(!retained.isEmpty())return retained.getFirst();
             var capacities=jdbc.queryForList("select capacidad_acceso from cancha where id_cancha=? and estado='A'",Integer.class,court);
             if(capacities.isEmpty() || capacities.getFirst()==null)throw error(HttpStatus.CONFLICT,"El administrador debe configurar la capacidad de acceso de esta cancha");
             if(request.cupos()>capacities.getFirst())throw error(HttpStatus.BAD_REQUEST,"La cantidad de participantes supera la capacidad de la cancha");

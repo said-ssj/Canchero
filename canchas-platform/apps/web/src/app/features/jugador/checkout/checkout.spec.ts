@@ -1303,4 +1303,21 @@ describe('Checkout Component - Fase 3: Selección, Agrupación y Cotización', (
     component['paymentReady'].set(false);
     expect(component['canSubmitReservation']()).toBe(false);
   });
+  it('traduce un 409 genérico a una indicación útil y nunca muestra solamente Conflict', async () => {
+    await preparePayment();
+    mockMP.start.mockRejectedValueOnce({ status: 409, error: { error: 'Conflict' } });
+    await component['confirmarReserva']();
+    expect(component['confirmError']()).toContain('horario');
+    expect(component['confirmError']()).not.toBe('Conflict');
+    expect(mockMP.open).not.toHaveBeenCalled();
+  });
+  it('muestra el motivo específico del conflicto proporcionado por la API', async () => {
+    await preparePayment();
+    mockMP.start.mockRejectedValueOnce({
+      status: 409,
+      error: { message: 'La reserva temporal ya finalizó' },
+    });
+    await component['confirmarReserva']();
+    expect(component['confirmError']()).toBe('La reserva temporal ya finalizó');
+  });
 });
