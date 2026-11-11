@@ -1,4 +1,4 @@
-import { Component, input, signal } from '@angular/core';
+import { Component, input, output, signal } from '@angular/core';
 
 /** Shared identity frame; business and personal data remain in their own services. */
 @Component({
@@ -17,19 +17,30 @@ import { Component, input, signal } from '@angular/core';
       <div class="profile-identity">
         <div class="identity-top" [class.no-avatar]="!showAvatar()">
           @if (showAvatar()) {
-            <div class="profile-avatar" [class.business-avatar]="isBusiness()">
+            <div class="profile-avatar" [class.business-avatar]="isBusiness() && !personalAvatar()">
               @if (photo() && brokenPhoto() !== photo()) {
                 <img
                   [src]="photo()"
                   [alt]="'Foto de ' + name()"
                   (error)="brokenPhoto.set(photo())"
                 />
-              } @else if (isBusiness()) {
+              } @else if (isBusiness() && !personalAvatar()) {
                 <span class="material-symbols-outlined business-avatar-icon" aria-hidden="true"
                   >stadium</span
                 >
               } @else {
                 <span>{{ initials() || name().trim().slice(0, 1).toUpperCase() || 'C' }}</span>
+              }
+              @if (editableAvatar()) {
+                <button
+                  type="button"
+                  class="avatar-change"
+                  (click)="avatarEdit.emit()"
+                  aria-label="Cambiar foto de perfil"
+                >
+                  <span class="material-symbols-outlined" aria-hidden="true">photo_camera</span>
+                  Cambiar
+                </button>
               }
             </div>
           }
@@ -66,6 +77,9 @@ import { Component, input, signal } from '@angular/core';
   styleUrl: './profile-header.css',
 })
 export class ProfileHeader {
+  readonly personalAvatar = input(false);
+  readonly editableAvatar = input(false);
+  readonly avatarEdit = output<void>();
   readonly showAvatar = input(true);
   readonly name = input.required<string>();
   readonly badge = input('Jugador');

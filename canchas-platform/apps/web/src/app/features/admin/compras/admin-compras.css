@@ -99,7 +99,7 @@
 .venue-name {
   font-size: 13px;
   font-weight: 600;
-  color: #475569;
+  color: var(--muted);
 }
 
 .view-title {
@@ -114,12 +114,12 @@
   font-size: 28px;
   width: 28px;
   height: 28px;
-  color: #27802D;
+  color: #27802d;
 }
 
 .view-subtitle {
   font-size: 14px;
-  color: #64748b;
+  color: var(--muted);
   margin: 0;
   max-width: 720px;
 }
@@ -134,13 +134,13 @@
 .action-btn {
   font-weight: 600;
   border-color: #cbd5e1 !important;
-  color: #334155 !important;
+  color: var(--ink) !important;
   border-radius: 4px !important;
 }
 
 .action-btn-primary {
   font-weight: 600;
-  background-color: #27802D !important;
+  background-color: #27802d !important;
   color: #ffffff !important;
   border-radius: 4px !important;
 }
@@ -157,7 +157,7 @@
   align-items: center;
   gap: 1rem;
   padding: 1.1rem 1.25rem;
-  background-color: #ffffff;
+  background-color: var(--surface);
   border: 1px solid #e2e8f0;
   border-radius: 4px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
@@ -170,8 +170,8 @@
   width: 44px;
   height: 44px;
   border-radius: 4px;
-  background-color: #f1f5f9;
-  color: #475569;
+  background-color: var(--page);
+  color: var(--muted);
 }
 
 .kpi-card.compras-total .kpi-icon-wrap {
@@ -206,7 +206,7 @@
 .kpi-label {
   font-size: 12px;
   font-weight: 600;
-  color: #64748b;
+  color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
@@ -214,7 +214,7 @@
 .kpi-value {
   font-size: 20px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--ink);
   line-height: 1.2;
 }
 
@@ -268,7 +268,7 @@ mat-button-toggle,
   align-items: center;
   gap: 1rem;
   flex-wrap: wrap;
-  background-color: #ffffff;
+  background-color: var(--surface);
   padding: 0.75rem 1rem;
   border: 1px solid #e2e8f0;
   border-radius: 4px;
@@ -291,9 +291,9 @@ mat-button-toggle,
 }
 
 .chip-filter {
-  background-color: #f8fafc;
+  background-color: var(--page);
   border: 1px solid #cbd5e1;
-  color: #475569;
+  color: var(--muted);
   font-size: 12px;
   font-weight: 600;
   padding: 5px 12px;
@@ -302,9 +302,9 @@ mat-button-toggle,
 }
 
 .chip-filter.active {
-  background-color: #0f172a;
+  background-color: var(--ink);
   color: #ffffff;
-  border-color: #0f172a;
+  border-color: var(--ink);
 }
 
 .chip-filter.recibida.active {
@@ -329,7 +329,7 @@ mat-button-toggle,
 .table-responsive {
   width: 100%;
   overflow-x: auto;
-  background-color: #ffffff;
+  background-color: var(--surface);
   border: 1px solid #e2e8f0;
   border-radius: 4px;
 }
@@ -341,8 +341,8 @@ mat-button-toggle,
 }
 
 .data-table th {
-  background-color: #f8fafc;
-  color: #475569;
+  background-color: var(--page);
+  color: var(--muted);
   font-weight: 700;
   padding: 10px 14px;
   border-bottom: 1px solid #e2e8f0;
@@ -352,11 +352,7 @@ mat-button-toggle,
 .data-table td {
   padding: 10px 14px;
   border-bottom: 1px solid #f1f5f9;
-  color: #1e293b;
-}
-
-.data-table tr:hover {
-  background-color: #f8fafc;
+  color: var(--ink);
 }
 
 .text-right {
@@ -378,7 +374,7 @@ mat-button-toggle,
 .td-fecha {
   white-space: nowrap;
   font-size: 12px;
-  color: #64748b;
+  color: var(--muted);
 }
 
 .tipo-tag {
@@ -389,17 +385,17 @@ mat-button-toggle,
   background-color: #e2e8f0;
   border-radius: 3px;
   margin-right: 6px;
-  color: #475569;
+  color: var(--muted);
 }
 
 .prov-name {
   font-weight: 600;
-  color: #0f172a;
+  color: var(--ink);
 }
 
 .prov-ruc {
   font-size: 11px;
-  color: #64748b;
+  color: var(--muted);
   font-family: monospace;
 }
 
@@ -454,7 +450,7 @@ mat-button-toggle,
 
 .badge-muted {
   border: none;
-  color: #64748b;
+  color: var(--muted);
   background: transparent;
 }
 
@@ -483,7 +479,7 @@ mat-button-toggle,
   flex-direction: column;
   gap: 2px;
   font-size: 12px;
-  color: #475569;
+  color: var(--muted);
 }
 
 .contact-info span {
@@ -501,7 +497,7 @@ mat-button-toggle,
 
 .td-direccion {
   font-size: 12px;
-  color: #64748b;
+  color: var(--muted);
   max-width: 240px;
 }
 
@@ -518,9 +514,11 @@ mat-button-toggle,
 }
 
 .modal-card {
-  background-color: #ffffff;
+  background-color: var(--surface);
   border-radius: 4px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
   width: 100%;
   max-width: 540px;
   display: flex;
@@ -548,18 +546,18 @@ mat-button-toggle,
   margin: 0;
   font-size: 17px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--ink);
 }
 
 .modal-header h3 mat-icon {
-  color: #27802D;
+  color: #27802d;
 }
 
 .close-btn {
   background: none;
   border: none;
   cursor: pointer;
-  color: #64748b;
+  color: var(--muted);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -582,7 +580,7 @@ mat-button-toggle,
   gap: 10px;
   padding: 1rem 1.5rem;
   border-top: 1px solid #e2e8f0;
-  background-color: #f8fafc;
+  background-color: var(--page);
 }
 
 .alert-banner-error {
@@ -617,7 +615,7 @@ mat-button-toggle,
 
 /* Partidas de Compra */
 .partidas-box {
-  background-color: #f8fafc;
+  background-color: var(--page);
   border: 1px solid #e2e8f0;
   border-radius: 4px;
   padding: 1rem;
@@ -630,7 +628,7 @@ mat-button-toggle,
   margin: 0;
   font-size: 14px;
   font-weight: 700;
-  color: #334155;
+  color: var(--ink);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -667,15 +665,15 @@ mat-button-toggle,
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
-  background-color: #ffffff;
+  background-color: var(--surface);
   border: 1px solid #e2e8f0;
   border-radius: 4px;
   overflow: hidden;
 }
 
 .partidas-table th {
-  background-color: #f1f5f9;
-  color: #475569;
+  background-color: var(--page);
+  color: var(--muted);
   padding: 8px 12px;
   font-size: 12px;
   text-align: left;
@@ -703,7 +701,7 @@ mat-button-toggle,
   align-items: flex-start;
   justify-content: space-between;
   gap: 1.5rem;
-  background-color: #ffffff;
+  background-color: var(--surface);
   border: 1px solid #e2e8f0;
   border-radius: 4px;
   padding: 1rem;
@@ -716,7 +714,7 @@ mat-button-toggle,
 .chk-hint {
   display: block;
   font-size: 11px;
-  color: #64748b;
+  color: var(--muted);
   margin-top: 2px;
 }
 
@@ -731,13 +729,13 @@ mat-button-toggle,
 .total-line {
   display: flex;
   justify-content: space-between;
-  color: #475569;
+  color: var(--muted);
 }
 
 .total-line.main-total {
   font-size: 16px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--ink);
   border-top: 1px solid #e2e8f0;
   padding-top: 6px;
 }
@@ -746,14 +744,14 @@ mat-button-toggle,
   display: flex;
   flex-wrap: wrap;
   gap: 1.5rem;
-  background-color: #f8fafc;
+  background-color: var(--page);
   padding: 1rem;
   border-radius: 4px;
   font-size: 13px;
 }
 
 .detail-header-info .lbl {
-  color: #64748b;
+  color: var(--muted);
   margin-right: 4px;
 }
 
@@ -769,5 +767,5 @@ mat-button-toggle,
 .detail-totals-box .main {
   font-size: 18px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--ink);
 }

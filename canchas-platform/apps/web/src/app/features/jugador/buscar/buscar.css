@@ -1,0 +1,250 @@
+:host {
+  display: block;
+  background: var(--page);
+  min-height: 70vh;
+}
+.search-page {
+  padding-top: 28px;
+  padding-bottom: 48px;
+}
+h1 {
+  font-size: 24px;
+  margin: 0 0 20px;
+}
+.search-form {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+.search-form mat-form-field {
+  flex: 1;
+  min-width: 0;
+}
+.search-tabs {
+  display: flex;
+  gap: 12px;
+  border-bottom: 1px solid var(--line);
+  margin: 20px 0;
+}
+.search-tabs button {
+  text-transform: capitalize;
+  border-radius: 0;
+}
+.search-tabs .selected {
+  color: var(--primary);
+  border-bottom: 2px solid var(--primary);
+}
+.search-tabs span {
+  margin-left: 8px;
+  background: var(--page);
+  border-radius: 6px;
+  padding: 2px 6px;
+}
+.results-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
+  gap: 24px;
+}
+.results-layout.single {
+  grid-template-columns: minmax(0, 1fr);
+}
+.single .venue-results:empty {
+  display: none;
+}
+h2 {
+  font-size: 21px;
+  margin: 20px 0 14px;
+}
+small {
+  font-size: 13px;
+  font-weight: 400;
+}
+h3 {
+  font-size: 17px;
+  margin: 0 0 7px;
+  overflow-wrap: anywhere;
+}
+p {
+  margin: 7px 0;
+}
+.venue-result,
+.court-result,
+.person-result {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface, var(--card));
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+.venue-result {
+  display: flex;
+  min-height: 184px;
+}
+.result-photo {
+  position: relative;
+  flex: 0 0 170px;
+  display: grid;
+  place-items: center;
+  background: #1b303a;
+  color: white;
+  font-weight: 700;
+  font-size: 22px;
+}
+.result-photo img,
+.person-avatar img {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  inset: 0;
+}
+.result-details {
+  flex: 1;
+  min-width: 0;
+  padding: 18px;
+}
+.result-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+.result-footer a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.result-footer .material-symbols-outlined {
+  font-size: 18px;
+}
+.court-result {
+  padding: 18px;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+}
+.person-result {
+  padding: 18px;
+}
+.person-identity {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.person-avatar {
+  position: relative;
+  flex: 0 0 54px;
+  height: 54px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--primary);
+  color: white;
+  display: grid;
+  place-items: center;
+  font-size: 24px;
+}
+.role {
+  font-size: 12px;
+  color: var(--primary);
+}
+.icon-action {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+.icon-action span {
+  font-size: 22px;
+}
+.icon-action:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+}
+mark {
+  background: transparent;
+  color: inherit;
+}
+.match {
+  background: #fce8c8;
+  color: #202020;
+}
+.search-state {
+  padding: 36px 0;
+}
+.result-count {
+  font-size: 13px;
+  color: var(--muted);
+}
+@media (max-width: 760px) {
+  .results-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .search-page {
+    padding-top: 20px;
+  }
+  .search-tabs {
+    gap: 0;
+    overflow-x: auto;
+  }
+  .search-tabs button {
+    padding: 0 8px;
+    min-width: 0;
+    font-size: 12px;
+  }
+  .search-tabs span {
+    margin-left: 4px;
+  }
+  .result-photo {
+    flex-basis: 100px;
+    font-size: 16px;
+  }
+  .result-details {
+    padding: 12px;
+  }
+  .venue-result {
+    min-height: 158px;
+  }
+  .result-footer a {
+    font-size: 12px;
+  }
+  .result-footer strong {
+    font-size: 14px;
+  }
+  .court-result {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .search-form {
+    gap: 8px;
+  }
+  .search-form button {
+    padding: 0 14px;
+  }
+}
+
+.attributes {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 10px 0;
+}
+.attributes span {
+  background: var(--page);
+  color: var(--muted);
+  font-size: 11px;
+  border: 1px solid var(--line);
+  padding: 3px 6px;
+  border-radius: 6px;
+}
+
+img[hidden] {
+  display: none !important;
+}

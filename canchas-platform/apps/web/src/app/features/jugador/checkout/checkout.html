@@ -1,8 +1,15 @@
 @if (isLoadingCatalog()) {
   <div class="container" style="padding: 48px 0" aria-busy="true">
-    <div class="cn-loader">
-      <mat-spinner diameter="48" color="primary"></mat-spinner>
-      <span>Cargando información...</span>
+    <div class="card" style="padding: 24px; margin-bottom: 24px">
+      <div class="skeleton-card" style="height: 20px; width: 240px; margin-bottom: 12px"></div>
+      <div class="skeleton-card" style="height: 14px; width: 360px"></div>
+    </div>
+    <div class="card" style="padding: 24px">
+      <div class="skeleton-card" style="height: 18px; width: 180px; margin-bottom: 16px"></div>
+      <div class="skeleton-card" style="height: 200px"></div>
+      <p class="muted small" style="margin-top: 16px">
+        Cargando información de la cancha y disponibilidad oficial...
+      </p>
     </div>
   </div>
 } @else if (contextError(); as errorMsg) {
@@ -359,6 +366,15 @@
             @if (reservationSection() === 2) {
               <div class="card" style="padding: 20px">
                 <h2 style="font-size: 16px; margin: 0 0 12px 0">Datos del partido</h2>
+                <mat-form-field
+                  appearance="outline"
+                  subscriptSizing="dynamic"
+                  class="cn-field w-full"
+                >
+                  <mat-label>Personas que ingresarán con el pase</mat-label>
+                  <input matInput type="number" min="1" max="100" [(ngModel)]="accessSlots" />
+                  <mat-hint>La cancha determina el máximo permitido.</mat-hint>
+                </mat-form-field>
                 <div class="list">
                   <div class="list-line">
                     <span>Sede</span><strong>{{ selectedComplejo().name }}</strong>
@@ -380,94 +396,6 @@
                 </div>
               </div>
             } @else if (reservationSection() === 3) {
-              <div class="card" style="padding: 20px">
-                <h2 style="font-size: 16px; margin: 0 0 12px 0">Método de pago</h2>
-                <div class="stack" style="gap: 10px; margin-bottom: 16px">
-                  <label class="check">
-                    <input type="radio" checked name="metodo" />
-                    Tarjeta (100% Online · Confirmación inmediata)
-                  </label>
-                  <label class="check muted" title="Yape deshabilitado para reservas online">
-                    <input type="radio" disabled name="metodo" />
-                    Yape · No disponible online
-                  </label>
-                  <label class="check muted" title="Plin deshabilitado para reservas online">
-                    <input type="radio" disabled name="metodo" />
-                    Plin · No disponible online
-                  </label>
-                </div>
-
-                <!-- Panel de Tarjeta -->
-                <div
-                  class="stack"
-                  style="
-                    gap: 12px;
-                    background: var(--page);
-                    padding: 16px;
-                    border-radius: var(--radius);
-                    border: 1px solid var(--line);
-                  "
-                >
-                  <mat-form-field
-                    appearance="outline"
-                    subscriptSizing="dynamic"
-                    class="cn-field w-full"
-                  >
-                    <mat-label>Número de tarjeta</mat-label>
-                    <input
-                      matInput
-                      id="card-num"
-                      type="text"
-                      inputmode="numeric"
-                      maxlength="19"
-                      [(ngModel)]="cardNumber"
-                    />
-                  </mat-form-field>
-                  <div class="row" style="gap: 12px">
-                    <mat-form-field
-                      appearance="outline"
-                      subscriptSizing="dynamic"
-                      class="cn-field"
-                      style="flex: 1"
-                    >
-                      <mat-label>Vencimiento</mat-label>
-                      <input
-                        matInput
-                        id="card-exp"
-                        type="text"
-                        placeholder="MM / AA"
-                        maxlength="5"
-                        [(ngModel)]="cardExpiry"
-                      />
-                    </mat-form-field>
-                    <mat-form-field
-                      appearance="outline"
-                      subscriptSizing="dynamic"
-                      class="cn-field"
-                      style="flex: 1"
-                    >
-                      <mat-label>CVV</mat-label>
-                      <input
-                        matInput
-                        id="card-cvv"
-                        type="password"
-                        inputmode="numeric"
-                        maxlength="4"
-                        [(ngModel)]="cardCvv"
-                      />
-                    </mat-form-field>
-                  </div>
-                  <mat-form-field
-                    appearance="outline"
-                    subscriptSizing="dynamic"
-                    class="cn-field w-full"
-                  >
-                    <mat-label>Titular de la tarjeta</mat-label>
-                    <input matInput id="card-holder" type="text" [(ngModel)]="cardHolder" />
-                  </mat-form-field>
-                </div>
-              </div>
-            } @else {
               <div class="card" style="padding: 20px">
                 <div class="row spread" style="align-items: center; margin-bottom: 12px">
                   <h2 style="font-size: 16px; margin: 0">Convocados al partido</h2>
@@ -607,6 +535,21 @@
                   </div>
                 </div>
               }
+            } @else {
+              <div class="card" style="padding: 20px">
+                <h2>Revisar y pagar</h2>
+                <p>
+                  Completa el pago en Mercado Pago. Tu reserva se confirma al verificar su
+                  aprobación.
+                </p>
+                <p class="muted small">Modo prueba: usa únicamente cuentas y tarjetas de prueba.</p>
+                @if (!paymentReady()) {
+                  <p role="status">El pago aún no está disponible. Intenta nuevamente más tarde.</p>
+                }
+                @if (confirmError()) {
+                  <p class="notice danger" role="alert">{{ confirmError() }}</p>
+                }
+              </div>
             }
 
             <div class="row spread checkout-step-actions">
@@ -624,7 +567,7 @@
                   <button
                     type="button"
                     class="btn primary"
-                    [disabled]="!isCardValid()"
+                    [disabled]="submitting()"
                     (click)="showReservationSection(4)"
                   >
                     Continuar
@@ -637,7 +580,7 @@
                     [disabled]="submitting()"
                     (click)="showReservationSection(3)"
                   >
-                    Volver al método de pago
+                    Volver a convocados
                   </button>
                   <button
                     type="button"
@@ -647,8 +590,8 @@
                   >
                     {{
                       submitting()
-                        ? 'Registrando reserva…'
-                        : 'Confirmar y pagar ' + fmt(totalToPayNow())
+                        ? 'Abriendo Mercado Pago…'
+                        : 'Pagar con Mercado Pago ' + fmt(totalToPayNow())
                     }}
                   </button>
                 }
@@ -677,254 +620,15 @@
               <div class="list-line">
                 <span>Tarifa base</span><strong>{{ fmt(subtotal()) }}</strong>
               </div>
-              @if (couponApplied()) {
-                <div class="list-line" style="color: var(--primary)">
-                  <span>Descuento {{ couponCodeInput() }}</span>
-                  <strong>- {{ fmt(discountAmount()) }}</strong>
-                </div>
-              }
+
               <div class="list-line">
                 <span>Total a pagar</span>
                 <strong class="total">{{ fmt(total()) }}</strong>
               </div>
             </div>
-
-            @if (reservationSection() === 3) {
-              <!-- Cupón de Descuento -->
-              <div style="border-top: 1px solid var(--line); padding-top: 12px; margin-top: 8px">
-                <small class="muted" style="display: block; margin-bottom: 6px; font-weight: 600"
-                  >¿Tienes un cupón?</small
-                >
-                <div class="row cn-filterbar" style="gap: 6px">
-                  <mat-form-field
-                    appearance="outline"
-                    subscriptSizing="dynamic"
-                    class="cn-field"
-                    style="flex: 1"
-                  >
-                    <mat-label>Código de cupón</mat-label>
-                    <input
-                      matInput
-                      type="text"
-                      placeholder="Ej: PROMO10"
-                      [(ngModel)]="couponCodeInput"
-                    />
-                  </mat-form-field>
-                  <button type="button" class="btn" (click)="applyCoupon()">Aplicar</button>
-                </div>
-                @if (couponMessage()) {
-                  <p class="small muted" style="margin-top: 4px">{{ couponMessage() }}</p>
-                }
-              </div>
-
-              <p class="muted small" style="margin-top: 8px">
-                Pago online del 100%. Sin recargo automático al jugador.
-              </p>
-            }
           </aside>
-        </div>
-      }
-
-      @case (3) {
-        <!-- ==================== PASO 3: CONFIRMACIÓN ==================== -->
-        <div class="result-page">
-          <div class="result-heading success">
-            <span class="result-symbol"
-              ><span class="material-symbols-outlined icon" aria-hidden="true"
-                >check_circle</span
-              ></span
-            >
-            <div>
-              <span class="badge success">Reserva confirmada</span>
-              <h1 style="font-size: 24px; margin: 6px 0 4px">¡Tu partido ya tiene cancha!</h1>
-              <p class="muted small" style="margin: 0">
-                Un solo bloque continuo confirmado en el servidor.
-              </p>
-            </div>
-          </div>
-
-          <div class="result-layout">
-            <div>
-              <dl class="booking-facts">
-                <div>
-                  <dt>Código</dt>
-                  <dd style="color: var(--orange); font-weight: 700">{{ reservaCode() }}</dd>
-                </div>
-                <div>
-                  <dt>Estado</dt>
-                  <dd style="color: var(--primary)">{{ reservaStatus() }}</dd>
-                </div>
-                <div>
-                  <dt>Sede</dt>
-                  <dd>{{ selectedComplejo().name }}</dd>
-                </div>
-                <div>
-                  <dt>Cancha</dt>
-                  <dd>{{ resolvedCourt()?.nombre || selectedTipoCancha() }}</dd>
-                </div>
-                <div>
-                  <dt>Fecha</dt>
-                  <dd>{{ summaryDateText() }}</dd>
-                </div>
-                <div>
-                  <dt>Bloque</dt>
-                  <dd>{{ bookingBlock().displayRange || horarioText() }} ({{ horasLabel() }})</dd>
-                </div>
-                <div>
-                  <dt>Ubicación</dt>
-                  <dd>{{ selectedComplejo().address }}</dd>
-                </div>
-              </dl>
-
-              <div class="result-actions" style="margin-top: 24px">
-                <a routerLink="/itinerario" class="btn primary">
-                  <span class="material-symbols-outlined icon" aria-hidden="true"
-                    >event_available</span
-                  >
-                  Ir a Mi Itinerario
-                </a>
-                <a routerLink="/sedes" class="btn">
-                  <span class="material-symbols-outlined icon" aria-hidden="true"
-                    >sports_soccer</span
-                  >
-                  Ver más canchas
-                </a>
-              </div>
-            </div>
-
-            <aside class="summary">
-              <h2>Resumen del bloque</h2>
-              <div class="list">
-                <div class="list-line">
-                  <span>Monto pagado</span
-                  ><strong style="color: var(--primary)">{{ fmt(paidAmount()) }}</strong>
-                </div>
-                <div class="list-line">
-                  <span>Saldo pendiente</span><strong>{{ fmt(balanceAmount()) }}</strong>
-                </div>
-                @if (paymentOpNumber()) {
-                  <div class="list-line">
-                    <span>Operación</span
-                    ><code style="font-family: monospace">{{ paymentOpNumber() }}</code>
-                  </div>
-                }
-              </div>
-              <p class="muted small">Pago con tarjeta · Saldo cubierto al 100% online.</p>
-            </aside>
-          </div>
         </div>
       }
     }
   </main>
-
-  <!-- ==================== MODAL DE CONFIRMACIÓN DE RESERVA ==================== -->
-  @if (showSuccess()) {
-    <div class="dialog-backdrop is-visible" (click)="onModalBackdrop($event)">
-      <div
-        class="dialog result-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Reserva confirmada"
-      >
-        <div class="dialog-header">
-          <div class="row" style="align-items: center; gap: 8px">
-            <span
-              class="material-symbols-outlined icon"
-              style="color: var(--primary); font-size: 22px"
-              aria-hidden="true"
-              >verified</span
-            >
-            <h2 style="font-size: 16px; margin: 0">Reserva Confirmada</h2>
-          </div>
-          <button
-            type="button"
-            class="btn icon-only"
-            (click)="showSuccess.set(false)"
-            title="Cerrar modal"
-            aria-label="Cerrar"
-          >
-            <span class="material-symbols-outlined icon" aria-hidden="true">close</span>
-          </button>
-        </div>
-
-        <div class="dialog-body" style="padding: 20px">
-          <div
-            class="result-heading success"
-            style="border: none; padding-bottom: 12px; margin-bottom: 12px"
-          >
-            <span class="result-symbol"
-              ><span class="material-symbols-outlined icon" aria-hidden="true"
-                >check_circle</span
-              ></span
-            >
-            <div>
-              <span class="badge success">Pago 100% online aprobado</span>
-              <h1 style="font-size: 20px; margin: 4px 0 2px">{{ reservaCode() }}</h1>
-              <p class="muted small" style="margin: 0">
-                ¡Tu reserva y pago 100% online fueron procesados con éxito!
-              </p>
-            </div>
-          </div>
-
-          <dl
-            class="booking-facts"
-            style="
-              border-top: 1px solid var(--line);
-              border-bottom: 1px solid var(--line);
-              margin: 0 0 16px 0;
-            "
-          >
-            <div>
-              <dt>Código</dt>
-              <dd style="color: var(--orange); font-weight: 700">{{ reservaCode() }}</dd>
-            </div>
-            <div>
-              <dt>Estado reserva</dt>
-              <dd style="color: var(--primary)">{{ reservaStatus() }}</dd>
-            </div>
-            <div>
-              <dt>Estado pago</dt>
-              <dd style="color: var(--primary)">{{ paymentStatus() }}</dd>
-            </div>
-            @if (paymentOpNumber()) {
-              <div>
-                <dt>Operación</dt>
-                <dd style="font-family: monospace">{{ paymentOpNumber() }}</dd>
-              </div>
-            }
-            <div>
-              <dt>Sede</dt>
-              <dd>{{ selectedComplejo().name }}</dd>
-            </div>
-            <div>
-              <dt>Cancha</dt>
-              <dd>{{ resolvedCourt()?.nombre || selectedTipoCancha() }}</dd>
-            </div>
-            <div>
-              <dt>Fecha y hora</dt>
-              <dd>{{ horarioText() }}</dd>
-            </div>
-            <div>
-              <dt>Total pagado</dt>
-              <dd style="color: var(--primary); font-weight: 700">{{ fmt(paidAmount()) }}</dd>
-            </div>
-            <div>
-              <dt>Saldo pendiente</dt>
-              <dd>{{ fmt(balanceAmount()) }}</dd>
-            </div>
-          </dl>
-
-          <div class="row" style="gap: 8px; justify-content: flex-end">
-            <button type="button" class="btn" (click)="showSuccess.set(false)">
-              Seguir navegando
-            </button>
-            <a routerLink="/itinerario" class="btn primary">
-              <span class="material-symbols-outlined icon" aria-hidden="true">event_available</span>
-              Ver en Mi Itinerario
-            </a>
-          </div>
-        </div>
-      </div>
-    </div>
-  }
 }

@@ -21,10 +21,12 @@ public class CommunityProfileService {
     public record ReviewItem(String venueId, String venueName, String author, int rating, String text, String date) {}
     public record Post(String id, String authorId, String text, List<String> photos, String createdAt) {}
     public record PostPage(List<Post> items, boolean hasMore) {}
-    public record Settings(String biography, String whatsapp, String cover) {}
+    public record Settings(String biography,String whatsapp,String cover,String photo,boolean updatePhoto) {
+        public Settings(String biography,String whatsapp,String cover){this(biography,whatsapp,cover,null,false);}
+    }
     public record Owner(String id, String name, String photo) {}
     public record MutualFollower(String id, String name, String photo) {}
-    public record ProfileSearchResult(String id, String name, String photo, String role) {}
+    public record ProfileSearchResult(String id,String name,String photo,String role,String handle) {}
     public Owner venueOwner(int venueId) {
         return jdbc.query("""
             select u.id_usuario, trim(concat_ws(' ',u.nombre,u.apellido)), p.foto
@@ -35,7 +37,9 @@ public class CommunityProfileService {
             .orElseThrow(()->new ResponseStatusException(HttpStatus.NOT_FOUND,"Dueño no encontrado"));
     }
     public record Profile(String id, String name, String photo, String role, String biography, String whatsapp, String cover,
-            long followers, long following, long postCount, List<VenueItem> venues, long reviewCount, Double rating, List<ReviewItem> reviews) {}
+            long followers, long following, long postCount, List<VenueItem> venues, long reviewCount, Double rating, List<ReviewItem> reviews,String handle) {
+        public Profile(String id,String name,String photo,String role,String biography,String whatsapp,String cover,long followers,long following,long postCount,List<VenueItem> venues,long reviewCount,Double rating,List<ReviewItem> reviews){this(id,name,photo,role,biography,whatsapp,cover,followers,following,postCount,venues,reviewCount,rating,reviews,null);}
+    }
     private void requireSchema() {
         if (!Boolean.TRUE.equals(jdbc.queryForObject("select to_regclass('public.perfil_comunidad') is not null and to_regclass('public.publicacion_perfil') is not null and to_regclass('public.seguimiento_perfil') is not null",Boolean.class)))
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,"La comunidad aún no está habilitada");
@@ -49,7 +53,7 @@ public class CommunityProfileService {
         var base=jdbc.queryForMap("""
             select trim(concat_ws(' ',nullif(u.nombre,''),nullif(u.apellido,''))) as name,
                    p.foto, r.nombre as role, coalesce(pc.biografia,'') as bio,
-                   coalesce(pc.whatsapp_publico,'') as whatsapp, pc.portada
+                   coalesce(pc.whatsapp_publico,'') as whatsapp, pc.portada,pc.identificador
             from usuario u join rol r on r.id_rol=u.id_rol
             left join perfil_jugador p on p.id_usuario=u.id_usuario
             left join perfil_comunidad pc on pc.id_usuario=u.id_usuario
@@ -79,7 +83,7 @@ public class CommunityProfileService {
                 count("select count(*) from seguimiento_perfil f join usuario u on u.id_usuario=f.id_seguidor where f.id_seguido=? and u.estado='A'",id),
                 count("select count(*) from seguimiento_perfil f join usuario u on u.id_usuario=f.id_seguido where f.id_seguidor=? and u.estado='A'",id),
                 count("select count(*) from publicacion_perfil where id_usuario=? and estado='A'",id),venues,
-                ((Number)stats.get("total")).longValue(), stats.get("promedio")==null ? null : ((Number)stats.get("promedio")).doubleValue(),reviews);
+                ((Number)stats.get("total")).longValue(), stats.get("promedio")==null ? null : ((Number)stats.get("promedio")).doubleValue(),reviews,(String)base.get("identificador"));
     }
     private long count(String sql,UUID id) { return Objects.requireNonNull(jdbc.queryForObject(sql,Long.class,id)); }
     public PostPage posts(UUID id,int page) {
@@ -120,7 +124,12 @@ public class CommunityProfileService {
             insert into perfil_comunidad(id_usuario,biografia,whatsapp_publico,portada) values(?,?,?,?)
             on conflict(id_usuario) do update set biografia=excluded.biografia,whatsapp_publico=excluded.whatsapp_publico,portada=excluded.portada,actualizado_en=now()
             """,id,bio,whatsapp,cover);
-        return new Settings(bio,whatsapp,cover);
+        if(settings.updatePhoto()) {
+            String photo=settings.photo();
+            if(photo!=null && !photo.isBlank())validateImage(photo); else photo=null;
+            jdbc.update("insert into perfil_jugador(id_usuario,foto) values(?,?) on conflict(id_usuario) do update set foto=excluded.foto",id,photo);
+        }
+        return new Settings(bio,whatsapp,cover,settings.photo(),settings.updatePhoto());
     }
     public boolean following(AuthUserDto user,UUID target) {
         requireSchema(); requireUser(target);
@@ -144,30 +153,21 @@ public class CommunityProfileService {
             """, (rs, row) -> new MutualFollower(rs.getString(1), Objects.toString(rs.getString(2), "Usuario"), rs.getString(3)), target, viewer);
     }
     public List<ProfileSearchResult> searchProfiles(String query) {
-        if (query == null || query.trim().length() < 2) return List.of();
-        requireSchema();
-        String pattern = "%" + query.trim().toLowerCase() + "%";
+        if(query==null || query.strip().length()<2)return List.of();requireSchema();
+        String term=java.text.Normalizer.normalize(query.strip(),java.text.Normalizer.Form.NFD).replaceAll("\\p{M}","").toLowerCase(Locale.ROOT).replaceFirst("^@","");
+        String pattern="%"+term.replace("\\","\\\\").replace("%","\\%").replace("_","\\_")+"%";
         return jdbc.query("""
-            select u.id_usuario,
-                   trim(concat_ws(' ', nullif(u.nombre,''), nullif(u.apellido,''))) as nombre,
-                   p.foto,
-                   coalesce(r.nombre, 'Jugador') as rol
-            from usuario u
-            left join rol r on r.id_rol = u.id_rol
-            left join perfil_jugador p on p.id_usuario = u.id_usuario
-            where u.estado = 'A'
-              and (lower(trim(concat_ws(' ', nullif(u.nombre,''), nullif(u.apellido,'')))) like ?
-                   or lower(u.nombre) like ?
-                   or lower(u.apellido) like ?)
-            order by u.nombre limit 10
-            """, (rs, row) -> new ProfileSearchResult(
-                rs.getString(1),
-                Objects.toString(rs.getString(2), "Jugador"),
-                rs.getString(3),
-                rs.getString(4)
-            ), pattern, pattern, pattern);
+          select u.id_usuario,trim(concat_ws(' ',nullif(u.nombre,''),nullif(u.apellido,''))) as nombre,p.foto,
+                 case when exists(select 1 from sede s where s.id_dueno=u.id_usuario and s.estado='A') or lower(r.nombre) in ('dueno','dueño','owner') then 'Dueño' else 'Jugador' end as rol,pc.identificador
+          from usuario u left join rol r on r.id_rol=u.id_rol
+          left join perfil_jugador p on p.id_usuario=u.id_usuario
+          left join perfil_comunidad pc on pc.id_usuario=u.id_usuario
+          where u.estado='A' and (p.id_usuario is not null or pc.id_usuario is not null)
+            and (translate(lower(trim(concat_ws(' ',nullif(u.nombre,''),nullif(u.apellido,'')))), 'áéíóúüñÁÉÍÓÚÜÑ', 'aeiouunaeiouun') like ? or pc.identificador like ?)
+          order by nombre,u.id_usuario limit 50
+          """,(rs,n)->new ProfileSearchResult(rs.getString(1),rs.getString(2),rs.getString(3),rs.getString(4),rs.getString(5)),pattern,pattern);
     }
-    @Transactional
+
     public void follow(AuthUserDto user,UUID target,boolean follow) {
         requireSchema(); UUID source=UUID.fromString(user.id()); requireUser(source); requireUser(target);
         if(source.equals(target)) throw invalid("No puedes seguirte a ti mismo");

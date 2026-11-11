@@ -102,6 +102,28 @@ public class BookingService extends JdbcSupport {
 
     @Transactional
     public BookingResponse createBooking(BookingRequest request, AuthUserDto authUser, String idempotencyKeyHeader) {
+        return createBookingInternal(request,authUser,idempotencyKeyHeader,false);
+    }
+
+    @Transactional
+    public BookingResponse createCounterBooking(BookingRequest request,AuthUserDto user,String key) {
+        int court;
+        try { court=Integer.parseInt(request.courtId()); }
+        catch(RuntimeException ex){throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Cancha invalida");}
+        var ids=jdbc.queryForList("select id_sede from cancha where id_cancha=?",Integer.class,court);
+        if(ids.isEmpty())throw new ResponseStatusException(HttpStatus.NOT_FOUND,"Cancha no encontrada");
+        if(!new TenantPermissions(jdbc).has(user,ids.getFirst(),"reserva.gestionar"))
+            throw new ResponseStatusException(HttpStatus.GONE,"El pago online se inicia mediante Mercado Pago. Esta ruta es solo para registro presencial autorizado.");
+        return createBooking(request,user,key);
+    }
+
+    @Transactional
+    public BookingResponse createPendingPayment(BookingRequest request, AuthUserDto authUser) {
+        return createBookingInternal(request,authUser,null,true);
+    }
+
+    private BookingResponse createBookingInternal(BookingRequest request, AuthUserDto authUser, String idempotencyKeyHeader, boolean pendingPayment) {
+
         if (authUser == null || authUser.id() == null || authUser.id().isBlank()) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Debes iniciar sesión para registrar una reserva.");
         }
@@ -137,7 +159,7 @@ public class BookingService extends JdbcSupport {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, quote.errorMessage());
             }
 
-            if (effectiveIdempotencyKey != null) {
+            if (!pendingPayment && effectiveIdempotencyKey != null) {
                 Optional<IdempotentBookingMatch> existing = findBookingByIdempotencyKey(effectiveIdempotencyKey);
                 if (existing.isPresent()) {
                     IdempotentBookingMatch match = existing.get();
@@ -162,7 +184,7 @@ public class BookingService extends JdbcSupport {
             String rawMetodo = request.metodoPago();
             String normMetodo = normalize(rawMetodo);
             boolean isPlayer = authUser.rol() == null || "cliente".equalsIgnoreCase(authUser.rol()) || "jugador".equalsIgnoreCase(authUser.rol());
-            if (isPlayer && (normMetodo.contains("yape") || normMetodo.contains("plin") || normMetodo.contains("efectivo"))) {
+            if (!pendingPayment && isPlayer && (normMetodo.contains("yape") || normMetodo.contains("plin") || normMetodo.contains("efectivo"))) {
                 throw new ResponseStatusException(
                         HttpStatus.BAD_REQUEST,
                         "En reservas online solo está habilitado el pago al 100% con tarjeta. Yape y Plin están deshabilitados online y efectivo es solo presencial.");
@@ -172,12 +194,12 @@ public class BookingService extends JdbcSupport {
             String outcome = request.paymentOutcome() != null ? request.paymentOutcome().trim().toLowerCase(Locale.ROOT) : "";
             String cardNum = request.cardNumber() != null ? request.cardNumber().replaceAll("\\s+", "") : "";
 
-            if ("timeout".equals(outcome) || cardNum.endsWith("9999")) {
+            if (!pendingPayment && ("timeout".equals(outcome) || cardNum.endsWith("9999"))) {
                 throw new ResponseStatusException(
                         HttpStatus.GATEWAY_TIMEOUT,
                         "Tiempo de espera agotado al procesar el pago con tarjeta. No se realizó ningún cargo ni confirmación.");
             }
-            if ("rejected".equals(outcome) || cardNum.endsWith("0000")) {
+            if (!pendingPayment && ("rejected".equals(outcome) || cardNum.endsWith("0000"))) {
                 throw new ResponseStatusException(
                         HttpStatus.PAYMENT_REQUIRED,
                         "El pago simulado con tarjeta fue rechazado por la entidad emisora. La reserva no fue confirmada.");
@@ -198,8 +220,8 @@ public class BookingService extends JdbcSupport {
             validateNoOverlappingReservationsOrMaintenance(courtId, fecha, slotRange);
 
             UUID clienteUuid = resolveOrCreateAuthenticatedClienteId(authUser, usuarioUuid);
-            int confirmedStatusId = reservationStatusId("confirm");
-            String codigo = generateUniquePassCode();
+            int confirmedStatusId = reservationStatusId(pendingPayment ? "pend" : "confirm");
+            String codigo = pendingPayment ? null : generateUniquePassCode();
             double authoritativeTotal = quote.total();
             String metodoPagoEfectivo = (rawMetodo == null || rawMetodo.isBlank()) ? "Tarjeta" : rawMetodo.trim();
 
@@ -220,8 +242,8 @@ public class BookingService extends JdbcSupport {
                     ps.setObject(6, slotRange.startTime());
                     ps.setObject(7, slotRange.endTime());
                     ps.setBigDecimal(8, BigDecimal.valueOf(authoritativeTotal));
-                    ps.setBigDecimal(9, BigDecimal.valueOf(authoritativeTotal));
-                    ps.setBigDecimal(10, BigDecimal.ZERO);
+                    ps.setBigDecimal(9, pendingPayment ? BigDecimal.ZERO : BigDecimal.valueOf(authoritativeTotal));
+                    ps.setBigDecimal(10, pendingPayment ? BigDecimal.valueOf(authoritativeTotal) : BigDecimal.ZERO);
                     ps.setString(11, codigo);
                     return ps;
                 }, keyHolder);
@@ -232,7 +254,7 @@ public class BookingService extends JdbcSupport {
             Number id = (Number) keyHolder.getKeys().get("id_reserva");
             int reservaId = id.intValue();
 
-            createPayment(reservaId, authoritativeTotal, metodoPagoEfectivo, effectiveIdempotencyKey, "aprobado");
+            if (!pendingPayment) createPayment(reservaId, authoritativeTotal, metodoPagoEfectivo, effectiveIdempotencyKey, "aprobado");
             return withQuoteDetails(
                     getBookingById(reservaId).orElseThrow(),
                     quote.tranches(),
@@ -242,7 +264,20 @@ public class BookingService extends JdbcSupport {
         }
     }
 
+    void applyVerifiedMercadoPago(int id, BigDecimal amount, String paymentId) {
+        int status=reservationStatusId("confirm");
+        jdbc.update("update reserva set id_estado_reserva=?,adelanto=?,saldo=0,codigo_pase=?,fecmod=now(),usmod='MERCADOPAGO',pcmod='API' where id_reserva=? and estado='A'",status,amount,"MP-"+id, id);
+        jdbc.update("""
+            insert into pago_reserva(id_reserva,id_metodo_pago,monto,fecha_pago,numero_operacion,
+            es_adelanto,comision_plataforma,monto_neto_dueno,estado_liquidacion,estado,usucre,pccre)
+            values(?,?,?,now(),?,false,0,?,'aprobado','A','MERCADOPAGO','API')
+            """,id,metodoPagoId("Tarjeta"),amount,"MP:"+paymentId,amount);
+    }
+
     public Optional<BookingResponse> confirmBooking(int id, AuthUserDto authUser) {
+        if (jdbc.queryForObject("select count(*) from information_schema.tables where table_schema='public' and table_name='mp_checkout'",Integer.class)>0
+            && jdbc.queryForObject("select count(*) from mp_checkout where id_reserva=? and estado<>'aprobado'",Integer.class,id)>0)
+            throw new ResponseStatusException(HttpStatus.CONFLICT,"La confirmacion requiere un pago verificado por Mercado Pago");
         if (authUser == null || authUser.id() == null || authUser.id().isBlank()) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Debes iniciar sesión para confirmar una reserva.");
         }
@@ -427,7 +462,7 @@ public class BookingService extends JdbcSupport {
                 left join estado_reserva er on er.id_estado_reserva = r.id_estado_reserva
                 left join cliente cl on cl.id_cliente = r.id_cliente
                 left join usuario u on u.id_usuario = r.id_usuario
-                where r.codigo_pase = ? and r.estado = 'A'
+                where r.codigo_pase = ? and r.estado = 'A' and r.codigo_pase not like 'MP-%'
                 """, (rs, rowNum) -> new PublicPassResponse(
                         String.valueOf(rs.getInt("id_reserva")),
                         rs.getString("codigo_pase"),

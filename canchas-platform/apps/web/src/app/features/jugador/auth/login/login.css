@@ -196,17 +196,7 @@
   margin: 0;
   line-height: 1.5;
 }
-.pwd-toggle-btn {
-  display: grid;
-  place-items: center;
-  border: 1px solid var(--login-border);
-  border-radius: 6px;
-  background: var(--login-field);
-  color: var(--login-text);
-  width: 40px;
-  height: 40px;
-  cursor: pointer;
-}
+
 .theme-toggle {
   position: absolute;
   inset: 0 0 auto auto;
@@ -247,11 +237,7 @@
 .form-input.has-toggle {
   padding-inline-end: 48px;
 }
-.pwd-toggle-btn {
-  position: absolute;
-  inset-inline-end: 5px;
-  border: 0;
-}
+
 .options-row {
   display: flex;
   justify-content: space-between;
@@ -429,10 +415,7 @@
     min-height: 42px;
     padding-block: 7px;
   }
-  .pwd-toggle-btn {
-    width: 32px;
-    height: 32px;
-  }
+
   .options-row {
     margin-bottom: 12px;
   }
@@ -486,4 +469,26 @@
   color: inherit;
   font-weight: 600;
   text-decoration: underline;
+}
+
+.pwd-toggle-btn {
+  position: static;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  min-width: 0;
+  padding: 0;
+  margin: 0 10px 0 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--login-text);
+  cursor: pointer;
+  line-height: 1;
+}
+.pwd-toggle-btn .material-symbols-outlined {
+  font-size: 22px;
+  line-height: 1;
 }

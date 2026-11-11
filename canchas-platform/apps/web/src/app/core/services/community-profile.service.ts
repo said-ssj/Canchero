@@ -47,6 +47,8 @@ export interface CommunitySettings {
   biography: string;
   whatsapp: string;
   cover: string | null;
+  photo?: string | null;
+  updatePhoto?: boolean;
 }
 
 export interface CommunityProfile extends CommunitySettings {
@@ -80,10 +82,23 @@ export interface CommunityProfile extends CommunitySettings {
   favoriteVenue?: string;
 }
 
+export interface HandleState {
+  handle: string | null;
+  nextChangeAt: string | null;
+  canChange: boolean;
+}
+
 @Injectable({ providedIn: 'root' })
 export class CommunityProfileService {
   private readonly http = inject(HttpClient);
   private readonly url = environment.apiUrl + '/community';
+
+  handleState() {
+    return this.http.get<HandleState>(this.url + '/me/handle');
+  }
+  changeHandle(handle: string) {
+    return this.http.put<HandleState>(this.url + '/me/handle', { handle });
+  }
 
   profile(id: string) {
     return this.http.get<CommunityProfile>(this.url + '/profiles/' + encodeURIComponent(id));

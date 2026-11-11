@@ -136,12 +136,15 @@ export class AdminFinanzas {
   });
 
   // Período contable
+  protected readonly customRange = signal<{ from: string; to: string } | null>(null);
+  protected readonly periodError = signal('');
   protected readonly periodoTag = signal<string>('Todos');
   protected readonly periodoActual = signal<string>('Todo el historial');
   protected readonly periodoRango = computed(() => {
     const today = limaDate();
     const date = new Date(today + 'T12:00:00Z');
     const mode = this.periodoTag();
+    if (mode === 'Personalizado') return this.customRange();
     if (mode === 'Semanal') {
       const from = addCalendarDays(today, -((date.getUTCDay() + 6) % 7));
       return { from, to: addCalendarDays(from, 6) };
@@ -172,8 +175,8 @@ export class AdminFinanzas {
   protected readonly reembolsoMotivo = signal<string>('');
   protected readonly reembolsoCondicionStock = signal<boolean>(false);
   protected readonly desgloseGeneralModalOpen = signal<boolean>(false);
-  protected readonly fechaDesde = signal<string>('2026-10-01');
-  protected readonly fechaHasta = signal<string>('2026-10-16');
+  protected readonly fechaDesde = signal<string>(limaDate().slice(0, 8) + '01');
+  protected readonly fechaHasta = signal<string>(limaDate());
   protected readonly fechaDesdeDate = computed(() => isoToLocalDate(this.fechaDesde()));
   protected readonly fechaHastaDate = computed(() => isoToLocalDate(this.fechaHasta()));
 
@@ -253,9 +256,9 @@ export class AdminFinanzas {
         const reserva = reservas.find((r) => r.id === pago.reserva_id);
         const cancha = canchaMap.get(reserva?.cancha_id ?? -1);
         const monto = Number(pago.monto) || 0;
-        // Regla 9: 5% flat pagado por el dueño, 95% neto
-        const comision = Math.round(monto * 0.05 * 100) / 100;
-        const neto = Math.round(monto * 0.95 * 100) / 100;
+        // Utilizar el importe de comisión persistido, sin asumir una tarifa.
+        const comision = Number(pago.comision_plataforma ?? 0);
+        const neto = Math.round((monto - comision) * 100) / 100;
         const metodo = pago.metodo_pago ?? 'Tarjeta';
 
         return {
@@ -284,7 +287,7 @@ export class AdminFinanzas {
       .sort((a, b) => (b.codigo < a.codigo ? -1 : b.codigo > a.codigo ? 1 : 0));
   });
 
-  // Métricas financieras calculadas con precisión del 5%
+  // Métricas calculadas a partir de los importes registrados.
   protected readonly metricas = computed(() => {
     const rows = this.facturables();
     const ingresoBruto = Math.round(rows.reduce((acc, f) => acc + f.monto, 0) * 100) / 100;
@@ -306,7 +309,9 @@ export class AdminFinanzas {
   // Ventas de Productos / Cantina (POS)
   protected readonly ventasProductos = computed(() => {
     const vId = this.venueId();
-    const ventas = typeof this.posService?.ventas === 'function' ? this.posService.ventas() : [];
+    const ventas = (
+      typeof this.posService?.ventas === 'function' ? this.posService.ventas() : []
+    ).filter((v) => this.inPeriod(v.fecha));
     if (!vId) return ventas.filter((v) => v.estado === 'completada');
     return ventas.filter(
       (v) => v.estado === 'completada' && (v.sedeId ? Number(v.sedeId) === Number(vId) : true),
@@ -321,8 +326,9 @@ export class AdminFinanzas {
   // Compras de Mercadería a Proveedores
   protected readonly comprasMercaderia = computed(() => {
     const vId = this.venueId();
-    const compras =
-      typeof this.purchaseService?.purchases === 'function' ? this.purchaseService.purchases() : [];
+    const compras = (
+      typeof this.purchaseService?.purchases === 'function' ? this.purchaseService.purchases() : []
+    ).filter((c) => this.inPeriod(c.fechaRecepcion ?? c.fechaEmision));
     if (!vId) return compras.filter((c) => c.estado === 'RECIBIDA');
     return compras.filter(
       (c) => c.estado === 'RECIBIDA' && (c.sedeId ? Number(c.sedeId) === Number(vId) : true),
@@ -339,23 +345,34 @@ export class AdminFinanzas {
     const movs =
       typeof this.cashService?.movimientos === 'function' ? this.cashService.movimientos() : [];
     const sum = movs
-      .filter((m) => String(m.tipo).toLowerCase() === 'egreso' || (m as any).tipo === 2)
+      .filter(
+        (m) =>
+          (String(m.tipo).toLowerCase() === 'egreso' || (m as any).tipo === 2) &&
+          this.inPeriod(this.cashService?.sesionActiva?.()?.fechaApertura),
+      )
       .reduce((acc, m) => acc + (m.monto || 0), 0);
     return Math.round(sum * 100) / 100;
   });
 
   // Total Abonos de Créditos y Fiados
   protected readonly totalAbonosCreditos = computed(() => {
-    const resumen =
-      typeof this.creditService?.resumen === 'function' ? this.creditService.resumen() : null;
-    return Math.round((resumen?.totalCobradoMes ?? 0) * 100) / 100;
+    const accounts = this.creditService?.cuentas?.() ?? [];
+    return (
+      Math.round(
+        accounts
+          .filter((c) => Number(c.sedeId) === Number(this.venueId()))
+          .flatMap((c) => c.abonos ?? [])
+          .filter((a) => this.inPeriod(a.fecha))
+          .reduce((n, a) => n + a.monto, 0) * 100,
+      ) / 100
+    );
   });
 
   // Finanzas Consolidadas & Utilidad Neta
   protected readonly utilidadConsolidada = computed(() => {
     const alquileresBruto = this.metricas().ingresoBruto;
     const comisionAlquileres = this.metricas().comisionApp;
-    const alquileresNeto = this.metricas().ingresoNeto; // 95%
+    const alquileresNeto = this.metricas().ingresoNeto;
     const cantinaBruto = this.totalVentasProductos(); // 100% para el dueño
     const abonosCredito = this.totalAbonosCreditos();
     const compras = this.totalComprasMercaderia();
@@ -583,7 +600,23 @@ export class AdminFinanzas {
   }
 
   protected consultarPeriodo(): void {
-    this.notice.emit(`Consulta de período: ${this.fechaDesde()} a ${this.fechaHasta()}`);
+    const from = this.fechaDesde(),
+      to = this.fechaHasta();
+    if (!isoToLocalDate(from) || !isoToLocalDate(to) || from > to) {
+      this.periodError.set('Selecciona un rango válido: Desde debe ser anterior o igual a Hasta.');
+      return;
+    }
+    this.periodError.set('');
+    this.customRange.set({ from, to });
+    this.periodoTag.set('Personalizado');
+    this.periodoActual.set(`${from} - ${to}`);
+    this.paginaActualFacturables.set(1);
+  }
+  private inPeriod(value: string | null | undefined): boolean {
+    const range = this.periodoRango();
+    if (!range) return true;
+    const date = String(value ?? '').slice(0, 10);
+    return !!date && date >= range.from && date <= range.to;
   }
 
   protected abrirRevisionDevolucion(): void {
@@ -616,7 +649,7 @@ export class AdminFinanzas {
       Método: f.metodo,
       Monto_Bruto_PEN: f.monto.toFixed(2),
       Comision_Canchero_5Pct_PEN: f.comision.toFixed(2),
-      Neto_Dueno_95Pct_PEN: f.neto.toFixed(2),
+      Neto_Registrado_PEN: f.neto.toFixed(2),
       Liquidado: f.liquidado ? 'Sí' : 'No',
     }));
 
@@ -678,8 +711,8 @@ export class AdminFinanzas {
       `Método de Pago:     ${item?.metodo ?? 'Electrónico'}`,
       '----------------------------------------------------',
       `Alquiler Bruto:     S/ ${monto}`,
-      `Comisión Canchero: - S/ ${comision} (5.0% flat)`,
-      `Neto al Dueño:      S/ ${neto} (95.0%)`,
+      `Comisión Canchero: - S/ ${comision}`,
+      `Neto al Dueño:      S/ ${neto}`,
       '----------------------------------------------------',
       `Estado Liquidación: ${item?.liquidado ? 'LIQUIDADO' : 'PENDIENTE DE CORTE'}`,
       '====================================================',

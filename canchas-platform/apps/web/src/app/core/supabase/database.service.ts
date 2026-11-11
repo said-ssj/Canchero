@@ -1650,10 +1650,48 @@ export class DatabaseService {
     );
   }
 
-  updateSedeAdelantoMinimo(_sedeId: number, _porcentaje: number): never {
-    throw new Error(
-      'Esta operacion requiere un contrato de servidor que todavia no esta implementado.',
+  async getVenuePreferences(id: number) {
+    const value = await firstValueFrom(
+      this.http
+        .get<{ minimumDepositPercent: number; walletHolder: string; walletPhone: string }>(
+          `${this.apiUrl}/venues/${id}/preferences`,
+        )
+        .pipe(timeout(12000)),
     );
+    this.sedes.update((rows) =>
+      rows.map((s) =>
+        Number(s.id) === Number(id)
+          ? { ...s, porcentaje_adelanto_minimo: value.minimumDepositPercent }
+          : s,
+      ),
+    );
+    return value;
+  }
+
+  async saveVenuePreferences(
+    id: number,
+    value: { minimumDepositPercent?: number; walletHolder?: string; walletPhone?: string },
+  ) {
+    const saved = await firstValueFrom(
+      this.http
+        .put<{ minimumDepositPercent: number; walletHolder: string; walletPhone: string }>(
+          `${this.apiUrl}/venues/${id}/preferences`,
+          value,
+        )
+        .pipe(timeout(12000)),
+    );
+    this.sedes.update((rows) =>
+      rows.map((s) =>
+        Number(s.id) === Number(id)
+          ? { ...s, porcentaje_adelanto_minimo: saved.minimumDepositPercent }
+          : s,
+      ),
+    );
+    return saved;
+  }
+
+  updateSedeAdelantoMinimo(id: number, percent: number) {
+    return this.saveVenuePreferences(id, { minimumDepositPercent: percent });
   }
 
   getReservasPorDueno(duenoId: string | number) {

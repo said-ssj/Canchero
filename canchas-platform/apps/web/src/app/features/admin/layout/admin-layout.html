@@ -38,6 +38,19 @@
 
       <!-- Menú de Navegación del Administrador -->
       <nav class="sidebar-nav">
+        @if (context.can('pase.verificar')) {
+          <a
+            class="sidebar-nav-item"
+            routerLink="/admin/accesos"
+            routerLinkActive="active"
+            (click)="closeMobileSidebar()"
+          >
+            <span class="material-symbols-outlined icon sidebar-nav-icon" aria-hidden="true"
+              >qr_code_scanner</span
+            >
+            <span>Control de accesos</span>
+          </a>
+        }
         <!-- 1. Mi Sede -->
         <a
           class="sidebar-nav-item"

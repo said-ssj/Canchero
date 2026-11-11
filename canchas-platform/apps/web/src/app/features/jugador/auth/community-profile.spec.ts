@@ -60,6 +60,7 @@ describe('Perfil personal de dueño con varias sedes', () => {
             getVenueDetalle: () => ({ canchas: [] }),
             getSedesPorDueno: () => [],
             sedes: signal([]),
+            getReservasPorJugador: () => [],
           },
         },
       ],
@@ -104,5 +105,53 @@ describe('Perfil personal de dueño con varias sedes', () => {
     expect(c['posts']()).toHaveLength(0);
     expect(c['profile']()?.postCount).toBe(0);
     expect(c['actionError']()).toContain('No se publicó');
+  });
+  it('cambia vista propia y visitante sin cambiar el rol ni perder la opción de volver', async () => {
+    const { f, c, element } = await setup();
+    c['profile'].update((p) => (p ? { ...p, role: 'Jugador', venues: [] } : p));
+    c['togglePerspective']();
+    f.detectChanges();
+    expect(c['isSelf']()).toBe(false);
+    expect(c['ownsProfile']()).toBe(true);
+    expect(c['profile']()?.role).toBe('Jugador');
+    expect(element.querySelector('[aria-label*="Volver a vista propia"]')).not.toBeNull();
+    expect(element.querySelector('.avatar-change')).toBeNull();
+    c['togglePerspective']();
+    f.detectChanges();
+    expect(c['isSelf']()).toBe(true);
+    expect(element.querySelector('.avatar-change')).not.toBeNull();
+  });
+  it('no convierte un perfil ajeno en propio al alternar la vista', async () => {
+    const { f, c, element } = await setup();
+    f.componentRef.setInput('userId', 'owner-b');
+    f.detectChanges();
+    await f.whenStable();
+    f.detectChanges();
+    c['togglePerspective']();
+    expect(c['ownsProfile']()).toBe(false);
+    expect(c['isSelf']()).toBe(false);
+    expect(element.querySelector('.btn-perspective-eye')).toBeNull();
+    expect(element.querySelector('.avatar-change')).toBeNull();
+  });
+  it('permite cerrar presentación y alternarla con editar perfil sin superponer formularios', async () => {
+    const { c } = await setup();
+    c['openSettings']();
+    expect(c['settingsOpen']()).toBe(true);
+    c['startEditingInfo']();
+    expect(c['settingsOpen']()).toBe(false);
+    expect(c['editingInfo']()).toBe(true);
+    c['openSettings']();
+    expect(c['editingInfo']()).toBe(false);
+    expect(c['settingsOpen']()).toBe(true);
+    c['openSettings']();
+    expect(c['settingsOpen']()).toBe(false);
+  });
+  it('muestra un error real en lugar de fabricar perfiles, fotos de sedes o seguidores', async () => {
+    const { api, c } = await setup();
+    api.profile.mockReturnValue(throwError(() => ({ status: 503 })));
+    await c['load']();
+    expect(c['profile']()).toBeNull();
+    expect(c['posts']()).toHaveLength(0);
+    expect(c['error']()).toContain('No pudimos cargar');
   });
 });

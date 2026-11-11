@@ -41,6 +41,7 @@ describe('AdminPersonalizacion Component - Etapa 7 (Personalización y Marca de 
     getSedesPorDueno: vi.fn(() => [mockSede]),
     saveOrUpdateSede: vi.fn(),
     refreshCatalogo: vi.fn(),
+    saveVenuePreferences: vi.fn(async () => ({})),
   };
 
   beforeEach(async () => {
@@ -67,7 +68,7 @@ describe('AdminPersonalizacion Component - Etapa 7 (Personalización y Marca de 
   it('deshabilita guardados y billeteras pendientes, conservando preview y descargas', () => {
     mockDbService.saveOrUpdateSede.mockClear();
     const root = fixture.nativeElement as HTMLElement;
-    for (const selector of ['#btn-save-texts', '#btn-save-all', '.segmented button']) {
+    for (const selector of ['.segmented button']) {
       for (const button of root.querySelectorAll<HTMLButtonElement>(selector)) {
         expect(button.disabled).toBe(true);
         button.click();
@@ -204,13 +205,15 @@ describe('AdminPersonalizacion Component - Etapa 7 (Personalización y Marca de 
       'owner-uuid',
       expect.objectContaining({
         descripcion: 'Descripción final',
-        telefono: '999 888 777',
+        telefono: '987 654 321',
       }),
     );
     expect(venueUpdatedSpy).toHaveBeenCalled();
-    expect(noticeSpy).toHaveBeenCalledWith(
-      'Cambios de marca y personalización publicados correctamente',
+    expect(mockDbService.saveVenuePreferences).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ walletPhone: '999 888 777' }),
     );
+    expect(component['feedback']()).toContain('guardados');
   });
 
   it('muestra estado de carga (skeleton) cuando loading es true', () => {

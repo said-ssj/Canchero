@@ -26,7 +26,8 @@ public class ApiAuthorizationInterceptor implements HandlerInterceptor {
     }
 
     @Override
-    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
+            throws Exception {
         String method = request.getMethod();
         if ("OPTIONS".equalsIgnoreCase(method)) {
             return true;
@@ -38,7 +39,7 @@ public class ApiAuthorizationInterceptor implements HandlerInterceptor {
         }
 
         AuthUserDto user = currentUser(request);
-        if (requiresOwnerOrAdmin(path, method) && !Roles.isOwnerOrAdmin(user.rol()) && !data.hasStaffAssignment(user)) {
+        if (requiresPanelRole(path, method) && !Roles.isOwnerOrAdmin(user.rol()) && !data.hasStaffAssignment(user)) {
             writeError(response, HttpStatus.FORBIDDEN, "No tienes permisos para realizar esta operación");
             return false;
         }
@@ -48,33 +49,59 @@ public class ApiAuthorizationInterceptor implements HandlerInterceptor {
     }
 
     private boolean isPublicEndpoint(String path, String method) {
-        if ("POST".equalsIgnoreCase(method) && "/api/auth/google".equals(path)) return true;
+        // El proveedor no tiene una sesion Canchero; el receptor valida HMAC antes de guardar.
+        if ("POST".equalsIgnoreCase(method) && "/api/payments/mercadopago/webhook".equals(path)) return true;
+        if ("GET".equalsIgnoreCase(method) && "/api/payments/mercadopago/capabilities".equals(path)) return true;
+
+        if ("POST".equalsIgnoreCase(method) && "/api/auth/google".equals(path))
+            return true;
         if (path.startsWith("/api/auth/login") || path.startsWith("/api/auth/register")
-                || path.startsWith("/api/auth/password/")) return true;
-        if (path.startsWith("/api/catalog")) return true;
-        if ("GET".equalsIgnoreCase(method) && (path.startsWith("/api/venues") || path.startsWith("/api/courts"))) return true;
-        if ("GET".equalsIgnoreCase(method) && path.startsWith("/api/bookings/pase/")) return true;
-        if ("GET".equalsIgnoreCase(method) && path.startsWith("/api/reviews")) return true;
-        if ("GET".equalsIgnoreCase(method) && path.matches("^/api/community/profiles/[0-9a-fA-F-]{36}(/posts)?$")) return true;
-        if ("GET".equalsIgnoreCase(method) && path.matches("^/api/community/venues/\\d+/owner$")) return true;
+                || path.startsWith("/api/auth/password/"))
+            return true;
+        if (path.startsWith("/api/catalog"))
+            return true;
+        if ("GET".equalsIgnoreCase(method) && (path.startsWith("/api/venues") || path.startsWith("/api/courts")))
+            return true;
+        if ("GET".equalsIgnoreCase(method) && path.startsWith("/api/bookings/pase/"))
+            return true;
+        if ("GET".equalsIgnoreCase(method) && path.startsWith("/api/reviews"))
+            return true;
+        if ("GET".equalsIgnoreCase(method) && path.equals("/api/community/profiles/search")) return true;
+        if ("GET".equalsIgnoreCase(method) && path.matches("^/api/community/profiles/[0-9a-fA-F-]{36}(/posts)?$"))
+            return true;
+        if ("GET".equalsIgnoreCase(method) && path.matches("^/api/community/venues/\\d+/owner$"))
+            return true;
         return false;
     }
 
-    private boolean requiresOwnerOrAdmin(String path, String method) {
-        if (path.startsWith("/api/cash")) return true;
-        if (path.startsWith("/api/pos")) return true;
-        if (path.startsWith("/api/cajas")) return true;
-        if (path.startsWith("/api/sesiones-caja")) return true;
-        if (path.startsWith("/api/movimientos-caja")) return true;
-        if (path.startsWith("/api/ventas")) return true;
-        if (path.startsWith("/api/productos")) return true;
+    private boolean requiresPanelRole(String path, String method) {
+        if (path.startsWith("/api/cash"))
+            return true;
+        if (path.startsWith("/api/pos"))
+            return true;
+        if (path.startsWith("/api/cajas"))
+            return true;
+        if (path.startsWith("/api/sesiones-caja"))
+            return true;
+        if (path.startsWith("/api/movimientos-caja"))
+            return true;
+        if (path.startsWith("/api/ventas"))
+            return true;
+        if (path.startsWith("/api/productos"))
+            return true;
         if ("GET".equalsIgnoreCase(method) && path.matches("^/api/pagos-reserva/reserva/\\d+$")) {
             return false;
         }
-        if (path.startsWith("/api/pagos-reserva")) return true;
-        if (path.startsWith("/api/venues") && !"GET".equalsIgnoreCase(method)) return true;
-        if (path.startsWith("/api/courts") && !"GET".equalsIgnoreCase(method)) return true;
-        if (path.startsWith("/api/users")) return true;
+        if (path.startsWith("/api/pagos-reserva"))
+            return true;
+        if (path.startsWith("/api/venues") && !"GET".equalsIgnoreCase(method))
+            return true;
+        if (path.startsWith("/api/courts") && !"GET".equalsIgnoreCase(method))
+            return true;
+        if (path.startsWith("/api/users"))
+            return true;
+        if (path.startsWith("/api/staff"))
+            return true;
         if ("PATCH".equalsIgnoreCase(method) && path.matches("^/api/bookings/\\d+/cancel$")) {
             return false;
         }
@@ -96,7 +123,8 @@ public class ApiAuthorizationInterceptor implements HandlerInterceptor {
     }
 
     private RuntimeException unauthorizedException() {
-        return new org.springframework.web.server.ResponseStatusException(HttpStatus.UNAUTHORIZED, "Sesión inválida o expirada");
+        return new org.springframework.web.server.ResponseStatusException(HttpStatus.UNAUTHORIZED,
+                "Sesión inválida o expirada");
     }
 
     private void writeError(HttpServletResponse response, HttpStatus status, String message) throws IOException {

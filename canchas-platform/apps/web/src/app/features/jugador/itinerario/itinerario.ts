@@ -1,5 +1,5 @@
 import { Component, computed, inject, signal, effect } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { VenueWeather } from '@shared/components/venue-weather/venue-weather';
@@ -15,6 +15,7 @@ import type { Booking, BookingStatus } from '@shared/models/booking.model';
   templateUrl: './itinerario.html',
 })
 export class Itinerario {
+  private readonly router = inject(Router);
   private readonly db = inject(DatabaseService);
   private readonly confirmation = inject(ConfirmationService);
   private confirmingCancellation = false;
@@ -230,6 +231,10 @@ export class Itinerario {
   }
 
   protected openQr(booking: Booking): void {
+    if (booking.codigoPase?.startsWith('MP-')) {
+      void this.router.navigate(['/pago/resultado'], { queryParams: { reserva: booking.id } });
+      return;
+    }
     this.reservaQr.set(booking);
     this.qrAbierto.set(true);
   }

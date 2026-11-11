@@ -1,0 +1,191 @@
+<main class="container search-page">
+  <h1>Buscar en Canchero</h1>
+  <form class="search-form" (ngSubmit)="submit()">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field">
+      <mat-label>Sedes, canchas o personas</mat-label>
+      <span matTextPrefix class="material-symbols-outlined" aria-hidden="true">search</span>
+      <input matInput name="q" [(ngModel)]="input" maxlength="120" />
+      @if (input) {
+        <button
+          matSuffix
+          type="button"
+          class="icon-action"
+          aria-label="Limpiar búsqueda"
+          (click)="clear()"
+        >
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      }
+    </mat-form-field>
+    <button mat-flat-button type="submit" [disabled]="input.trim().length < 2">Buscar</button>
+  </form>
+  <nav class="search-tabs" aria-label="Tipos de resultados">
+    @for (tab of tabs; track tab) {
+      <button
+        mat-button
+        type="button"
+        [class.selected]="type() === tab"
+        [attr.aria-pressed]="type() === tab"
+        (click)="selectType(tab)"
+      >
+        {{ tab }} <span>{{ count(tab) ?? '—' }}</span>
+      </button>
+    }
+  </nav>
+  @if (query().length < 2) {
+    <p class="search-state">Escribe al menos dos caracteres para buscar.</p>
+  }
+  @if (busy() || db.catalogLoading()) {
+    <p role="status">Buscando resultados…</p>
+  }
+  @if (error()) {
+    <p role="alert">{{ error() }}</p>
+  }
+  @if (db.catalogError()) {
+    <p role="alert">
+      No se pudieron cargar las sedes y canchas. Los resultados pueden estar incompletos.
+    </p>
+  }
+  @if (result(); as r) {
+    <p class="result-count">
+      {{ r.totalCount }} {{ r.totalCount === 1 ? 'resultado' : 'resultados' }} para «{{ r.query }}»
+    </p>
+    @if (r.personasError) {
+      <p role="status">La búsqueda de personas no está disponible en este momento.</p>
+    }
+    @if (r.totalCount === 0 && !r.personasError && !db.catalogLoading() && !db.catalogError()) {
+      <p class="search-state">No encontramos coincidencias. Prueba con otro nombre o distrito.</p>
+    }
+    <div
+      class="results-layout"
+      [class.single]="type() !== 'todo' || (!r.totalSedes && !r.totalCanchas)"
+    >
+      <section class="venue-results" aria-label="Sedes y canchas">
+        @if ((type() === 'todo' && r.totalSedes > 0) || type() === 'sedes') {
+          <h2>
+            Sedes <small>{{ r.totalSedes }}</small>
+          </h2>
+          @for (s of r.sedes.slice(0, venueLimit()); track s.id) {
+            <article class="venue-result">
+              <div class="result-photo">
+                <span>Canchero</span>
+                @if (s.foto) {
+                  <img [src]="s.foto" [alt]="s.nombre" (error)="imageError($event)" />
+                }
+              </div>
+              <div class="result-details">
+                <h3>
+                  @for (part of parts(s.nombre, query()); track $index) {
+                    <mark [class.match]="part.isMatch">{{ part.text }}</mark>
+                  }
+                </h3>
+                <p class="muted">{{ s.distrito }}{{ s.ciudad ? ' · ' + s.ciudad : '' }}</p>
+                @if (s.direccion) {
+                  <p class="muted">{{ s.direccion }}</p>
+                }
+                <div class="attributes">
+                  @for (attribute of s.atributos; track attribute) {
+                    <span>{{ attribute }}</span>
+                  }
+                </div>
+                <p>{{ s.canchasCount }} canchas</p>
+                <div class="result-footer">
+                  @if (s.precioMin != null && s.precioMin! > 0) {
+                    <strong>S/ {{ s.precioMin!.toFixed(2) }} <small>/ hora · desde</small></strong>
+                  }
+                  <a mat-flat-button [routerLink]="['/sedes', s.id]"
+                    >Ver canchas
+                    <span class="material-symbols-outlined" aria-hidden="true"
+                      >arrow_forward</span
+                    ></a
+                  >
+                </div>
+              </div>
+            </article>
+          }
+          @if (r.sedes.length > venueLimit()) {
+            <button mat-stroked-button type="button" (click)="venueLimit.set(venueLimit() + 6)">
+              Ver más sedes ({{ r.sedes.length - venueLimit() }}
+              {{ r.sedes.length - venueLimit() === 1 ? 'restante' : 'restantes' }})
+            </button>
+          }
+        }
+        @if ((type() === 'todo' && r.totalCanchas > 0) || type() === 'canchas') {
+          <h2>
+            Canchas <small>{{ r.totalCanchas }}</small>
+          </h2>
+          @for (c of r.canchas.slice(0, courtLimit()); track c.id) {
+            <article class="court-result">
+              <div>
+                <h3>
+                  @for (part of parts(c.nombre, query()); track $index) {
+                    <mark [class.match]="part.isMatch">{{ part.text }}</mark>
+                  }
+                </h3>
+                <p>{{ c.venueNombre }}</p>
+                <p class="muted">
+                  {{ c.formato }}{{ c.superficie ? ' · ' + c.superficie : '' }} · {{ c.distrito }}
+                </p>
+              </div>
+              <a mat-stroked-button [routerLink]="['/checkout']" [queryParams]="{ courtId: c.id }"
+                >Ver horarios</a
+              >
+            </article>
+          }
+        }
+        @if ((type() === 'todo' || type() === 'canchas') && r.canchas.length > courtLimit()) {
+          <button mat-stroked-button type="button" (click)="courtLimit.set(courtLimit() + 12)">
+            Ver más canchas ({{ r.canchas.length - courtLimit() }} restantes)
+          </button>
+        }
+      </section>
+      @if (type() === 'todo' || type() === 'personas') {
+        <section class="people-results" aria-label="Personas">
+          <h2>
+            Personas <small>{{ r.totalPersonas }}</small>
+          </h2>
+          @for (p of r.personas.slice(0, peopleLimit()); track p.id) {
+            <article class="person-result">
+              <div class="person-identity">
+                <div class="person-avatar">
+                  <span>{{ p.nombre.slice(0, 1).toUpperCase() }}</span>
+                  @if (p.foto) {
+                    <img
+                      [src]="p.foto"
+                      [alt]="'Foto de ' + p.nombre"
+                      (error)="imageError($event)"
+                    />
+                  }
+                </div>
+                <div>
+                  <h3>{{ p.nombre }}</h3>
+                  @if (p.rol) {
+                    <span class="role">{{ p.rol }}</span>
+                  }
+                  @if (p.username) {
+                    <p class="muted">{{ p.username }}</p>
+                  }
+                </div>
+              </div>
+              <a mat-stroked-button [routerLink]="p.isCurrentUser ? '/perfil' : '/perfiles/' + p.id"
+                >Ver perfil</a
+              >
+            </article>
+          }
+          @if (r.personas.length > peopleLimit()) {
+            <button mat-stroked-button type="button" (click)="peopleLimit.set(peopleLimit() + 10)">
+              Ver más personas
+            </button>
+          }
+          @if (r.personas.length === 0 && !r.personasError) {
+            <p class="muted">No hay personas que coincidan con tu búsqueda.</p>
+          }
+          <p class="muted small">
+            Se busca por nombre e identificador público, nunca por correo ni teléfono. Se muestran
+            hasta 50 personas.
+          </p>
+        </section>
+      }
+    </div>
+  }
+</main>

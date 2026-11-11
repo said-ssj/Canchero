@@ -239,6 +239,13 @@ export class AuthService {
   }
 
   /** Pide el enlace de recuperación; el servidor responde igual exista o no la cuenta. */
+  changePassword(currentPassword: string, newPassword: string) {
+    return this.http.put<{ message: string }>(`${this.apiUrl}/account/password`, {
+      currentPassword,
+      newPassword,
+    });
+  }
+
   requestPasswordReset(email: string): Observable<{ message: string }> {
     return this.sessionHttp
       .post<{ message: string }>(`${this.apiUrl}/auth/password/forgot`, {

@@ -157,11 +157,24 @@ export class AdminPersonalizacion {
     );
   });
 
+  protected readonly saving = signal(false);
+  protected readonly feedback = signal('');
+  private preferencesVenue = '';
   constructor() {
     // Sincronizar datos iniciales al cargar o cambiar de sede
     effect(() => {
       const s = this.sede();
+      if (this.preferencesVenue === (s?.id ?? '')) return;
+      this.preferencesVenue = s?.id ?? '';
       if (s) {
+        void this.db
+          .getVenuePreferences?.(Number(s.id))
+          .then((value) => {
+            if (this.sede()?.id !== s.id) return;
+            this.totemMerchant.set(value.walletHolder || '');
+            this.totemPhone.set(value.walletPhone || '');
+          })
+          .catch(() => this.feedback.set('No se pudieron cargar los datos de billetera.'));
         this.previewTagline.set((s.descripcion ?? '').slice(0, 58));
         this.liveVenueStory.set(s.descripcion ?? '');
         this.totemMerchant.set(s.nombre);
@@ -308,26 +321,32 @@ export class AdminPersonalizacion {
   // ===== PUBLICACIÓN GENERAL =====
   protected async publicarCambiosSede(): Promise<void> {
     const s = this.sede();
-    if (s) {
-      const updated: Venue = {
+    if (!s || this.saving()) return;
+    this.feedback.set('');
+    this.saving.set(true);
+    let walletSaved = false;
+    try {
+      await this.db.saveVenuePreferences(Number(s.id), {
+        walletHolder: this.totemMerchant(),
+        walletPhone: this.totemPhone(),
+      });
+      walletSaved = true;
+      await this.db.saveOrUpdateSede(this.currentDuenoId(), {
         ...s,
         descripcion: this.liveVenueStory(),
-        telefono: this.totemPhone(),
-      };
-      try {
-        await this.db.saveOrUpdateSede(this.currentDuenoId(), updated);
-      } catch (error) {
-        this.notice.emit(
-          (error as any)?.error?.message ||
-            (error as any)?.message ||
-            'No se pudieron publicar los cambios. Intenta nuevamente.',
-        );
-        return;
-      }
-      this.venueUpdated.emit(updated);
-      this.notice.emit('Cambios de marca y personalización publicados correctamente');
-    } else {
-      this.notice.emit('No hay sede seleccionada para publicar cambios');
+      });
+      this.venueUpdated.emit({ ...s, descripcion: this.liveVenueStory() });
+      this.feedback.set(
+        'Textos y datos de billetera guardados para esta sede. El receptor de Mercado Pago no cambia.',
+      );
+    } catch (e: any) {
+      this.feedback.set(
+        walletSaved
+          ? 'Los datos de billetera se guardaron, pero no los textos. Reintenta guardar.'
+          : e?.error?.message || 'No se pudieron guardar los datos.',
+      );
+    } finally {
+      this.saving.set(false);
     }
   }
 }

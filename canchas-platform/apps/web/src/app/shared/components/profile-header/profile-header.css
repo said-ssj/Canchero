@@ -5,7 +5,7 @@
 .profile-hero {
   overflow: hidden;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 8px;
   background: var(--surface);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
@@ -116,7 +116,7 @@ h1 {
   color: #167338;
   background: #e8f5e9;
   padding: 3px 10px;
-  border-radius: 12px;
+  border-radius: 8px;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -134,7 +134,7 @@ h1 {
   font-size: 11px;
   font-weight: 700;
   padding: 3px 9px;
-  border-radius: 12px;
+  border-radius: 8px;
 }
 .verified-icon {
   font-size: 14px;
@@ -191,4 +191,44 @@ h1 {
 .identity-top.no-avatar {
   margin-top: 0;
   padding-top: 16px;
+}
+
+/* Hover solicitado únicamente para cambiar la foto propia; también accesible con foco/toque. */
+.profile-avatar {
+  position: relative;
+  overflow: hidden;
+}
+.avatar-change {
+  position: absolute;
+  bottom: 0;
+  inset-inline: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-height: 34px;
+  padding: 4px 0;
+  border: 0;
+  background: #000b;
+  color: white;
+  font-size: 11px;
+  opacity: 0;
+  cursor: pointer;
+}
+.avatar-change .material-symbols-outlined {
+  font-size: 16px;
+}
+.profile-avatar:hover .avatar-change,
+.profile-avatar:focus-within .avatar-change {
+  opacity: 1;
+}
+.avatar-change:focus-visible {
+  opacity: 1;
+  outline: 2px solid white;
+  outline-offset: -3px;
+}
+@media (hover: none) {
+  .avatar-change {
+    opacity: 1;
+  }
 }

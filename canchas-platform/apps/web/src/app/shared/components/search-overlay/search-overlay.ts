@@ -321,27 +321,24 @@ export class SearchOverlayComponent implements OnInit, OnDestroy {
     }
   }
 
-  protected submitGlobalSearch(): void {
+  protected submitGlobalSearch(tipo = this.onlyPersonsMode() ? 'personas' : 'todo'): void {
     const q = this.query().trim();
-    if (this.onlyPersonsMode()) {
-      return;
-    }
     if (!q) {
       this.closeOverlay();
-      void this.router.navigate(['/sedes']);
+      void this.router.navigate(['/buscar']);
       return;
     }
     this.recentSearchesService.add(q);
     this.closeOverlay();
-    void this.router.navigate(['/sedes'], { queryParams: { q } });
+    void this.router.navigate(['/buscar'], { queryParams: { q, tipo } });
   }
 
   protected viewAllSedesForQuery(): void {
-    this.submitGlobalSearch();
+    this.submitGlobalSearch('sedes');
   }
 
   protected viewAllCanchasForQuery(): void {
-    this.submitGlobalSearch();
+    this.submitGlobalSearch('canchas');
   }
 
   protected retrySearch(): void {

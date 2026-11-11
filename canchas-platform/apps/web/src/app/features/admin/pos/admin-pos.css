@@ -40,7 +40,8 @@
 }
 
 /* Scoped to this feature, including Material's internal animation elements. */
-:host, :host * {
+:host,
+:host * {
   animation: none !important;
   transition: none !important;
 }
@@ -149,16 +150,6 @@ button:disabled {
   color: #000000 !important;
 }
 
-.pos-btn-action:hover {
-  border-color: #27802D !important;
-  color: #27802D !important;
-}
-
-.pos-btn-action:hover mat-icon,
-.pos-btn-action:hover span {
-  color: #27802D !important;
-}
-
 :root.dark-theme .pos-btn-action,
 body.dark-theme .pos-btn-action {
   color: #f1f5f9 !important;
@@ -171,19 +162,6 @@ body.dark-theme .pos-btn-action mat-icon,
 :root.dark-theme .pos-btn-action span,
 body.dark-theme .pos-btn-action span {
   color: #f1f5f9 !important;
-}
-
-:root.dark-theme .pos-btn-action:hover,
-body.dark-theme .pos-btn-action:hover {
-  border-color: #4ade80 !important;
-  color: #4ade80 !important;
-}
-
-:root.dark-theme .pos-btn-action:hover mat-icon,
-body.dark-theme .pos-btn-action:hover mat-icon,
-:root.dark-theme .pos-btn-action:hover span,
-body.dark-theme .pos-btn-action:hover span {
-  color: #4ade80 !important;
 }
 
 /* Banner de Alerta de Stock Mínimo Crítico */
@@ -360,12 +338,6 @@ body.dark-theme .pos-btn-action:hover span {
   justify-content: space-between;
   cursor: pointer;
   position: relative;
-}
-
-:host .pos-product-card.mat-mdc-card:hover {
-  transform: none;
-  box-shadow: none;
-  border-color: var(--pos-product-border, var(--color-border, #e2e8f0));
 }
 
 .pos-product-card.is-low-stock {
@@ -1099,7 +1071,7 @@ body.dark-theme .pos-btn-action:hover span {
 
 /* Ticket Térmico 80mm */
 .pos-receipt-paper {
-  background: #ffffff;
+  background: var(--surface);
   padding: 1rem;
   margin: 0.75rem 0;
   border: 1px dashed #cbd5e1;
@@ -1133,7 +1105,7 @@ body.dark-theme .pos-btn-action:hover span {
   white-space: nowrap;
   overflow: hidden;
   margin: 4px 0;
-  color: #64748b;
+  color: var(--muted);
 }
 
 .pos-receipt-voucher-type {
@@ -1397,7 +1369,8 @@ body.dark-theme .pos-btn-action:hover span {
 .pos-dest-btn {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
+  justify-content: center;
   padding: 3px 8px;
   font-size: 0.75rem;
   font-weight: 700;
@@ -1409,8 +1382,8 @@ body.dark-theme .pos-btn-action:hover span {
 }
 
 .pos-dest-btn.active {
-  border-color: #27802D;
-  color: #27802D;
+  border-color: #27802d;
+  color: #27802d;
   background: transparent;
 }
 
@@ -1481,8 +1454,8 @@ body.dark-theme .pos-btn-action:hover span {
 }
 
 .ticket-w-btn.active {
-  border-color: #27802D;
-  color: #27802D;
+  border-color: #27802d;
+  color: #27802d;
 }
 
 .pos-receipt-paper.paper-58mm {
@@ -1498,4 +1471,16 @@ body.dark-theme .pos-btn-action:hover span {
   border-top: 1px dashed #000;
   border-bottom: 1px dashed #000;
   font-size: 10px;
+}
+
+.pos-dest-btn mat-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  font-size: 20px;
+  line-height: 1;
+  margin: 0;
+  flex-shrink: 0;
 }

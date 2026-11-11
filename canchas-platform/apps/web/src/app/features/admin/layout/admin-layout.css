@@ -177,11 +177,6 @@
       color 0.15s ease;
   }
 
-  .mat-admin-shell .sidebar-close-btn.mat-mdc-icon-button:hover {
-    background: rgba(255, 255, 255, 0.18) !important;
-    color: #ffffff !important;
-  }
-
   .mat-admin-shell .sidebar-close-btn mat-icon {
     font-size: 22px !important;
     width: 22px !important;
@@ -295,33 +290,11 @@ button.profile-avatar-btn {
   transition: color 0.15s ease !important;
 }
 
-.btn-bell:hover,
-.btn-theme-toggle:hover,
-.profile-avatar-btn:hover,
-button.btn-bell:hover,
-button.btn-theme-toggle:hover,
-button.profile-avatar-btn:hover {
-  background: transparent !important;
-  color: var(--color-brand-green, #27802d) !important;
-}
-
-.btn-bell:hover mat-icon,
-.btn-theme-toggle:hover mat-icon,
-button.btn-bell:hover mat-icon,
-button.btn-theme-toggle:hover mat-icon {
-  color: var(--color-brand-green, #27802d) !important;
-}
-
 .profile-avatar-btn .user-avatar-badge {
   border-radius: 50% !important;
   border: none !important;
   width: 34px !important;
   height: 34px !important;
-}
-
-.profile-avatar-btn:hover .user-avatar-badge {
-  outline: 2px solid var(--color-brand-green, #27802d) !important;
-  outline-offset: 1px !important;
 }
 .management-scope {
   display: grid;
@@ -402,7 +375,7 @@ button.btn-theme-toggle:hover mat-icon {
 }
 
 .venue-search-input::placeholder {
-  color: #64748b;
+  color: var(--muted);
   font-weight: 400;
 }
 
@@ -416,10 +389,6 @@ button.btn-theme-toggle:hover mat-icon {
   justify-content: center;
   color: #94a3b8;
   border-radius: 50%;
-}
-
-.btn-clear-search:hover {
-  color: var(--color-danger, #dc2626);
 }
 
 .btn-clear-search .mat-icon {
@@ -460,7 +429,7 @@ button.btn-theme-toggle:hover mat-icon {
   gap: 8px;
   padding: 12px 14px;
   font-size: 13px;
-  color: #64748b;
+  color: var(--muted);
 }
 
 .venue-dropdown-empty .mat-icon {
@@ -482,10 +451,6 @@ button.btn-theme-toggle:hover mat-icon {
   transition: background-color 0.12s ease;
 }
 
-.venue-dropdown-item:hover {
-  background-color: var(--color-slate-100, #f1f5f9);
-}
-
 .venue-dropdown-item.is-selected {
   background-color: rgba(39, 128, 45, 0.08);
 }
@@ -495,7 +460,7 @@ button.btn-theme-toggle:hover mat-icon {
   width: 20px;
   height: 20px;
   line-height: 20px;
-  color: #64748b;
+  color: var(--muted);
   flex-shrink: 0;
 }
 
@@ -525,7 +490,7 @@ button.btn-theme-toggle:hover mat-icon {
 
 .venue-item-address {
   font-size: 11px;
-  color: #64748b;
+  color: var(--muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -559,11 +524,11 @@ button.btn-theme-toggle:hover mat-icon {
 .fb-notifications-popover {
   position: absolute;
   top: calc(100% + 8px);
-  right: -60px;
-  width: 380px;
+  right: 0;
+  width: min(340px, calc(100vw - 32px));
   max-width: 90vw;
   max-height: 520px;
-  background: #ffffff;
+  background: var(--surface);
   border: 1px solid var(--color-border, #e2e8f0);
   border-radius: 8px;
   box-shadow:
@@ -611,17 +576,12 @@ button.btn-theme-toggle:hover mat-icon {
   background: transparent;
   border: none;
   cursor: pointer;
-  color: #64748b;
+  color: var(--muted);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: 4px;
   border-radius: 4px;
-}
-
-.fb-notif-action-icon:hover {
-  color: var(--color-brand-green, #27802d);
-  background: rgba(39, 128, 45, 0.08);
 }
 
 .fb-notif-tabs {
@@ -631,12 +591,12 @@ button.btn-theme-toggle:hover mat-icon {
 
 .fb-notif-tab {
   border: none;
-  background: #f1f5f9;
-  color: #475569;
+  background: var(--page);
+  color: var(--ink);
   font-size: 13px;
   font-weight: 600;
   padding: 6px 12px;
-  border-radius: 16px;
+  border-radius: 6px;
   cursor: pointer;
   transition: all 0.15s ease;
 }
@@ -669,11 +629,9 @@ button.btn-theme-toggle:hover mat-icon {
   padding: 0;
 }
 
-.fb-notif-link-btn:hover {
-  text-decoration: underline;
-}
-
 .fb-notif-list {
+  overflow-x: hidden;
+  min-width: 0;
   flex: 1;
   overflow-y: auto;
   padding: 4px 8px;
@@ -694,16 +652,8 @@ button.btn-theme-toggle:hover mat-icon {
   text-align: left;
 }
 
-.fb-notif-item:hover {
-  background-color: #f8fafc;
-}
-
 .fb-notif-item.unread {
   background-color: rgba(39, 128, 45, 0.04);
-}
-
-.fb-notif-item.unread:hover {
-  background-color: rgba(39, 128, 45, 0.08);
 }
 
 .fb-notif-avatar-container {
@@ -787,9 +737,12 @@ button.btn-theme-toggle:hover mat-icon {
 }
 
 .fb-notif-empty {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  min-width: 0;
   padding: 32px 16px;
   text-align: center;
-  color: #64748b;
+  color: var(--muted);
 }
 
 .fb-notif-empty mat-icon {
@@ -815,10 +768,6 @@ button.btn-theme-toggle:hover mat-icon {
   font-weight: 700;
   cursor: pointer;
   padding: 4px 8px;
-}
-
-.fb-notif-footer-btn:hover {
-  text-decoration: underline;
 }
 
 /* Modo oscuro para la ventana de notificaciones */
@@ -857,11 +806,6 @@ body.dark-theme .fb-notif-tab.active {
 :root.dark-theme .fb-notif-section-title,
 body.dark-theme .fb-notif-section-title {
   color: #e4e6eb;
-}
-
-:root.dark-theme .fb-notif-item:hover,
-body.dark-theme .fb-notif-item:hover {
-  background-color: rgba(255, 255, 255, 0.05);
 }
 
 :root.dark-theme .fb-notif-item.unread,
@@ -910,11 +854,6 @@ body.dark-theme .venue-live-dropdown {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
 }
 
-:root.dark-theme .venue-dropdown-item:hover,
-body.dark-theme .venue-dropdown-item:hover {
-  background-color: rgba(255, 255, 255, 0.08);
-}
-
 :root.dark-theme .venue-dropdown-item.is-selected,
 body.dark-theme .venue-dropdown-item.is-selected {
   background-color: rgba(39, 128, 45, 0.22);
@@ -930,4 +869,10 @@ body.dark-theme .venue-item-address,
 :root.dark-theme .venue-dropdown-empty,
 body.dark-theme .venue-dropdown-empty {
   color: #94a3b8;
+}
+
+.fb-notif-list > * {
+  max-width: 100%;
+  min-width: 0;
+  white-space: normal;
 }

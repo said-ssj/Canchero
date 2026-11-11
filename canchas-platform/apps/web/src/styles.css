@@ -587,105 +587,33 @@ a:focus-visible {
   border-radius: var(--radius, 6px);
 }
 
-.btn.icon-only,
-.btn-icon-only,
-.icon-only-btn,
-.btn-icon-action {
-  width: 28px !important;
-  min-width: 28px !important;
-  height: 28px !important;
+/* Icon actions: icon-sized target, transparent background and keyboard focus. */
+:is(.btn.icon-only, .btn-icon-only, .icon-only-btn, .btn-icon-action) {
+  width: 22px !important;
+  min-width: 22px !important;
+  height: 22px !important;
+  min-height: 0 !important;
   padding: 0 !important;
-  border: none !important;
+  border: 0 !important;
+  border-radius: 0 !important;
   background: transparent !important;
-  background-color: transparent !important;
   box-shadow: none !important;
-  outline: none !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  color: var(--muted, #64748b) !important;
-  cursor: pointer;
-  transition: color 0.15s ease;
+  color: var(--muted) !important;
+  transition: none;
 }
-
-.btn.icon-only .icon,
-.btn.icon-only .material-symbols-outlined,
-.btn-icon-only .material-symbols-outlined,
-.icon-only-btn .material-symbols-outlined,
-.btn-icon-action .material-symbols-outlined {
+:is(.btn.icon-only, .btn-icon-only, .icon-only-btn, .btn-icon-action) .material-symbols-outlined {
   font-size: 22px !important;
   width: 22px !important;
   height: 22px !important;
   line-height: 22px !important;
   color: inherit !important;
 }
-
-.btn.icon-only:hover,
-.btn.icon-only:active,
-.btn.icon-only:focus,
-.btn-icon-only:hover,
-.btn-icon-only:active,
-.btn-icon-only:focus,
-.icon-only-btn:hover,
-.icon-only-btn:active,
-.icon-only-btn:focus,
-.btn-icon-action:hover,
-.btn-icon-action:active,
-.btn-icon-action:focus {
-  background: transparent !important;
-  background-color: transparent !important;
-  box-shadow: none !important;
-  outline: none !important;
-  color: var(--can-color-primary, #27802d) !important;
-}
-
-.btn.icon-only:hover .material-symbols-outlined,
-.btn.icon-only:active .material-symbols-outlined,
-.btn.icon-only:focus .material-symbols-outlined,
-.btn-icon-only:hover .material-symbols-outlined,
-.btn-icon-only:active .material-symbols-outlined,
-.btn-icon-only:focus .material-symbols-outlined,
-.icon-only-btn:hover .material-symbols-outlined,
-.icon-only-btn:active .material-symbols-outlined,
-.icon-only-btn:focus .material-symbols-outlined,
-.btn-icon-action:hover .material-symbols-outlined,
-.btn-icon-action:active .material-symbols-outlined,
-.btn-icon-action:focus .material-symbols-outlined {
-  color: var(--can-color-primary, #27802d) !important;
-}
-
-/* Modo oscuro para botones de solo icono */
-:root.dark-theme .btn.icon-only,
-body.dark-theme .btn.icon-only,
-:root.dark-theme .btn-icon-only,
-body.dark-theme .btn-icon-only,
-:root.dark-theme .icon-only-btn,
-body.dark-theme .icon-only-btn,
-:root.dark-theme .btn-icon-action,
-body.dark-theme .btn-icon-action {
-  color: #cbd5e1 !important;
-  background: transparent !important;
-  border: none !important;
-}
-
-:root.dark-theme .btn.icon-only:hover,
-:root.dark-theme .btn.icon-only:active,
-body.dark-theme .btn.icon-only:hover,
-body.dark-theme .btn.icon-only:active,
-:root.dark-theme .btn-icon-only:hover,
-:root.dark-theme .btn-icon-only:active,
-body.dark-theme .btn-icon-only:hover,
-body.dark-theme .btn-icon-only:active,
-:root.dark-theme .icon-only-btn:hover,
-:root.dark-theme .icon-only-btn:active,
-body.dark-theme .icon-only-btn:hover,
-body.dark-theme .icon-only-btn:active,
-:root.dark-theme .btn-icon-action:hover,
-:root.dark-theme .btn-icon-action:active,
-body.dark-theme .btn-icon-action:hover,
-body.dark-theme .btn-icon-action:active {
-  background: transparent !important;
-  color: #4ade80 !important;
+:is(.btn.icon-only, .btn-icon-only, .icon-only-btn, .btn-icon-action):focus-visible {
+  outline: 2px solid var(--primary) !important;
+  outline-offset: 3px;
 }
 
 /* Deshabilitado unificado del sistema de diseno: gris, disabled nativo, sin sombra */
@@ -4021,4 +3949,87 @@ body.dark-theme .cn-field-textarea .mdc-floating-label {
   .brand-badge {
     display: none;
   }
+}
+
+/* Material controls share semantic tokens in both themes. */
+.mat-admin-shell {
+  --mat-button-outlined-label-text-color: var(--ink);
+  --mat-button-outlined-outline-color: var(--line);
+  --mat-button-text-label-text-color: var(--ink);
+  --mat-form-field-outlined-input-text-color: var(--ink);
+  --mat-form-field-outlined-label-text-color: var(--muted);
+  --mat-table-background-color: var(--surface);
+  --mat-table-row-item-label-text-color: var(--ink);
+  --mat-table-header-headline-color: var(--ink);
+}
+.mat-admin-shell :is(.mat-mdc-outlined-button, .mat-mdc-button):not(:disabled) {
+  color: var(--ink);
+  border-color: var(--line);
+}
+.mat-admin-shell .mat-mdc-table {
+  background: var(--surface);
+  color: var(--ink);
+}
+.mat-admin-shell
+  .mat-mdc-table
+  :is(.mat-mdc-header-row, .mat-mdc-row, .mat-mdc-footer-row, .mat-mdc-header-cell, .mat-mdc-cell) {
+  background: var(--surface);
+  color: var(--ink);
+  border-color: var(--line);
+}
+.mat-mdc-form-field.cn-field .mat-mdc-input-element:not(textarea) {
+  padding: 0 !important;
+  min-height: 0;
+  height: auto;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none;
+  line-height: 24px;
+}
+.mat-mdc-form-field.cn-field:not(.cn-field-textarea) .mat-mdc-form-field-infix {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  padding-block: 10px;
+}
+.mat-mdc-form-field.cn-field :is(.mat-mdc-form-field-icon-prefix, .mat-mdc-form-field-icon-suffix) {
+  display: flex;
+  align-items: center;
+  align-self: center;
+}
+:is(.cn-field .mat-mdc-icon-button, .btn.icon-only, .icon-only-btn, .config-pwd-btn) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  line-height: 1;
+}
+.cn-field .mat-mdc-icon-button .mat-mdc-button-touch-target {
+  width: 24px;
+  height: 24px;
+}
+.mat-mdc-icon-button .mat-mdc-button-persistent-ripple,
+.mat-mdc-icon-button .mat-ripple {
+  display: none;
+}
+:is(.cn-field .mat-mdc-icon-button, .btn.icon-only, .icon-only-btn, .config-pwd-btn):focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+}
+
+/* Perfiles: el objetivo de clic de un botón de solo icono coincide con su icono. */
+.community-page button[mat-icon-button] .mat-mdc-button-touch-target {
+  display: none;
+}
+.community-page button[mat-icon-button] {
+  --mat-icon-button-state-layer-size: 22px;
 }

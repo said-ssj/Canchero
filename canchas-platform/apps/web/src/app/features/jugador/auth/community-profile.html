@@ -1,3 +1,10 @@
+<input
+  #avatarPicker
+  type="file"
+  hidden
+  accept="image/jpeg,image/png,image/webp"
+  (change)="selectAvatar(avatarPicker)"
+/>
 <main class="container community-page">
   @if (loading() && !profile()) {
     <section class="panel skeleton-profile cn-loader" role="status">
@@ -34,6 +41,9 @@
   }
   @if (!isBlocked() && profile(); as p) {
     <app-profile-header
+      [personalAvatar]="true"
+      [editableAvatar]="isSelf()"
+      (avatarEdit)="requestAvatar(avatarPicker)"
       [name]="p.name"
       [photo]="avatarUrl()"
       [cover]="p.cover"
@@ -90,7 +100,7 @@
             [class.btn-cover-secondary]="!following()"
             [class.btn-following]="following()"
             type="button"
-            [disabled]="relationshipBusy()"
+            [disabled]="relationshipBusy() || ownsProfile()"
             (click)="handleFollowClick()"
           >
             @if (following()) {
@@ -145,7 +155,7 @@
             class="btn-cover btn-follow"
             [class.btn-following]="following()"
             type="button"
-            [disabled]="relationshipBusy()"
+            [disabled]="relationshipBusy() || ownsProfile()"
             (click)="handleFollowClick()"
             [attr.aria-label]="following() ? 'Dejar de seguir a ' + p.name : 'Seguir a ' + p.name"
           >
@@ -195,7 +205,7 @@
             <span class="material-symbols-outlined" aria-hidden="true">share</span>
             <span>Compartir perfil</span>
           </button>
-          @if (!isSelf()) {
+          @if (!ownsProfile()) {
             <button mat-menu-item type="button" (click)="openReportModal()">
               <span class="material-symbols-outlined" aria-hidden="true">flag</span>
               <span>Reportar perfil</span>
@@ -214,36 +224,38 @@
         </mat-menu>
       </div>
 
-      @if (isSelf()) {
+      @if (ownsProfile()) {
         <button
           mat-icon-button
           profileIdentityEnd
           type="button"
           class="btn-perspective-eye"
-          [class.visitor-mode]="isVisitorPerspective()"
           (click)="togglePerspective()"
+          [disableRipple]="true"
           [matTooltip]="
-            isOwnerPerspective()
-              ? 'Cambiar a perspectiva de visitante'
-              : 'Cambiar a perspectiva del dueño'
+            isSelf()
+              ? 'Vista propia · Cambiar a vista de visitante'
+              : 'Vista de visitante · Volver a vista propia'
           "
           [attr.aria-label]="
-            isOwnerPerspective()
-              ? 'Cambiar a perspectiva de visitante'
-              : 'Cambiar a perspectiva del dueño'
+            isSelf()
+              ? 'Vista propia · Cambiar a vista de visitante'
+              : 'Vista de visitante · Volver a vista propia'
           "
         >
-          <span class="material-symbols-outlined" aria-hidden="true">
-            {{ isOwnerPerspective() ? 'visibility' : 'visibility_off' }}
-          </span>
+          <span class="material-symbols-outlined" aria-hidden="true">{{
+            isSelf() ? 'visibility' : 'visibility_off'
+          }}</span>
         </button>
       }
 
       <div profileMeta class="profile-meta-content">
         <p class="profile-handle">
-          &#64;{{ handle() }}
+          @if (handle()) {
+            &#64;{{ handle() }}
+          }
           @if (pLocation()) {
-            · {{ pLocation() }}
+            {{ handle() ? '· ' : '' }}{{ pLocation() }}
           }
         </p>
 
@@ -380,7 +392,19 @@
     <!-- PRESENTACIÓN Y PORTADA (MODAL PARA DUEÑO / SELF) -->
     @if (settingsOpen() && isSelf()) {
       <section class="panel settings" aria-labelledby="presentation-title">
-        <h2 id="presentation-title">Tu presentación pública</h2>
+        <div class="presentation-heading">
+          <h2 id="presentation-title">Tu presentación pública</h2>
+          <button
+            mat-icon-button
+            type="button"
+            [disableRipple]="true"
+            aria-label="Cerrar presentación"
+            [disabled]="busy() || reading()"
+            (click)="settingsOpen.set(false)"
+          >
+            <span class="material-symbols-outlined" aria-hidden="true">close</span>
+          </button>
+        </div>
         <form #settingsForm="ngForm" (ngSubmit)="saveSettings()">
           <fieldset [disabled]="busy() || reading()">
             <mat-form-field
@@ -420,23 +444,57 @@
                 automáticamente.</small
               >
             </div>
-            <div class="cover-edit">
-              <label>
-                Portada personal (opcional)
+            <div class="presentation-media">
+              <div class="media-editor">
+                <h3>Foto de perfil</h3>
+                <div class="media-preview avatar-preview">
+                  @if (draftAvatar) {
+                    <img [src]="draftAvatar" alt="Tu foto de perfil actual" />
+                  } @else {
+                    <span class="material-symbols-outlined" aria-hidden="true">person</span>
+                  }
+                </div>
+                <button mat-stroked-button type="button" (click)="avatarPicker.click()">
+                  Cambiar foto
+                </button>
+                @if (draftAvatar) {
+                  <button
+                    mat-button
+                    type="button"
+                    (click)="draftAvatar = null; photoChanged = true"
+                  >
+                    Quitar foto
+                  </button>
+                }
+              </div>
+              <div class="media-editor">
+                <h3>Portada personal</h3>
+                <div class="media-preview cover-preview">
+                  @if (cover) {
+                    <img [src]="cover" alt="Tu portada actual" />
+                  } @else {
+                    <span class="material-symbols-outlined" aria-hidden="true">panorama</span>
+                  }
+                </div>
                 <input
                   #coverInput
                   type="file"
+                  hidden
                   accept="image/jpeg,image/png,image/webp"
                   (change)="selectPhotos(coverInput, true)"
                 />
-              </label>
-              @if (cover) {
-                <img [src]="cover" alt="Vista previa de tu portada" />
-                <button mat-stroked-button type="button" class="btn outline" (click)="cover = null">
-                  Quitar portada
+                <button mat-stroked-button type="button" (click)="coverInput.click()">
+                  Cambiar portada
                 </button>
-              }
+                @if (cover) {
+                  <button mat-button type="button" (click)="cover = null">Quitar portada</button>
+                }
+              </div>
             </div>
+            <small class="muted"
+              >JPG, PNG o WebP. Máximo 5 MB por imagen. Las vistas previas se guardan al
+              confirmar.</small
+            >
           </fieldset>
           <div class="actions">
             <button
@@ -1390,18 +1448,19 @@
                         type="text"
                         [(ngModel)]="editHandle"
                         name="editHandle"
-                        (input)="onHandleInput($event)"
+                        readonly
                         placeholder="tu_usuario"
                         maxlength="30"
                       />
+                      <button matSuffix mat-button type="button" (click)="changeHandle()">
+                        Cambiar
+                      </button>
                     </mat-form-field>
                     @if (handleValidationError()) {
                       <small class="field-error-text">{{ handleValidationError() }}</small>
                     } @else {
                       <small class="field-hint-text"
-                        >Tu identificador único en la comunidad (@{{
-                          editHandle || 'usuario'
-                        }}).</small
+                        >Identificador público. Se puede cambiar cada tres meses.</small
                       >
                     }
                   </div>
@@ -1474,7 +1533,7 @@
                         aria-readonly="true"
                       />
                       <span
-                        matSuffix
+                        matIconSuffix
                         class="material-symbols-outlined locked-field-icon"
                         title="Calculada automáticamente según tu historial de reservas"
                         >lock</span

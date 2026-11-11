@@ -132,7 +132,7 @@
 }
 .op-period {
   display: flex;
-  align-items: end;
+  align-items: flex-start;
   flex-wrap: wrap;
   gap: 12px;
   margin-bottom: 24px;
@@ -338,4 +338,14 @@
   .dialog-footer {
     padding: 16px;
   }
+}
+
+.op-period > .cn-field {
+  flex: 1 1 190px;
+  max-width: 280px;
+}
+.op-period > button {
+  align-self: flex-start;
+  margin-top: 0;
+  height: 44px;
 }

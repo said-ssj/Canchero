@@ -8,6 +8,7 @@ export interface SedeResult {
   rating?: number;
   canchasCount?: number;
   precioMin?: number;
+  atributos?: string[];
 }
 
 export interface CanchaResult {
@@ -41,6 +42,7 @@ export interface SearchResults {
   totalCanchas: number;
   totalPersonas: number;
   totalCount: number;
+  personasError?: boolean;
 }
 
 /**

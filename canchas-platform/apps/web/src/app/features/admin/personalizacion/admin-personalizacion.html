@@ -108,8 +108,7 @@
               type="button"
               class="btn"
               id="btn-save-texts"
-              disabled
-              title="Guardado pendiente de confirmación persistida"
+              (click)="guardarTextosMarca()"
             >
               <span class="material-symbols-outlined icon" aria-hidden="true">check</span>
               Guardar textos
@@ -154,7 +153,9 @@
 
           <!-- Selector de billetera y metadatos -->
           <div style="margin-top: 16px">
-            <p class="small muted">Billetera de recepción pendiente de integración</p>
+            <p class="small muted">
+              Datos informativos de tu billetera. Los pagos online se procesan por Mercado Pago.
+            </p>
             <div class="segmented" role="group" aria-label="Billetera de recepción no disponible">
               <button type="button" disabled>Yape Móvil</button>
               <button type="button" disabled>Plin Transfer</button>
@@ -174,7 +175,7 @@
               <input
                 matInput
                 id="qr-merchant-name"
-                disabled
+                maxlength="150"
                 type="text"
                 placeholder="Ej. Complejo Deportivo Magdalena S.A.C."
                 [ngModel]="totemMerchant()"
@@ -186,7 +187,8 @@
               <input
                 matInput
                 id="qr-phone-number"
-                disabled
+                inputmode="tel"
+                maxlength="15"
                 type="text"
                 placeholder="Ej. 987 654 321"
                 [ngModel]="totemPhone()"
@@ -197,15 +199,16 @@
         </section>
 
         <!-- Guardar toda la personalización -->
-        <div class="row">
+        <p role="status">{{ feedback() }}</p>
+        <div class="row personalizacion-actions">
           <button
             mat-stroked-button
             disableRipple
             type="button"
             class="btn"
             id="btn-save-all"
-            disabled
-            title="Publicación pendiente de confirmación persistida"
+            [disabled]="saving()"
+            (click)="publicarCambiosSede()"
           >
             <span class="material-symbols-outlined icon" aria-hidden="true">check</span>
             Guardar personalización

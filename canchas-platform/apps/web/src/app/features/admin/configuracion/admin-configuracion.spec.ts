@@ -7,7 +7,7 @@ import { DatabaseService } from '@core/supabase/database.service';
 import { AuthService } from '@core/auth/auth.service';
 import type { Venue } from '@shared/models/venue.model';
 import { COMPROBANTES_LIQUIDACION_HISTORIAL } from './admin-configuracion.models';
-import { supabase } from '@core/supabase/client';
+import { of, throwError } from 'rxjs';
 
 describe('AdminConfiguracion Component - Etapa 7 (Configuración General & Cuenta)', () => {
   let fixture: ComponentFixture<AdminConfiguracion>;
@@ -52,6 +52,7 @@ describe('AdminConfiguracion Component - Etapa 7 (Configuración General & Cuent
   };
 
   const mockAuthService = {
+    changePassword: vi.fn(() => of({ message: 'ok' })),
     currentUser: mockCurrentUser,
     logout: vi.fn().mockResolvedValue(undefined),
   };
@@ -84,7 +85,7 @@ describe('AdminConfiguracion Component - Etapa 7 (Configuración General & Cuent
   it('debe crearse correctamente e inicializar datos del titular y sede activa', () => {
     expect(component).toBeTruthy();
     expect(component['perfilEmail']()).toBe('dueno@canchero.pe');
-    expect(component['titularRazonSocial']()).toBe('Complejo Deportivo Magdalena S.A.C.');
+    expect(component['titularRazonSocial']()).toBe('Dueño Oficial');
     expect(component['rucFacturacion']()).toBe('20601234567');
   });
 
@@ -134,10 +135,7 @@ describe('AdminConfiguracion Component - Etapa 7 (Configuración General & Cuent
     component['pwdCurrent'].set('OldPassword123');
     component['pwdNew'].set('NewValidPassword2026!');
     component['pwdConfirm'].set('NewValidPassword2026!');
-    vi.spyOn(supabase.auth, 'updateUser').mockResolvedValueOnce({
-      data: { user: null },
-      error: null,
-    } as any);
+    mockAuthService.changePassword.mockReturnValueOnce(of({ message: 'ok' }));
     await component.guardarNuevaPassword();
 
     expect(component['pwdError']()).toBe('');
@@ -151,10 +149,9 @@ describe('AdminConfiguracion Component - Etapa 7 (Configuración General & Cuent
     component['pwdCurrent'].set('OldPassword123');
     component['pwdNew'].set('NewValidPassword2026!');
     component['pwdConfirm'].set('NewValidPassword2026!');
-    vi.spyOn(supabase.auth, 'updateUser').mockResolvedValueOnce({
-      data: { user: null },
-      error: { message: 'Auth session missing' },
-    } as any);
+    mockAuthService.changePassword.mockReturnValueOnce(
+      throwError(() => ({ error: { message: 'Sesión inválida' } })),
+    );
     await component.guardarNuevaPassword();
     expect(component['pwdSuccess']()).toBe('');
     expect(component['pwdError']()).not.toBe('');
@@ -184,40 +181,14 @@ describe('AdminConfiguracion Component - Etapa 7 (Configuración General & Cuent
     expect(saved['pagos']).toBe(false);
   });
 
-  it('debe seleccionar cuenta bancaria para liquidaciones y guardarla', () => {
-    let avisoEmitido = '';
-    component.notice.subscribe((msg) => (avisoEmitido = msg));
-
-    component['seleccionarCuentaBancaria']('interbank');
-    expect(component['cuentaBancariaSeleccionada']()).toBe('interbank');
-    expect(localStorage.getItem('canchero_payout_bank')).toBe('interbank');
-    expect(avisoEmitido).toContain('Interbank');
-  });
-
-  it('debe cambiar la frecuencia de pago y guardarla en localStorage', () => {
-    let avisoEmitido = '';
-    component.notice.subscribe((msg) => (avisoEmitido = msg));
-
-    component['cambiarFrecuenciaPago']('Quincenal');
-    expect(component['frecuenciaPago']()).toBe('Quincenal');
-    expect(localStorage.getItem('canchero_payout_freq')).toBe('Quincenal');
-    expect(avisoEmitido).toContain('Quincenal');
-  });
-
-  it('debe permitir agregar una nueva cuenta bancaria a la lista', () => {
-    let avisoEmitido = '';
-    component.notice.subscribe((msg) => (avisoEmitido = msg));
-
-    component['nuevaCuentaBanco'].set('BanBif');
-    component['nuevaCuentaTipo'].set('Cuenta Ahorros');
-    component['nuevaCuentaNumero'].set('0011223344556677');
-    component['nuevaCuentaCci'].set('011-223-34455667788-99');
-
-    component['guardarNuevaCuentaBancaria']();
-
-    expect(component['cuentasBancarias']().length).toBe(3);
-    expect(component['cuentaBancariaSeleccionada']()).toBe('banbif');
-    expect(avisoEmitido).toContain('BanBif');
+  it('muestra el alcance de Mercado Pago sin inventar cuentas ni liquidaciones', () => {
+    component.setSeccion('comision');
+    fixture.detectChanges();
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('No hay transferencias automáticas');
+    expect(text).not.toContain('4910');
+    expect(text).not.toContain('LC-0921');
+    expect(component['cuentasBancarias']()).toEqual([]);
   });
 
   it('debe emitir selectVenue y addVenue al interactuar con el bloque multisede', () => {

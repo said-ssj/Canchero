@@ -2,6 +2,8 @@ import { Component, computed, effect, inject, input, output, signal } from '@ang
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { MatDialog } from '@angular/material/dialog';
+import { ProfileHandleDialog } from './profile-handle-dialog';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from '@core/auth/auth.service';
 import { DatabaseService } from '@core/supabase/database.service';
@@ -61,6 +63,9 @@ export class CommunityProfilePage {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly dialog = inject(MatDialog);
+  protected draftAvatar: string | null = null;
+  protected photoChanged = false;
 
   private readonly params = toSignal(this.route.paramMap, {
     initialValue: this.route.snapshot.paramMap,
@@ -97,7 +102,6 @@ export class CommunityProfilePage {
   protected editShowPhonePublic = false;
   protected editShowAddressPublic = false;
   protected editShowFavoriteVenuePublic = true;
-  protected readonly customHandle = signal<string>('');
   protected readonly handleValidationError = signal<string>('');
   protected readonly isFavoriteVenuePublic = signal<boolean>(
     typeof localStorage !== 'undefined'
@@ -163,7 +167,7 @@ export class CommunityProfilePage {
   protected readonly busy = signal(false);
   protected readonly reading = signal(false);
   protected readonly tab = signal('publicaciones');
-  protected readonly previewRole = signal<'auto' | 'owner' | 'visitor'>('auto');
+  protected readonly previewRole = signal<'self' | 'visitor'>('self');
   protected readonly settingsOpen = signal(false);
   protected readonly draftPhotos = signal<string[]>([]);
   protected readonly following = signal<boolean | null>(null);
@@ -185,21 +189,14 @@ export class CommunityProfilePage {
   protected readonly newReviewRating = signal(5);
   protected newReviewText = '';
 
-  protected readonly isOwnerPerspective = computed(() => {
-    if (this.previewRole() === 'owner') return true;
-    if (this.previewRole() === 'visitor') return false;
-    return this.business() && this.isSelf();
-  });
-
-  protected readonly isVisitorPerspective = computed(() => !this.isOwnerPerspective());
-
+  protected readonly isOwnerPerspective = computed(() => this.business() && this.isSelf());
+  protected readonly isVisitorPerspective = computed(() => this.previewRole() === 'visitor');
   protected togglePerspective(): void {
-    const next = this.isOwnerPerspective() ? 'visitor' : 'owner';
-    this.previewRole.set(next);
-    this.shareToast.set(
-      next === 'owner' ? 'Perspectiva: Vista del dueño' : 'Perspectiva: Vista de visitante',
-    );
-    setTimeout(() => this.shareToast.set(''), 2200);
+    if (!this.ownsProfile()) return;
+    this.previewRole.set(this.previewRole() === 'self' ? 'visitor' : 'self');
+    this.settingsOpen.set(false);
+    this.editingInfo.set(false);
+    this.shareToast.set(this.previewRole() === 'self' ? 'Vista propia' : 'Vista de visitante');
   }
 
   protected readonly ownerRating = computed<number>(() => {
@@ -219,53 +216,15 @@ export class CommunityProfilePage {
     Math.max(0, Math.min(5, Math.round(this.ownerRating()))),
   );
 
-  protected readonly isSelf = computed(() => {
-    if (this.previewRole() === 'owner') return true;
-    if (this.previewRole() === 'visitor') return false;
-    const u = this.auth.user();
-    if (!u) return false;
-    const targetId = this.id();
-    if (
-      !targetId ||
-      targetId === 'self' ||
-      targetId === 'me' ||
-      String(u.id) === String(targetId)
-    ) {
-      return true;
-    }
-    if (this.auth.isOwner()) {
-      if (
-        targetId === 'dueno' ||
-        targetId === 'labombonera' ||
-        targetId === 'owner-1' ||
-        targetId === 'user-owner' ||
-        targetId === '1'
-      ) {
-        return true;
-      }
-      const sedes = this.db.getSedesPorDueno(u.id);
-      if (sedes.some((s) => String(s.id) === targetId || String(s.id_sede) === targetId)) {
-        return true;
-      }
-    }
-    return false;
+  protected readonly ownsProfile = computed(() => {
+    const user = this.auth.user();
+    const id = this.id();
+    return !!user && (!id || id === 'self' || id === 'me' || String(user.id) === String(id));
   });
+  protected readonly isSelf = computed(() => this.ownsProfile() && this.previewRole() === 'self');
   protected readonly signedIn = this.auth.isLoggedIn;
 
-  protected readonly avatarUrl = computed<string | null>(() => {
-    const p = this.profile();
-    if (this.isSelf()) {
-      const u = this.auth.user();
-      const player =
-        typeof this.auth.playerProfile === 'function' ? this.auth.playerProfile() : null;
-      const stored =
-        u?.id && typeof localStorage !== 'undefined'
-          ? localStorage.getItem(`canchero_user_avatar_${u.id}`)
-          : null;
-      return player?.foto || stored || p?.photo || null;
-    }
-    return p?.photo || null;
-  });
+  protected readonly avatarUrl = computed<string | null>(() => this.profile()?.photo || null);
 
   protected readonly initials = computed(() => {
     const p = this.profile();
@@ -285,20 +244,7 @@ export class CommunityProfilePage {
     () => this.profile()?.role === 'Dueño' || !!this.profile()?.venues.length,
   );
 
-  protected readonly handle = computed(() => {
-    const p = this.profile();
-    if (!p) return 'jugadorcanchero';
-    if (this.business()) return 'labombonera';
-    const u = this.auth.user();
-    const stored =
-      u?.id && typeof localStorage !== 'undefined'
-        ? localStorage.getItem(`canchero_custom_handle_${u.id}`)
-        : null;
-    if (stored) return stored;
-    if (this.customHandle()) return this.customHandle();
-    if (p.handle) return p.handle;
-    return p.name.toLowerCase().replace(/[^a-z0-9]/g, '') || 'jugadorcanchero';
-  });
+  protected readonly handle = computed(() => this.profile()?.handle || '');
 
   /* UBICACIÓN REAL (Sin inventar Chincha si no la tiene) */
   protected readonly pLocation = computed(() => {
@@ -331,9 +277,7 @@ export class CommunityProfilePage {
         }
       } catch {}
     }
-    const now = new Date();
-    const m = now.toLocaleString('es-PE', { month: 'long' });
-    return `${m.charAt(0).toUpperCase() + m.slice(1)} ${now.getFullYear()}`;
+    return 'Sin fecha registrada';
   });
   protected readonly matchesPlayed = computed(() => {
     if (this.isSelf()) {
@@ -479,25 +423,6 @@ export class CommunityProfilePage {
     });
   });
 
-  /* Horarios y Servicios para la vista del perfil de dueño */
-  protected readonly horarios = [
-    { dia: 'Lunes (hoy)', hora: '07:00 – 23:00' },
-    { dia: 'Martes', hora: '07:00 – 23:00' },
-    { dia: 'Miércoles', hora: '07:00 – 23:00' },
-    { dia: 'Jueves', hora: '07:00 – 23:00' },
-    { dia: 'Viernes', hora: '07:00 – 24:00' },
-    { dia: 'Sábado', hora: '07:00 – 24:00' },
-    { dia: 'Domingo', hora: '08:00 – 22:00' },
-  ];
-
-  protected readonly serviciosSede = [
-    { icon: 'local_parking', label: 'Estacionamiento' },
-    { icon: 'shower', label: 'Vestuarios y duchas' },
-    { icon: 'lightbulb', label: 'Iluminación LED' },
-    { icon: 'local_cafe', label: 'Cafetería' },
-    { icon: 'sports_soccer', label: 'Balones y chalecos' },
-  ];
-
   protected get ratingBreakdown(): { stars: number; count: number; pct: number }[] {
     const reviews = this.profile()?.reviews ?? [];
     const total = reviews.length;
@@ -550,174 +475,28 @@ export class CommunityProfilePage {
     this.settingsOpen.set(false);
     this.editingInfo.set(false);
     this.hasMore.set(false);
-
-    if (this.isSelf()) {
-      void this.db
-        .fetchMyBookings()
-        .then((b) => {
-          if (Array.isArray(b)) this.myBookings.set(b);
-        })
-        .catch(() => {});
-    }
-
-    // Verificar si el usuario está bloqueado
-    if (this.isUserBlocked(id)) {
-      this.isBlocked.set(true);
+    this.previewRole.set('self');
+    this.isBlocked.set(this.isUserBlocked(id));
+    if (this.isBlocked()) {
       this.loading.set(false);
       return;
     }
-    this.isBlocked.set(false);
-
     try {
       const profile = await firstValueFrom(this.api.profile(id));
       if (request !== this.request) return;
       this.profile.set(profile);
-      this.tab.set('publicaciones');
+      if (this.ownsProfile() && typeof this.db.fetchMyBookings === 'function') {
+        void this.db
+          .fetchMyBookings()
+          .then((b) => {
+            if (request === this.request && Array.isArray(b)) this.myBookings.set(b);
+          })
+          .catch(() => {});
+      }
       await this.loadPosts(id, 0, request);
     } catch {
-      if (request === this.request) {
-        if (this.isSelf()) {
-          const u = this.auth.user();
-          if (u) {
-            const player =
-              typeof this.auth.playerProfile === 'function' ? this.auth.playerProfile() : null;
-            const sedes = this.db.getSedesPorDueno(u.id);
-            const isOwner = this.auth.isOwner();
-            this.profile.set({
-              id: u.id,
-              name: player ? `${player.nombre} ${player.apellido}`.trim() || u.nombre : u.nombre,
-              role: isOwner ? 'Dueño' : 'Jugador',
-              photo: player?.foto || null,
-              cover: null,
-              biography: '',
-              whatsapp: player?.telefono || '',
-              followers: isOwner ? 214 : 0,
-              following: isOwner ? 45 : 0,
-              postCount: 0,
-              rating: null,
-              reviewCount: 0,
-              reviews: [],
-              matchesPlayed: 0,
-              favoriteVenue: undefined,
-              venues: sedes.map((s) => ({
-                id: s.id,
-                name: s.nombre,
-                district: s.distrito,
-                city: s.departamento,
-                address: s.direccion,
-                photo: s.imagenes?.[0] || null,
-                phone: s.telefono || null,
-              })),
-            });
-            this.tab.set('publicaciones');
-            this.error.set('');
-            return;
-          }
-        }
-
-        // Detectar si el ID consultado corresponde a un dueño o sede
-        const venue = this.db
-          .sedes()
-          .find(
-            (s: any) =>
-              String(s.id) === String(id) ||
-              String(s.id_sede) === String(id) ||
-              String(s.id_dueno) === String(id),
-          );
-        const isOwnerView =
-          !!venue ||
-          id === 'dueno' ||
-          id === 'labombonera' ||
-          id.startsWith('owner') ||
-          id.includes('dueno') ||
-          this.previewRole() === 'owner';
-
-        if (isOwnerView) {
-          const vName = venue?.nombre || 'Canchas La Bombonera – Moquegua';
-          const vDistrict = venue?.distrito || 'Mariscal Nieto';
-          const vCity = venue?.departamento || 'Moquegua';
-          const vAddress =
-            venue?.direccion || 'Av. Los Libertadores Nº 394, Mariscal Nieto, Moquegua';
-          const vPhone = venue?.telefono || '916 518 518';
-
-          this.profile.set({
-            id: id || 'labombonera',
-            name: vName,
-            role: 'Dueño',
-            verified: true,
-            photo: venue?.imagenes?.[0] || null,
-            cover: null,
-            biography:
-              'Sede deportiva con canchas de alquiler por hora en Moquegua. Grass sintético de última generación, iluminación LED y ambiente familiar. ¡Reserva tu turno y juega seguro!',
-            whatsapp: vPhone,
-            phone: vPhone,
-            address: vAddress,
-            isPhonePublic: true,
-            isAddressPublic: true,
-            ruc: '20•••••••81',
-            rucValidated: true,
-            canchasCount: 14,
-            followers: 214,
-            following: 45,
-            postCount: 3,
-            rating: null,
-            reviewCount: 0,
-            venues: [
-              {
-                id: String(venue?.id || venue?.id_sede || '1'),
-                name: vName,
-                district: vDistrict,
-                city: vCity,
-                address: vAddress,
-                phone: vPhone,
-                photo: venue?.imagenes?.[0] || null,
-              },
-            ],
-            reviews: [],
-          });
-          this.tab.set('publicaciones');
-          this.posts.set([
-            {
-              id: 'p-owner-1',
-              authorId: id,
-              text: 'Martes y miércoles: 2 horas al precio de 1 hora y media en Cancha 3. ¡Solo esta semana!',
-              badge: 'Promoción',
-              photos: [],
-              createdAt: new Date().toISOString(),
-              likes: 12,
-              commentCount: 4,
-            },
-          ]);
-        } else {
-          // Perfil de jugador visitante (sin publicaciones de momento)
-          this.profile.set({
-            id: id || 'jugadorcanchero',
-            name: 'Jugador Canchero',
-            role: 'Jugador',
-            verified: false,
-            photo: null,
-            cover: null,
-            biography: '',
-            whatsapp: '',
-            phone: '',
-            address: '',
-            isPhonePublic: false,
-            isAddressPublic: false,
-            followers: 0,
-            following: 0,
-            postCount: 0,
-            matchesPlayed: 0,
-            favoriteVenue: undefined,
-            rating: null,
-            reviewCount: 0,
-            reviews: [],
-            venues: [],
-          });
-          this.tab.set('publicaciones');
-          this.posts.set([]);
-        }
-        this.error.set('');
-      }
+      if (request === this.request)
+        this.error.set('No pudimos cargar este perfil. Reintenta en unos momentos.');
     } finally {
       if (request === this.request) this.loading.set(false);
     }
@@ -835,55 +614,18 @@ export class CommunityProfilePage {
     this.startEditingInfo();
   }
 
-  protected onHandleInput(event: Event): void {
-    const target = event.target as HTMLInputElement;
-    let val = target.value.trim().toLowerCase().replace(/\s+/g, '');
-    if (val.startsWith('@')) val = val.substring(1);
-    this.editHandle = val;
-    this.validateHandle(val);
-  }
-
-  protected validateHandle(val: string): boolean {
-    if (!val) {
-      this.handleValidationError.set('');
-      return true;
-    }
-    if (val.length < 3 || val.length > 30) {
-      this.handleValidationError.set('El @username debe tener entre 3 y 30 caracteres.');
-      return false;
-    }
-    if (!/^[a-zA-Z0-9_.-]+$/.test(val)) {
-      this.handleValidationError.set(
-        'Solo se permiten letras, números, puntos, guiones y guion bajo.',
-      );
-      return false;
-    }
-    const u = this.auth.user();
-    const existing = this.db.usuarios().find((other: any) => {
-      const otherId = String(other.id_usuario || other.id);
-      if (u?.id && String(u.id) === otherId) return false;
-      const otherHandle = (other.username || other.handle || '').toLowerCase();
-      return otherHandle === val;
-    });
-    if (existing) {
-      this.handleValidationError.set('Este @username ya está en uso.');
-      return false;
-    }
-    this.handleValidationError.set('');
-    return true;
-  }
-
   protected startEditingInfo(): void {
+    if (!this.isSelf() || this.busy() || this.reading()) return;
+    if (this.editingInfo()) {
+      this.cancelEditingInfo();
+      return;
+    }
+    this.settingsOpen.set(false);
     const p = this.profile();
     const player = typeof this.auth.playerProfile === 'function' ? this.auth.playerProfile() : null;
-    const u = this.auth.user();
     this.editNombre = player?.nombre || p?.name?.split(' ')[0] || '';
     this.editApellido = player?.apellido || p?.name?.split(' ').slice(1).join(' ') || '';
-    const storedHandle =
-      u?.id && typeof localStorage !== 'undefined'
-        ? localStorage.getItem(`canchero_custom_handle_${u.id}`)
-        : null;
-    this.editHandle = storedHandle || p?.handle || this.handle();
+    this.editHandle = p?.handle || '';
     this.handleValidationError.set('');
     this.editTelefono = player?.telefono || p?.whatsapp || '';
     this.editDireccion = player?.direccion || '';
@@ -902,11 +644,7 @@ export class CommunityProfilePage {
   }
 
   protected async saveEditingInfo(): Promise<void> {
-    if (this.busy()) return;
-    if (this.editHandle && !this.validateHandle(this.editHandle)) {
-      this.actionError.set(this.handleValidationError() || 'Revisa el @username.');
-      return;
-    }
+    if (!this.isSelf() || this.busy()) return;
     this.busy.set(true);
     try {
       const full = `${this.editNombre} ${this.editApellido}`.trim();
@@ -926,17 +664,12 @@ export class CommunityProfilePage {
         await firstValueFrom(
           this.api.saveSettings({
             biography: this.editBiography,
-            whatsapp: this.editTelefono,
+            whatsapp: this.profile()?.whatsapp || '',
             cover: this.profile()?.cover || null,
           }),
         );
       }
 
-      const u = this.auth.user();
-      if (this.editHandle && u?.id && typeof localStorage !== 'undefined') {
-        localStorage.setItem(`canchero_custom_handle_${u.id}`, this.editHandle);
-        this.customHandle.set(this.editHandle);
-      }
       this.isFavoriteVenuePublic.set(this.editShowFavoriteVenuePublic);
       if (typeof localStorage !== 'undefined') {
         localStorage.setItem(
@@ -950,9 +683,9 @@ export class CommunityProfilePage {
           ? {
               ...current,
               name: full || current.name,
-              handle: this.editHandle || current.handle,
+              handle: current.handle,
               biography: this.editBiography,
-              whatsapp: this.editTelefono,
+              whatsapp: current.whatsapp,
               phone: this.editTelefono,
               address: this.editDireccion,
               isPhonePublic: this.editShowPhonePublic,
@@ -974,13 +707,57 @@ export class CommunityProfilePage {
   }
 
   protected openSettings() {
+    if (!this.isSelf() || this.busy() || this.reading()) return;
+    if (this.settingsOpen()) {
+      this.settingsOpen.set(false);
+      return;
+    }
     const p = this.profile();
     if (!p) return;
+    this.editingInfo.set(false);
     this.biography = p.biography;
     this.whatsapp = p.whatsapp;
     this.cover = p.cover;
+    this.draftAvatar = this.avatarUrl();
+    this.photoChanged = false;
     this.settingsOpen.set(true);
     this.actionError.set('');
+  }
+  protected requestAvatar(input: HTMLInputElement) {
+    if (!this.isSelf()) return;
+    if (!this.settingsOpen()) this.openSettings();
+    input.click();
+  }
+  protected async selectAvatar(input: HTMLInputElement) {
+    const file = input.files?.[0];
+    input.value = '';
+    if (!this.isSelf() || !file || this.busy() || this.reading()) return;
+    this.reading.set(true);
+    this.actionError.set('');
+    try {
+      this.draftAvatar = await this.optimize(file);
+      this.photoChanged = true;
+    } catch {
+      this.actionError.set('Elige una imagen JPG, PNG o WebP de hasta 5 MB.');
+    } finally {
+      this.reading.set(false);
+    }
+  }
+  protected changeHandle() {
+    if (!this.isSelf()) return;
+    this.dialog
+      .open(ProfileHandleDialog, {
+        width: '460px',
+        maxWidth: '95vw',
+        data: { handle: this.profile()?.handle || '' },
+      })
+      .afterClosed()
+      .subscribe((state: any) => {
+        if (state && this.isSelf()) {
+          this.editHandle = state.handle || '';
+          this.profile.update((p) => (p ? { ...p, handle: state.handle } : p));
+        }
+      });
   }
 
   protected async saveSettings() {
@@ -994,10 +771,32 @@ export class CommunityProfilePage {
           biography: this.biography,
           whatsapp: this.whatsapp,
           cover: this.cover,
+          photo: this.draftAvatar,
+          updatePhoto: this.photoChanged,
         }),
       );
       if (id !== this.id()) return;
-      this.profile.update((p) => (p ? { ...p, ...settings } : p));
+      this.profile.update((p) =>
+        p
+          ? {
+              ...p,
+              biography: settings.biography,
+              whatsapp: settings.whatsapp,
+              cover: settings.cover,
+              photo: this.photoChanged ? this.draftAvatar : p.photo,
+            }
+          : p,
+      );
+      if (this.photoChanged) {
+        const user = this.auth.user();
+        if (user && typeof localStorage !== 'undefined') {
+          if (this.draftAvatar)
+            localStorage.setItem(`canchero_user_avatar_${user.id}`, this.draftAvatar);
+          else localStorage.removeItem(`canchero_user_avatar_${user.id}`);
+        }
+        if (typeof this.auth.loadPlayerProfile === 'function')
+          await firstValueFrom(this.auth.loadPlayerProfile());
+      }
       this.settingsOpen.set(false);
     } catch {
       this.actionError.set(
@@ -1015,6 +814,7 @@ export class CommunityProfilePage {
   }
 
   protected handleFollowClick(): void {
+    if (this.ownsProfile()) return;
     if (!this.signedIn()) {
       this.openAuthPrompt('seguir a este usuario');
       return;

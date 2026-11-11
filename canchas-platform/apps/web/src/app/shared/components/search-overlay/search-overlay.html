@@ -211,7 +211,7 @@
                     <h4>No encontramos resultados para «{{ query() }}»</h4>
                     <p>Prueba con otro nombre, ciudad, distrito o deporte.</p>
                     <button type="button" class="btn-explore-all" (click)="submitGlobalSearch()">
-                      Ver todas las sedes disponibles
+                      Explorar resultados
                     </button>
                   }
                 </div>
@@ -295,6 +295,7 @@
                           ')'
                         : undefined
                     "
+                    (footerClick)="submitGlobalSearch('personas')"
                   >
                     @if (!isAuthenticated()) {
                       <!-- Aviso amigable sin sesión -->

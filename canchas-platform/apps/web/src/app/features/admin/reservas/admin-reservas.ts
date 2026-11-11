@@ -408,6 +408,11 @@ export class AdminReservas {
 
   constructor() {
     effect(() => {
+      const id = Number(this.venueId());
+      if (id) void this.db.getVenuePreferences?.(id).catch(() => {});
+    });
+
+    effect(() => {
       this.venueId();
       this.filter.set('pendientes');
       this.query.set('');
@@ -650,19 +655,21 @@ export class AdminReservas {
     });
   }
 
-  saveDepositConfig(): void {
+  async saveDepositConfig(): Promise<void> {
     if (!this.presentialOperationsAvailable) return;
-    const percent = Math.max(10, Math.min(90, Math.round(this.depositPercentDraft())));
-    const vId = this.venueId();
-    if (vId) {
-      try {
-        this.db.updateSedeAdelantoMinimo?.(vId, percent);
-      } catch {
-        // ignore
-      }
+    const percent = this.depositPercentDraft(),
+      id = this.venueId();
+    if (!id || !Number.isInteger(percent) || percent < 10 || percent > 90) {
+      this.notice.emit('El porcentaje debe estar entre 10 y 90.');
+      return;
     }
-    this.updateDepositPercent.emit(percent);
-    this.dialogRef?.close();
+    try {
+      await this.db.updateSedeAdelantoMinimo(id, percent);
+      this.updateDepositPercent.emit(percent);
+      this.dialogRef?.close();
+    } catch (e: any) {
+      this.notice.emit(e?.error?.message || 'No se pudo guardar el adelanto.');
+    }
   }
 
   exportCsv(): void {

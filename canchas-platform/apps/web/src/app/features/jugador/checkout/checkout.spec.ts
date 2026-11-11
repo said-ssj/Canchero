@@ -1,3 +1,4 @@
+import { MercadoPagoApi } from '../../../core/payments/mercadopago-api';
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
@@ -10,6 +11,17 @@ import type { Court, Venue } from '@shared/models/venue.model';
 import type { User } from '@shared/models/user.model';
 import { resolveSlotAvailability } from '@core/utils/availability.utils';
 import type { WeekDay } from './checkout';
+
+const mockMP = {
+  open: vi.fn(),
+  capabilities: vi.fn(async () => ({ available: true, testMode: true })),
+  start: vi.fn(async (_request: any) => ({
+    id: 'checkout-test',
+    checkoutUrl: 'https://www.mercadopago.com.pe/checkout/test',
+    expiresAt: '',
+    testMode: true,
+  })),
+};
 
 describe('Checkout Component - Fase 1: Identidad y Cancha Concreta', () => {
   let fixture: ComponentFixture<Checkout>;
@@ -140,6 +152,7 @@ describe('Checkout Component - Fase 1: Identidad y Cancha Concreta', () => {
       imports: [Checkout],
       providers: [
         provideRouter([]),
+        { provide: MercadoPagoApi, useValue: mockMP },
         { provide: DatabaseService, useValue: mockDatabaseService },
         { provide: AuthService, useValue: mockAuthService },
         { provide: ActivatedRoute, useValue: mockActivatedRoute },
@@ -454,6 +467,7 @@ describe('Checkout Component - Fase 2: Disponibilidad Real y Tarifas', () => {
       imports: [Checkout],
       providers: [
         provideRouter([]),
+        { provide: MercadoPagoApi, useValue: mockMP },
         { provide: DatabaseService, useValue: mockDatabaseService },
         { provide: AuthService, useValue: mockAuthService },
         { provide: ActivatedRoute, useValue: mockActivatedRoute },
@@ -909,6 +923,7 @@ describe('Checkout Component - Fase 3: Selección, Agrupación y Cotización', (
       imports: [Checkout],
       providers: [
         provideRouter([]),
+        { provide: MercadoPagoApi, useValue: mockMP },
         { provide: DatabaseService, useValue: mockDatabaseService },
         { provide: AuthService, useValue: mockAuthService },
         { provide: ActivatedRoute, useValue: mockActivatedRoute },
@@ -919,10 +934,7 @@ describe('Checkout Component - Fase 3: Selección, Agrupación y Cotización', (
   function createComponent(): void {
     fixture = TestBed.createComponent(Checkout);
     component = fixture.componentInstance;
-    component['cardNumber'].set('4532 0000 0000 4242');
-    component['cardExpiry'].set('12/28');
-    component['cardCvv'].set('123');
-    component['cardHolder'].set('Jugador de prueba');
+    component['paymentReady'].set(true);
     fixture.detectChanges();
   }
 
@@ -1211,367 +1223,84 @@ describe('Checkout Component - Fase 3: Selección, Agrupación y Cotización', (
     expect(component['bookingBlock']().tranches[0].price).toBe(135);
   });
 
-  it('F4-1: confirmarReserva persiste el bloque completo (no solo la primera hora) con idempotencyKey y abre éxito solo tras confirmación del servidor', async () => {
-    const createOnlineBookingSpy = vi.fn(async (payload: any) => ({
-      reserva: {
-        id: 701,
-        codigo_pase: '#CAN-7010',
-        fecha_reserva: payload.fecha,
-        hora_inicio: '18:00',
-        hora_fin: '20:00',
-        monto_total: payload.total,
-      },
-      pago: { id: 701, monto: payload.total },
-      response: {
-        id: '701',
-        codigoPase: '#CAN-7010',
-        horario: '18:00 - 20:00',
-        total: payload.total,
-      },
-    }));
-    (mockDatabaseService as any).createOnlineBooking = createOnlineBookingSpy;
-    (mockDatabaseService as any).fetchCourtAvailability = vi.fn(async () => ({}));
+  async function preparePayment() {
+    (mockDatabaseService as any).fetchCourtAvailability = undefined;
     delete (mockDatabaseService as any).quoteCourtBooking;
-
     createComponent();
     component['nextWeek']();
     await fixture.whenStable();
+    const day = component['currentWeekDays']()[3];
+    component['toggleSlot'](day, 18);
+    component['toggleSlot'](day, 19);
     fixture.detectChanges();
-    const futureDay = component['currentWeekDays']()[3];
+    return day;
+  }
 
-    component['toggleSlot'](futureDay, 18);
-    component['toggleSlot'](futureDay, 19);
-    fixture.detectChanges();
-
-    expect(component['canSubmitReservation']()).toBe(true);
+  it('envía el bloque y cupos al backend sin tarjeta ni monto controlado por el navegador', async () => {
+    const day = await preparePayment();
+    component['accessSlots'].set(4);
     await component['confirmarReserva']();
-
-    expect(createOnlineBookingSpy).toHaveBeenCalledTimes(1);
-    const sentPayload = createOnlineBookingSpy.mock.calls[0][0];
-    expect(sentPayload.courtId).toBe('court-101');
-    expect(sentPayload.fecha).toBe(futureDay.dateStr);
-    expect(sentPayload.horario).toBe('18:00 - 20:00');
-    expect(sentPayload.hours).toEqual([18, 19]);
-    expect(sentPayload.total).toBe(240);
-    expect(sentPayload.idempotencyKey).toMatch(/^chk-court-101-/);
-
-    expect(component['showSuccess']()).toBe(true);
-    expect(component['reservaCode']()).toBe('#CAN-7010');
-    expect(component['confirmError']()).toBe('');
-  });
-
-  it('F4-2: Reintento con la misma selección reutiliza la misma idempotencyKey y cambiar horas genera una nueva clave', async () => {
-    const keys: string[] = [];
-    (mockDatabaseService as any).fetchCourtAvailability = undefined;
-    delete (mockDatabaseService as any).quoteCourtBooking;
-    (mockDatabaseService as any).createOnlineBooking = vi.fn(async (payload: any) => {
-      keys.push(payload.idempotencyKey);
-      return {
-        reserva: { id: 702, codigo_pase: '#CAN-7020' },
-        pago: { id: 702, monto: payload.total },
-        response: {
-          id: '702',
-          codigoPase: '#CAN-7020',
-          horario: payload.horario,
-          total: payload.total,
-        },
-      };
+    expect(mockMP.start).toHaveBeenCalledTimes(1);
+    const sent = mockMP.start.mock.calls[0][0];
+    expect(sent).toEqual({
+      courtId: 'court-101',
+      fecha: day.dateStr,
+      hours: [18, 19],
+      cupos: 4,
+      idempotencyKey: expect.any(String),
     });
-
-    createComponent();
-    component['nextWeek']();
-    await fixture.whenStable();
-    fixture.detectChanges();
-    const futureDay = component['currentWeekDays']()[3];
-
-    component['toggleSlot'](futureDay, 18);
-    component['toggleSlot'](futureDay, 19);
-    await component['confirmarReserva']();
-    await component['confirmarReserva']();
-
-    expect(keys.length).toBe(2);
-    expect(keys[0]).toBe(keys[1]);
-
-    // Si el usuario agrega una hora adicional (18:00 - 21:00), la firma cambia y genera otra clave
-    component['toggleSlot'](futureDay, 20);
-    await component['confirmarReserva']();
-    expect(keys.length).toBe(3);
-    expect(keys[2]).not.toBe(keys[0]);
+    expect(sent.idempotencyKey).toMatch(/^[A-Za-z0-9_-]{8,100}$/);
+    expect(mockMP.open).toHaveBeenCalled();
+    expect(component['showSuccess']()).toBe(false);
   });
 
-  it('F4-3: Ignora clics repetidos mientras submitting() está en curso (evita doble envío concurrente desde UI)', async () => {
-    let resolveBooking!: (value: any) => void;
-    (mockDatabaseService as any).fetchCourtAvailability = undefined;
-    delete (mockDatabaseService as any).quoteCourtBooking;
-    const createOnlineBookingSpy = vi.fn(
+  it('reutiliza la clave al reintentar y la cambia al modificar horas', async () => {
+    const day = await preparePayment();
+    await component['confirmarReserva']();
+    await component['confirmarReserva']();
+    const first = mockMP.start.mock.calls[0][0].idempotencyKey;
+    expect(mockMP.start.mock.calls[1][0].idempotencyKey).toBe(first);
+    component['toggleSlot'](day, 20);
+    await component['confirmarReserva']();
+    expect(mockMP.start.mock.calls[2][0].idempotencyKey).not.toBe(first);
+  });
+
+  it('evita dos solicitudes por doble clic', async () => {
+    await preparePayment();
+    let finish!: (value: any) => void;
+    mockMP.start.mockImplementationOnce(
       () =>
-        new Promise((res) => {
-          resolveBooking = res;
+        new Promise((resolve) => {
+          finish = resolve;
         }),
     );
-    (mockDatabaseService as any).createOnlineBooking = createOnlineBookingSpy;
+    const running = component['confirmarReserva']();
+    await component['confirmarReserva']();
+    expect(mockMP.start).toHaveBeenCalledTimes(1);
+    finish({
+      id: 'test',
+      checkoutUrl: 'https://www.mercadopago.com.pe/checkout/test',
+      expiresAt: '',
+      testMode: true,
+    });
+    await running;
+  });
 
-    createComponent();
-    component['nextWeek']();
-    await fixture.whenStable();
-    fixture.detectChanges();
-    const futureDay = component['currentWeekDays']()[3];
+  it('muestra el error del servidor sin inventar confirmación ni redirigir', async () => {
+    await preparePayment();
+    mockMP.start.mockRejectedValueOnce({
+      status: 503,
+      error: { message: 'Webhooks pendientes de configurar' },
+    });
+    await component['confirmarReserva']();
+    expect(component['confirmError']()).toContain('Webhooks pendientes');
+    expect(mockMP.open).not.toHaveBeenCalled();
+    expect(component['showSuccess']()).toBe(false);
+  });
 
-    component['toggleSlot'](futureDay, 18);
-    const firstPromise = component['confirmarReserva']();
-    expect(component['submitting']()).toBe(true);
+  it('no habilita el pago sin la configuración del servidor', async () => {
+    await preparePayment();
+    component['paymentReady'].set(false);
     expect(component['canSubmitReservation']()).toBe(false);
-
-    // Segundo clic mientras el primero sigue en vuelo
-    await component['confirmarReserva']();
-    expect(createOnlineBookingSpy).toHaveBeenCalledTimes(1);
-
-    resolveBooking({
-      reserva: { id: 703, codigo_pase: '#CAN-7030' },
-      pago: { id: 703, monto: 120 },
-      response: { id: '703', codigoPase: '#CAN-7030', horario: '18:00 - 19:00', total: 120 },
-    });
-    await firstPromise;
-    expect(component['submitting']()).toBe(false);
-    expect(component['showSuccess']()).toBe(true);
-  });
-
-  it('F4-4: Ante 409 Conflict del servidor, no muestra éxito, recarga disponibilidad real y poda turnos ocupados con reprice()', async () => {
-    (mockDatabaseService as any).fetchCourtAvailability = undefined;
-    delete (mockDatabaseService as any).quoteCourtBooking;
-
-    createComponent();
-    component['nextWeek']();
-    await fixture.whenStable();
-    fixture.detectChanges();
-    const futureDay = component['currentWeekDays']()[3];
-
-    component['toggleSlot'](futureDay, 18);
-    component['toggleSlot'](futureDay, 19);
-    expect(component['selectedSlots']().length).toBe(2);
-
-    (mockDatabaseService as any).fetchCourtAvailability = vi.fn(async () => {
-      // Al refrescar disponibilidad, la hora 19:00 ya aparece ocupada por otro jugador
-      mockReservasSignal.set([
-        {
-          id_cancha: 101,
-          fecha_reserva: futureDay.dateStr,
-          hora_inicio: '19:00',
-          hora_fin: '20:00',
-          estado: 'confirmada',
-          id_estado_reserva: 2,
-        },
-      ]);
-      return {};
-    });
-
-    (mockDatabaseService as any).createOnlineBooking = vi.fn(async () => {
-      throw {
-        status: 409,
-        error: { message: 'Horario no disponible: ya existe una reserva activa en ese rango.' },
-      };
-    });
-
-    await component['confirmarReserva']();
-
-    expect(component['showSuccess']()).toBe(false);
-    expect((mockDatabaseService as any).fetchCourtAvailability).toHaveBeenCalled();
-    // La hora 19:00 fue removida por reprice() y solo queda 18:00
-    expect(component['selectedSlots']().map((s) => s.hour)).toEqual([18]);
-    expect(component['confirmError']()).toContain('Horario no disponible');
-  });
-
-  it('F4-5: Si el servidor falla (500/red), no simula éxito ni agrega reservas falsas', async () => {
-    (mockDatabaseService as any).fetchCourtAvailability = undefined;
-    delete (mockDatabaseService as any).quoteCourtBooking;
-    mockReservasSignal.set([]);
-    (mockDatabaseService as any).createOnlineBooking = vi.fn(async () => {
-      throw {
-        status: 500,
-        error: { message: 'Error interno al persistir la reserva' },
-      };
-    });
-
-    createComponent();
-    component['nextWeek']();
-    await fixture.whenStable();
-    mockReservasSignal.set([]);
-    fixture.detectChanges();
-    const futureDay = component['currentWeekDays']()[3];
-
-    component['toggleSlot'](futureDay, 18);
-    await component['confirmarReserva']();
-
-    expect(component['showSuccess']()).toBe(false);
-    expect(component['confirmError']()).toContain('Error interno al persistir la reserva');
-    expect(mockReservasSignal().length).toBe(0);
-  });
-
-  describe('Fase 5: Pago y Confirmación (Tarjeta online 100%, rechazo/timeout simulado y estados separados)', () => {
-    it('F5-1: El flujo online del jugador exige 100% de pago con tarjeta y rechaza Yape/Plin', () => {
-      createComponent();
-      component['nextWeek']();
-      const futureDay = component['currentWeekDays']()[3];
-      component['toggleSlot'](futureDay, 18);
-
-      // El total a pagar ahora debe ser el 100% del subtotal de la reserva
-      expect(component['total']()).toBeGreaterThan(0);
-      expect(component['totalToPayNow']()).toBe(component['total']());
-      expect(component['paymentMethodName']()).toBe('Tarjeta');
-
-      // Intentar cambiar a Yape o Plin online debe ser rechazado
-      component['selectPayment']('yape');
-      expect(component['paymentMethod']()).toBe('card');
-      expect(component['confirmError']()).toContain(
-        'solo está habilitado el pago al 100% con tarjeta',
-      );
-
-      component['selectPayment']('plin');
-      expect(component['paymentMethod']()).toBe('card');
-      expect(component['confirmError']()).toContain(
-        'solo está habilitado el pago al 100% con tarjeta',
-      );
-    });
-
-    it('F5-2: Valida los campos de la tarjeta impidiendo el envío si son inválidos', () => {
-      createComponent();
-      component['nextWeek']();
-      const futureDay = component['currentWeekDays']()[3];
-      component['toggleSlot'](futureDay, 18);
-
-      expect(component['isCardValid']()).toBe(true);
-      expect(component['canSubmitReservation']()).toBe(true);
-
-      // Número inválido (<16 dígitos)
-      component['cardNumber'].set('1234');
-      expect(component['isCardValid']()).toBe(false);
-      expect(component['canSubmitReservation']()).toBe(false);
-
-      // Restaurar número, fecha inválida
-      component['cardNumber'].set('4532 0000 0000 4242');
-      component['cardExpiry'].set('13/25'); // mes inválido
-      expect(component['isCardValid']()).toBe(false);
-
-      // Formato incorrecto
-      component['cardExpiry'].set('2028');
-      expect(component['isCardValid']()).toBe(false);
-
-      // Restaurar fecha, CVV inválido
-      component['cardExpiry'].set('12/28');
-      component['cardCvv'].set('1');
-      expect(component['isCardValid']()).toBe(false);
-
-      // Restaurar CVV, nombre vacío
-      component['cardCvv'].set('123');
-      component['cardHolder'].set('   ');
-      expect(component['isCardValid']()).toBe(false);
-
-      // Nombre válido
-      component['cardHolder'].set('Juan Pérez');
-      expect(component['isCardValid']()).toBe(true);
-      expect(component['canSubmitReservation']()).toBe(true);
-    });
-
-    it('F5-3: Pago simulado exitoso (approved) confirma reserva en el servidor con saldo 0 y muestra modal con estados separados', async () => {
-      (mockDatabaseService as any).fetchCourtAvailability = undefined;
-      delete (mockDatabaseService as any).quoteCourtBooking;
-
-      createComponent();
-      component['nextWeek']();
-      await fixture.whenStable();
-      fixture.detectChanges();
-      const futureDay = component['currentWeekDays']()[3];
-      component['toggleSlot'](futureDay, 18);
-
-      const createOnlineBookingSpy = vi.fn(async (payload: any) => ({
-        reserva: { id: 801, codigo_pase: '#CAN-8010', estado: 'Confirmada', id_estado_reserva: 2 },
-        pago: { id: 801, estado: 'aprobado', numero_operacion: 'IDEMP:test-idemp-801' },
-        response: {
-          id: '801',
-          codigoPase: '#CAN-8010',
-          horario: '18:00 - 19:00',
-          total: 120,
-          status: 'Confirmada',
-          paymentStatus: 'aprobado',
-          paidAmount: 120,
-          balanceAmount: 0,
-          paymentOperationNumber: 'IDEMP:test-idemp-801',
-        },
-      }));
-      (mockDatabaseService as any).createOnlineBooking = createOnlineBookingSpy;
-
-      component['cardSimulationOutcome'].set('approved');
-      await component['confirmarReserva']();
-
-      expect(createOnlineBookingSpy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          paymentOutcome: 'approved',
-          metodoPago: 'Tarjeta',
-        }),
-      );
-      expect(component['showSuccess']()).toBe(true);
-      expect(component['reservaCode']()).toBe('#CAN-8010');
-      expect(component['reservaStatus']()).toBe('Confirmada');
-      expect(component['paymentStatus']()).toBe('aprobado');
-      expect(component['paidAmount']()).toBe(120);
-      expect(component['balanceAmount']()).toBe(0);
-      expect(component['paymentOpNumber']()).toBe('IDEMP:test-idemp-801');
-    });
-
-    it('F5-4: Pago simulado rechazado (402) muestra error claro y no confirma reserva ni muestra modal de éxito', async () => {
-      (mockDatabaseService as any).fetchCourtAvailability = undefined;
-      delete (mockDatabaseService as any).quoteCourtBooking;
-
-      createComponent();
-      component['nextWeek']();
-      await fixture.whenStable();
-      fixture.detectChanges();
-      const futureDay = component['currentWeekDays']()[3];
-      component['toggleSlot'](futureDay, 18);
-
-      (mockDatabaseService as any).createOnlineBooking = vi.fn(async () => {
-        throw {
-          status: 402,
-          error: {
-            message:
-              'El pago simulado con tarjeta fue rechazado por la entidad emisora. La reserva no fue confirmada.',
-          },
-        };
-      });
-
-      component['cardSimulationOutcome'].set('rejected');
-      await component['confirmarReserva']();
-
-      expect(component['showSuccess']()).toBe(false);
-      expect(component['confirmError']()).toContain('rechazado por la entidad emisora');
-    });
-
-    it('F5-5: Pago simulado timeout (504) informa tiempo de espera agotado sin confirmar reserva', async () => {
-      (mockDatabaseService as any).fetchCourtAvailability = undefined;
-      delete (mockDatabaseService as any).quoteCourtBooking;
-
-      createComponent();
-      component['nextWeek']();
-      await fixture.whenStable();
-      fixture.detectChanges();
-      const futureDay = component['currentWeekDays']()[3];
-      component['toggleSlot'](futureDay, 18);
-
-      (mockDatabaseService as any).createOnlineBooking = vi.fn(async () => {
-        throw {
-          status: 504,
-          error: {
-            message:
-              'Tiempo de espera agotado al conectar con el procesador de pagos. No se realizó ningún cargo.',
-          },
-        };
-      });
-
-      component['cardSimulationOutcome'].set('timeout');
-      await component['confirmarReserva']();
-
-      expect(component['showSuccess']()).toBe(false);
-      expect(component['confirmError']()).toContain('Tiempo de espera agotado');
-    });
   });
 });

@@ -9,12 +9,26 @@ export const routes: Routes = [
     children: [
       { path: '', loadComponent: () => import('./features/jugador/home/home').then((m) => m.Home) },
       {
+        path: 'buscar',
+        loadComponent: () => import('./features/jugador/buscar/buscar').then((m) => m.Buscar),
+      },
+      {
         path: 'sedes',
         loadComponent: () => import('./features/jugador/sedes/sedes').then((m) => m.Sedes),
       },
       {
         path: 'sedes/:id',
         loadComponent: () => import('./features/jugador/detalle/detalle').then((m) => m.Detalle),
+      },
+      {
+        path: 'accesos',
+        loadComponent: () =>
+          import('./features/admin/reservas/access-check').then((m) => m.AccessCheck),
+      },
+      {
+        path: 'pago/resultado',
+        loadComponent: () =>
+          import('./features/jugador/checkout/payment-result').then((m) => m.PaymentResult),
       },
       {
         path: 'checkout',
@@ -81,6 +95,11 @@ export const routes: Routes = [
     canActivateChild: [authGuard],
     children: [
       { path: '', redirectTo: 'sedes', pathMatch: 'full' },
+      {
+        path: 'accesos',
+        loadComponent: () =>
+          import('./features/admin/reservas/access-check').then((m) => m.AccessCheck),
+      },
       {
         path: 'sedes',
         loadComponent: () => import('./features/admin/sedes/admin-sedes').then((m) => m.AdminSedes),

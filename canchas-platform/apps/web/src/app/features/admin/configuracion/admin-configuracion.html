@@ -30,10 +30,9 @@
       <span class="material-symbols-outlined" style="font-size: 20px">info</span>
     </div>
     <div class="config-callout-content">
-      <strong>Aclaración operativa importante:</strong>
-      La personalización visual de tu portal y los métodos de cobro a jugadores por Yape/Plin se
-      gestionan en <strong>Personalización &amp; QR</strong>. Esta sección administra tu cuenta
-      matriz y la liquidación directa con Canchero.
+      <strong>Tu cuenta y tus sedes.</strong>
+      Los textos y los datos informativos de billetera se editan en Personalización &amp; QR. Los
+      pagos online se gestionan con Mercado Pago.
     </div>
     <button type="button" class="config-callout-action" (click)="irAPersonalizacion()">
       <span>Ir a Personalización &amp; QR</span>
@@ -119,7 +118,7 @@
               <mat-label>Titular</mat-label>
               <input matInput type="text" [value]="titularRazonSocial()" readonly />
             </mat-form-field>
-            <span class="config-field-hint">Nombre visible para tus jugadores.</span>
+            <span class="config-field-hint">Nombre del titular de la cuenta.</span>
           </div>
 
           <div class="config-field">
@@ -176,7 +175,7 @@
                   (input)="pwdCurrent.set($any($event.target).value)"
                 />
                 <button
-                  matSuffix
+                  matIconSuffix
                   aria-label="Mostrar contraseña actual"
                   class="config-pwd-btn"
                   (click)="toggleShowPwdCurrent()"
@@ -207,7 +206,7 @@
                   (input)="pwdNew.set($any($event.target).value)"
                 />
                 <button
-                  matSuffix
+                  matIconSuffix
                   aria-label="Mostrar nueva contraseña"
                   class="config-pwd-btn"
                   (click)="toggleShowPwdNew()"
@@ -521,9 +520,19 @@
           <div class="config-field">
             <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
               <mat-label>Adelanto mínimo</mat-label>
-              <input matInput type="text" value="30%" disabled />
+              <input
+                matInput
+                type="number"
+                min="10"
+                max="90"
+                step="1"
+                [ngModel]="depositPercent()"
+                (ngModelChange)="depositPercent.set(+$event)"
+              />
             </mat-form-field>
-            <span class="config-field-hint">Nombre visible para tus jugadores.</span>
+            <span class="config-field-hint"
+              >Porcentaje mínimo de adelanto para reservas presenciales de esta sede.</span
+            >
           </div>
 
           <p
@@ -534,11 +543,19 @@
               margin: 0;
             "
           >
-            Configurable del 10% al 90%. Saldo antes de jugar. Online: tarjeta al 100%; Yape y Plin
-            no habilitados.
+            Del 10% al 90% para registro presencial. Las reservas online se pagan al 100% mediante
+            Mercado Pago; esta preferencia no cambia ese cobro.
           </p>
 
-          <button class="btn-primary btn-full btn-disabled" type="button" disabled>
+          <p role="status">{{ settingsFeedback() }}</p>
+          <button
+            mat-flat-button
+            disableRipple
+            class="btn-primary"
+            type="button"
+            [disabled]="savingDeposit()"
+            (click)="saveDeposit()"
+          >
             Guardar porcentaje
           </button>
         </section>
@@ -551,166 +568,19 @@
         <section class="config-card">
           <div class="config-card-header">
             <div class="config-card-title-group">
-              <h2>Comisión y liquidación</h2>
-              <span>Condiciones del servicio</span>
+              <h2>Pagos y liquidación</h2>
+              <span>Mercado Pago Checkout Pro · pruebas</span>
             </div>
           </div>
-
-          <!-- Highlight Box Comisión 5% -->
-          <div class="commission-box">
-            <div class="commission-header">
-              <span class="commission-title">Comisión Canchero 5%</span>
-              <span class="commission-badge">5.0%</span>
-            </div>
-            <p class="commission-desc">
-              A cargo del dueño sobre el alquiler efectivamente cobrado y registrado. Se revierte
-              proporcionalmente en devoluciones.
-            </p>
-            <span style="font-size: 12px; color: var(--can-color-ink-secondary, #666666)">
-              Las ventas de productos no generan esta comisión.
-            </span>
-            <button
-              class="btn-secondary btn-full btn-disabled"
-              type="button"
-              disabled
-              style="margin-top: 6px"
-            >
-              Gestión bancaria
-            </button>
-          </div>
-
-          <!-- Cuentas bancarias de depósito -->
-          <div class="config-field">
-            <label>Cuentas bancarias de depósito</label>
-            <div class="bank-list">
-              @for (cuenta of cuentasBancarias(); track cuenta.id) {
-                <div
-                  class="bank-item"
-                  [class.is-selected]="cuentaBancariaSeleccionada() === cuenta.id"
-                  (click)="seleccionarCuentaBancaria(cuenta.id)"
-                >
-                  <div style="display: flex; align-items: center; gap: 10px">
-                    <input
-                      type="radio"
-                      name="bank_choice"
-                      [checked]="cuentaBancariaSeleccionada() === cuenta.id"
-                      (change)="seleccionarCuentaBancaria(cuenta.id)"
-                    />
-                    <div>
-                      <div style="font-weight: 600; font-size: 13px">
-                        {{ cuenta.banco }} - {{ cuenta.tipo }}
-                      </div>
-                      <div style="font-size: 12px; color: var(--can-color-ink-secondary, #666666)">
-                        N° {{ cuenta.numeroEnmascarado }} (CCI: {{ cuenta.cci }})
-                      </div>
-                    </div>
-                  </div>
-                  @if (cuentaBancariaSeleccionada() === cuenta.id) {
-                    <span class="material-symbols-outlined" style="color: #27802d; font-size: 20px"
-                      >check_circle</span
-                    >
-                  }
-                </div>
-              }
-            </div>
-            <button
-              class="btn-link"
-              type="button"
-              style="margin-top: 4px"
-              (click)="abrirAgregarCuentaBancaria()"
-            >
-              <span class="material-symbols-outlined" style="font-size: 16px">add</span>
-              <span>Agregar nueva cuenta bancaria</span>
-            </button>
-          </div>
-
-          <!-- Frecuencia de liquidación -->
-          <div class="config-field">
-            <label>Frecuencia de liquidaciones</label>
-            <div class="freq-group">
-              <button
-                class="freq-btn"
-                [class.is-active]="frecuenciaPago() === 'Semanal (Lunes)'"
-                (click)="cambiarFrecuenciaPago('Semanal (Lunes)')"
-                type="button"
-              >
-                Semanal
-                @if (frecuenciaPago() === 'Semanal (Lunes)') {
-                  <mat-icon class="active-check" aria-hidden="true">check</mat-icon>
-                }
-              </button>
-              <button
-                class="freq-btn"
-                [class.is-active]="frecuenciaPago() === 'Quincenal'"
-                (click)="cambiarFrecuenciaPago('Quincenal')"
-                type="button"
-              >
-                Quincenal
-                @if (frecuenciaPago() === 'Quincenal') {
-                  <mat-icon class="active-check" aria-hidden="true">check</mat-icon>
-                }
-              </button>
-              <button
-                class="freq-btn"
-                [class.is-active]="frecuenciaPago() === 'Mensual'"
-                (click)="cambiarFrecuenciaPago('Mensual')"
-                type="button"
-              >
-                Mensual
-                @if (frecuenciaPago() === 'Mensual') {
-                  <mat-icon class="active-check" aria-hidden="true">check</mat-icon>
-                }
-              </button>
-            </div>
-          </div>
-
-          <!-- Comprobantes descargables -->
-          <div class="config-field">
-            <label>Comprobantes de Liquidación Oficial</label>
-            <div style="display: flex; flex-direction: column; gap: 8px">
-              @for (comp of comprobantesHistorial(); track comp.codigo) {
-                <div
-                  style="
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    padding: 10px 12px;
-                    background: var(--can-color-background, #f5f6f7);
-                    border: 1px solid var(--can-color-border, #dfe3e8);
-                    border-radius: 6px;
-                  "
-                >
-                  <div>
-                    <div style="font-size: 13px; font-weight: 600">
-                      {{ comp.periodo }} • {{ comp.codigo }}
-                    </div>
-                    <div style="font-size: 11px; color: var(--can-color-ink-secondary, #666666)">
-                      Comisión: S/ {{ comp.comisionMonto.toFixed(2) }} (Neto: S/
-                      {{ comp.netoTransferido.toFixed(2) }})
-                    </div>
-                  </div>
-                  <div style="display: flex; gap: 6px">
-                    <button
-                      class="btn-secondary"
-                      style="height: 30px; padding: 0 8px; font-size: 11px"
-                      type="button"
-                      (click)="descargarComprobanteTxt(comp)"
-                    >
-                      TXT
-                    </button>
-                    <button
-                      class="btn-secondary"
-                      style="height: 30px; padding: 0 8px; font-size: 11px"
-                      type="button"
-                      (click)="descargarComprobanteXml(comp)"
-                    >
-                      XML
-                    </button>
-                  </div>
-                </div>
-              }
-            </div>
-          </div>
+          <p>Las reservas online se pagan al 100% en la cuenta de prueba de Canchero.</p>
+          <p>
+            No hay transferencias automáticas a dueños, cuentas bancarias vinculadas ni una comisión
+            del 5% aplicada por esta integración.
+          </p>
+          <p class="config-field-hint">
+            Las tarifas reales de Mercado Pago y el reparto entre dueños se definirán al integrar
+            producción. Aquí no se muestran cuentas ni liquidaciones de ejemplo.
+          </p>
         </section>
       }
     </div>

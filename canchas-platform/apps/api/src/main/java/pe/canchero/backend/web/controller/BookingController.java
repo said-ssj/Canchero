@@ -41,7 +41,7 @@ public class BookingController {
         if (!(rawUser instanceof AuthUserDto authUser)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Debes iniciar sesión para registrar una reserva.");
         }
-        return ResponseEntity.status(HttpStatus.CREATED).body(data.createBooking(request, authUser, idempotencyKey));
+        return ResponseEntity.status(HttpStatus.CREATED).body(data.createCounterBooking(request,authUser,idempotencyKey));
     }
 
     @GetMapping("/my")

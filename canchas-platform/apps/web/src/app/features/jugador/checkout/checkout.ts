@@ -1,3 +1,4 @@
+import { MercadoPagoApi } from '../../../core/payments/mercadopago-api';
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -84,6 +85,15 @@ export class Checkout {
   private readonly db = inject(DatabaseService);
   private readonly auth = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
+  private readonly mp = inject(MercadoPagoApi);
+  protected readonly paymentReady = signal(false);
+  protected readonly paymentConfigChecked = signal(false);
+  protected readonly accessSlots = signal(1);
+  private readonly paymentInit = this.mp
+    .capabilities()
+    .then((x) => this.paymentReady.set(x.available))
+    .catch(() => this.paymentReady.set(false))
+    .finally(() => this.paymentConfigChecked.set(true));
 
   protected readonly fallbackCourtImg =
     'https://images.unsplash.com/photo-1529900241929-58a47400d705?q=80&w=300&auto=format&fit=crop';
@@ -174,8 +184,8 @@ export class Checkout {
   protected readonly sectionLabels = [
     'Horarios',
     'Datos del partido',
-    'Método de pago',
     'Convocados al partido',
+    'Revisar y pagar',
   ];
 
   protected readonly isLoadingAvailability = signal(false);
@@ -222,51 +232,9 @@ export class Checkout {
     },
   ]);
 
-  protected readonly paymentMethod = signal<'card' | 'yape' | 'plin'>('card');
-  protected readonly isSplitActive = signal(false);
-
-  // Campos de tarjeta simulada y estados explícitos (Fase 5)
-  protected readonly cardNumber = signal('');
-  protected readonly cardExpiry = signal('');
-  protected readonly cardCvv = signal('');
-  protected readonly cardHolder = signal('');
-  protected readonly cardSimulationOutcome = signal<'approved' | 'rejected' | 'timeout'>(
-    'approved',
-  );
-
-  protected readonly reservaStatus = signal('Confirmada');
-  protected readonly paymentStatus = signal('aprobado');
-  protected readonly paidAmount = signal(0);
-  protected readonly balanceAmount = signal(0);
-  protected readonly paymentOpNumber = signal('');
-
-  protected readonly isCardValid = computed<boolean>(() => {
-    const num = this.cardNumber().replace(/\s+/g, '');
-    const exp = this.cardExpiry().trim();
-    const cvv = this.cardCvv().trim();
-    const holder = this.cardHolder().trim();
-    const expMatch = exp.match(/^(\d{2})\/(\d{2})$/);
-    if (!expMatch) return false;
-    const month = parseInt(expMatch[1], 10);
-    if (month < 1 || month > 12) return false;
-    return num.length >= 15 && num.length <= 19 && cvv.length >= 3 && holder.length > 0;
-  });
-
   protected readonly newPlayerName = signal('');
   protected readonly newPlayerPhone = signal('');
   protected readonly newPlayerTipo = signal<'Registrado' | 'Invitado'>('Invitado');
-
-  protected readonly couponCodeInput = signal('');
-  protected readonly couponApplied = signal(false);
-  protected readonly couponPercent = signal(0);
-  protected readonly couponMessage = signal('');
-
-  protected readonly opCode = signal('');
-  protected readonly voucherFileName = signal('');
-  protected readonly voucherUploaded = signal(false);
-  protected readonly voucherDragging = signal(false);
-  protected readonly copied = signal(false);
-  protected readonly linkCopied = signal(false);
 
   protected readonly confirmError = signal('');
   protected readonly submitting = signal(false);
@@ -399,9 +367,7 @@ export class Checkout {
     return this.selectedSlots().reduce((acc, s) => acc + s.price, 0);
   });
 
-  protected readonly discountAmount = computed(() => this.subtotal() * this.couponPercent());
-
-  protected readonly total = computed(() => Math.max(0, this.subtotal() - this.discountAmount()));
+  protected readonly total = computed(() => this.subtotal());
 
   protected readonly cuotaPerPlayer = computed(() => {
     const count = this.players().length || 1;
@@ -496,24 +462,6 @@ export class Checkout {
     return '#b45309';
   });
 
-  protected readonly qrTitle = computed(() =>
-    this.paymentMethod() === 'yape' ? 'Pago QR Oficial Yape' : 'Pago QR Oficial Plin',
-  );
-
-  protected readonly qrAccentColor = computed(() =>
-    this.paymentMethod() === 'yape' ? '#742384' : '#00d1b2',
-  );
-
-  protected readonly voucherBorderColor = computed(() =>
-    this.voucherDragging() ? 'var(--color-brand-green)' : '#cbd5e1',
-  );
-
-  protected readonly voucherStatusText = computed(() =>
-    this.voucherUploaded()
-      ? 'Voucher adjuntado y listo para validar'
-      : 'Esperando verificación de recepción',
-  );
-
   protected readonly convocadosText = computed(() => `${this.players().length} Convocados activos`);
 
   protected fmt(n: number): string {
@@ -523,16 +471,6 @@ export class Checkout {
   protected cuotaLabel(): string {
     const n = this.players().length;
     return `Cuota por persona (${n} jugador${n > 1 ? 'es' : ''})`;
-  }
-
-  protected couponPercentText(): string {
-    return `-${Math.round(this.couponPercent() * 100)}%`;
-  }
-
-  protected paymentMethodName(): string {
-    const m = this.paymentMethod();
-    if (m === 'card') return 'Tarjeta';
-    return m === 'yape' ? 'Yape' : 'Plin';
   }
 
   protected goToPaso(paso: 1 | 2 | 3): void {
@@ -560,7 +498,7 @@ export class Checkout {
   }
 
   protected showReservationSection(section: 2 | 3 | 4): void {
-    if (this.submitting() || (section === 4 && !this.isCardValid())) return;
+    if (this.submitting()) return;
     this.confirmError.set('');
     this.reservationSection.set(section);
     this.scrollToCheckout();
@@ -889,168 +827,6 @@ export class Checkout {
     return { text: 'En mesa / efec', cls: 'muted' };
   }
 
-  protected toggleSplit(e: Event): void {
-    this.isSplitActive.set((e.target as HTMLInputElement).checked);
-  }
-
-  protected readonly coupons = [
-    { code: 'CANCHERO10', percent: 0.1, label: '10% descuento' },
-    { code: 'CANCHERO20', percent: 0.2, label: '20% descuento' },
-    { code: 'DEPOR20', percent: 0.2, label: '20% descuento deporte' },
-    { code: 'WELCOME15', percent: 0.15, label: '15% bienvenida' },
-  ];
-
-  protected getPaymentPhone(): string {
-    const comp = this.selectedComplejo();
-    const method = this.paymentMethod();
-    if (method === 'plin') return '987 321 654';
-    return comp.phone?.replace(/[^0-9]/g, '') ?? '987654321';
-  }
-
-  protected applyCoupon(): void {
-    const code = this.couponCodeInput().trim().toUpperCase();
-    const coupon = this.coupons.find((c) => c.code === code);
-    if (coupon) {
-      this.couponApplied.set(true);
-      this.couponPercent.set(coupon.percent);
-      this.couponMessage.set(`Cupón ${coupon.code} de ${coupon.label} aplicado`);
-    } else {
-      this.couponApplied.set(false);
-      this.couponPercent.set(0);
-      this.couponMessage.set(
-        'Código no válido. Prueba: ' + this.coupons.map((c) => c.code).join(', '),
-      );
-    }
-  }
-
-  protected generarQRSVG(data: string): string {
-    const size = 140;
-    const modules = this.qrCodeModules(data);
-    const moduleSize = size / modules.length;
-    let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">`;
-    svg += `<rect width="${size}" height="${size}" fill="white"/>`;
-    for (let r = 0; r < modules.length; r++) {
-      for (let c = 0; c < modules[r].length; c++) {
-        if (modules[r][c]) {
-          svg += `<rect x="${c * moduleSize}" y="${r * moduleSize}" width="${moduleSize}" height="${moduleSize}" fill="black"/>`;
-        }
-      }
-    }
-    svg += '</svg>';
-    return svg;
-  }
-
-  private qrCodeModules(text: string): boolean[][] {
-    const size = 25;
-    const modules: boolean[][] = Array(size)
-      .fill(null)
-      .map(() => Array(size).fill(false));
-    let hash = 0;
-    for (let i = 0; i < text.length; i++) {
-      hash = ((hash << 5) - hash + text.charCodeAt(i)) | 0;
-    }
-    for (let r = 0; r < size; r++) {
-      for (let c = 0; c < size; c++) {
-        const seed = (hash * 31 + r * 17 + c * 13) & 0x7fffffff;
-        modules[r][c] = seed % 2 === 0;
-      }
-    }
-    modules[0][0] = true;
-    modules[0][size - 1] = true;
-    modules[size - 1][0] = true;
-    return modules;
-  }
-
-  protected readonly qrSvg = computed(() => {
-    const court = this.resolvedCourt();
-    const data = `https://canchero.pe/checkout?courtId=${court?.id ?? ''}`;
-    return this.generarQRSVG(data);
-  });
-
-  protected removeCoupon(): void {
-    this.couponApplied.set(false);
-    this.couponPercent.set(0);
-    this.couponMessage.set('');
-  }
-
-  protected selectPayment(m: 'yape' | 'plin' | 'card'): void {
-    if (m !== 'card') {
-      this.confirmError.set(
-        'En reservas online solo está habilitado el pago al 100% con tarjeta. Yape y Plin están deshabilitados para reservas online.',
-      );
-      return;
-    }
-    this.confirmError.set('');
-    this.paymentMethod.set('card');
-  }
-
-  protected copyNumber(): void {
-    const comp = this.selectedComplejo();
-    const phone = this.getPaymentPhone().replace(/[^0-9]/g, '') || '987654321';
-    void navigator.clipboard?.writeText(phone);
-    this.copied.set(true);
-    setTimeout(() => this.copied.set(false), 2000);
-  }
-
-  protected copyLink(): void {
-    void navigator.clipboard?.writeText(window.location.href);
-    this.linkCopied.set(true);
-    setTimeout(() => this.linkCopied.set(false), 2500);
-  }
-
-  protected shareWhatsApp(): void {
-    const comp = this.selectedComplejo();
-    const slotTexts = this.selectedSlots().length
-      ? this.selectedSlots()
-          .map((s) => `${s.dayDisplay}: ${s.time}`)
-          .join(' | ')
-      : 'Horario por coordinar';
-    const cuota = this.cuotaPerPlayer().toFixed(2);
-    const phone = comp.phone?.replace(/[^0-9]/g, '') ?? '987654321';
-    const msg = encodeURIComponent(
-      `Habla equipo. Pichanga confirmada:\n\n` +
-        `Sede: ${comp.name}\n` +
-        `Cancha: ${this.selectedTipoCancha()}\n` +
-        `Horario(s): ${slotTexts}\n` +
-        `Cuota individual: S/ ${cuota} (Yape/Plin al ${phone})\n\n` +
-        `Confirmen su asistencia para no quedarnos sin gente.`,
-    );
-    window.open(`https://api.whatsapp.com/send?text=${msg}`, '_blank');
-  }
-
-  protected openVoucherPicker(input: HTMLInputElement): void {
-    input.click();
-  }
-
-  protected onVoucherDragOver(e: Event): void {
-    e.preventDefault();
-    this.voucherDragging.set(true);
-  }
-
-  protected onVoucherDragLeave(e: Event): void {
-    e.preventDefault();
-    this.voucherDragging.set(false);
-  }
-
-  protected onVoucherDrop(e: DragEvent): void {
-    e.preventDefault();
-    this.voucherDragging.set(false);
-    const file = e.dataTransfer?.files[0];
-    if (file) this.updateVoucher(file);
-  }
-
-  protected onVoucherSelect(e: Event): void {
-    const input = e.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (file) this.updateVoucher(file);
-  }
-
-  private updateVoucher(file: File): void {
-    const sizeKb = Math.max(1, Math.round(file.size / 1024));
-    this.voucherFileName.set(`${file.name} (${sizeKb} KB)`);
-    this.voucherUploaded.set(true);
-  }
-
   private lastIdempotencySignature: string | null = null;
   private lastIdempotencyKey: string | null = null;
 
@@ -1062,7 +838,10 @@ export class Checkout {
       !this.isLoadingAvailability() &&
       this.bookingBlock().isValid &&
       this.bookingBlock().durationHours > 0 &&
-      this.isCardValid() &&
+      this.paymentReady() &&
+      Number.isInteger(this.accessSlots()) &&
+      this.accessSlots() > 0 &&
+      this.accessSlots() <= 100 &&
       !this.submitting()
     );
   });
@@ -1073,13 +852,12 @@ export class Checkout {
     dateStr: string,
     displayRange: string,
   ): string {
-    const signature = `${userId}|${courtId}|${dateStr}|${displayRange}`;
+    const signature = `${userId}|${courtId}|${dateStr}|${displayRange}|${this.accessSlots()}`;
     if (this.lastIdempotencySignature === signature && this.lastIdempotencyKey) {
       return this.lastIdempotencyKey;
     }
     const randomSuffix = Math.random().toString(36).substring(2, 10);
-    const key =
-      `chk-${courtId}-${dateStr}-${displayRange.replace(/\s+/g, '')}-${randomSuffix}`.slice(0, 96);
+    const key = `chk-${courtId}-${dateStr}-${crypto.randomUUID()}`.slice(0, 96);
     this.lastIdempotencySignature = signature;
     this.lastIdempotencyKey = key;
     return key;
@@ -1118,6 +896,13 @@ export class Checkout {
       return;
     }
 
+    if (!this.canSubmitReservation()) {
+      this.confirmError.set(
+        'El pago todav�a no est� disponible. Revisa la configuraci�n y la cantidad de participantes.',
+      );
+      return;
+    }
+
     const dateStr = block.dateStr;
     const displayRange = block.displayRange;
     const user = this.currentUser();
@@ -1129,41 +914,18 @@ export class Checkout {
       dateStr,
       displayRange,
     );
-    const metodoPagoLabel = 'Tarjeta';
 
     this.submitting.set(true);
     this.confirmError.set('');
     try {
-      const result = await this.db.createOnlineBooking({
-        courtId: court.id,
-        venueId: venue?.id,
-        courtName: court.nombre,
-        venueName: venue?.nombre,
+      const result = await this.mp.start({
+        courtId: String(court.id),
         fecha: dateStr,
-        horario: displayRange,
         hours: block.tranches.map((t) => t.hour),
-        total: block.subtotal,
-        metodoPago: metodoPagoLabel,
-        jugadores: this.players().map((p) => p.name),
+        cupos: this.accessSlots(),
         idempotencyKey,
-        numeroOperacion: this.opCode().trim() || undefined,
-        paymentOutcome: this.cardSimulationOutcome(),
-        cardNumber: this.cardNumber().replace(/\s+/g, ''),
-        cardHolder: this.cardHolder().trim(),
       });
-
-      const passCode = result?.reserva?.codigo_pase || result?.response?.codigoPase || '#CAN-0000';
-      this.reservaCode.set(passCode);
-      this.reservaTimeText.set(result?.response?.horario || displayRange);
-      this.reservaStatus.set(result?.response?.status || result?.reserva?.estado || 'Confirmada');
-      this.paymentStatus.set(result?.response?.paymentStatus || result?.pago?.estado || 'aprobado');
-      this.paidAmount.set(Number(result?.response?.paidAmount ?? block.subtotal));
-      this.balanceAmount.set(Number(result?.response?.balanceAmount ?? 0));
-      this.paymentOpNumber.set(
-        result?.response?.paymentOperationNumber || result?.pago?.numero_operacion || '',
-      );
-      this.showSuccess.set(true);
-      void this.loadWeekAvailability(String(court.id), this.weekOffset());
+      this.mp.open(result.checkoutUrl);
     } catch (err: any) {
       const status = err?.status;
       const serverMsg =
@@ -1173,13 +935,12 @@ export class Checkout {
 
       if (status === 402) {
         this.confirmError.set(
-          serverMsg ||
-            'El pago simulado con tarjeta fue rechazado por la entidad emisora. La reserva no fue confirmada.',
+          serverMsg || 'Mercado Pago no pudo iniciar el pago. La reserva no fue confirmada.',
         );
       } else if (status === 504) {
         this.confirmError.set(
           serverMsg ||
-            'Tiempo de espera agotado al conectar con el procesador de pagos. No se realizó ningún cargo.',
+            'No pudimos consultar el estado del pago. Reintenta con la misma selección antes de iniciar otro pago.',
         );
       } else if (status === 409) {
         this.lastIdempotencyKey = null;
@@ -1203,9 +964,5 @@ export class Checkout {
     } finally {
       this.submitting.set(false);
     }
-  }
-
-  protected onModalBackdrop(e: Event): void {
-    if (e.target === e.currentTarget) this.showSuccess.set(false);
   }
 }

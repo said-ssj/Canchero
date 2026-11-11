@@ -9,7 +9,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
 import { AuthService } from '@core/auth/auth.service';
 import { DatabaseService } from '@core/supabase/database.service';
-import { supabase } from '@core/supabase/client';
+import { firstValueFrom } from 'rxjs';
 import type { Venue } from '@shared/models/venue.model';
 import {
   ALERTAS_SISTEMA_DEFINICION,
@@ -116,21 +116,20 @@ export class AdminConfiguracion {
 
   // Datos reactivos de perfil y cuenta matriz
   protected readonly perfilEmail = computed(() => {
-    return this.auth.currentUser()?.email || 'admin@canchero.pe';
+    return this.auth.currentUser()?.email || '';
   });
 
   protected readonly perfilTelefono = computed(() => {
-    return this.auth.currentUser()?.telefono || this.venue()?.telefono || '+51 987 654 321';
+    return this.auth.currentUser()?.telefono || '';
   });
 
   protected readonly titularRazonSocial = computed(() => {
     const v = this.venue();
-    if (v?.nombre) return `${v.nombre} S.A.C.`;
-    return 'Mi Complejo Deportivo S.A.C.';
+    return this.auth.currentUser()?.nombre || '';
   });
 
   protected readonly rucFacturacion = computed(() => {
-    return this.venue()?.ruc_facturacion || '20609876543';
+    return this.venue()?.ruc_facturacion || 'Sin registrar';
   });
 
   // Estado del formulario de cambio de contraseña
@@ -169,12 +168,10 @@ export class AdminConfiguracion {
   });
 
   // Cuentas bancarias de depósito y liquidaciones
-  protected readonly cuentasBancarias = signal<CuentaBancariaItem[]>(CUENTAS_BANCARIAS_DEFECTO);
+  protected readonly cuentasBancarias = signal<CuentaBancariaItem[]>([]);
   protected readonly cuentaBancariaSeleccionada = signal<string>('bcp');
   protected readonly frecuenciaPago = signal<FrecuenciaLiquidacion>('Semanal (Lunes)');
-  protected readonly comprobantesHistorial = signal<ComprobanteLiquidacionItem[]>(
-    COMPROBANTES_LIQUIDACION_HISTORIAL,
-  );
+  protected readonly comprobantesHistorial = signal<ComprobanteLiquidacionItem[]>([]);
 
   // Modales de control
   protected readonly modalAyudaOpen = signal<boolean>(false);
@@ -194,7 +191,43 @@ export class AdminConfiguracion {
   protected readonly nuevaCuentaNumero = signal<string>('');
   protected readonly nuevaCuentaCci = signal<string>('');
 
+  protected readonly depositPercent = signal(50);
+  protected readonly savingDeposit = signal(false);
+  protected readonly settingsFeedback = signal('');
+  private preferencesVenue: number | null = null;
+  protected async saveDeposit(): Promise<void> {
+    const id = Number(this.venueId()),
+      value = this.depositPercent();
+    if (!id || this.savingDeposit()) return;
+    if (!Number.isInteger(value) || value < 10 || value > 90) {
+      this.settingsFeedback.set('Elige un porcentaje entero entre 10 y 90.');
+      return;
+    }
+    this.savingDeposit.set(true);
+    this.settingsFeedback.set('');
+    try {
+      await this.db.updateSedeAdelantoMinimo(id, value);
+      this.settingsFeedback.set('Adelanto presencial guardado para esta sede.');
+    } catch (e: any) {
+      this.settingsFeedback.set(e?.error?.message || 'No se pudo guardar el adelanto.');
+    } finally {
+      this.savingDeposit.set(false);
+    }
+  }
+
   constructor() {
+    effect(() => {
+      const id = Number(this.venueId());
+      if (!id || id === this.preferencesVenue) return;
+      this.preferencesVenue = id;
+      void this.db
+        .getVenuePreferences?.(id)
+        .then((value) => {
+          if (id === Number(this.venueId())) this.depositPercent.set(value.minimumDepositPercent);
+        })
+        .catch(() => this.settingsFeedback.set('No se pudieron cargar los ajustes de la sede.'));
+    });
+
     // Restaurar preferencias guardadas en localStorage si existen
     if (typeof localStorage !== 'undefined') {
       try {
@@ -266,22 +299,15 @@ export class AdminConfiguracion {
     this.pwdUpdating.set(true);
 
     try {
-      // Intentar actualizar contraseña en Supabase Auth si existe sesión activa
-      const { data, error } = await supabase.auth.updateUser({ password: nuevo });
-
-      if (error) {
-        this.pwdError.set(
-          'No se pudo actualizar la contraseña. Comprueba tu sesión y vuelve a intentar.',
-        );
-      } else {
-        this.pwdSuccess.set('Contraseña de la cuenta matriz actualizada con éxito.');
-        this.notice.emit('Contraseña actualizada en el servidor de autenticación.');
-        this.pwdCurrent.set('');
-        this.pwdNew.set('');
-        this.pwdConfirm.set('');
-      }
+      await firstValueFrom(this.auth.changePassword(actual, nuevo));
+      this.pwdSuccess.set('Contraseña actualizada correctamente.');
+      this.notice.emit('Contraseña actualizada en Canchero.');
+      this.pwdCurrent.set('');
+      this.pwdNew.set('');
+      this.pwdConfirm.set('');
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Error inesperado';
+      const msg =
+        (err as any)?.error?.message || (err instanceof Error ? err.message : 'Error inesperado');
       this.pwdError.set(`No se pudo procesar la solicitud: ${msg}`);
     } finally {
       this.pwdUpdating.set(false);
@@ -523,13 +549,9 @@ export class AdminConfiguracion {
 
   protected guardarConfiguracionGeneral(): void {
     this.guardarPreferenciasAlertas(false);
-    if (typeof localStorage !== 'undefined') {
-      try {
-        localStorage.setItem('canchero_payout_bank', this.cuentaBancariaSeleccionada());
-        localStorage.setItem('canchero_payout_freq', this.frecuenciaPago());
-      } catch {}
-    }
-    this.notice.emit('Configuración general y liquidación sincronizadas.');
+    this.notice.emit(
+      'Preferencias de alertas guardadas en este navegador. Los datos de la sede se guardan desde cada sección.',
+    );
   }
 
   protected abrirCentroAyuda(): void {

@@ -10,12 +10,14 @@ describe('AdminFinanzas Component - Etapa 7 (Finanzas y Liquidación)', () => {
   let fixture: ComponentFixture<AdminFinanzas>;
   let component: AdminFinanzas;
 
-  const mockCurrentUser = signal<{ id: string; email: string; nombre: string; rol: string } | null>({
-    id: 'owner-uuid',
-    email: 'dueno@canchero.pe',
-    nombre: 'Dueño Oficial',
-    rol: 'dueno',
-  });
+  const mockCurrentUser = signal<{ id: string; email: string; nombre: string; rol: string } | null>(
+    {
+      id: 'owner-uuid',
+      email: 'dueno@canchero.pe',
+      nombre: 'Dueño Oficial',
+      rol: 'dueno',
+    },
+  );
 
   const mockSedes = [
     { id: 1, id_dueno: 1, nombre: 'Sede Principal Surco' },
@@ -127,25 +129,27 @@ describe('AdminFinanzas Component - Etapa 7 (Finanzas y Liquidación)', () => {
     const notice = vi.fn();
     component.notice.subscribe(notice);
     const root = fixture.nativeElement as HTMLElement;
-    const pending = Array.from(root.querySelectorAll<HTMLButtonElement>('button')).filter(button =>
-      /Consultar periodo|Revisar devolución|Solicitar liquidación/.test(button.textContent ?? '')
+    const pending = Array.from(root.querySelectorAll<HTMLButtonElement>('button')).filter(
+      (button) => /Revisar devolución|Solicitar liquidación/.test(button.textContent ?? ''),
     );
-    expect(pending).toHaveLength(3);
+    expect(pending).toHaveLength(2);
     for (const button of pending) {
       expect(button.disabled).toBe(true);
       button.click();
     }
     expect(component['reembolsoModalOpen']()).toBe(false);
     expect(notice).not.toHaveBeenCalled();
-    expect(root.querySelector<HTMLAnchorElement>('.config-link')?.getAttribute('href')).toBe('/admin/configuracion');
+    expect(root.querySelector<HTMLAnchorElement>('.config-link')?.getAttribute('href')).toBe(
+      '/admin/configuracion',
+    );
   });
 
   it('mantiene filtros reales y deshabilita exportación cuando no hay resultados', () => {
     component['buscarFacturables']('sin coincidencias');
     fixture.detectChanges();
     const root = fixture.nativeElement as HTMLElement;
-    const exportButton = Array.from(root.querySelectorAll<HTMLButtonElement>('button')).find(button =>
-      button.textContent?.includes('Exportar CSV')
+    const exportButton = Array.from(root.querySelectorAll<HTMLButtonElement>('button')).find(
+      (button) => button.textContent?.includes('Exportar CSV'),
     );
     expect(exportButton?.disabled).toBe(true);
     expect(component['facturablesFiltrados']()).toHaveLength(0);
@@ -295,5 +299,16 @@ describe('AdminFinanzas Component - Etapa 7 (Finanzas y Liquidación)', () => {
     const errorBanner = compiled.querySelector('.finanzas-error-banner');
     expect(errorBanner).toBeTruthy();
     expect(errorBanner?.textContent).toContain('Fallo de conexión a Supabase');
+  });
+  it('aplica un período inclusivo al reporte y rechaza rangos invertidos', () => {
+    component['fechaDesde'].set('2026-09-10');
+    component['fechaHasta'].set('2026-09-10');
+    component['consultarPeriodo']();
+    expect(component['facturables']()).toHaveLength(1);
+    expect(component['metricas']().ingresoBruto).toBe(100);
+    component['fechaDesde'].set('2026-09-12');
+    component['consultarPeriodo']();
+    expect(component['periodError']()).not.toBe('');
+    expect(component['metricas']().ingresoBruto).toBe(100);
   });
 });
