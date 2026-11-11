@@ -16,7 +16,7 @@ El pase usa un token criptográfico; la BD guarda solo su hash. El QR contiene e
 Migración aditiva: `supabase/migrations/20261111034030_mercadopago_checkout_accesos.sql`.
 Añade capacidad de acceso y tablas privadas de checkout, pagos, Webhooks, pases y movimientos. Mantiene RLS y revoca acceso directo de anon/authenticated. Solo los formatos fútbol conocidos reciben capacidad calculada; otros requieren configuración explícita. No ejecutar dos veces. No reconstruye el esquema anterior ni inserta reservas de ejemplo.
 
-## Configuración pendiente: obtener firma de Webhooks
+## Configuración de Webhooks
 
 1. Entra a Mercado Pago Developers → Tus integraciones → aplicación **Canchero**, conservando RYA-TECH aparte.
 2. Abre **Webhooks / Notificaciones Webhooks** y el entorno **Prueba**.
@@ -25,13 +25,13 @@ Añade capacidad de acceso y tablas privadas de checkout, pagos, Webhooks, pases
 4. Selecciona el evento **Pagos (Payments)** y guarda la configuración.
 5. En esa misma sección busca **Firma secreta / Secret signature**, normalmente con la opción de revelar o copiar. Esta no es el Access Token ni la Public Key.
 6. Guárdala como `MERCADOPAGO_WEBHOOK_SECRET` en `canchas-platform/.env.local`. No pegarla en el chat, Angular, Vercel ni Git.
-7. Para el servidor publicado, colocar las mismas variables privadas en Render → canchero-api → Environment. La URL no recibirá notificaciones correctamente hasta desplegar estos cambios. No se configuró ni desplegó el servidor remoto en esta entrega.
+7. Para el servidor publicado, colocar las mismas variables privadas en Render → canchero-api → Environment. La configuración del servidor fue guardada y desplegada el 11 de noviembre de 2026; todavía se debe comprobar una notificación firmada enviada por Mercado Pago.
 
 Referencia oficial: https://www.mercadopago.com.pe/developers/es/docs/checkout-pro-preferences/additional-content/notifications/webhooks
 
 Variables API (ver `.env.example`): `MERCADOPAGO_ENABLED`, `MERCADOPAGO_ACCESS_TOKEN`, `MERCADOPAGO_COLLECTOR_ID`, `MERCADOPAGO_WEBHOOK_SECRET`, `MERCADOPAGO_PASS_SECRET`, `MERCADOPAGO_PUBLIC_URL`, `MERCADOPAGO_WEBHOOK_URL`. El secreto de pase generado en `.env.local` debe mantenerse estable y respaldarse privadamente: cambiarlo invalida los QR emitidos.
 
-Por ahora `MERCADOPAGO_ENABLED=false`: no hay cobros ni reservas fingidas. Activarlo solo con la migración aplicada, firma configurada y API accesible por HTTPS. Para probar una API local con callbacks, se necesita un túnel HTTPS hacia el puerto real de esa API, y actualizar URL de Webhooks; no apuntar callbacks a localhost. APP_PUBLIC_URL de recuperación/Google no se modifica: Mercado Pago tiene su propia MERCADOPAGO_PUBLIC_URL.
+Desde el 11 de noviembre de 2026, Render tiene `MERCADOPAGO_ENABLED=true` con credenciales de prueba, firma y secreto de pases. La API pública informa `available=true` y `testMode=true`; esto no demuestra que un pago o Webhook completo haya sido aprobado. Para probar una API local con callbacks, se necesita un túnel HTTPS hacia el puerto real de esa API, y actualizar URL de Webhooks; no apuntar callbacks a localhost. APP_PUBLIC_URL de recuperación/Google no se modifica: Mercado Pago tiene su propia MERCADOPAGO_PUBLIC_URL.
 
 ## Prueba manual pendiente con el proveedor
 
@@ -43,16 +43,27 @@ Comprobar aprobado, pendiente/rechazado, retorno sin parámetros, Webhook repeti
 
 ## Límites actuales
 
-Implementación de prueba con una cuenta receptora de Canchero. No es marketplace, no reparte fondos a dueños, no certifica integración de producción ni concilia depósitos bancarios. El registro interno usa comisión cero hasta tener conciliación real; no representa una tarifa de Mercado Pago. Falta completar configuración y prueba real del proveedor antes de habilitar la pasarela. Ningún cambio de este trabajo fue publicado automáticamente.
+Implementación de prueba con una cuenta receptora de Canchero. No es marketplace, no reparte fondos a dueños, no certifica integración de producción ni concilia depósitos bancarios. El registro interno usa comisión cero hasta tener conciliación real; no representa una tarifa de Mercado Pago. Falta completar una compra de prueba y comprobar su notificación firmada antes de considerar verificado todo el flujo. La configuración de prueba y el código fueron publicados con autorización del usuario.
 
-## Verificaci�n automatizada
+## Verificación automatizada
 
-38 pruebas del checkout y 13 de la nueva integraci�n con PostgreSQL real temporal aprobadas. Typecheck y build Angular pasan (advertencia previa de tama�o inicial; lector jsQR CommonJS). Suite general API: 234 casos, 7 fallos y 17 errores en pruebas existentes de caja/roles/listados; sus reportes incluyen falta de asignacion_sede en fixtures H2 y un caso de permiso de cajero en PostgreSQL. No se declara verde la suite completa ni se considera certificada la integraci�n con el proveedor. A�n falta pago real de prueba y entrega de Webhooks firmada por Mercado Pago.
+38 pruebas del checkout y 13 de la nueva integración con PostgreSQL real temporal aprobadas. Typecheck y build Angular pasan (advertencia previa de tamaño inicial; lector jsQR CommonJS). Suite general API: 234 casos, 7 fallos y 17 errores en pruebas existentes de caja/roles/listados; sus reportes incluyen falta de asignacion_sede en fixtures H2 y un caso de permiso de cajero en PostgreSQL. No se declara verde la suite completa ni se considera certificada la integración con el proveedor. Aún falta pago real de prueba y entrega de Webhooks firmada por Mercado Pago.
 
-Arranque adicional de API comprobado en 8091 con Supabase: health UP, capabilities available=false/testMode=true y checkout sin sesi�n devuelve 401. Se detuvo la instancia temporal al terminar; la API habitual no se reinici�.
+Arranque adicional de API comprobado en 8091 con Supabase: health UP, capabilities available=false/testMode=true y checkout sin sesión devuelve 401. Se detuvo la instancia temporal al terminar; la API habitual no se reinició.
 
 ## Correccion local del reintento (11 de noviembre de 2026)
 
-Al volver desde Mercado Pago una pesta�a puede enviar otra clave de operacion. La API recupera la misma retencion activa solo cuando coinciden cuenta, cancha, fecha, horas y cupos; serializa la seleccion por cuenta y no crea otra reserva. Nunca recupera retenciones vencidas, reservas confirmadas ni retenciones de otra cuenta. El vencimiento original no se ampl�a.
+Al volver desde Mercado Pago una pestaña puede enviar otra clave de operacion. La API recupera la misma retencion activa solo cuando coinciden cuenta, cancha, fecha, horas y cupos; serializa la seleccion por cuenta y no crea otra reserva. Nunca recupera retenciones vencidas, reservas confirmadas ni retenciones de otra cuenta. El vencimiento original no se amplía.
 
-El controlador devuelve el motivo de ResponseStatusException en message. El checkout descarta t�tulos HTTP gen�ricos como Conflict y muestra una indicaci�n en espa�ol. Las pruebas usan PostgreSQL local desechable; no se inventan cobros ni se modifican reservas de usuarios para verificarlo. El resultado de pago sigue dependiendo de la verificaci�n del proveedor.
+El controlador devuelve el motivo de ResponseStatusException en message. El checkout descarta títulos HTTP genéricos como Conflict y muestra una indicación en español. Las pruebas usan PostgreSQL local desechable; no se inventan cobros ni se modifican reservas de usuarios para verificarlo. El resultado de pago sigue dependiendo de la verificación del proveedor.
+
+
+## Verificación del despliegue (11 de noviembre de 2026)
+
+Render ejecutaba el commit 3c74993, anterior a los cambios de comunidad y pagos. Se guardaron únicamente las siete variables MERCADOPAGO autorizadas, conservando el resto de la configuración, y se desplegó 54353757 (incluye ad129067 y 490046b6). No se colocaron secretos en Vercel ni Git.
+
+Verificado en la API pública: /health devuelve 200/UP; /api/community/profiles/search?q=alejandro devuelve 200 con dos resultados; un perfil público devuelve 200; /api/payments/mercadopago/capabilities devuelve available=true/testMode=true. Verificado en navegador: la búsqueda muestra ambas cuentas y abren el perfil propio y el de la otra cuenta.
+
+Verificación dirigida previa al despliegue: 16 pruebas de Mercado Pago con PostgreSQL temporal, 5 HTTP y 40 de checkout aprobadas; typecheck aprobado. No equivale a una ejecución completa de todas las pruebas del repositorio ni a una compra aprobada por Mercado Pago.
+
+Render está configurado para desplegar automáticamente después de pasar CI. Un push por sí solo no confirma que la nueva versión esté en vivo: comprobar el commit y el estado del despliegue. No se modificó esta condición.
