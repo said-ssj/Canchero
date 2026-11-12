@@ -100,6 +100,11 @@ export const routes: Routes = [
     children: [
       { path: '', redirectTo: 'sedes', pathMatch: 'full' },
       {
+        path: 'moderacion',
+        loadComponent: () =>
+          import('./features/admin/moderacion/moderacion').then((m) => m.Moderacion),
+      },
+      {
         path: 'accesos',
         loadComponent: () =>
           import('./features/admin/reservas/access-check').then((m) => m.AccessCheck),

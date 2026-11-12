@@ -32,6 +32,10 @@ describe('Mensajería privada', () => {
     const api = {
       list: vi.fn(() => of([conversation])),
       open: vi.fn(() => of(conversation)),
+      contacts: vi.fn(() => of([])),
+      accept: vi.fn(() =>
+        of({ ...conversation, following: true, incomingRequest: false, canSend: true }),
+      ),
       messages: vi.fn(() => of({ items: [message], hasMore: false })),
       read: vi.fn(() => of(undefined)),
       send: vi.fn(() => of({ ...message, authorId: 'me', text: 'Hola' })),
@@ -116,5 +120,40 @@ describe('Mensajería privada', () => {
     const { fixture, channel } = await setup();
     fixture.destroy();
     expect(channel.unsubscribe).toHaveBeenCalledOnce();
+  });
+  it('accepts an incoming request in place and displays the following state', async () => {
+    const { fixture, page, api } = await setup();
+    page.conversations.set([
+      { ...conversation, incomingRequest: true, canSend: false, handle: 'persona' },
+    ]);
+    await page.choose(conversation.id);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('El usuario @persona te envió un mensaje');
+    await page.accept();
+    fixture.detectChanges();
+    expect(api.accept).toHaveBeenCalledWith(conversation.id);
+    expect(page.selected()).toBe(conversation.id);
+    expect(page.conversation().following).toBe(true);
+    expect(fixture.nativeElement.textContent).toContain('Siguiendo');
+  });
+  it('does not send a second outgoing request and keeps blocked identities generic', async () => {
+    const { fixture, page, api } = await setup();
+    await page.choose(conversation.id);
+    page.conversations.set([{ ...conversation, canSend: false, outgoingRequest: true }]);
+    page.draft = 'Segundo mensaje';
+    await page.send();
+    expect(api.send).not.toHaveBeenCalled();
+    page.conversations.set([
+      {
+        ...conversation,
+        name: 'Usuario Canchero',
+        photo: null,
+        restrictedProfile: true,
+        canSend: false,
+      },
+    ]);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.chat-heading a.peer-name')).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('motivos de privacidad');
   });
 });

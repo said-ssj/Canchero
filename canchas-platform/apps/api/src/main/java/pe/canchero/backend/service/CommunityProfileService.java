@@ -36,8 +36,10 @@ public class CommunityProfileService {
             """, (rs,row)->new Owner(rs.getString(1),rs.getString(2),rs.getString(3)),venueId).stream().findFirst()
             .orElseThrow(()->new ResponseStatusException(HttpStatus.NOT_FOUND,"Dueño no encontrado"));
     }
+    public Owner venueOwner(int venueId,AuthUserDto viewer){Owner owner=venueOwner(venueId);return new CommunitySafetyService(jdbc).blocked(viewer==null?null:UUID.fromString(viewer.id()),UUID.fromString(owner.id()))?new Owner(owner.id(),"Usuario Canchero",null):owner;}
     public record Profile(String id, String name, String photo, String role, String biography, String whatsapp, String cover,
-            long followers, long following, long postCount, List<VenueItem> venues, long reviewCount, Double rating, List<ReviewItem> reviews,String handle) {
+            long followers, long following, long postCount, List<VenueItem> venues, long reviewCount, Double rating, List<ReviewItem> reviews,String handle,boolean restricted) {
+        public Profile(String id,String name,String photo,String role,String biography,String whatsapp,String cover,long followers,long following,long postCount,List<VenueItem> venues,long reviewCount,Double rating,List<ReviewItem> reviews,String handle){this(id,name,photo,role,biography,whatsapp,cover,followers,following,postCount,venues,reviewCount,rating,reviews,handle,false);}
         public Profile(String id,String name,String photo,String role,String biography,String whatsapp,String cover,long followers,long following,long postCount,List<VenueItem> venues,long reviewCount,Double rating,List<ReviewItem> reviews){this(id,name,photo,role,biography,whatsapp,cover,followers,following,postCount,venues,reviewCount,rating,reviews,null);}
     }
     private void requireSchema() {
@@ -49,7 +51,12 @@ public class CommunityProfileService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND,"Perfil no encontrado");
     }
     public Profile profile(UUID id) {
+        return profile(id,null);
+    }
+    public Profile profile(UUID id,AuthUserDto viewer) {
         requireSchema(); requireUser(id);
+        if(new CommunitySafetyService(jdbc).blocked(viewer==null?null:UUID.fromString(viewer.id()),id))
+            return new Profile(id.toString(),"Usuario Canchero",null,"","","",null,0,0,0,List.of(),0,null,List.of(),null,true);
         var base=jdbc.queryForMap("""
             select trim(concat_ws(' ',nullif(u.nombre,''),nullif(u.apellido,''))) as name,
                    p.foto, r.nombre as role, coalesce(pc.biografia,'') as bio,
@@ -87,7 +94,11 @@ public class CommunityProfileService {
     }
     private long count(String sql,UUID id) { return Objects.requireNonNull(jdbc.queryForObject(sql,Long.class,id)); }
     public PostPage posts(UUID id,int page) {
+        return posts(id,page,null);
+    }
+    public PostPage posts(UUID id,int page,AuthUserDto viewer) {
         requireSchema(); requireUser(id);
+        if(new CommunitySafetyService(jdbc).blocked(viewer==null?null:UUID.fromString(viewer.id()),id))return new PostPage(List.of(),false);
         if (page<0 || page>500) throw invalid("Página inválida");
         var items=jdbc.query("select id_publicacion,id_usuario,texto,fotos::text,creado_en from publicacion_perfil where id_usuario=? and estado='A' order by creado_en desc,id_publicacion desc limit 11 offset ?",
                 (rs,row)->new Post(rs.getString(1),rs.getString(2),rs.getString(3),photos(rs.getString(4)),rs.getObject(5,java.time.OffsetDateTime.class).toString()),id,page*10);
@@ -97,6 +108,7 @@ public class CommunityProfileService {
     @Transactional
     public Post publish(AuthUserDto user,String text,List<String> photos) {
         requireSchema(); UUID author=UUID.fromString(user.id()); requireUser(author);
+        new CommunitySafetyService(jdbc).requireWritable(author);
         String content=text==null?"":text.strip();
         if(photos!=null && photos.stream().anyMatch(Objects::isNull)) throw invalid("Fotos inválidas");
         var images=photos==null?List.<String>of():List.copyOf(photos);
@@ -133,6 +145,7 @@ public class CommunityProfileService {
     }
     public boolean following(AuthUserDto user,UUID target) {
         requireSchema(); requireUser(target);
+        if(new CommunitySafetyService(jdbc).blocked(UUID.fromString(user.id()),target))return false;
         return Boolean.TRUE.equals(jdbc.queryForObject("select exists(select 1 from seguimiento_perfil where id_seguidor=? and id_seguido=?)",Boolean.class,UUID.fromString(user.id()),target));
     }
     public List<MutualFollower> mutualFollowers(AuthUserDto user, UUID target) {
@@ -140,6 +153,7 @@ public class CommunityProfileService {
         UUID viewer;
         try { viewer = UUID.fromString(user.id()); } catch (Exception e) { return List.of(); }
         if (viewer.equals(target)) return List.of();
+        if(new CommunitySafetyService(jdbc).blocked(viewer,target))return List.of();
         return jdbc.query("""
             select u.id_usuario,
                    trim(concat_ws(' ', nullif(u.nombre,''), nullif(u.apellido,''))) as nombre,
@@ -153,10 +167,16 @@ public class CommunityProfileService {
             """, (rs, row) -> new MutualFollower(rs.getString(1), Objects.toString(rs.getString(2), "Usuario"), rs.getString(3)), target, viewer);
     }
     public List<ProfileSearchResult> searchProfiles(String query) {
+        return searchProfiles(query,null);
+    }
+    public List<ProfileSearchResult> searchProfiles(String query,AuthUserDto viewer) {
         if(query==null || query.strip().length()<2)return List.of();requireSchema();
         String term=java.text.Normalizer.normalize(query.strip(),java.text.Normalizer.Form.NFD).replaceAll("\\p{M}","").toLowerCase(Locale.ROOT).replaceFirst("^@","");
         String pattern="%"+term.replace("\\","\\\\").replace("%","\\%").replace("_","\\_")+"%";
-        return jdbc.query("""
+        boolean blockSchema=Boolean.TRUE.equals(jdbc.queryForObject("select to_regclass('public.chat_bloqueo') is not null",Boolean.class));
+        UUID viewerId=viewer==null?null:UUID.fromString(viewer.id());
+        String privacy=blockSchema?" and not exists(select 1 from chat_bloqueo b where (b.id_usuario=?::uuid and b.id_bloqueado=u.id_usuario) or (b.id_usuario=u.id_usuario and b.id_bloqueado=?::uuid)) ":"";
+        String sql="""
           select u.id_usuario,trim(concat_ws(' ',nullif(u.nombre,''),nullif(u.apellido,''))) as nombre,p.foto,
                  case when exists(select 1 from sede s where s.id_dueno=u.id_usuario and s.estado='A') or lower(r.nombre) in ('dueno','dueño','owner') then 'Dueño' else 'Jugador' end as rol,pc.identificador
           from usuario u left join rol r on r.id_rol=u.id_rol
@@ -164,14 +184,22 @@ public class CommunityProfileService {
           left join perfil_comunidad pc on pc.id_usuario=u.id_usuario
           where u.estado='A' and (p.id_usuario is not null or pc.id_usuario is not null)
             and (translate(lower(trim(concat_ws(' ',nullif(u.nombre,''),nullif(u.apellido,'')))), 'áéíóúüñÁÉÍÓÚÜÑ', 'aeiouunaeiouun') like ? or pc.identificador like ?)
-          order by nombre,u.id_usuario limit 50
-          """,(rs,n)->new ProfileSearchResult(rs.getString(1),rs.getString(2),rs.getString(3),rs.getString(4),rs.getString(5)),pattern,pattern);
+          """+privacy+" order by nombre,u.id_usuario limit 50";
+        Object[] params=blockSchema?new Object[]{pattern,pattern,viewerId,viewerId}:new Object[]{pattern,pattern};
+        return jdbc.query(sql,(rs,n)->new ProfileSearchResult(rs.getString(1),rs.getString(2),rs.getString(3),rs.getString(4),rs.getString(5)),params);
     }
 
-    public void follow(AuthUserDto user,UUID target,boolean follow) {
+    @Transactional public void follow(AuthUserDto user,UUID target,boolean follow) {
         requireSchema(); UUID source=UUID.fromString(user.id()); requireUser(source); requireUser(target);
+        String pair=source.toString().compareTo(target.toString())<0?source+":"+target:target+":"+source;
+        jdbc.query("select pg_advisory_xact_lock(hashtextextended(?,0))",(r,n)->true,pair);
+        if(new CommunitySafetyService(jdbc).blocked(source,target))throw new ResponseStatusException(HttpStatus.FORBIDDEN,"Este perfil no está disponible");
         if(source.equals(target)) throw invalid("No puedes seguirte a ti mismo");
-        if(follow) jdbc.update("insert into seguimiento_perfil(id_seguidor,id_seguido) values(?,?) on conflict do nothing",source,target);
+        if(follow) {
+            jdbc.update("insert into seguimiento_perfil(id_seguidor,id_seguido) values(?,?) on conflict do nothing",source,target);
+            if(Boolean.TRUE.equals(jdbc.queryForObject("select exists(select 1 from information_schema.columns where table_schema='public' and table_name='chat_conversacion' and column_name='aceptada_en')",Boolean.class)))
+                jdbc.update("update chat_conversacion set aceptada_en=coalesce(aceptada_en,now()) where iniciador=? and (usuario_a=? or usuario_b=?)",target,source,source);
+        }
         else jdbc.update("delete from seguimiento_perfil where id_seguidor=? and id_seguido=?",source,target);
     }
     private static ResponseStatusException invalid(String message) { return new ResponseStatusException(HttpStatus.BAD_REQUEST,message); }

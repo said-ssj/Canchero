@@ -12,6 +12,22 @@ export interface Conversation {
   unread: number;
   blockedByMe: boolean;
   canSend: boolean;
+  handle?: string | null;
+  following?: boolean;
+  incomingRequest?: boolean;
+  outgoingRequest?: boolean;
+  restrictedProfile?: boolean;
+}
+export interface ChatContact {
+  id: string;
+  name: string;
+  photo: string | null;
+  handle: string | null;
+}
+export interface CommunityRestriction {
+  restricted: boolean;
+  underReview: boolean;
+  until: string | null;
 }
 export interface ChatMessage {
   id: string;
@@ -35,6 +51,15 @@ export class ChatService {
   open(peerId: string) {
     return this.http.post<Conversation>(`${this.base}/conversations`, { peerId });
   }
+  contacts(q = '') {
+    return this.http.get<ChatContact[]>(`${this.base}/contacts`, { params: { q } });
+  }
+  accept(id: string) {
+    return this.http.post<Conversation>(`${this.base}/conversations/${id}/accept`, {});
+  }
+  status() {
+    return this.http.get<CommunityRestriction>(`${environment.apiUrl}/community/moderation/status`);
+  }
   messages(id: string, before?: string, after?: string) {
     const params: Record<string, string> = {};
     if (before) params['before'] = before;
@@ -57,7 +82,11 @@ export class ChatService {
   relationship(peerId: string) {
     return this.http.get<{ blockedByMe: boolean }>(`${this.base}/users/${peerId}/relationship`);
   }
-  report(id: string, reason: string) {
-    return this.http.post<void>(`${this.base}/conversations/${id}/reports`, { reason });
+  report(id: string, reason: string, category = 'otros', block = false) {
+    return this.http.post<void>(`${this.base}/conversations/${id}/reports`, {
+      reason,
+      category,
+      block,
+    });
   }
 }

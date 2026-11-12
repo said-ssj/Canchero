@@ -12,17 +12,24 @@
       <span>Cargando perfil…</span>
     </section>
   }
-  @if (isBlocked()) {
+  @if (isBlocked() || profile()?.restricted) {
     <section class="panel empty-profile-panel blocked-panel" role="alert">
       <div class="empty-camera-circle blocked-circle">
-        <span class="material-symbols-outlined empty-icon" aria-hidden="true">block</span>
+        <span class="material-symbols-outlined empty-icon" aria-hidden="true">person</span>
       </div>
-      <h2>Perfil no disponible</h2>
-      <p>Este perfil no está disponible o la cuenta ha sido restringida.</p>
+      <h2>Usuario Canchero</h2>
+      <p>Este perfil no está disponible por motivos de privacidad.</p>
       <div style="margin-top: 16px; display: flex; gap: 10px; justify-content: center">
-        <button mat-stroked-button type="button" class="btn outline" (click)="desbloquearUsuario()">
-          Desbloquear usuario
-        </button>
+        @if (isBlocked()) {
+          <button
+            mat-stroked-button
+            type="button"
+            class="btn outline"
+            (click)="desbloquearUsuario()"
+          >
+            Desbloquear usuario
+          </button>
+        }
         <a mat-flat-button routerLink="/" class="btn primary">Volver al inicio</a>
       </div>
     </section>

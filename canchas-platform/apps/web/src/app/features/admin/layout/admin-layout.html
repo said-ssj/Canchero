@@ -283,6 +283,15 @@
         @if (isSuperAdmin()) {
           <a
             class="sidebar-nav-item"
+            routerLink="/admin/moderacion"
+            routerLinkActive="active"
+            (click)="closeMobileSidebar()"
+            ><span class="material-symbols-outlined icon sidebar-nav-icon" aria-hidden="true"
+              >policy</span
+            ><span>Revisión de reportes</span></a
+          >
+          <a
+            class="sidebar-nav-item"
             routerLink="/admin/usuarios"
             routerLinkActive="active"
             (click)="closeMobileSidebar()"

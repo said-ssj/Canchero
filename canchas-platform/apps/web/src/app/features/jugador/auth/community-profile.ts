@@ -493,6 +493,7 @@ export class CommunityProfilePage {
       const profile = await firstValueFrom(this.api.profile(id));
       if (request !== this.request) return;
       this.profile.set(profile);
+      if (profile.restricted) return;
       if (this.ownsProfile() && typeof this.db.fetchMyBookings === 'function') {
         void this.db
           .fetchMyBookings()

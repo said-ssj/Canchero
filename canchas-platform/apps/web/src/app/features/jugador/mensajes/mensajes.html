@@ -20,7 +20,16 @@
       @if (busy()) {
         <p class="empty">Cargando conversaciones…</p>
       }
-      @for (c of conversations(); track c.id) {
+      <form class="contact-search" (ngSubmit)="searchContacts()">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic"
+          ><mat-label>Buscar en mis seguidos y chats</mat-label
+          ><input matInput name="contact" [(ngModel)]="searchText" maxlength="80"
+        /></mat-form-field>
+        <button class="icon-action" type="submit" aria-label="Buscar contactos">
+          <span class="material-symbols-outlined">search</span>
+        </button>
+      </form>
+      @for (c of visibleConversations(); track c.id) {
         <button
           class="conversation-row"
           [class.selected]="selected() === c.id"
@@ -48,8 +57,35 @@
           <div class="empty">
             <span class="material-symbols-outlined">chat_bubble_outline</span>
             <h3>Aún no tienes conversaciones</h3>
-            <p>Abre un perfil y pulsa Mensaje para comenzar.</p>
+            <p>Sigue a una persona y búscala aquí para enviarle una solicitud.</p>
           </div>
+        }
+      }
+      <h3 class="contacts-label">Personas que sigues</h3>
+      @if (contactsLoading()) {
+        <p class="empty" role="status">Buscando…</p>
+      }
+      @if (contactsError()) {
+        <p class="feedback" role="alert">{{ contactsError() }}</p>
+      }
+      @for (contact of contacts(); track contact.id) {
+        <button type="button" class="conversation-row" (click)="openContact(contact)">
+          <span class="avatar"
+            >{{ initials(contact.name) }}
+            @if (contact.photo) {
+              <img [src]="contact.photo" alt="" (error)="imageError($event)" />
+            }
+          </span>
+          <span class="row-copy"
+            ><strong>{{ contact.name }}</strong
+            ><span>{{
+              contact.handle ? '@' + contact.handle : 'Sin identificador público'
+            }}</span></span
+          >
+        </button>
+      } @empty {
+        @if (!contactsLoading() && !contactsError()) {
+          <p class="empty">No hay personas seguidas con ese criterio.</p>
         }
       }
     </aside>
@@ -64,21 +100,55 @@
           >
             <span class="material-symbols-outlined">arrow_back</span>
           </button>
-          <a [routerLink]="['/perfiles', c.peerId]" class="peer-name">{{ c.name }}</a>
-          <div class="chat-actions">
-            <button mat-button [disabled]="blocking()" (click)="toggleBlock()">
-              {{ c.blockedByMe ? 'Desbloquear' : 'Bloquear' }}
-            </button>
-            <button
-              class="icon-action"
-              (click)="report()"
-              aria-label="Reportar conversación"
-              title="Reportar conversación"
+          @if (!c.restrictedProfile) {
+            <a [routerLink]="['/perfiles', c.peerId]" class="peer-name">{{ c.name }}</a>
+          } @else {
+            <span class="peer-name"
+              ><span class="material-symbols-outlined" aria-hidden="true">person</span> Usuario
+              Canchero</span
             >
-              <span class="material-symbols-outlined">flag</span>
-            </button>
+          }
+          @if (c.following) {
+            <span class="following-label">Siguiendo</span>
+          }
+          <div class="chat-actions">
+            @if (!c.restrictedProfile || c.blockedByMe) {
+              <button
+                class="icon-action"
+                [matMenuTriggerFor]="chatMenu"
+                aria-label="Opciones de conversación"
+              >
+                <span class="material-symbols-outlined">more_horiz</span>
+              </button>
+              <mat-menu #chatMenu="matMenu"
+                ><button mat-menu-item [disabled]="blocking()" (click)="toggleBlock()">
+                  {{ c.blockedByMe ? 'Desbloquear' : 'Bloquear' }}</button
+                ><button mat-menu-item (click)="report()">Bloquear y reportar</button></mat-menu
+              >
+            }
           </div>
         </header>
+        @if (c.incomingRequest) {
+          <section class="request-notice" aria-label="Solicitud de mensaje">
+            <p>
+              {{ c.handle ? 'El usuario @' + c.handle : c.name }} te envió un mensaje, pero no
+              pertenece a tu lista de seguidos.
+            </p>
+            <div class="request-actions">
+              <button mat-flat-button [disabled]="blocking()" (click)="accept()">Seguir</button
+              ><button mat-stroked-button [disabled]="blocking()" (click)="toggleBlock()">
+                Bloquear</button
+              ><button mat-stroked-button [disabled]="blocking()" (click)="report()">
+                Bloquear y reportar
+              </button>
+            </div>
+          </section>
+        }
+        @if (c.outgoingRequest) {
+          <p class="notice">
+            Puedes enviar un solo mensaje hasta que esta persona acepte siguiéndote.
+          </p>
+        }
         <div
           #history
           class="history"
@@ -113,7 +183,13 @@
             {{
               c.blockedByMe
                 ? 'Bloqueaste a esta persona. Puedes conservar el historial.'
-                : 'Esta conversación no permite nuevos mensajes.'
+                : c.restrictedProfile
+                  ? 'Esta conversación no está disponible por motivos de privacidad.'
+                  : c.outgoingRequest
+                    ? 'Solicitud enviada. Espera a que sea aceptada.'
+                    : c.incomingRequest
+                      ? 'Sigue a esta persona para aceptar y responder.'
+                      : 'Esta conversación no permite nuevos mensajes.'
             }}
           </p>
         }

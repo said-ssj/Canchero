@@ -17,9 +17,10 @@ import { MAT_RIPPLE_GLOBAL_OPTIONS } from '@angular/material/core';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatMenuModule } from '@angular/material/menu';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from '@core/auth/auth.service';
-import { ChatService, ChatMessage, Conversation } from '@core/services/chat.service';
+import { ChatService, ChatMessage, Conversation, ChatContact } from '@core/services/chat.service';
 import { RealtimeAuthService } from '@core/supabase/realtime-auth.service';
 import { ChatReportDialog } from './report-dialog';
 
@@ -34,6 +35,7 @@ import { ChatReportDialog } from './report-dialog';
     MatFormFieldModule,
     MatInputModule,
     MatDialogModule,
+    MatMenuModule,
   ],
   templateUrl: './mensajes.html',
   styleUrl: './mensajes.css',
@@ -63,6 +65,17 @@ export class Mensajes implements OnInit {
   protected readonly live = signal(false);
   protected readonly blocking = signal(false);
   protected draft = '';
+  protected searchText = '';
+  protected readonly contacts = signal<ChatContact[]>([]);
+  protected readonly contactsLoading = signal(false);
+  protected readonly contactsError = signal('');
+  private contactRequest = 0;
+  protected readonly visibleConversations = computed(() =>
+    this.conversations().filter((c) =>
+      `${c.name} ${c.handle || ''}`.toLowerCase().includes(this.searchTextSignal()),
+    ),
+  );
+  private readonly searchTextSignal = signal('');
   private retry?: { id: string; text: string; requestId: string };
   private generation = 0;
   private dead = false;
@@ -107,6 +120,7 @@ export class Mensajes implements OnInit {
     }
     this.currentIdentity = this.auth.user()!.id;
     await this.refresh();
+    await this.searchContacts();
     if (this.dead) return;
     const peer = this.route.snapshot.queryParamMap.get('usuario');
     if (peer) {
@@ -309,24 +323,75 @@ export class Mensajes implements OnInit {
     try {
       await firstValueFrom(this.api.block(conversation.peerId, !conversation.blockedByMe));
       await this.refresh();
+      await this.searchContacts();
     } catch (e) {
       this.actionError.set(this.reason(e, 'No se pudo actualizar el bloqueo.'));
     } finally {
       this.blocking.set(false);
     }
   }
-  protected async report() {
+  protected async report(block = true) {
     const id = this.selected();
     if (!id) return;
+    if (block && !this.conversation()?.blockedByMe) {
+      await this.toggleBlock();
+      if (!this.conversation()?.blockedByMe) return;
+    }
     const reason = await firstValueFrom(
       this.dialogs.open(ChatReportDialog, { width: '420px', maxWidth: '95vw' }).afterClosed(),
     );
     if (!reason) return;
     try {
-      await firstValueFrom(this.api.report(id, reason));
-      this.notice.set('Reporte guardado para revisión.');
+      await firstValueFrom(this.api.report(id, reason.details, reason.category, block));
+      this.notice.set('Reporte registrado. Una denuncia repetida no suma votos adicionales.');
     } catch (e) {
       this.actionError.set(this.reason(e, 'No se pudo guardar el reporte.'));
+    }
+  }
+  protected async searchContacts() {
+    const request = ++this.contactRequest;
+    this.searchTextSignal.set(this.searchText.toLowerCase().trim().replace(/^@/, ''));
+    this.contactsLoading.set(true);
+    this.contactsError.set('');
+    try {
+      const contacts = await firstValueFrom(
+        this.api.contacts(this.searchText.trim().replace(/^@/, '')),
+      );
+      if (!this.dead && request === this.contactRequest) this.contacts.set(contacts);
+    } catch {
+      if (!this.dead && request === this.contactRequest) {
+        this.contacts.set([]);
+        this.contactsError.set('No se pudieron cargar tus seguidos.');
+      }
+    } finally {
+      if (!this.dead && request === this.contactRequest) this.contactsLoading.set(false);
+    }
+  }
+  protected async openContact(contact: ChatContact) {
+    this.error.set('');
+    try {
+      const c = await firstValueFrom(this.api.open(contact.id));
+      if (this.dead) return;
+      this.conversations.update((rows) => [c, ...rows.filter((r) => r.id !== c.id)]);
+      await this.choose(c.id);
+    } catch (e) {
+      this.error.set(this.reason(e, 'No se pudo abrir la conversación.'));
+    }
+  }
+  protected async accept() {
+    const c = this.conversation();
+    if (!c || this.blocking()) return;
+    this.blocking.set(true);
+    this.actionError.set('');
+    try {
+      const updated = await firstValueFrom(this.api.accept(c.id));
+      if (this.dead) return;
+      this.conversations.update((rows) => rows.map((r) => (r.id === updated.id ? updated : r)));
+      this.notice.set('Ahora sigues a esta persona. Ya pueden conversar.');
+    } catch (e) {
+      this.actionError.set(this.reason(e, 'No se pudo aceptar la solicitud.'));
+    } finally {
+      this.blocking.set(false);
     }
   }
   private scrollBottom() {

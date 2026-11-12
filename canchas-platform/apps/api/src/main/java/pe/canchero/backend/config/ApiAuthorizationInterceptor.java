@@ -35,6 +35,9 @@ public class ApiAuthorizationInterceptor implements HandlerInterceptor {
 
         String path = request.getRequestURI();
         if (!path.startsWith("/api/") || isPublicEndpoint(path, method)) {
+            // Los perfiles públicos también respetan bloqueos cuando hay una sesión identificada.
+            if(path.startsWith("/api/community/") && request.getHeader("Authorization")!=null)
+                request.setAttribute("auth.user",currentUser(request));
             return true;
         }
 

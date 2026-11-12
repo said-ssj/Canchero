@@ -52,6 +52,7 @@ export interface CommunitySettings {
 }
 
 export interface CommunityProfile extends CommunitySettings {
+  restricted?: boolean;
   id: string;
   name: string;
   photo: string | null;

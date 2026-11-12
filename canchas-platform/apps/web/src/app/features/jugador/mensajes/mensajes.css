@@ -56,6 +56,43 @@ h3 {
   font-size: 11px;
   color: var(--color-ink-600);
 }
+.contact-search {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 12px;
+}
+.contact-search mat-form-field {
+  min-width: 0;
+  flex: 1;
+}
+.contacts-label {
+  padding: 12px;
+  margin: 0;
+  border-top: 1px solid var(--color-border);
+  color: var(--color-ink-600);
+  font-size: 12px;
+}
+.request-notice {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-brand-green) 7%, var(--color-surface));
+  font-size: 13px;
+  flex-shrink: 0;
+}
+.request-notice p {
+  margin: 0 0 10px;
+  overflow-wrap: anywhere;
+}
+.request-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.following-label {
+  font-size: 11px;
+  color: var(--color-brand-green);
+}
 .conversation-row {
   display: flex;
   align-items: center;

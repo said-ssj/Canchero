@@ -39,4 +39,14 @@ class CommunityProfileHttpTest {
       .andExpect(status().isCreated()).andExpect(jsonPath("$.authorId").value(id.toString()));
     verify(service).publish(eq(user),eq("Mi partido"),eq(List.of()));
   }
+  @Test void publicProfileSearchAndFeedReceiveTheOptionalAuthenticatedViewer() throws Exception {
+    String bearer="Bearer "+tokens.issue(id,true);
+    when(service.profile(id,user)).thenReturn(new CommunityProfileService.Profile(id.toString(),"Usuario Canchero",null,"","","",null,0,0,0,List.of(),0,null,List.of(),null,true));
+    when(service.posts(id,0,user)).thenReturn(new CommunityProfileService.PostPage(List.of(),false));
+    when(service.searchProfiles("persona",user)).thenReturn(List.of());
+    mvc.perform(get("/api/community/profiles/"+id).header("Authorization",bearer)).andExpect(status().isOk()).andExpect(jsonPath("$.restricted").value(true)).andExpect(header().string("Cache-Control","private, no-store"));
+    mvc.perform(get("/api/community/profiles/"+id+"/posts").header("Authorization",bearer)).andExpect(status().isOk()).andExpect(jsonPath("$.items").isEmpty());
+    mvc.perform(get("/api/community/profiles/search?q=persona").header("Authorization",bearer)).andExpect(status().isOk());
+    verify(service).searchProfiles("persona",user);verify(service,never()).profile(id);verify(service,never()).posts(id,0);
+  }
 }
