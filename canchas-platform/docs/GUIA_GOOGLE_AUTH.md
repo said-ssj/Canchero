@@ -22,7 +22,18 @@ una vez para asociar Google a su mismo perfil.
    en la API y en el build de Angular. La API también necesita `SUPABASE_URL` y
    `SUPABASE_ANON_KEY` públicas del mismo proyecto. En local, esas variables se
    pueden colocar en `.env.local`. En Vercel se requiere un nuevo build.
-5. Probar alta de jugador, vinculación con contraseña, cuenta inactiva,
+5. Para que la ventana de Google muestre el dominio de Canchero y no
+   `<proyecto>.supabase.co`, configurar también `GOOGLE_CLIENT_ID` (el ID del
+   cliente OAuth web, es público) en el build de Angular (`.env.local` y Vercel).
+   Con él, el login usa el botón oficial de Google Identity Services y entrega
+   el token a Supabase con `signInWithIdToken`; sin él, se mantiene la
+   redirección por Supabase. Requisitos:
+   - Google Cloud → cliente OAuth web → **Authorized JavaScript origins**:
+     `https://canchero-iota.vercel.app`, `http://localhost:4200` y `http://localhost`.
+   - Supabase → **Providers → Google → Client IDs**: incluir ese mismo ID.
+   - Para que aparezca el nombre "Canchero" en vez del dominio, completar
+     **Google Auth Platform → Branding** y verificar la marca (pide un dominio propio).
+6. Probar alta de jugador, vinculación con contraseña, cuenta inactiva,
    cancelación de Google, cierre de sesión y recarga. Verificar que el dueño
    conserva el mismo perfil y el alcance sobre sus sedes.
 

@@ -492,3 +492,10 @@
   font-size: 22px;
   line-height: 1;
 }
+
+/* Botón oficial de Google Identity Services, centrado como el resto de acciones. */
+.google-gis:not([hidden]) {
+  display: flex;
+  justify-content: center;
+  min-height: 44px;
+}

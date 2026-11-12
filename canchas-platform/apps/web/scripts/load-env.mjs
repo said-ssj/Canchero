@@ -131,6 +131,8 @@ const generated = {
   appEnvironment: value(process.env.APP_ENVIRONMENT, fileValues.APP_ENVIRONMENT) || (cloudBuild ? 'production' : 'development'),
   appRelease: value(process.env.APP_RELEASE, process.env.VERCEL_GIT_COMMIT_SHA, fileValues.APP_RELEASE) || '',
   googleAuthEnabled: value(process.env.GOOGLE_AUTH_ENABLED, fileValues.GOOGLE_AUTH_ENABLED) === 'true',
+  // ID de cliente OAuth web (público): activa el botón de Google Identity Services.
+  googleClientId: value(process.env.GOOGLE_CLIENT_ID, fileValues.GOOGLE_CLIENT_ID) || '',
   url: supabaseUrl.replace(/\/+$/, ''),
   anonKey,
   googleMapsApiKey: googleMapsApiKey || undefined,

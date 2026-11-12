@@ -86,16 +86,7 @@ export class GoogleCallback {
           throw new Error(error?.message || 'No se pudo intercambiar el código por una sesión');
         }
         token = data.session.access_token;
-        const meta = data.session.user?.user_metadata;
-        const photo = meta?.['avatar_url'] || meta?.['picture'] || null;
-        if (photo && typeof localStorage !== 'undefined') {
-          try {
-            localStorage.setItem('canchero_oauth_avatar', photo);
-            if (data.session.user?.id) {
-              localStorage.setItem(`canchero_user_avatar_${data.session.user.id}`, photo);
-            }
-          } catch {}
-        }
+        this.rememberAvatar(data.session.user);
       } else {
         // Fallback: verificar fragmento hash (#access_token=... o #error=...)
         const hash = window.location.hash.startsWith('#')
@@ -111,7 +102,13 @@ export class GoogleCallback {
         if (hashToken) {
           token = hashToken;
         } else {
-          throw new Error('No se recibió código de autorización ni token de Google');
+          // Botón de Google Identity Services: el login ya dejó la sesión de Supabase guardada.
+          const { data } = await googleOAuthClient().auth.getSession();
+          if (!data.session) {
+            throw new Error('No se recibió código de autorización ni token de Google');
+          }
+          token = data.session.access_token;
+          this.rememberAvatar(data.session.user);
         }
       }
 
@@ -127,6 +124,16 @@ export class GoogleCallback {
         'No se completó el acceso con Google. Vuelve al inicio de sesión e inténtalo de nuevo.',
       );
     }
+  }
+
+  private rememberAvatar(user: { id?: string; user_metadata?: Record<string, any> } | null): void {
+    const meta = user?.user_metadata;
+    const photo = meta?.['avatar_url'] || meta?.['picture'] || null;
+    if (!photo || typeof localStorage === 'undefined') return;
+    try {
+      localStorage.setItem('canchero_oauth_avatar', photo);
+      if (user?.id) localStorage.setItem(`canchero_user_avatar_${user.id}`, photo);
+    } catch {}
   }
 
   protected confirm(event: Event, field: HTMLInputElement, confirmation: HTMLInputElement): void {
