@@ -1,7 +1,7 @@
-import { MercadoPagoApi } from '../../../core/payments/mercadopago-api';
+import { MercadoPagoApi, PaymentState } from '../../../core/payments/mercadopago-api';
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
@@ -86,6 +86,10 @@ export class Checkout {
   private readonly auth = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
   private readonly mp = inject(MercadoPagoApi);
+  private readonly router = inject(Router);
+  protected readonly resumedPayment = signal<PaymentState | null>(null);
+  protected readonly restoringPayment = signal(false);
+  protected readonly resumeError = signal('');
   protected readonly paymentReady = signal(false);
   protected readonly paymentConfigChecked = signal(false);
   protected readonly accessSlots = signal(1);
@@ -261,6 +265,8 @@ export class Checkout {
         this.availabilityError.set(null);
       }
       this.queryCourtId.set(cId);
+      const resume = params.get('resume');
+      if (resume) void this.restorePayment(resume);
       if (cId) {
         void this.loadWeekAvailability(cId, this.weekOffset());
       }
@@ -270,6 +276,10 @@ export class Checkout {
       const user = this.currentUser();
       const userId = user?.id ?? null;
       if (this.lastSessionUserId !== undefined && this.lastSessionUserId !== userId) {
+        if (this.resumedPayment()) {
+          this.resumedPayment.set(null);
+          this.selectedSlots.set([]);
+        }
         this.confirmError.set('');
         this.showSuccess.set(false);
       }
@@ -279,6 +289,94 @@ export class Checkout {
         list.map((p) => (p.isCaptain ? { ...p, name: captainName } : p)),
       );
     });
+  }
+
+  private async restorePayment(id: string): Promise<void> {
+    this.restoringPayment.set(true);
+    this.resumeError.set('');
+    try {
+      await this.auth.ready;
+      const ownerId = this.currentUser()?.id;
+      if (!/^[0-9a-f-]{36}$/i.test(id)) throw new Error('Operación inválida.');
+      const held = await this.mp.state(id);
+      if (ownerId !== this.currentUser()?.id) return;
+      if (!held.canResume || held.estado !== 'pendiente') {
+        await this.router.navigate(['/pago/resultado'], {
+          queryParams: { checkout: id },
+          replaceUrl: true,
+        });
+        return;
+      }
+      this.queryCourtId.set(held.courtId);
+      this.resumedPayment.set(held);
+      this.accessSlots.set(held.cupos);
+      const date = new Date(held.fecha + 'T12:00:00');
+      const today = new Date(getLimaDate() + 'T12:00:00');
+      this.weekOffset.set(
+        Math.max(
+          0,
+          Math.round(
+            (this.getMondayOfWeek(date).getTime() - this.getMondayOfWeek(today).getTime()) /
+              604800000,
+          ),
+        ),
+      );
+      const label = new Intl.DateTimeFormat('es-PE', {
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short',
+      }).format(date);
+      const court = this.resolvedCourt();
+      this.selectedSlots.set(
+        held.hours.map((hour) => ({
+          id: `${held.fecha}_${hour}`,
+          dateStr: held.fecha,
+          dayDisplay: label,
+          hour,
+          time: `${this.pad2(hour)}:00 - ${this.pad2(hour + 1)}:00`,
+          price: court
+            ? this.db.getCourtSlotAvailability(court, held.fecha, hour).price
+            : held.monto / held.hours.length,
+        })),
+      );
+      this.serverQuote.set(null);
+      this.activePaso.set(2);
+      this.reservationSection.set(3);
+      void this.loadWeekAvailability(held.courtId, this.weekOffset());
+      try {
+        const draft = JSON.parse(sessionStorage.getItem(`mp-convocados:${id}`) || 'null');
+        if (draft?.userId === this.currentUser()?.id && Array.isArray(draft.players))
+          this.players.update((current) => [
+            ...current.filter((p) => p.isCaptain),
+            ...draft.players
+              .filter((p: Player) => !p.isCaptain && typeof p.name === 'string')
+              .slice(0, 99),
+          ]);
+      } catch {
+        /* Solo borrador de convocados; la reserva siempre procede de la API. */
+      }
+      this.scrollToCheckout();
+    } catch {
+      const message =
+        'No se pudo recuperar tu reserva. Inicia sesión con la misma cuenta y reintenta.';
+      this.confirmError.set(message);
+      this.resumeError.set(message);
+    } finally {
+      this.restoringPayment.set(false);
+    }
+  }
+
+  private matchesHeldSelection(): boolean {
+    const held = this.resumedPayment();
+    const slots = this.selectedSlots();
+    return (
+      !!held &&
+      held.courtId === this.queryCourtId() &&
+      held.cupos === this.accessSlots() &&
+      new Date(held.expiresAt).getTime() > Date.now() &&
+      slots.length === held.hours.length &&
+      slots.every((slot) => slot.dateStr === held.fecha && held.hours.includes(slot.hour))
+    );
   }
 
   protected readonly selectedComplejo = computed<Complejo>(() => {
@@ -327,6 +425,8 @@ export class Checkout {
 
   protected readonly bookingBlock = computed<BookingBlock>(() => {
     const localBlock = buildBookingBlock(this.selectedSlots(), this.nightStartHour());
+    if (localBlock.isValid && this.matchesHeldSelection())
+      return { ...localBlock, subtotal: this.resumedPayment()!.monto };
     const srv = this.serverQuote();
     if (
       localBlock.isValid &&
@@ -727,6 +827,10 @@ export class Checkout {
 
   private async syncServerQuote(): Promise<void> {
     const seq = ++this.quoteSeq;
+    if (this.matchesHeldSelection()) {
+      this.serverQuote.set(null);
+      return;
+    }
     const court = this.resolvedCourt();
     const localBlock = buildBookingBlock(this.selectedSlots(), this.nightStartHour());
     if (!court || !localBlock.isValid || localBlock.durationHours === 0 || !localBlock.dateStr) {
@@ -764,6 +868,7 @@ export class Checkout {
   }
 
   protected reprice(): void {
+    if (this.matchesHeldSelection()) return;
     const court = this.resolvedCourt();
     if (!court) return;
     this.selectedSlots.update((slots) => {
@@ -842,7 +947,8 @@ export class Checkout {
       Number.isInteger(this.accessSlots()) &&
       this.accessSlots() > 0 &&
       this.accessSlots() <= 100 &&
-      !this.submitting()
+      !this.submitting() &&
+      !this.restoringPayment()
     );
   });
 
@@ -917,6 +1023,14 @@ export class Checkout {
     this.submitting.set(true);
     this.confirmError.set('');
     try {
+      const held = this.resumedPayment();
+      if (held && this.matchesHeldSelection()) {
+        const verified = await this.mp.state(held.id);
+        if (!verified.canResume) {
+          await this.router.navigate(['/pago/resultado'], { queryParams: { checkout: held.id } });
+          return;
+        }
+      }
       const result = await this.mp.start({
         courtId: String(court.id),
         fecha: dateStr,
@@ -924,6 +1038,14 @@ export class Checkout {
         cupos: this.accessSlots(),
         idempotencyKey,
       });
+      try {
+        sessionStorage.setItem(
+          `mp-convocados:${result.id}`,
+          JSON.stringify({ userId: user?.id, players: this.players().filter((p) => !p.isCaptain) }),
+        );
+      } catch {
+        /* No impedir el pago si el navegador bloquea el borrador local. */
+      }
       this.mp.open(result.checkoutUrl);
     } catch (err: any) {
       const status = err?.status;

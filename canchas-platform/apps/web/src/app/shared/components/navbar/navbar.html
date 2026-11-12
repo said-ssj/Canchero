@@ -59,6 +59,14 @@
 
       <app-theme-toggle />
       @if (user(); as u) {
+        <a
+          routerLink="/mensajes"
+          class="nav-message-icon"
+          aria-label="Abrir mensajes"
+          title="Mensajes"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">chat_bubble_outline</span>
+        </a>
         <div class="user-profile-menu-wrapper">
           <button
             mat-icon-button

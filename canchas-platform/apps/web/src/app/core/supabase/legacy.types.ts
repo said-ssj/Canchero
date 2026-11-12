@@ -22,6 +22,7 @@ export interface Reserva {
   adelanto?: number;
   saldo?: number;
   estado_real?: 'A' | 'I';
+  payment_method?: string | null;
   feccre?: string;
   fecmod?: string | null;
   usucre?: string;

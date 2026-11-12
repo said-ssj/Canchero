@@ -20,7 +20,9 @@ public class MercadoPagoService {
     public record StartRequest(String courtId,String fecha,List<Integer> hours,int cupos,String idempotencyKey) {}
     public record StartResponse(UUID id,String checkoutUrl,String expiresAt,boolean testMode) {}
     public record State(UUID id,int reservaId,String estado,BigDecimal monto,String cancha,String sede,
-                        String fecha,String horario,int cupos,int ingresosUtilizados,String passToken,String expiresAt) {}
+                        String fecha,String horario,int cupos,int ingresosUtilizados,String passToken,String expiresAt,
+                        String courtId,List<Integer> hours,String paymentStatus,boolean canResume,
+                        String direccion,String codigoReserva,String estadoPase,String publicPassUrl,boolean testMode) {}
     private final JdbcTemplate jdbc;
     private final BookingService bookings;
     private final MercadoPagoClient mp;
@@ -126,14 +128,34 @@ public class MercadoPagoService {
     public State state(UUID id,AuthUserDto user){
         requireReady();requireOwner(id,user);expire();
         var x=jdbc.queryForMap("""
-            select x.*,c.nombre_numero as cancha,s.nombre as sede,r.fecha_reserva,r.hora_inicio,r.hora_fin,r.estado as reserva_estado,
+            select x.*,c.id_cancha,c.nombre_numero as cancha,s.nombre as sede,s.direccion,r.codigo_pase,r.fecha_reserva,r.hora_inicio,r.hora_fin,r.estado as reserva_estado,
+            (select p.estado from mp_pago p where p.id_checkout=x.id order by p.actualizado_en desc,p.payment_id desc limit 1) as payment_status,
+            exists(select 1 from mp_pago p where p.id_checkout=x.id and p.estado not in ('rejected','cancelled')) as payment_in_progress,
             er.nombre as reserva_estado_nombre,coalesce(a.ingresos_utilizados,0) as usados,a.estado as acceso_estado
             from mp_checkout x join reserva r on r.id_reserva=x.id_reserva join cancha c on c.id_cancha=r.id_cancha
             join sede s on s.id_sede=c.id_sede join estado_reserva er on er.id_estado_reserva=r.id_estado_reserva
             left join reserva_acceso a on a.id=x.id where x.id=?
             """,id);
-        boolean pass="aprobado".equals(x.get("estado")) && "A".equals(x.get("reserva_estado")) && "activo".equals(x.get("acceso_estado")) && !x.get("reserva_estado_nombre").toString().toLowerCase(Locale.ROOT).contains("cancel");
-        return new State(id,((Number)x.get("id_reserva")).intValue(),x.get("estado").toString(),(BigDecimal)x.get("monto"),x.get("cancha").toString(),x.get("sede").toString(),x.get("fecha_reserva").toString(),x.get("hora_inicio")+" - "+x.get("hora_fin"),((Number)x.get("cupos")).intValue(),((Number)x.get("usados")).intValue(),pass?PaymentCrypto.pass(settings.passSecret(),id):null,x.get("vence_en").toString());
+        boolean pass="aprobado".equals(x.get("estado")) && "A".equals(x.get("reserva_estado")) && "activo".equals(x.get("acceso_estado")) && x.get("reserva_estado_nombre").toString().toLowerCase(Locale.ROOT).contains("confirm");
+        int start=((java.sql.Time)x.get("hora_inicio")).toLocalTime().getHour();
+        int end=((java.sql.Time)x.get("hora_fin")).toLocalTime().getHour();
+        if(end==0)end=24;
+        LocalDate date=((java.sql.Date)x.get("fecha_reserva")).toLocalDate();
+        LocalTime finish=((java.sql.Time)x.get("hora_fin")).toLocalTime();
+        Instant accessUntil=(finish.equals(LocalTime.MIDNIGHT)?date.plusDays(1).atStartOfDay():date.atTime(finish)).atZone(ZoneId.of("America/Lima")).toInstant();
+        String passState=pass?"activo":"no_disponible";
+        if("revocado".equals(x.get("acceso_estado")) || (x.get("acceso_estado")!=null && (!"A".equals(x.get("reserva_estado")) || x.get("reserva_estado_nombre").toString().toLowerCase(Locale.ROOT).contains("cancel"))))passState="revocado";
+        if(pass && ((Number)x.get("usados")).intValue()>=((Number)x.get("cupos")).intValue())passState="agotado";
+        if(pass && !Instant.now(clock).isBefore(accessUntil))passState="vencido";
+        pass=pass && "activo".equals(passState);
+        boolean resumable="pendiente".equals(x.get("estado")) && "A".equals(x.get("reserva_estado"))
+                && x.get("reserva_estado_nombre").toString().toLowerCase(Locale.ROOT).startsWith("pend")
+                && !Boolean.TRUE.equals(x.get("payment_in_progress"))
+                && ((java.sql.Timestamp)x.get("vence_en")).toInstant().isAfter(Instant.now(clock));
+        String token=pass?PaymentCrypto.pass(settings.passSecret(),id):null;
+        String accessUrl=pass?settings.publicUrl().replaceAll("/$","")+"/accesos#"+token:null;
+        String time=((java.sql.Time)x.get("hora_inicio")).toLocalTime().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"))+" - "+(end==24?"24:00":finish.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm")));
+        return new State(id,((Number)x.get("id_reserva")).intValue(),x.get("estado").toString(),(BigDecimal)x.get("monto"),x.get("cancha").toString(),x.get("sede").toString(),x.get("fecha_reserva").toString(),time,((Number)x.get("cupos")).intValue(),((Number)x.get("usados")).intValue(),token,((java.sql.Timestamp)x.get("vence_en")).toInstant().toString(),x.get("id_cancha").toString(),java.util.stream.IntStream.range(start,end).boxed().toList(),(String)x.get("payment_status"),resumable,(String)x.get("direccion"),(String)x.get("codigo_pase"),passState,accessUrl,true);
     }
     public State refresh(UUID id,String paymentId,AuthUserDto user){
         requireReady();requireOwner(id,user);

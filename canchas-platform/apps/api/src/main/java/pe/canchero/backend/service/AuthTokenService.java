@@ -24,11 +24,12 @@ public class AuthTokenService {
     private final Clock clock;
 
     @Autowired
-    public AuthTokenService(@Value("${app.auth.token-secret:${SUPABASE_JWT_SECRET}}") String secret) {
+    public AuthTokenService(@Value("${app.auth.token-secret:${APP_AUTH_TOKEN_SECRET:${SUPABASE_JWT_SECRET:}}}") String secret) {
         this(secret, Clock.systemUTC());
     }
 
     public AuthTokenService(String secret, Clock clock) {
+        if (secret == null || secret.isBlank()) throw new IllegalArgumentException("Falta APP_AUTH_TOKEN_SECRET");
         this.secret = secret;
         this.clock = clock;
     }
@@ -52,6 +53,10 @@ public class AuthTokenService {
     public String renew(String token) {
         TokenClaims claims = verifiedClaims(token);
         return issue(claims.userId(), claims.rememberMe());
+    }
+
+    public long expiresAt(String token) {
+        return verifiedClaims(token).expiresAt();
     }
 
     private TokenClaims verifiedClaims(String token) {
@@ -85,13 +90,13 @@ public class AuthTokenService {
             if (clock.instant().getEpochSecond() >= expiresAt) {
                 throw unauthorized();
             }
-            return new TokenClaims(UUID.fromString(payloadParts[0]), rememberMe);
+            return new TokenClaims(UUID.fromString(payloadParts[0]), rememberMe, expiresAt);
         } catch (IllegalArgumentException ex) {
             throw unauthorized();
         }
     }
 
-    private record TokenClaims(UUID userId, boolean rememberMe) {}
+    private record TokenClaims(UUID userId, boolean rememberMe, long expiresAt) {}
 
     private String sign(String encodedPayload) {
         try {

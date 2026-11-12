@@ -13,6 +13,7 @@ import { resolveSlotAvailability } from '@core/utils/availability.utils';
 import type { WeekDay } from './checkout';
 
 const mockMP = {
+  state: vi.fn(),
   open: vi.fn(),
   capabilities: vi.fn(async () => ({ available: true, testMode: true })),
   start: vi.fn(async (_request: any) => ({
@@ -1235,6 +1236,43 @@ describe('Checkout Component - Fase 3: Selección, Agrupación y Cotización', (
     fixture.detectChanges();
     return day;
   }
+
+  it('recupera Convocados desde la API aunque el horario propio aparezca ocupado y conserva el importe retenido', async () => {
+    const day = await preparePayment();
+    const id = '12345678-1234-1234-1234-123456789abc';
+    mockMP.state.mockResolvedValue({
+      id,
+      courtId: 'court-101',
+      fecha: day.dateStr,
+      hours: [18, 19],
+      monto: 200,
+      cupos: 4,
+      estado: 'pendiente',
+      canResume: true,
+      expiresAt: new Date(Date.now() + 300000).toISOString(),
+      paymentStatus: null,
+    });
+    await component['restorePayment'](id);
+    const getSlot = vi
+      .spyOn(mockDatabaseService, 'getCourtSlotAvailability')
+      .mockReturnValue({ state: 'occupied', price: 999 } as any);
+    component['reprice']();
+    expect(component['selectedSlots']().map((s) => s.hour)).toEqual([18, 19]);
+    expect(component['reservationSection']()).toBe(3);
+    expect(component['accessSlots']()).toBe(4);
+    expect(component['subtotal']()).toBe(200);
+    expect(mockMP.start).not.toHaveBeenCalled();
+    getSlot.mockRestore();
+  });
+
+  it('no restaura una operación que pertenece a otra cuenta', async () => {
+    await preparePayment();
+    mockMP.state.mockRejectedValue({ status: 403 });
+    await component['restorePayment']('12345678-1234-1234-1234-123456789abc');
+    expect(component['resumedPayment']()).toBeNull();
+    expect(component['confirmError']()).toContain('misma cuenta');
+    expect(mockMP.start).not.toHaveBeenCalled();
+  });
 
   it('envía el bloque y cupos al backend sin tarjeta ni monto controlado por el navegador', async () => {
     const day = await preparePayment();

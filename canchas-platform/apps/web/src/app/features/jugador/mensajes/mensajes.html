@@ -1,0 +1,150 @@
+<main class="container messages-page">
+  <header class="page-heading">
+    <div>
+      <h1>Mensajes</h1>
+      <p>Coordina tu próximo partido.</p>
+    </div>
+    <a mat-stroked-button routerLink="/buscar">Buscar personas</a>
+  </header>
+  @if (error()) {
+    <div class="feedback" role="alert">
+      {{ error() }} <button mat-button (click)="refresh()">Reintentar</button>
+    </div>
+  }
+  <section class="messenger" [class.chat-open]="selected()">
+    <aside class="inbox" aria-label="Tus conversaciones">
+      <div class="inbox-title">
+        <h2>Conversaciones</h2>
+        <span class="connection">{{ live() ? 'Conectado' : 'Actualización periódica' }}</span>
+      </div>
+      @if (busy()) {
+        <p class="empty">Cargando conversaciones…</p>
+      }
+      @for (c of conversations(); track c.id) {
+        <button
+          class="conversation-row"
+          [class.selected]="selected() === c.id"
+          (click)="choose(c.id)"
+          [attr.aria-pressed]="selected() === c.id"
+        >
+          <span class="avatar"
+            ><span>{{ initials(c.name) }}</span>
+            @if (c.photo) {
+              <img [src]="c.photo" alt="" (error)="imageError($event)" />
+            }
+          </span>
+          <span class="row-copy"
+            ><strong>{{ c.name }}</strong
+            ><span>{{ c.lastMessage || 'Inicia la conversación' }}</span></span
+          >
+          @if (c.unread) {
+            <span class="unread" [attr.aria-label]="c.unread + ' mensajes sin leer'">{{
+              c.unread > 99 ? '99+' : c.unread
+            }}</span>
+          }
+        </button>
+      } @empty {
+        @if (!busy() && !error()) {
+          <div class="empty">
+            <span class="material-symbols-outlined">chat_bubble_outline</span>
+            <h3>Aún no tienes conversaciones</h3>
+            <p>Abre un perfil y pulsa Mensaje para comenzar.</p>
+          </div>
+        }
+      }
+    </aside>
+    <section class="chat" aria-label="Conversación">
+      @if (conversation(); as c) {
+        <header class="chat-heading">
+          <button
+            class="icon-action mobile-back"
+            type="button"
+            (click)="back()"
+            aria-label="Volver a conversaciones"
+          >
+            <span class="material-symbols-outlined">arrow_back</span>
+          </button>
+          <a [routerLink]="['/perfiles', c.peerId]" class="peer-name">{{ c.name }}</a>
+          <div class="chat-actions">
+            <button mat-button [disabled]="blocking()" (click)="toggleBlock()">
+              {{ c.blockedByMe ? 'Desbloquear' : 'Bloquear' }}
+            </button>
+            <button
+              class="icon-action"
+              (click)="report()"
+              aria-label="Reportar conversación"
+              title="Reportar conversación"
+            >
+              <span class="material-symbols-outlined">flag</span>
+            </button>
+          </div>
+        </header>
+        <div
+          #history
+          class="history"
+          (scroll)="historyScrolled()"
+          role="log"
+          aria-label="Historial de mensajes"
+          aria-live="polite"
+          aria-relevant="additions"
+        >
+          @if (hasMore()) {
+            <button mat-button [disabled]="loadingOlder()" (click)="older()">
+              {{ loadingOlder() ? 'Cargando…' : 'Mensajes anteriores' }}
+            </button>
+          }
+          @for (m of messages(); track m.id) {
+            <article class="bubble" [class.mine]="m.authorId === auth.user()?.id">
+              <p>{{ m.text }}</p>
+              <time [attr.datetime]="m.createdAt">{{ m.createdAt | date: 'd MMM, HH:mm' }}</time>
+            </article>
+          } @empty {
+            <p class="empty">Escribe el primer mensaje.</p>
+          }
+        </div>
+        @if (actionError()) {
+          <p class="feedback" role="alert">{{ actionError() }}</p>
+        }
+        @if (notice()) {
+          <p class="notice" role="status">{{ notice() }}</p>
+        }
+        @if (!c.canSend) {
+          <p class="notice">
+            {{
+              c.blockedByMe
+                ? 'Bloqueaste a esta persona. Puedes conservar el historial.'
+                : 'Esta conversación no permite nuevos mensajes.'
+            }}
+          </p>
+        }
+        <form class="composer" (ngSubmit)="send()">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic"
+            ><mat-label>Escribe un mensaje</mat-label>
+            <textarea
+              matInput
+              name="message"
+              [(ngModel)]="draft"
+              maxlength="4000"
+              rows="2"
+              [disabled]="!c.canSend"
+              aria-label="Texto del mensaje"
+            ></textarea>
+          </mat-form-field>
+          <button
+            mat-flat-button
+            type="submit"
+            [disabled]="!draft.trim() || sending() || !c.canSend"
+          >
+            {{ sending() ? 'Enviando…' : 'Enviar' }}
+          </button>
+        </form>
+      } @else {
+        <div class="empty welcome">
+          <span class="material-symbols-outlined">forum</span>
+          <h2>Tus conversaciones, en un lugar</h2>
+          <p>Selecciona una conversación o busca una persona.</p>
+        </div>
+      }
+    </section>
+  </section>
+</main>

@@ -5,7 +5,11 @@ import { CajaService } from '@core/services/caja.service';
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { vi } from 'vitest';
 import { AdminReservas } from './admin-reservas';
-import type { AdminReservationRow, CourtOption, NuevaReservaPresencialInput } from './admin-reservas.models';
+import type {
+  AdminReservationRow,
+  CourtOption,
+  NuevaReservaPresencialInput,
+} from './admin-reservas.models';
 import {
   addCalendarDays,
   addHoursToTime,
@@ -63,8 +67,20 @@ function row(
 }
 
 const mockCourts: CourtOption[] = [
-  { id: 1, nombre: 'Cancha 1 (Fútbol 7)', precio_hora: 80, precio_hora_noche: 100, hora_inicio_noche: '18:00' },
-  { id: 2, nombre: 'Cancha 2 (Fútbol 5)', precio_hora: 60, precio_hora_noche: 80, hora_inicio_noche: '19:00' },
+  {
+    id: 1,
+    nombre: 'Cancha 1 (Fútbol 7)',
+    precio_hora: 80,
+    precio_hora_noche: 100,
+    hora_inicio_noche: '18:00',
+  },
+  {
+    id: 2,
+    nombre: 'Cancha 2 (Fútbol 5)',
+    precio_hora: 60,
+    precio_hora_noche: 80,
+    hora_inicio_noche: '19:00',
+  },
 ];
 
 describe('AdminReservas', () => {
@@ -81,10 +97,16 @@ describe('AdminReservas', () => {
     await TestBed.configureTestingModule({
       imports: [AdminReservas],
       providers: [
-        { provide: DatabaseService, useValue: {
-          catalogLoading: signal(false), loadErrors: signal([]), refreshCatalogo,
-          aprobarReserva: approve, descartarReserva: reject,
-        } },
+        {
+          provide: DatabaseService,
+          useValue: {
+            catalogLoading: signal(false),
+            loadErrors: signal([]),
+            refreshCatalogo,
+            aprobarReserva: approve,
+            descartarReserva: reject,
+          },
+        },
         { provide: AuthService, useValue: { currentUser: signal(null) } },
         { provide: CajaService, useValue: {} },
       ],
@@ -99,20 +121,40 @@ describe('AdminReservas', () => {
     fixture.detectChanges();
     component.today.set('2026-10-14');
   });
-  afterEach(() => { fixture.destroy(); vi.restoreAllMocks(); });
+  afterEach(() => {
+    fixture.destroy();
+    vi.restoreAllMocks();
+  });
+
+  it('separa Mercado Pago de la aprobación manual conservando las reservas presenciales', async () => {
+    const online = row(10, 1, '2026-10-14', 'pendiente', { metodo: 'Mercado Pago' });
+    const manual = row(11);
+    fixture.componentRef.setInput('rows', [online, manual]);
+    fixture.detectChanges();
+    expect(component.pendingCount()).toBe(1);
+    await component.requestAction('approve', online);
+    await component.requestAction('reject', online);
+    expect(approve).not.toHaveBeenCalled();
+    expect(reject).not.toHaveBeenCalled();
+  });
 
   it('isolates rows by court ID even when venue data contains foreign rows', () => {
-    expect(component.scopedRows().map(r => r.reserva.id)).toEqual([1, 2]);
+    expect(component.scopedRows().map((r) => r.reserva.id)).toEqual([1, 2]);
     component.selectCourt(2);
-    expect(component.filteredRows().map(r => r.reserva.id)).toEqual([2]);
+    expect(component.filteredRows().map((r) => r.reserva.id)).toEqual([2]);
     fixture.componentRef.setInput('venueId', null);
     fixture.detectChanges();
     expect(component.scopedRows()).toEqual([]);
   });
   it('filters seven calendar days without including the past or following week', () => {
-    fixture.componentRef.setInput('rows', [row(1, 1, '2026-10-13'), row(2), row(3, 1, '2026-10-20'), row(4, 1, '2026-10-21')]);
+    fixture.componentRef.setInput('rows', [
+      row(1, 1, '2026-10-13'),
+      row(2),
+      row(3, 1, '2026-10-20'),
+      row(4, 1, '2026-10-21'),
+    ]);
     component.filter.set('semana');
-    expect(component.filteredRows().map(r => r.reserva.id)).toEqual([2, 3]);
+    expect(component.filteredRows().map((r) => r.reserva.id)).toEqual([2, 3]);
   });
   it('closes details and resets filters when changing venue', () => {
     component.search('Ana');
@@ -123,7 +165,7 @@ describe('AdminReservas', () => {
     fixture.detectChanges();
     expect(component.query()).toBe('');
     expect(component.selected()).toBeNull();
-    expect(component.scopedRows().map(r => r.reserva.id)).toEqual([3]);
+    expect(component.scopedRows().map((r) => r.reserva.id)).toEqual([3]);
   });
   it('shows loading, error and empty states exclusively', () => {
     fixture.componentRef.setInput('loading', true);
@@ -133,7 +175,9 @@ describe('AdminReservas', () => {
     fixture.componentRef.setInput('loading', false);
     fixture.componentRef.setInput('error', 'Sin conexion');
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('[role="alert"]').textContent).toContain('Sin conexion');
+    expect(fixture.nativeElement.querySelector('[role="alert"]').textContent).toContain(
+      'Sin conexion',
+    );
     expect(fixture.nativeElement.querySelector('table')).toBeNull();
     fixture.componentRef.setInput('error', '');
     fixture.componentRef.setInput('rows', []);
@@ -149,7 +193,11 @@ describe('AdminReservas', () => {
   });
   it('waits for the server and prevents duplicate approval requests', async () => {
     let finish!: () => void;
-    approve.mockReturnValueOnce(new Promise<void>(resolve => { finish = resolve; }));
+    approve.mockReturnValueOnce(
+      new Promise<void>((resolve) => {
+        finish = resolve;
+      }),
+    );
     const notice = vi.spyOn(component.notice, 'emit');
     const pending = component.requestAction('approve', records[0]);
     expect(notice).not.toHaveBeenCalled();
@@ -176,7 +224,9 @@ describe('AdminReservas', () => {
     expect(approve).not.toHaveBeenCalled();
   });
   it('keeps incomplete financial operations disabled and emits no fake transaction', () => {
-    const button = Array.from(fixture.nativeElement.querySelectorAll('button')).find((el: any) => el.textContent.includes('Reserva presencial')) as HTMLButtonElement;
+    const button = Array.from(fixture.nativeElement.querySelectorAll('button')).find((el: any) =>
+      el.textContent.includes('Reserva presencial'),
+    ) as HTMLButtonElement;
     expect(button.disabled).toBe(true);
     const created = vi.spyOn(component.createBooking, 'emit');
     const action = vi.spyOn(component.action, 'emit');

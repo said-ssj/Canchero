@@ -349,7 +349,12 @@
       <button mat-stroked-button [disableRipple]="true" (click)="openVerifiablePass(row)">
         Pase Verificable
       </button>
-      @if (row.estado === 'pendiente') {
+      @if (row.estado === 'pendiente' && isMercadoPago(row)) {
+        <p role="status">
+          Mercado Pago confirma automáticamente el pago. No requiere aprobación manual.
+        </p>
+      }
+      @if (row.estado === 'pendiente' && !isMercadoPago(row)) {
         <button mat-stroked-button [disableRipple]="true" (click)="requestAction('reject', row)">
           Rechazar
         </button>

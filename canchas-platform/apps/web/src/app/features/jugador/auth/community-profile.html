@@ -177,6 +177,17 @@
           </button>
         }
 
+        @if (!ownsProfile() && !business()) {
+          <button
+            mat-stroked-button
+            class="btn-cover btn-cover-secondary"
+            type="button"
+            (click)="handleMessageClick(p)"
+          >
+            <span class="material-symbols-outlined" aria-hidden="true">chat_bubble</span
+            ><span>Mensaje</span>
+          </button>
+        }
         <!-- Botón Compartir Enlace -->
         <button
           mat-icon-button

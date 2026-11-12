@@ -276,7 +276,7 @@ public class BookingService extends JdbcSupport {
 
     public Optional<BookingResponse> confirmBooking(int id, AuthUserDto authUser) {
         if (jdbc.queryForObject("select count(*) from information_schema.tables where table_schema='public' and table_name='mp_checkout'",Integer.class)>0
-            && jdbc.queryForObject("select count(*) from mp_checkout where id_reserva=? and estado<>'aprobado'",Integer.class,id)>0)
+            && jdbc.queryForObject("select count(*) from mp_checkout where id_reserva=?",Integer.class,id)>0)
             throw new ResponseStatusException(HttpStatus.CONFLICT,"La confirmacion requiere un pago verificado por Mercado Pago");
         if (authUser == null || authUser.id() == null || authUser.id().isBlank()) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Debes iniciar sesión para confirmar una reserva.");
@@ -897,18 +897,21 @@ public class BookingService extends JdbcSupport {
     }
 
     private String bookingsSql() {
+        String methodSql="(select mp.nombre from pago_reserva pr join metodo_pago mp on mp.id_metodo_pago = pr.id_metodo_pago where pr.id_reserva = r.id_reserva and pr.estado = 'A' order by pr.id_pago_reserva desc limit 1)";
+        if (jdbc.queryForObject("select count(*) from information_schema.tables where table_schema='public' and table_name='mp_checkout'",Integer.class)>0)
+            methodSql="coalesce((select 'Mercado Pago' from mp_checkout x where x.id_reserva=r.id_reserva limit 1),"+methodSql+")";
         return """
                 select r.id_reserva, r.codigo_pase, r.id_cancha, r.fecha_reserva, r.hora_inicio, r.hora_fin,
                        r.monto_total, r.adelanto, r.saldo, er.nombre as estado_nombre,
                        c.nombre_numero as cancha_nombre, s.nombre as sede_nombre, s.id_sede,
                        (select pr.estado_liquidacion from pago_reserva pr where pr.id_reserva = r.id_reserva and pr.estado = 'A' order by pr.id_pago_reserva desc limit 1) as pago_estado,
                        (select pr.numero_operacion from pago_reserva pr where pr.id_reserva = r.id_reserva and pr.estado = 'A' order by pr.id_pago_reserva desc limit 1) as pago_num_op,
-                       (select mp.nombre from pago_reserva pr join metodo_pago mp on mp.id_metodo_pago = pr.id_metodo_pago where pr.id_reserva = r.id_reserva and pr.estado = 'A' order by pr.id_pago_reserva desc limit 1) as metodo_pago_nombre
+                       %s as metodo_pago_nombre
                 from reserva r
                 join cancha c on c.id_cancha = r.id_cancha
                 join sede s on s.id_sede = c.id_sede
                 left join estado_reserva er on er.id_estado_reserva = r.id_estado_reserva
-                """;
+                """.formatted(methodSql);
     }
 
     private UUID resolveOrCreateAuthenticatedClienteId(AuthUserDto authUser, UUID usuarioUuid) {

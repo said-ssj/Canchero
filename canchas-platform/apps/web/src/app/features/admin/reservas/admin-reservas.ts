@@ -306,7 +306,9 @@ export class AdminReservas {
   });
 
   readonly pendingCount = computed(
-    () => this.scopedRows().filter((row) => row.estado === 'pendiente').length,
+    () =>
+      this.scopedRows().filter((row) => row.estado === 'pendiente' && !this.isMercadoPago(row))
+        .length,
   );
 
   readonly filteredRows = computed(() => {
@@ -314,7 +316,8 @@ export class AdminReservas {
     const until = addCalendarDays(from, 6);
     const query = this.query().trim().toLocaleLowerCase('es-PE');
     return this.scopedRows().filter((row) => {
-      if (this.filter() === 'pendientes' && row.estado !== 'pendiente') return false;
+      if (this.filter() === 'pendientes' && (row.estado !== 'pendiente' || this.isMercadoPago(row)))
+        return false;
       if (this.filter() === 'hoy' && row.reserva.fecha !== from) return false;
       if (this.filter() === 'semana' && (row.reserva.fecha < from || row.reserva.fecha > until))
         return false;
@@ -466,6 +469,7 @@ export class AdminReservas {
   }
 
   async requestAction(kind: 'approve' | 'reject', row: AdminReservationRow): Promise<void> {
+    if (this.isMercadoPago(row)) return;
     if (
       this.guardando() ||
       this.loading() ||
@@ -490,6 +494,14 @@ export class AdminReservas {
     } finally {
       this.guardando.set(false);
     }
+  }
+
+  isMercadoPago(row: AdminReservationRow): boolean {
+    return (
+      row.reserva.payment_method === 'Mercado Pago' ||
+      row.metodo === 'Mercado Pago' ||
+      row.operacion.startsWith('MP:')
+    );
   }
 
   openNewBooking(): void {

@@ -16,6 +16,15 @@ export interface PaymentState {
   ingresosUtilizados: number;
   passToken: string | null;
   expiresAt: string;
+  courtId: string;
+  hours: number[];
+  paymentStatus: string | null;
+  canResume: boolean;
+  direccion: string | null;
+  codigoReserva: string | null;
+  estadoPase: 'activo' | 'agotado' | 'vencido' | 'revocado' | 'no_disponible';
+  publicPassUrl: string | null;
+  testMode: boolean;
 }
 @Injectable({ providedIn: 'root' })
 export class MercadoPagoApi {

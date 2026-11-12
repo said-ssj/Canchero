@@ -2,6 +2,28 @@
    PERFIL DE USUARIO COMPACTO & MENÚ HAMBURGUESA
    ========================================================================== */
 
+.nav-message-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-ink-700);
+  text-decoration: none;
+  flex-shrink: 0;
+}
+.nav-message-icon .material-symbols-outlined {
+  font-size: 22px;
+  line-height: 1;
+}
+.nav-message-icon:focus-visible {
+  outline: 2px solid var(--color-brand-green);
+  outline-offset: 3px;
+}
+
 .user-profile-menu-wrapper {
   position: relative;
   display: inline-flex;

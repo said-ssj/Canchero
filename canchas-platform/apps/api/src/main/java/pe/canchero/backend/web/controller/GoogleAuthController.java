@@ -65,6 +65,10 @@ public class GoogleAuthController {
                     .headers(headers -> headers.setBearerAuth(request.accessToken()))
                     .retrieve().body(JsonNode.class);
         } catch (HttpClientErrorException ex) {
+            if (ex.getResponseBodyAsString().contains("Invalid API key")) {
+                throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                        "La clave pública de Supabase necesita actualizarse en el servidor");
+            }
             if (ex.getStatusCode().value() == 401 || ex.getStatusCode().value() == 403) throw invalidIdentity();
             throw unavailable();
         } catch (RestClientException ex) {

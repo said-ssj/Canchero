@@ -45,6 +45,8 @@ class MercadoPagoPostgresTest {
     @Test void createsPendingWithoutPaymentAndDoesNotCollectCardData(){
         UUID id=start();var state=service.state(id,PLAYER_1);
         assertEquals("pendiente",state.estado());assertNull(state.passToken());assertEquals(90,state.monto().intValue());
+        assertTrue(state.canResume());assertNull(state.paymentStatus());assertEquals("101",state.courtId());assertEquals(List.of(10),state.hours());
+        assertEquals("Mercado Pago",new BookingService(jdbc,new VenueService(jdbc),clock).listMyBookings(PLAYER_1).getFirst().paymentMethod());
         assertEquals(0,jdbc.queryForObject("select count(*) from pago_reserva",Integer.class));
         assertEquals(1,jdbc.queryForObject("select id_estado_reserva from reserva",Integer.class));
         assertNull(jdbc.queryForObject("select codigo_pase from reserva",String.class));
@@ -65,6 +67,8 @@ class MercadoPagoPostgresTest {
     @Test void verifiedApprovalIsAtomicIdempotentAndPrivate(){
         UUID id=start();approve(id);approve(id);
         var state=service.state(id,PLAYER_1);assertEquals("aprobado",state.estado());assertTrue(state.passToken().startsWith("CAN1_"));
+        assertFalse(state.canResume());assertEquals("approved",state.paymentStatus());
+        assertThrows(ResponseStatusException.class,()->new BookingService(jdbc,new VenueService(jdbc),clock).confirmBooking(state.reservaId(),OWNER_A));
         assertEquals(1,jdbc.queryForObject("select count(*) from pago_reserva",Integer.class));
         assertEquals(90,jdbc.queryForObject("select adelanto from reserva",Integer.class));
         assertThrows(ResponseStatusException.class,()->service.state(id,PLAYER_2));
@@ -82,7 +86,9 @@ class MercadoPagoPostgresTest {
     }
     @Test void pendingRejectedOrRedirectAloneDoNotGrantAccess(){
         UUID id=start();var p=payment(id,"10001");p.put("status","pending");service.reconcile("10001",p);
+        assertFalse(service.state(id,PLAYER_1).canResume());assertEquals("pending",service.state(id,PLAYER_1).paymentStatus());
         p.put("status","rejected");service.reconcile("10001",p);
+        assertTrue(service.state(id,PLAYER_1).canResume());assertEquals("rejected",service.state(id,PLAYER_1).paymentStatus());
         assertEquals("pendiente",service.state(id,PLAYER_1).estado());assertNull(service.state(id,PLAYER_1).passToken());
         assertThrows(ResponseStatusException.class,()->new BookingService(jdbc,new VenueService(jdbc),clock).confirmBooking(service.state(id,PLAYER_1).reservaId(),OWNER_A));
     }
@@ -119,6 +125,32 @@ class MercadoPagoPostgresTest {
             var a=executor.submit(scan);var b=executor.submit(scan);assertNotEquals(a.get(15,TimeUnit.SECONDS),b.get(15,TimeUnit.SECONDS));
         }
         assertEquals(1,jdbc.queryForObject("select ingresos_utilizados from reserva_acceso",Integer.class));
+    }
+    @Test void sharedCopiesKeepOneTokenAndOneGlobalLimitAndExpireAtMatchEnd(){
+        UUID id=start();approve(id);
+        var initial=service.state(id,PLAYER_1);
+        assertEquals("activo",initial.estadoPase());
+        assertEquals(initial.passToken(),service.forBooking(initial.reservaId(),PLAYER_1).passToken());
+        assertEquals("https://web.example.com/accesos#"+initial.passToken(),initial.publicPassUrl());
+        assertEquals("10:00 - 11:00",initial.horario());
+        clock.set(Instant.parse("2026-10-23T15:00:00Z"));
+        var scanner=new ReservationAccessService(jdbc,manager,clock);
+        scanner.scan(new ReservationAccessService.Scan(initial.passToken(),UUID.randomUUID()),OWNER_A);
+        assertEquals(initial.passToken(),service.state(id,PLAYER_1).passToken());
+        scanner.scan(new ReservationAccessService.Scan(initial.passToken(),UUID.randomUUID()),OWNER_A);
+        var exhausted=service.state(id,PLAYER_1);
+        assertEquals("agotado",exhausted.estadoPase());assertEquals(2,exhausted.ingresosUtilizados());
+        assertNull(exhausted.passToken());assertNull(exhausted.publicPassUrl());
+        assertThrows(ResponseStatusException.class,()->scanner.scan(new ReservationAccessService.Scan(initial.passToken(),UUID.randomUUID()),OWNER_A));
+        clock.set(Instant.parse("2026-10-23T16:00:00Z"));
+        assertEquals("vencido",service.state(id,PLAYER_1).estadoPase());
+    }
+    @Test void eachPaidReservationGetsItsOwnPassWithoutDuplicatingOnWebhookRetries(){
+        UUID first=start();approve(first);String firstToken=service.state(first,PLAYER_1).passToken();
+        UUID second=service.start(new MercadoPagoService.StartRequest("101",BOOKING_DATE,List.of(11),2,"another-match-1"),PLAYER_1).id();
+        service.reconcile("10002",payment(second,"10002"));service.reconcile("10002",payment(second,"10002"));
+        assertNotEquals(firstToken,service.state(second,PLAYER_1).passToken());
+        assertEquals(2,jdbc.queryForObject("select count(*) from reserva_acceso",Integer.class));
     }
     @Test void scanChecksTimeCancellationAndInvalidTokens(){
         UUID id=start();approve(id);var scanner=new ReservationAccessService(jdbc,manager,clock);String token=service.state(id,PLAYER_1).passToken();

@@ -40,6 +40,17 @@ class GoogleAuthControllerTest {
     }
 
     @Test
+    void invalidProjectKeyIsNotReportedAsWrongGoogleCredentials() {
+        supabase.expect(requestTo(USER_URL)).andRespond(withStatus(HttpStatus.UNAUTHORIZED)
+                .contentType(MediaType.APPLICATION_JSON).body("{\"message\":\"Invalid API key\"}"));
+        var failure = assertThrows(ResponseStatusException.class,
+                () -> controller.exchange(new GoogleAuthController.GoogleRequest("verified.jwt", null, true)));
+        assertEquals(HttpStatus.SERVICE_UNAVAILABLE, failure.getStatusCode());
+        verifyNoInteractions(data);
+        supabase.verify();
+    }
+
+    @Test
     void passesOnlyTheIdentityVerifiedBySupabaseToTheAccountExchange() {
         UUID id = UUID.randomUUID();
         supabase.expect(requestTo(USER_URL)).andExpect(header("Authorization", "Bearer verified.jwt"))

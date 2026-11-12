@@ -382,6 +382,7 @@ export class DatabaseService {
       payment_status:
         b.paymentStatus ?? (paidAmount > 0 && balanceAmount === 0 ? 'aprobado' : 'pendiente'),
       retention_status: b.retentionStatus ?? 'sin_retencion',
+      payment_method: b.paymentMethod ?? null,
       creado_en: new Date().toISOString(),
     };
   }

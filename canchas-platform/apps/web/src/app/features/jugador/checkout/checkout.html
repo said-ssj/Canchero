@@ -40,6 +40,12 @@
   </section>
 } @else {
   <main class="container" id="main">
+    @if (restoringPayment()) {
+      <p class="notice" role="status">Recuperando tu reserva…</p>
+    }
+    @if (resumeError()) {
+      <p class="notice danger" role="alert">{{ resumeError() }}</p>
+    }
     <!-- Migas de pan y contexto de cancha -->
     <nav class="crumb" aria-label="Ruta">
       <a class="btn" routerLink="/sedes"
@@ -363,6 +369,12 @@
         <!-- Detalles de reserva, pago y convocados -->
         <div class="checkout-layout">
           <section class="stack" style="gap: 20px">
+            @if (resumedPayment()) {
+              <p class="notice" role="status">
+                Has vuelto sin completar el pago. Conservamos tu horario hasta que venza la
+                retención original. Todavía no está confirmado.
+              </p>
+            }
             @if (reservationSection() === 2) {
               <div class="card" style="padding: 20px">
                 <h2 style="font-size: 16px; margin: 0 0 12px 0">Datos del partido</h2>
@@ -372,7 +384,14 @@
                   class="cn-field w-full"
                 >
                   <mat-label>Personas que ingresarán con el pase</mat-label>
-                  <input matInput type="number" min="1" max="100" [(ngModel)]="accessSlots" />
+                  <input
+                    matInput
+                    type="number"
+                    min="1"
+                    max="100"
+                    [(ngModel)]="accessSlots"
+                    [readonly]="!!resumedPayment()"
+                  />
                   <mat-hint>La cancha determina el máximo permitido.</mat-hint>
                 </mat-form-field>
                 <div class="list">
@@ -473,7 +492,7 @@
                       </div>
                       <div class="row" style="align-items: center; gap: 8px">
                         @if (player.isCaptain) {
-                          <span class="badge success">Pagando ahora</span>
+                          <span class="badge success">Titular del pago</span>
                         } @else {
                           <span class="badge">{{ fmt(cuotaPerPlayer()) }}</span>
                           <button
@@ -520,7 +539,9 @@
                   >
                   <div>
                     <strong>Sesión activa: {{ captainName() }} ({{ currentUser()?.email }})</strong>
-                    <p>La reserva se confirmará de forma inmediata en el servidor tras el cobro.</p>
+                    <p>
+                      La reserva se confirmará automáticamente cuando Mercado Pago apruebe el pago.
+                    </p>
                   </div>
                 </div>
               }

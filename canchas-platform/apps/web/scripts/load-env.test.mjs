@@ -74,9 +74,11 @@ test('only public frontend Sentry settings enter the browser bundle', () => {
     SENTRY_BACKEND_DSN: 'PRIVATE_BACKEND_TEST',
     SENTRY_FRONTEND_DSN: 'https://public@ingest.example.test/123',
     SENTRY_ENABLED: 'true',
+    APP_AUTH_TOKEN_SECRET: 'PRIVATE_SESSION_SIGNING_TEST',
+    SUPABASE_REALTIME_JWT_SECRET: 'PRIVATE_REALTIME_SIGNING_TEST',
   });
   assert.equal(result.code, 0);
   assert.match(result.generated, /"sentryEnabled": true/);
   assert.match(result.generated, /public@ingest.example.test/);
-  assert.doesNotMatch(result.generated, /PRIVATE_TEST_VALUE|PRIVATE_WEATHER_TEST|PRIVATE_BACKEND_TEST/);
+  assert.doesNotMatch(result.generated, /PRIVATE_TEST_VALUE|PRIVATE_WEATHER_TEST|PRIVATE_BACKEND_TEST|PRIVATE_SESSION_SIGNING_TEST|PRIVATE_REALTIME_SIGNING_TEST/);
 });

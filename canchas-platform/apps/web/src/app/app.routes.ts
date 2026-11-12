@@ -7,6 +7,10 @@ export const routes: Routes = [
     path: '',
     component: MainLayout,
     children: [
+      {
+        path: 'mensajes',
+        loadComponent: () => import('./features/jugador/mensajes/mensajes').then((m) => m.Mensajes),
+      },
       { path: '', loadComponent: () => import('./features/jugador/home/home').then((m) => m.Home) },
       {
         path: 'buscar',

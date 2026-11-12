@@ -1,12 +1,25 @@
-import { Component, DestroyRef, inject, signal } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { Component, DestroyRef, InjectionToken, inject, signal } from '@angular/core';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { MatButtonModule } from '@angular/material/button';
 import { CurrencyPipe } from '@angular/common';
 import { MercadoPagoApi, PaymentState } from '../../../core/payments/mercadopago-api';
 import { AuthService } from '../../../core/auth/auth.service';
 import * as QRCode from 'qrcode';
+import {
+  createPassFiles,
+  downloadPass,
+  passDate,
+  passUrl,
+  requireActivePass,
+} from '../../../core/payments/reservation-pass';
+
+export const RESERVATION_PASS_EXPORT = new InjectionToken('ReservationPassExport', {
+  providedIn: 'root',
+  factory: () => ({ create: createPassFiles, download: downloadPass }),
+});
 
 @Component({
-  imports: [RouterLink, CurrencyPipe],
+  imports: [RouterLink, CurrencyPipe, MatButtonModule],
   template: ` <main class="payment-result" aria-labelledby="payment-title">
     <a routerLink="/itinerario">Volver a mi itinerario</a>
     <section class="result-card">
@@ -33,8 +46,12 @@ import * as QRCode from 'qrcode';
             <dd>{{ p.cancha }}</dd>
           </div>
           <div>
+            <dt>Dirección</dt>
+            <dd>{{ p.direccion || 'No registrada' }}</dd>
+          </div>
+          <div>
             <dt>Fecha y horario</dt>
-            <dd>{{ p.fecha }} · {{ p.horario }}</dd>
+            <dd>{{ dateLabel(p.fecha) }} · {{ p.horario }} (Perú)</dd>
           </div>
           <div>
             <dt>Total</dt>
@@ -47,9 +64,21 @@ import * as QRCode from 'qrcode';
         </dl>
         @if (p.estado === 'pendiente') {
           <p>
-            La reserva está retenida temporalmente. El regreso desde Mercado Pago no acredita el
-            pago: esperamos su verificación.
+            {{
+              p.canResume
+                ? 'Todavía no hay un pago en proceso. Puedes retomar tu reserva mientras siga retenida.'
+                : 'Mercado Pago está procesando el pago. La reserva se confirmará automáticamente al aprobarse; el dueño no necesita validarla.'
+            }}
           </p>
+          @if (p.canResume) {
+            <a
+              mat-flat-button
+              [disableRipple]="true"
+              [routerLink]="['/checkout']"
+              [queryParams]="{ courtId: p.courtId, resume: p.id }"
+              >Volver a convocados</a
+            >
+          }
         }
         @if (p.estado === 'revision') {
           <p>
@@ -67,10 +96,64 @@ import * as QRCode from 'qrcode';
             {{ p.ingresosUtilizados }} de {{ p.cupos }} ingresos utilizados. Presenta este QR al
             personal de la sede.
           </p>
+          <p>
+            El mismo QR sirve para todo el grupo. Cada ingreso consume un cupo; compartirlo no
+            aumenta el límite.
+          </p>
+          <div class="pass-actions">
+            <button
+              mat-flat-button
+              [disableRipple]="true"
+              [disabled]="exporting() || loading()"
+              (click)="exportPass('pdf')"
+            >
+              <span class="material-symbols-outlined" aria-hidden="true">download</span> Descargar
+              pase PDF
+            </button>
+            <button
+              mat-stroked-button
+              [disableRipple]="true"
+              [disabled]="exporting() || loading()"
+              (click)="exportPass('share')"
+            >
+              <span class="material-symbols-outlined" aria-hidden="true">share</span> Compartir pase
+            </button>
+            <button
+              mat-stroked-button
+              [disableRipple]="true"
+              [disabled]="exporting() || loading()"
+              (click)="exportPass('image')"
+            >
+              <span class="material-symbols-outlined" aria-hidden="true">image</span> Guardar imagen
+            </button>
+          </div>
+        }
+        @if (p.estadoPase === 'agotado') {
+          <p role="status">
+            Este pase ya utilizó sus {{ p.cupos }} ingresos. Las copias del QR tampoco permiten
+            nuevos ingresos.
+          </p>
+        }
+        @if (p.estadoPase === 'vencido') {
+          <p role="status">El horario del partido terminó. El pase está vencido.</p>
+        }
+        @if (p.estadoPase === 'revocado') {
+          <p role="status">El pase fue revocado y ya no permite ingresos.</p>
         }
       }
+      @if (exportMessage()) {
+        <p role="status">{{ exportMessage() }}</p>
+      }
       @if (auth.isLoggedIn()) {
-        <button type="button" [disabled]="loading()" (click)="load(true)">Actualizar estado</button>
+        <button
+          mat-stroked-button
+          [disableRipple]="true"
+          type="button"
+          [disabled]="loading()"
+          (click)="load(true)"
+        >
+          Actualizar estado
+        </button>
       }
     </section>
   </main>`,
@@ -119,19 +202,21 @@ import * as QRCode from 'qrcode';
         max-width: 100%;
         background: white;
       }
+      .pass-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .pass-actions .material-symbols-outlined {
+        font-size: 20px;
+        vertical-align: middle;
+        margin-right: 6px;
+      }
       .error {
         color: #b42318;
       }
       button {
-        padding: 10px 16px;
-        border: 0;
-        border-radius: 6px;
-        background: #25832a;
-        color: white;
-      }
-      button:disabled {
-        background: #e5e7eb;
-        color: #6b7280;
+        margin-top: 12px;
       }
       @media (max-width: 480px) {
         dl > div {
@@ -151,12 +236,17 @@ import * as QRCode from 'qrcode';
 export class PaymentResult {
   protected readonly auth = inject(AuthService);
   private readonly api = inject(MercadoPagoApi);
+  private readonly passFiles = inject(RESERVATION_PASS_EXPORT);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly destroy = inject(DestroyRef);
   readonly data = signal<PaymentState | null>(null);
   readonly loading = signal(false);
   readonly error = signal('');
   readonly qr = signal('');
+  readonly exporting = signal(false);
+  readonly exportMessage = signal('');
+  readonly dateLabel = passDate;
   readonly returnUrl = '/pago/resultado' + window.location.search;
   private timer?: ReturnType<typeof setTimeout>;
   private attempts = 0;
@@ -173,7 +263,12 @@ export class PaymentResult {
       (
         {
           aprobado: 'Pago aprobado y reserva confirmada',
-          pendiente: 'Esperando confirmación del pago',
+          pendiente:
+            this.data()?.paymentStatus === 'rejected'
+              ? 'Pago rechazado'
+              : this.data()?.canResume
+                ? 'Pago sin completar'
+                : 'Pago en proceso',
           expirado: 'Reserva temporal vencida',
           revision: 'Pago en revisión',
           reembolsado: 'Pago reembolsado',
@@ -182,6 +277,50 @@ export class PaymentResult {
         } as Record<string, string>
       )[this.data()?.estado ?? ''] ?? 'Resultado de tu reserva'
     );
+  }
+
+  async exportPass(kind: 'pdf' | 'image' | 'share') {
+    if (this.exporting() || this.loading() || !this.data() || !this.auth.isLoggedIn()) return;
+    this.exporting.set(true);
+    this.exportMessage.set('');
+    try {
+      // Volver a consultar: un pase mostrado antes pudo agotarse o ser revocado.
+      const verified = await this.api.state(this.data()!.id);
+      if (this.dead) return;
+      this.data.set(verified);
+      requireActivePass(verified);
+      const files = await this.passFiles.create(verified, window.location.origin);
+      if (this.dead) return;
+      if (kind === 'share' && navigator.share && navigator.canShare?.({ files: [files.pdf] })) {
+        try {
+          await navigator.share({ title: 'Pase de reserva Canchero', files: [files.pdf] });
+          this.exportMessage.set(
+            'Pase entregado al menú para compartir. Todas las copias comparten los mismos cupos.',
+          );
+        } catch (e: any) {
+          if (e?.name === 'AbortError') throw e;
+          this.passFiles.download(files.pdf);
+          this.exportMessage.set(
+            'El navegador no pudo compartir el archivo. Descargamos el PDF para que puedas adjuntarlo.',
+          );
+        }
+      } else {
+        this.passFiles.download(kind === 'image' ? files.image : files.pdf);
+        this.exportMessage.set(
+          kind === 'share'
+            ? 'Pase PDF descargado. Puedes adjuntarlo en WhatsApp, correo u otra aplicación.'
+            : 'Pase descargado. Todas las copias comparten los mismos cupos.',
+        );
+      }
+    } catch (e: any) {
+      if (e?.name !== 'AbortError')
+        this.exportMessage.set(
+          e?.message || 'No se pudo generar el pase. Actualiza el estado e inténtalo nuevamente.',
+        );
+      if (this.data()?.estadoPase !== 'activo') this.qr.set('');
+    } finally {
+      this.exporting.set(false);
+    }
   }
   async load(reconcile = false) {
     if (!this.auth.isLoggedIn() || this.loading() || this.dead) return;
@@ -194,7 +333,10 @@ export class PaymentResult {
     this.loading.set(true);
     this.error.set('');
     try {
-      const paymentId = this.route.snapshot.queryParamMap.get('payment_id');
+      const paymentId = [
+        this.route.snapshot.queryParamMap.get('payment_id'),
+        this.route.snapshot.queryParamMap.get('collection_id'),
+      ].find((value) => value && /^\d{1,30}$/.test(value));
       const result =
         !id && bookingId
           ? await this.api.byBooking(bookingId)
@@ -202,13 +344,21 @@ export class PaymentResult {
             ? await this.api.refresh(id!, paymentId)
             : await this.api.state(id!);
       if (this.dead) return;
+      // La URL nunca acredita ni cancela un pago. Solo reanudar una retención propia
+      // autorizada por la API; un pago pendiente/aprobado permanece en el resultado.
+      if (id && !paymentId && result.canResume && result.paymentStatus === null) {
+        await this.router.navigate(['/checkout'], {
+          queryParams: { courtId: result.courtId, resume: result.id },
+          replaceUrl: true,
+        });
+        return;
+      }
       this.data.set(result);
       this.qr.set('');
-      if (result.estado === 'aprobado' && result.passToken) {
-        const url = new URL('/accesos', window.location.origin);
-        url.hash = result.passToken;
+      if (result.estado === 'aprobado' && result.estadoPase === 'activo' && result.passToken) {
+        const url = passUrl(result, window.location.origin);
         this.qr.set(
-          await QRCode.toDataURL(url.href, { width: 240, margin: 3, errorCorrectionLevel: 'M' }),
+          await QRCode.toDataURL(url, { width: 240, margin: 4, errorCorrectionLevel: 'M' }),
         );
       }
       if (result.estado === 'pendiente' && this.attempts++ < 6)

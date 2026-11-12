@@ -10,6 +10,7 @@ import {
 } from '@core/services/community-profile.service';
 import { AuthService } from '@core/auth/auth.service';
 import { DatabaseService } from '@core/supabase/database.service';
+import { ChatService } from '@core/services/chat.service';
 
 describe('Perfil personal de dueño con varias sedes', () => {
   const data: CommunityProfile = {
@@ -44,6 +45,10 @@ describe('Perfil personal de dueño con varias sedes', () => {
       providers: [
         provideRouter([]),
         { provide: CommunityProfileService, useValue: api },
+        {
+          provide: ChatService,
+          useValue: { relationship: () => of({ blockedByMe: false }), block: () => of(undefined) },
+        },
         {
           provide: AuthService,
           useValue: {

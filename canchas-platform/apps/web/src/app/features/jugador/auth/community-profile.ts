@@ -8,6 +8,7 @@ import { firstValueFrom } from 'rxjs';
 import { AuthService } from '@core/auth/auth.service';
 import { DatabaseService } from '@core/supabase/database.service';
 import { CourtReportService } from '@core/services/court-report.service';
+import { ChatService } from '@core/services/chat.service';
 import {
   CommunityProfileService,
   CommunityProfile as Profile,
@@ -62,6 +63,7 @@ export class CommunityProfilePage {
   private readonly courtReportService = inject(CourtReportService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly chat = inject(ChatService);
   private readonly snackBar = inject(MatSnackBar);
   private readonly dialog = inject(MatDialog);
   protected draftAvatar: string | null = null;
@@ -476,12 +478,18 @@ export class CommunityProfilePage {
     this.editingInfo.set(false);
     this.hasMore.set(false);
     this.previewRole.set('self');
-    this.isBlocked.set(this.isUserBlocked(id));
-    if (this.isBlocked()) {
-      this.loading.set(false);
-      return;
-    }
+    this.isBlocked.set(false);
     try {
+      if (this.signedIn() && id !== this.auth.user()?.id) {
+        try {
+          const relation = await firstValueFrom(this.chat.relationship(id));
+          if (request !== this.request) return;
+          this.isBlocked.set(relation.blockedByMe);
+        } catch {
+          if (request === this.request)
+            this.actionError.set('No se pudo comprobar el bloqueo de este perfil.');
+        }
+      }
       const profile = await firstValueFrom(this.api.profile(id));
       if (request !== this.request) return;
       this.profile.set(profile);
@@ -573,16 +581,6 @@ export class CommunityProfilePage {
     this.newReviewText = '';
     this.shareToast.set('¡Tu reseña fue publicada con éxito!');
     setTimeout(() => this.shareToast.set(''), 3000);
-  }
-
-  private isUserBlocked(userId: string): boolean {
-    if (typeof localStorage === 'undefined' || !userId) return false;
-    try {
-      const blocked = JSON.parse(localStorage.getItem('canchero_blocked_users') || '[]');
-      return Array.isArray(blocked) && blocked.includes(userId);
-    } catch {
-      return false;
-    }
   }
 
   private async loadPosts(id: string, page: number, request = this.request) {
@@ -827,16 +825,8 @@ export class CommunityProfilePage {
       this.openAuthPrompt('enviar un mensaje a este usuario');
       return;
     }
-    if (p.whatsapp) {
-      window.open(
-        'https://wa.me/' + p.whatsapp.replace(/\D/g, ''),
-        '_blank',
-        'noopener,noreferrer',
-      );
-      return;
-    }
-    this.shareToast.set('Mensajería directa disponible próximamente.');
-    setTimeout(() => this.shareToast.set(''), 3000);
+    if (!this.ownsProfile())
+      void this.router.navigate(['/mensajes'], { queryParams: { usuario: p.id } });
   }
 
   protected handleReservarClick(): void {
@@ -930,29 +920,25 @@ export class CommunityProfilePage {
   protected bloquearUsuario(): void {
     const p = this.profile();
     if (!p) return;
-    try {
-      const blocked = JSON.parse(localStorage.getItem('canchero_blocked_users') || '[]');
-      if (!blocked.includes(p.id)) {
-        blocked.push(p.id);
-        localStorage.setItem('canchero_blocked_users', JSON.stringify(blocked));
-      }
-      this.isBlocked.set(true);
-      this.snackBar.open(`Has bloqueado a ${p.name}.`, 'Cerrar', { duration: 3500 });
-    } catch {
-      this.actionError.set('No se pudo procesar el bloqueo.');
-    }
+    this.chat.block(p.id, true).subscribe({
+      next: () => {
+        this.isBlocked.set(true);
+        this.snackBar.open(`Has bloqueado a ${p.name}.`, 'Cerrar', { duration: 3500 });
+      },
+      error: () => this.actionError.set('No se pudo guardar el bloqueo.'),
+    });
   }
 
   protected desbloquearUsuario(): void {
     const p = this.profile();
     if (!p) return;
-    try {
-      const blocked = JSON.parse(localStorage.getItem('canchero_blocked_users') || '[]');
-      const updated = blocked.filter((id: string) => id !== p.id);
-      localStorage.setItem('canchero_blocked_users', JSON.stringify(updated));
-      this.isBlocked.set(false);
-      this.snackBar.open('Usuario desbloqueado.', 'Cerrar', { duration: 3000 });
-    } catch {}
+    this.chat.block(p.id, false).subscribe({
+      next: () => {
+        this.isBlocked.set(false);
+        this.snackBar.open('Usuario desbloqueado.', 'Cerrar', { duration: 3000 });
+      },
+      error: () => this.actionError.set('No se pudo guardar el desbloqueo.'),
+    });
   }
 
   /* ================= COMPARTIR PERFIL ================= */

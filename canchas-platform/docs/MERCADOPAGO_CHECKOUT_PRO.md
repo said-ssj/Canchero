@@ -67,3 +67,19 @@ Verificado en la API pública: /health devuelve 200/UP; /api/community/profiles/
 Verificación dirigida previa al despliegue: 16 pruebas de Mercado Pago con PostgreSQL temporal, 5 HTTP y 40 de checkout aprobadas; typecheck aprobado. No equivale a una ejecución completa de todas las pruebas del repositorio ni a una compra aprobada por Mercado Pago.
 
 Render está configurado para desplegar automáticamente después de pasar CI. Un push por sí solo no confirma que la nueva versión esté en vivo: comprobar el commit y el estado del despliegue. No se modificó esta condición.
+
+
+## Regreso sin pagar y aprobación automática (11 de noviembre de 2026)
+
+Implementado localmente: al volver sin identificador de pago, Resultado consulta la API. Solo si esta autoriza retomar una retención propia, activa, sin pagos registrados y no vencida, redirige a Convocados. Cancha, fecha, horas, cupos e importe se recuperan de PostgreSQL; los convocados adicionales son únicamente un borrador de interfaz de la misma pestaña y cuenta. No se crea otra reserva ni se amplía su vencimiento. Un pago pendiente real, aprobado, observado o una retención vencida permanece en Resultado. Se admite también collection_id y siempre se verifica en el servidor.
+
+La API identifica las reservas de Mercado Pago incluso antes del cobro. El panel las separa de Por verificar y no permite aprobarlas/rechazarlas como transferencias manuales. La API también impide su confirmación manual, incluyendo pagos ya aprobados. La confirmación y el pase dependen de una aprobación validada por Webhook o consulta a Mercado Pago. Las reservas presenciales conservan su flujo independiente.
+
+Se mantienen una cuenta receptora de prueba de Canchero y el vencimiento de diez minutos. No se implementó marketplace/OAuth de vendedores ni cobro directo por dueño. Los pagos manuales no se convierten en pagos de Mercado Pago y no se simulan confirmaciones. Sin cambios de esquema ni migraciones nuevas. Cambios aún sin commit/push ni despliegue de esta corrección.
+
+
+## Pase descargable y compartido (11 de noviembre de 2026)
+
+Cierre local del plan en PLAN_PASE_RESERVA_QR.md. Resultado ofrece PDF, imagen PNG y compartir PDF usando el mismo token y enlace canónico público del servidor. El documento incluye sede, dirección, cancha, fecha/hora de Perú, reserva, importe, cantidad autorizada y cupos disponibles al generarlo. Reconsulta el estado antes de exportar; no exporta pases agotados, vencidos, cancelados o revocados. Compartir no aumenta el contador y no envía mensajes automáticamente. El PDF identifica el modo prueba y no es comprobante fiscal.
+
+Verificado con PostgreSQL temporal: emisión idempotente, un token por reserva pagada, copias con contador único, reintentos sin doble consumo, último cupo simultáneo, límites por sede y horario. Verificado documento de QA aislado: PDF A4 válido, renderizado inspeccionado y QR de PDF/PNG decodificado con contenido idéntico. Ningún pase de QA se insertó en Supabase. Estas correcciones siguen locales, sin commit/push ni despliegue. Falta compra de prueba completa contra el proveedor y recepción real del Webhook.
