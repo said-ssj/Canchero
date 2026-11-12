@@ -679,23 +679,22 @@ export class AdminCanchas {
     const files = Array.from(input.files);
     this.subiendoFoto.set(true);
     const uploadedUrls: string[] = [];
+    let fallidas = 0;
 
     for (const file of files) {
       try {
-        const publicUrl = await this.db.uploadPublicImage(file, 'canchas');
-        uploadedUrls.push(publicUrl);
+        uploadedUrls.push(await this.db.uploadPublicImage(file, 'canchas'));
       } catch {
-        // Fallback resiliente offline
-        const dataUrl = await new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onload = (e) => resolve(e.target?.result as string);
-          reader.readAsDataURL(file);
-        });
-        uploadedUrls.push(dataUrl);
+        // Sin respaldo en base64: llenaba la BD y volvía lentas las consultas de canchas.
+        fallidas++;
       }
     }
 
     this.subiendoFoto.set(false);
+    input.value = '';
+    if (fallidas > 0) {
+      this.mostrarToast(`Fotos no subidas: ${fallidas}. Usa JPG, PNG o WebP de hasta 5 MB.`);
+    }
 
     if (uploadedUrls.length > 0) {
       if (!this.nuevaCanchaFoto()) {

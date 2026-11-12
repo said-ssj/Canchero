@@ -612,9 +612,9 @@ export class AdminSedes implements OnInit, OnDestroy {
     input.value = '';
     if (
       files.length + this.galeriaFotos().length > 12 ||
-      files.some((file) => !file.type.startsWith('image/') || file.size > 10 * 1024 * 1024)
+      files.some((file) => !file.type.startsWith('image/') || file.size > 5 * 1024 * 1024)
     ) {
-      this.mostrarToast('La galería admite hasta 12 imágenes de hasta 10 MB cada una.');
+      this.mostrarToast('La galería admite hasta 12 imágenes de hasta 5 MB cada una.');
       return;
     }
     const request = ++this.photoRequest;
