@@ -1,10 +1,11 @@
-export type AlertaOperativaTipo = 'pagos' | 'reservas' | 'contacto' | 'resenas';
+export type AlertaOperativaTipo = 'pagos' | 'stock' | 'reservas' | 'contacto' | 'resenas';
 
 export interface AlertaOperativaConfig {
   id: AlertaOperativaTipo;
   titulo: string;
   descripcion: string;
   esUrgente?: boolean;
+  disponible?: boolean;
 }
 
 export interface CuentaBancariaItem {
@@ -36,15 +37,24 @@ export interface ConfiguracionPerfilState {
 
 export const ALERTAS_SISTEMA_DEFINICION: AlertaOperativaConfig[] = [
   {
+    id: 'stock',
+    titulo: 'Stock bajo',
+    descripcion: 'Productos por debajo del mínimo de la sede.',
+    disponible: true,
+  },
+  {
     id: 'pagos',
-    titulo: 'Pago pendiente de verificación (Yape / Plin)',
-    descripcion: 'Alerta inmediata con captura adjunta de comprobante bancario para liberar el turno en el panel.',
+    titulo: 'Reservas con verificación manual pendiente',
+    descripcion:
+      'Avisos de abonos que requieren revisión. Mercado Pago se verifica automáticamente.',
     esUrgente: true,
+    disponible: true,
   },
   {
     id: 'reservas',
     titulo: 'Nueva reserva confirmada',
-    descripcion: 'Aviso de bloqueo de losa con nombre del cliente, horario e importe acordado en el sistema.',
+    descripcion:
+      'Aviso de bloqueo de losa con nombre del cliente, horario e importe acordado en el sistema.',
     esUrgente: false,
   },
   {
@@ -56,45 +66,12 @@ export const ALERTAS_SISTEMA_DEFINICION: AlertaOperativaConfig[] = [
   {
     id: 'resenas',
     titulo: 'Reseña y calificación recibida',
-    descripcion: 'Comentarios y valoraciones de jugadores que finalizaron su partido en el complejo.',
+    descripcion:
+      'Comentarios y valoraciones de jugadores que finalizaron su partido en el complejo.',
     esUrgente: false,
   },
 ];
 
-export const CUENTAS_BANCARIAS_DEFECTO: CuentaBancariaItem[] = [
-  {
-    id: 'bcp',
-    banco: 'BCP',
-    tipo: 'Cuenta Corriente Soles',
-    numeroEnmascarado: '•••• 4910',
-    cci: '002-194-0024910-18',
-    esPrincipal: true,
-  },
-  {
-    id: 'interbank',
-    banco: 'Interbank',
-    tipo: 'Soles Empresarial',
-    numeroEnmascarado: '•••• 8821',
-    cci: '003-200-0188210-92',
-    esPrincipal: false,
-  },
-];
-
-export const COMPROBANTES_LIQUIDACION_HISTORIAL: ComprobanteLiquidacionItem[] = [
-  {
-    codigo: 'LC-0921',
-    periodo: 'Octubre 2024',
-    fecha: '2024-10-31',
-    alquileresBrutos: 18400.0,
-    comisionMonto: 920.0,
-    netoTransferido: 17480.0,
-  },
-  {
-    codigo: 'LC-0840',
-    periodo: 'Septiembre 2024',
-    fecha: '2024-09-30',
-    alquileresBrutos: 17600.0,
-    comisionMonto: 880.0,
-    netoTransferido: 16720.0,
-  },
-];
+// Sin proveedor bancario conectado no hay cuentas ni liquidaciones verificadas.
+export const CUENTAS_BANCARIAS_DEFECTO: CuentaBancariaItem[] = [];
+export const COMPROBANTES_LIQUIDACION_HISTORIAL: ComprobanteLiquidacionItem[] = [];

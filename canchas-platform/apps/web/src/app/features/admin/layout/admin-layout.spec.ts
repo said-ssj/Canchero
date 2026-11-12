@@ -148,6 +148,17 @@ describe('AdminLayout', () => {
     expect(component.stockCriticoCount()).toBe(1);
   });
 
+  it('no solicita aprobar manualmente retenciones de Mercado Pago', () => {
+    const previous = mockReservas();
+    mockReservas.set([
+      ...previous,
+      { cancha_id: 1, estado: 'pendiente', payment_method: 'Mercado Pago' },
+      { cancha_id: 1, estado: 'pendiente', codigo_operacion: 'MP:checkout' } as any,
+    ] as any);
+    expect(component.pendientesCount()).toBe(1);
+    mockReservas.set(previous);
+  });
+
   it('debe calcular correctamente las iniciales del usuario administrador', () => {
     expect(component.initials('Roberto Mendoza')).toBe('RM');
     expect(component.initials('Carlos')).toBe('CA');

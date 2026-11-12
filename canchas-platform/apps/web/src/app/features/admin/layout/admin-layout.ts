@@ -1,3 +1,4 @@
+import { AdminAlertPreferences } from '@core/services/admin-alert-preferences.service';
 import { ThemeService } from '@core/theme/theme.service';
 import {
   Component,
@@ -153,7 +154,13 @@ export class AdminLayout implements OnInit, OnDestroy {
     const canchaIds = new Set(canchas.map((c) => c.id));
     return this.db
       .getReservasPorDueno(this.duenoId())
-      .filter((r) => canchaIds.has(r.cancha_id) && r.estado === 'pendiente').length;
+      .filter(
+        (r) =>
+          canchaIds.has(r.cancha_id) &&
+          r.estado === 'pendiente' &&
+          r.payment_method !== 'Mercado Pago' &&
+          !r.codigo_operacion?.startsWith('MP:'),
+      ).length;
   });
 
   readonly pendientesBadgeText = computed(() => {
@@ -232,6 +239,8 @@ export class AdminLayout implements OnInit, OnDestroy {
   readonly notifFilter = signal<'todas' | 'no_leidas'>('todas');
   private readonly readNotifIds = signal<Set<string>>(new Set());
 
+  private readonly alertPreferences = inject(AdminAlertPreferences);
+
   readonly notificationsList = computed(() => {
     const sedeId = this.sedeDelDueno()?.id ?? 'global';
     const readIds = this.readNotifIds();
@@ -248,8 +257,9 @@ export class AdminLayout implements OnInit, OnDestroy {
       leida: boolean;
     }> = [];
 
+    const preferences = this.alertPreferences.get(this.sedeDelDueno()?.id);
     const pendientes = this.pendientesCount();
-    if (pendientes > 0) {
+    if (pendientes > 0 && preferences['pagos']) {
       const id = `reservas-pendientes-${sedeId}-${pendientes}`;
       items.push({
         id,
@@ -266,7 +276,7 @@ export class AdminLayout implements OnInit, OnDestroy {
     }
 
     const criticos = this.stockCriticoCount();
-    if (criticos > 0) {
+    if (criticos > 0 && preferences['stock']) {
       const id = `stock-critico-${sedeId}-${criticos}`;
       items.push({
         id,

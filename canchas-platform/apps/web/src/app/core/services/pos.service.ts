@@ -576,29 +576,24 @@ export class PosService {
             catchError(() => of(fallback)),
           ),
         );
-      const optional = <T>(label: string, obs$: import('rxjs').Observable<T>, fallback: T) =>
-        withTimeout(label, obs$).catch(() => fallback);
-
-      // El catálogo es imprescindible; kardex y ventas degradan sin bloquear el punto de venta.
+      // Un historial desconocido no equivale a un historial vacío.
       const [productos, kardex, ventas, capabilities, categorias] = await Promise.all([
         withTimeout(
           'productos',
           this.http.get<Producto[]>(`${this.apiUrl}/products?sedeId=${sedeId}`),
         ),
-        optional(
+        withTimeout(
           'kardex',
           this.http.get<MovimientoKardex[]>(`${this.apiUrl}/inventory?sedeId=${sedeId}`),
-          [] as MovimientoKardex[],
         ),
-        optional(
-          'ventas',
-          this.http.get<VentaPOS[]>(`${this.apiUrl}/sales?sedeId=${sedeId}`),
-          [] as VentaPOS[],
-        ),
+        withTimeout('ventas', this.http.get<VentaPOS[]>(`${this.apiUrl}/sales?sedeId=${sedeId}`)),
         safeGet<{ ready: boolean }>(`${this.apiUrl}/payment-capabilities?sedeId=${sedeId}`, {
-          ready: true,
+          ready: false,
         }),
-        safeGet<CategoriaProducto[]>(`${this.apiUrl}/catalog/categories?sedeId=${sedeId}`, []),
+        withTimeout(
+          'categorías',
+          this.http.get<CategoriaProducto[]>(`${this.apiUrl}/catalog/categories?sedeId=${sedeId}`),
+        ),
       ]);
       if (
         request !== this.loadRequest ||

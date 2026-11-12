@@ -1,6 +1,6 @@
 import { HttpBackend, HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { DestroyRef, Injectable, NgZone, inject, signal, computed } from '@angular/core';
-import { Observable, firstValueFrom, of } from 'rxjs';
+import { Observable, firstValueFrom, of, throwError } from 'rxjs';
 import { catchError, map, timeout } from 'rxjs/operators';
 import { googleOAuthClient, supabase } from '../supabase/client';
 import type { User } from '@shared/models/user.model';
@@ -17,6 +17,7 @@ interface StoredSession extends BackendAuthResponse {
 }
 
 export interface PlayerProfile {
+  handle?: string | null;
   nombre: string | null;
   apellido: string | null;
   telefono: string | null;
@@ -279,7 +280,7 @@ export class AuthService {
     return profile?.id === this.user()?.id ? (profile?.data ?? null) : null;
   });
 
-  loadPlayerProfile(): Observable<PlayerProfile> {
+  loadPlayerProfile(strict = false): Observable<PlayerProfile> {
     return this.trackProfile(this.http.get<PlayerProfile>(`${this.apiUrl}/auth/profile`)).pipe(
       map((profile) => {
         const u = this.user();
@@ -293,7 +294,8 @@ export class AuthService {
         }
         return profile;
       }),
-      catchError(() => {
+      catchError((error) => {
+        if (strict) return throwError(() => error);
         const u = this.user();
         const saved =
           typeof localStorage !== 'undefined' && u?.id
@@ -306,7 +308,7 @@ export class AuthService {
           direccion: null,
           idDistrito: null,
           foto: saved || null,
-          completo: !!u?.nombre,
+          completo: false,
         };
         if (u?.id) this.profileState.set({ id: u.id, data: fallback });
         return of(fallback);

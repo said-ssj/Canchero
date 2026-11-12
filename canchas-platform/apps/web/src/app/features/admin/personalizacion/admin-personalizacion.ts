@@ -292,7 +292,7 @@ export class AdminPersonalizacion {
       '======================================================================',
       `Sede Deportiva:    ${nombreSede}`,
       `Dirección:         ${s?.direccion || this.venueAddress() || 'Sin dirección registrada'}`,
-      `Teléfono Oficial:  ${s?.telefono || this.venuePhone() || '987 654 321'}`,
+      `Teléfono Oficial:  ${s?.telefono || this.venuePhone() || 'Sin teléfono registrado'}`,
       `Razón Social:      ${this.totemMerchant()}`,
       `Color de Acento:   ${this.colorAcentoNombre()} (${this.colorAcento()})`,
       `Enlace de Reserva: ${this.qrUrl()}`,

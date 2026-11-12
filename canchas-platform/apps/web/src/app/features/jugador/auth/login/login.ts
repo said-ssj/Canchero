@@ -81,16 +81,17 @@ export class Login {
       }
       this.showError.set(false);
       this.submitting.set(false);
-      if (this.auth.isOwner()) {
-        void this.router.navigate(['/admin']);
-      } else {
-        const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
-        if (returnUrl && returnUrl.startsWith('/') && !returnUrl.startsWith('//')) {
-          void this.router.navigateByUrl(returnUrl);
-        } else {
-          void this.router.navigate(['/itinerario']);
-        }
-      }
+      const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+      const regreso =
+        returnUrl && /^\/(?![/\\])/.test(returnUrl) && !returnUrl.includes('\\')
+          ? returnUrl
+          : this.auth.isOwner()
+            ? '/admin'
+            : '/itinerario';
+      void this.router.navigate(['/perfil'], {
+        queryParams: { acceso: 'inicio', regreso },
+        replaceUrl: true,
+      });
     });
   }
 }

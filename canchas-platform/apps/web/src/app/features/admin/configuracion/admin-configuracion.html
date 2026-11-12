@@ -101,8 +101,7 @@
                   font-weight: 600;
                 "
               >
-                <span class="material-symbols-outlined" style="font-size: 14px">check_circle</span>
-                Verificado
+                Correo de la cuenta
               </span>
             </div>
             <div class="fiche-item">
@@ -474,6 +473,8 @@
                 <button
                   class="canchero-switch"
                   [class.is-checked]="alertaOperativaActiva(alerta.id)"
+                  [disabled]="!alerta.disponible"
+                  [attr.aria-label]="alerta.titulo"
                   (click)="toggleAlertaOperativa(alerta.id)"
                   role="switch"
                   [attr.aria-checked]="alertaOperativaActiva(alerta.id)"
@@ -493,7 +494,8 @@
               padding-top: 10px;
             "
           >
-            Correo y WhatsApp no están habilitados.
+            Los cambios filtran tu campana en este navegador y sede. Las otras alertas siguen
+            pendientes de integración.
           </span>
 
           <div style="display: flex; justify-content: flex-end">
@@ -604,7 +606,7 @@
   <div class="config-modal-backdrop" (click)="modalEditarPerfilOpen.set(false)">
     <div class="config-modal-card" (click)="$event.stopPropagation()">
       <div class="config-modal-header">
-        <h3>Editar Datos del Titular</h3>
+        <h3>Editar datos de la sede</h3>
         <button type="button" class="config-modal-close" (click)="modalEditarPerfilOpen.set(false)">
           <span class="material-symbols-outlined">close</span>
         </button>
@@ -612,7 +614,7 @@
       <div style="display: flex; flex-direction: column; gap: 12px">
         <div class="config-field">
           <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cn-field w-full">
-            <mat-label>Nombre Completo o Razón Social</mat-label>
+            <mat-label>Nombre comercial de la sede</mat-label>
             <input
               matInput
               [value]="editNombre()"

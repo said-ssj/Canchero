@@ -150,3 +150,6 @@ dumps/
 
 # Seguimiento local de integracion de Mercado Pago
 .mp-integrate-progress.md
+
+# Generated from the pinned emoji dataset before start/build/test
+apps/web/public/assets/emojis/

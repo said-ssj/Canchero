@@ -29,6 +29,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDividerModule } from '@angular/material/divider';
+import { EmojiButton } from '@shared/components/emoji-button/emoji-button';
 
 @Component({
   selector: 'app-community-profile',
@@ -48,6 +49,7 @@ import { MatDividerModule } from '@angular/material/divider';
     MatChipsModule,
     MatSnackBarModule,
     MatDividerModule,
+    EmojiButton,
   ],
   templateUrl: './community-profile.html',
   styleUrl: './community-profile.css',
@@ -111,60 +113,6 @@ export class CommunityProfilePage {
       : true,
   );
   protected readonly myBookings = signal<any[]>([]);
-
-  /* Emoji Picker */
-  protected readonly emojiPickerOpen = signal(false);
-  protected readonly emojis = signal<string[]>([
-    '⚽',
-    '🏆',
-    '🔥',
-    '👍',
-    '👏',
-    '🎉',
-    '🏃',
-    '🥅',
-    '👟',
-    '🍺',
-    '🍕',
-    '😎',
-    '💪',
-    '📍',
-    '📅',
-    '⚡',
-    '🥇',
-    '🥈',
-    '🥉',
-    '🎯',
-    '❤️',
-    '🙌',
-    '💯',
-    '🤩',
-    '👋',
-    '🥳',
-    '💥',
-    '🤝',
-    '🚀',
-    '🏟️',
-    '🥎',
-    '🏀',
-    '🏐',
-    '🎾',
-    '🏓',
-    '🥊',
-    '🥋',
-    '🥤',
-    '🥪',
-    '🍔',
-    '⭐',
-    '✨',
-    '😃',
-    '😄',
-    '😁',
-    '😆',
-    '🤙',
-    '👊',
-  ]);
-  private emojiLoaded = false;
 
   protected readonly busy = signal(false);
   protected readonly reading = signal(false);
@@ -1038,43 +986,6 @@ export class CommunityProfilePage {
 
   protected removePhoto(index: number) {
     this.draftPhotos.update((photos) => photos.filter((_, i) => i !== index));
-  }
-
-  protected async toggleEmojiPicker(): Promise<void> {
-    const nextState = !this.emojiPickerOpen();
-    this.emojiPickerOpen.set(nextState);
-    if (nextState && !this.emojiLoaded) {
-      this.emojiLoaded = true;
-      try {
-        const res = await fetch('https://emojiapi.dev/api/v1/emojis');
-        if (res.ok) {
-          const data = await res.json();
-          const apiEmojis: string[] = [];
-          if (Array.isArray(data)) {
-            for (const item of data) {
-              if (typeof item === 'string') apiEmojis.push(item);
-              else if (item && typeof item.character === 'string') apiEmojis.push(item.character);
-              else if (item && typeof item.emoji === 'string') apiEmojis.push(item.emoji);
-            }
-          } else if (data && Array.isArray(data.emojis)) {
-            for (const item of data.emojis) {
-              if (typeof item === 'string') apiEmojis.push(item);
-              else if (item && typeof item.character === 'string') apiEmojis.push(item.character);
-            }
-          }
-          if (apiEmojis.length > 0) {
-            const current = this.emojis();
-            const set = new Set([...current, ...apiEmojis.slice(0, 120)]);
-            this.emojis.set(Array.from(set));
-          }
-        }
-      } catch {}
-    }
-  }
-
-  protected insertEmoji(emoji: string): void {
-    this.text = (this.text ? this.text + ' ' : '') + emoji;
-    this.emojiPickerOpen.set(false);
   }
 
   protected async deletePost(post: CommunityPost) {

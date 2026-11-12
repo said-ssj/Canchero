@@ -1,6 +1,19 @@
 .profile-page {
   padding-block: 24px 40px;
 }
+.profile-page.onboarding-page {
+  max-width: 760px;
+}
+.onboarding-page .profile-layout {
+  display: block;
+}
+.onboarding-heading {
+  margin: 8px 0 20px;
+}
+.onboarding-heading p {
+  color: var(--color-ink-600);
+  margin: 8px 0;
+}
 .profile-card {
   width: 100%;
   max-width: none;
@@ -37,7 +50,7 @@ select {
   min-width: 0;
   font: inherit;
 }
-input:not([type='file']),
+input:not([type='file']):not([matInput]),
 select {
   padding: 10px 12px;
   border: 1px solid var(--line, #d6dce3);
@@ -296,7 +309,7 @@ dd {
 .profile-card select {
   font-size: 13px;
 }
-.profile-card input:not([type='file']),
+.profile-card input:not([type='file']):not([matInput]),
 .profile-card select {
   background: var(--color-surface, #fff);
   color: inherit;

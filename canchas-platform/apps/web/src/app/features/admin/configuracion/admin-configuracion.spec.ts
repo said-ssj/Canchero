@@ -6,7 +6,6 @@ import { AdminConfiguracion } from './admin-configuracion';
 import { DatabaseService } from '@core/supabase/database.service';
 import { AuthService } from '@core/auth/auth.service';
 import type { Venue } from '@shared/models/venue.model';
-import { COMPROBANTES_LIQUIDACION_HISTORIAL } from './admin-configuracion.models';
 import { of, throwError } from 'rxjs';
 
 describe('AdminConfiguracion Component - Etapa 7 (Configuración General & Cuenta)', () => {
@@ -15,11 +14,13 @@ describe('AdminConfiguracion Component - Etapa 7 (Configuración General & Cuent
   let router: Router;
 
   const mockCurrentUser = signal<{
+    id: string;
     email: string;
     nombre: string;
     rol: string;
     telefono?: string;
   } | null>({
+    id: 'owner-test',
     email: 'dueno@canchero.pe',
     nombre: 'Dueño Oficial',
     rol: 'dueno',
@@ -177,7 +178,7 @@ describe('AdminConfiguracion Component - Etapa 7 (Configuración General & Cuent
     expect(component['alertaOperativaActiva']('pagos')).toBe(false);
     expect(avisoEmitido).toContain('Alerta interna');
 
-    const saved = JSON.parse(localStorage.getItem('canchero_pref_alertas') || '{}');
+    const saved = JSON.parse(localStorage.getItem('canchero_alertas:owner-test:1') || '{}');
     expect(saved['pagos']).toBe(false);
   });
 
@@ -206,7 +207,14 @@ describe('AdminConfiguracion Component - Etapa 7 (Configuración General & Cuent
   });
 
   it('debe descargar comprobante de liquidación en formato TXT y XML real sin extensiones falsas', () => {
-    const comp = COMPROBANTES_LIQUIDACION_HISTORIAL[0];
+    const comp = {
+      codigo: 'QA-001',
+      periodo: 'Prueba de exportación',
+      fecha: '2026-11-12',
+      alquileresBrutos: 100,
+      comisionMonto: 0,
+      netoTransferido: 100,
+    };
     const createObjectUrlSpy = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:mock-url');
     const revokeObjectUrlSpy = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
 
@@ -245,7 +253,14 @@ describe('AdminConfiguracion Component - Etapa 7 (Configuración General & Cuent
     component['editRuc'].set('20111222333');
 
     await component['guardarEdicionPerfil']();
-    expect(mockDbService.saveOrUpdateSede).toHaveBeenCalled();
+    expect(mockDbService.saveOrUpdateSede).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        nombre: 'Complejo Real Madrid Lima',
+        telefono: '+51 911 222 333',
+        ruc_facturacion: '20111222333',
+      }),
+    );
     expect(component['modalEditarPerfilOpen']()).toBe(false);
   });
 });

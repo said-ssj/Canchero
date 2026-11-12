@@ -49,7 +49,10 @@ export class PlayerProfilePage {
   private readonly auth = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
-  protected readonly firstAccess = this.route.snapshot.queryParamMap.get('acceso') === 'google';
+  protected firstAccess = ['google', 'registro', 'inicio'].includes(
+    this.route.snapshot.queryParamMap.get('acceso') || '',
+  );
+  protected readonly handleLocked = signal(false);
   protected readonly loading = signal(true);
   protected readonly saving = signal(false);
   protected readonly readingPhoto = signal(false);
@@ -142,14 +145,22 @@ export class PlayerProfilePage {
   }
 
   protected async load(): Promise<void> {
+    const identity = this.auth.user()?.id;
     this.loading.set(true);
     this.error.set('');
     try {
-      const profile = await firstValueFrom(this.auth.loadPlayerProfile());
+      const profile = await firstValueFrom(this.auth.loadPlayerProfile(true));
+      if (this.auth.user()?.id !== identity) {
+        this.profile = null;
+        void this.router.navigateByUrl('/login');
+        return;
+      }
       if (this.firstAccess && profile.completo) {
         this.continue();
         return;
       }
+      if (!profile.completo) this.firstAccess = true;
+      this.handleLocked.set(!!profile.handle);
       this.districts = await firstValueFrom(
         this.http.get<District[]>(environment.apiUrl + '/catalog/districts'),
       ).catch(() => []);
@@ -266,8 +277,11 @@ export class PlayerProfilePage {
         this.editing.set(false);
         this.saved.set(true);
       }
-    } catch {
-      this.error.set('No pudimos guardar tu perfil. Revisa los datos e inténtalo nuevamente.');
+    } catch (failure: unknown) {
+      this.error.set(
+        (failure as { error?: { message?: string } })?.error?.message ||
+          'No pudimos guardar tu perfil. Revisa los datos e inténtalo nuevamente.',
+      );
     } finally {
       this.saving.set(false);
     }
@@ -275,9 +289,16 @@ export class PlayerProfilePage {
 
   private continue(): void {
     const target = this.route.snapshot.queryParamMap.get('regreso');
-    const safeTarget = target && /^\/(?![/\\])/.test(target) && !target.includes('\\');
-    void this.router.navigateByUrl(safeTarget ? target : this.firstAccess ? '/itinerario' : '/', {
-      replaceUrl: true,
-    });
+    const safeTarget =
+      target &&
+      /^\/(?![/\\])/.test(target) &&
+      !target.includes('\\') &&
+      !/^\/perfil(?:[/?#]|$)/.test(target);
+    void this.router.navigateByUrl(
+      safeTarget ? target : this.auth.isOwner() ? '/admin' : '/itinerario',
+      {
+        replaceUrl: true,
+      },
+    );
   }
 }

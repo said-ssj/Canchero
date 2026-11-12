@@ -12,6 +12,18 @@ import { AuthService } from '@core/auth/auth.service';
 import { DatabaseService } from '@core/supabase/database.service';
 import { ChatService } from '@core/services/chat.service';
 
+// Estas pruebas usan servicios simulados; no deben abrir sockets hacia Supabase real.
+vi.mock('@core/supabase/client', () => ({
+  supabase: {
+    getChannels: () => [],
+    removeChannel: () => Promise.resolve(),
+    channel: () => {
+      const channel = { on: () => channel, subscribe: () => channel };
+      return channel;
+    },
+  },
+}));
+
 describe('Perfil personal de dueño con varias sedes', () => {
   const data: CommunityProfile = {
     id: 'owner-a',

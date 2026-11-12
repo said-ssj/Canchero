@@ -84,7 +84,7 @@ export class Registro {
     const pass = this.password();
     const confirm = this.passwordConfirm();
 
-    if (!nombre || !email || !telefono) {
+    if (!nombre || !email) {
       this.feedbackText.set('Por favor completa todos los campos requeridos.');
       this.feedbackVisible.set(true);
       return;
@@ -136,19 +136,16 @@ export class Registro {
           this.success.set(false);
           return;
         }
-        setTimeout(() => {
-          this.submitting.set(false);
-          this.success.set(true);
-          this.ownerPending.set(ownerRegistration && !this.auth.isOwner());
-          if (this.ownerPending()) return;
-          setTimeout(() => {
-            if (this.auth.isOwner()) {
-              void this.router.navigate(['/admin']);
-            } else {
-              void this.router.navigate(['/itinerario']);
-            }
-          }, 900);
-        }, 1000);
+        this.submitting.set(false);
+        this.success.set(true);
+        this.ownerPending.set(ownerRegistration && !this.auth.isOwner());
+        void this.router.navigate(['/perfil'], {
+          queryParams: {
+            acceso: 'registro',
+            regreso: this.auth.isOwner() ? '/admin' : '/itinerario',
+          },
+          replaceUrl: true,
+        });
       });
   }
 }

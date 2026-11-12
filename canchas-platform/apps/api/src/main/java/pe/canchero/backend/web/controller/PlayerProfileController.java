@@ -8,6 +8,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import pe.canchero.backend.web.dto.AuthUserDto;
+import pe.canchero.backend.service.ProfileHandleService;
+import pe.canchero.backend.web.dto.ErrorResponse;
+import org.springframework.http.ResponseEntity;
 
 @RestController
 @RequestMapping("/api/auth/profile")
@@ -17,15 +20,22 @@ public class PlayerProfileController {
     public PlayerProfileController(JdbcTemplate jdbc) {
         this.jdbc = jdbc;
     }
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ErrorResponse> error(ResponseStatusException error) {
+        return ResponseEntity.status(error.getStatusCode()).body(new ErrorResponse(error.getReason()));
+    }
 
     @GetMapping
     public Profile profile(@RequestAttribute("auth.user") AuthUserDto user) {
         return jdbc.queryForObject("""
-                select u.nombre, u.apellido, u.telefono, p.direccion, p.foto, p.id_usuario is not null, p.id_distrito
+                select u.nombre, u.apellido, u.telefono, p.direccion, p.foto,
+                  p.id_usuario is not null and length(btrim(coalesce(u.nombre,'')))>0
+                  and length(btrim(coalesce(u.apellido,'')))>0 and pc.identificador is not null, p.id_distrito,pc.identificador
                 from public.usuario u left join public.perfil_jugador p on p.id_usuario = u.id_usuario
+                left join public.perfil_comunidad pc on pc.id_usuario=u.id_usuario
                 where u.id_usuario = ?
                 """, (rs, row) -> new Profile(rs.getString(1), rs.getString(2), rs.getString(3),
-                rs.getString(4), rs.getString(5), rs.getBoolean(6), rs.getObject(7, Integer.class)), UUID.fromString(user.id()));
+                rs.getString(4), rs.getString(5), rs.getBoolean(6), rs.getObject(7, Integer.class),rs.getString(8)), UUID.fromString(user.id()));
     }
 
     @PutMapping
@@ -61,6 +71,12 @@ public class PlayerProfileController {
             }
         }
         if (!telefono.isEmpty() && !telefono.matches("[+0-9 ()-]{7,20}")) throw invalid();
+        var handles = new ProfileHandleService(jdbc);
+        String handle = input.handle() == null ? handles.state(user).handle() : input.handle();
+        if (handle == null || handle.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Elige tu identificador de usuario con @");
+        }
+        handles.change(user, handle);
         int updated = jdbc.update("""
                 update public.usuario
                 set nombre = ?, apellido = ?, telefono = ?
@@ -71,7 +87,7 @@ public class PlayerProfileController {
                 insert into public.perfil_jugador (id_usuario, direccion, foto, id_distrito) values (?, ?, ?, ?)
                 on conflict (id_usuario) do update set direccion = excluded.direccion, foto = excluded.foto, id_distrito = excluded.id_distrito
                 """, UUID.fromString(user.id()), direccion, foto, districtId);
-        return new Profile(nombre, apellido, telefono, direccion, foto, true, districtId);
+        return profile(user);
     }
 
     private static String field(String value, int limit, boolean required) {
@@ -84,5 +100,11 @@ public class PlayerProfileController {
         return new ResponseStatusException(HttpStatus.BAD_REQUEST, "Revisa los datos del perfil");
     }
 
-    public record Profile(String nombre, String apellido, String telefono, String direccion, String foto, boolean completo, Integer idDistrito) {}
+    public record Profile(String nombre, String apellido, String telefono, String direccion, String foto,
+                          boolean completo, Integer idDistrito, String handle) {
+        public Profile(String nombre, String apellido, String telefono, String direccion, String foto,
+                       boolean completo, Integer idDistrito) {
+            this(nombre, apellido, telefono, direccion, foto, completo, idDistrito, null);
+        }
+    }
 }

@@ -35,7 +35,6 @@ import type { Venue } from '@shared/models/venue.model';
 import { limaDate, addCalendarDays } from '../reservas/admin-reservas.utils';
 import type {
   FacturableRow,
-  LiquidacionHistorialItem,
   CanalPagoItem,
   FiltroFacturablesTab,
   ColumnasVisibilidad,
@@ -259,15 +258,15 @@ export class AdminFinanzas {
         // Utilizar el importe de comisión persistido, sin asumir una tarifa.
         const comision = Number(pago.comision_plataforma ?? 0);
         const neto = Math.round((monto - comision) * 100) / 100;
-        const metodo = pago.metodo_pago ?? 'Tarjeta';
+        const metodo = pago.metodo_pago || 'Sin registrar';
 
         return {
           codigo: reserva?.codigo_pase ?? `#CAN-${pago.id.toString().padStart(4, '0')}`,
           codigoCorto: (reserva?.codigo_pase ?? `CAN-${pago.id}`).replace('#', ''),
           fechaLabel: reserva?.fecha
-            ? `${reserva.fecha}, ${reserva.hora_inicio ?? '18:00'}h`
-            : `${pago.fecha_pago || 'Hoy'}, ${pago.hora_pago || '19:00'}`,
-          canchaNombre: cancha?.nombre ?? 'Cancha Principal',
+            ? `${reserva.fecha}, ${reserva.hora_inicio || 'Hora sin registrar'}`
+            : `${pago.fecha_pago || 'Fecha sin registrar'}, ${pago.hora_pago || 'Hora sin registrar'}`,
+          canchaNombre: cancha?.nombre || 'Cancha sin registrar',
           servicio: reserva?.hora_inicio
             ? `Alquiler ${reserva.hora_inicio} - ${reserva.hora_fin}`
             : 'Alquiler de cancha',
@@ -433,63 +432,31 @@ export class AdminFinanzas {
   protected readonly canalesPago = computed<CanalPagoItem[]>(() => {
     const rows = this.facturables();
     const total = rows.reduce((acc, f) => acc + f.monto, 0);
-    if (total === 0) {
-      return [
-        {
-          nombre: 'Billeteras Móviles (Yape / Plin)',
-          porcentaje: 68,
-          color: 'var(--color-brand-green, #3cb043)',
-          monto: 0,
-        },
-        {
-          nombre: 'Tarjetas Débito / Crédito',
-          porcentaje: 24,
-          color: 'var(--color-brand-orange, #f5821f)',
-          monto: 0,
-        },
-        { nombre: 'Efectivo en Recepción', porcentaje: 8, color: '#1a1a1a', monto: 0 },
-      ];
+    if (total <= 0) return [];
+    const amounts = new Map<string, number>();
+    for (const row of rows) {
+      const method = row.metodo.toLowerCase();
+      const name =
+        method.includes('yape') || method.includes('plin')
+          ? 'Billeteras Móviles (Yape / Plin)'
+          : method.includes('tarjeta')
+            ? 'Tarjetas Débito / Crédito'
+            : method.includes('efectivo')
+              ? 'Efectivo en Recepción'
+              : row.metodo;
+      amounts.set(name, (amounts.get(name) || 0) + row.monto);
     }
-
-    let yapePlin = 0;
-    let tarjeta = 0;
-    let efectivo = 0;
-
-    for (const r of rows) {
-      const m = r.metodo.toLowerCase();
-      if (m.includes('yape') || m.includes('plin')) {
-        yapePlin += r.monto;
-      } else if (m.includes('efectivo')) {
-        efectivo += r.monto;
-      } else {
-        tarjeta += r.monto;
-      }
-    }
-
-    const pctYape = Math.round((yapePlin / total) * 100);
-    const pctTarjeta = Math.round((tarjeta / total) * 100);
-    const pctEfectivo = Math.max(0, 100 - pctYape - pctTarjeta);
-
-    return [
-      {
-        nombre: 'Billeteras Móviles (Yape / Plin)',
-        porcentaje: pctYape,
-        color: 'var(--color-brand-green, #3cb043)',
-        monto: yapePlin,
-      },
-      {
-        nombre: 'Tarjetas Débito / Crédito',
-        porcentaje: pctTarjeta,
-        color: 'var(--color-brand-orange, #f5821f)',
-        monto: tarjeta,
-      },
-      {
-        nombre: 'Efectivo en Recepción',
-        porcentaje: pctEfectivo,
-        color: '#1a1a1a',
-        monto: efectivo,
-      },
+    const colors = [
+      'var(--color-brand-green)',
+      'var(--color-brand-orange)',
+      'var(--color-ink-600)',
     ];
+    return [...amounts].map(([nombre, monto], index) => ({
+      nombre,
+      monto,
+      porcentaje: Math.round((monto / total) * 100),
+      color: colors[index % colors.length],
+    }));
   });
 
   // Filtro de facturables
@@ -542,26 +509,6 @@ export class AdminFinanzas {
     this.pageSizeFacturablesSignal.set(event.pageSize);
     this.paginaActualFacturables.set(event.pageIndex + 1);
   }
-
-  // Historial de liquidaciones bancarias
-  protected readonly liquidacionesHistorial = computed<LiquidacionHistorialItem[]>(() => {
-    const liquidados = this.facturables().filter((f) => f.liquidado);
-    if (liquidados.length === 0) {
-      // Si la base no está vacía y tiene reservas pero ninguna liquidada, retornar arreglo vacío
-      return [];
-    }
-
-    // Agrupar o listar las transferencias registradas
-    return liquidados.map((f, idx) => ({
-      id: `LIQ-2026-${(84 - idx).toString().padStart(3, '0')}`,
-      codigo: f.codigo,
-      fecha: f.fechaLabel,
-      destino: 'BCP Cta. Cte. **4509',
-      referencia: `OPE-${890000 + idx * 123}`,
-      monto: f.neto,
-      estado: 'transferido',
-    }));
-  });
 
   // ===== ACCIONES =====
 
@@ -648,7 +595,7 @@ export class AdminFinanzas {
       Servicio: f.servicio,
       Método: f.metodo,
       Monto_Bruto_PEN: f.monto.toFixed(2),
-      Comision_Canchero_5Pct_PEN: f.comision.toFixed(2),
+      Comision_Registrada_PEN: f.comision.toFixed(2),
       Neto_Registrado_PEN: f.neto.toFixed(2),
       Liquidado: f.liquidado ? 'Sí' : 'No',
     }));

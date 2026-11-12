@@ -1,3 +1,4 @@
+import { AdminAlertPreferences } from '@core/services/admin-alert-preferences.service';
 import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
 import { AdminContext } from '../admin-context.service';
 import { CommonModule } from '@angular/common';
@@ -13,8 +14,6 @@ import { firstValueFrom } from 'rxjs';
 import type { Venue } from '@shared/models/venue.model';
 import {
   ALERTAS_SISTEMA_DEFINICION,
-  CUENTAS_BANCARIAS_DEFECTO,
-  COMPROBANTES_LIQUIDACION_HISTORIAL,
   type AlertaOperativaConfig,
   type AlertaOperativaTipo,
   type CuentaBancariaItem,
@@ -158,14 +157,11 @@ export class AdminConfiguracion {
     return { score: 4, label: 'Muy Fuerte', colorClass: 'bg-turf-green' };
   });
 
+  private readonly alertPreferences = inject(AdminAlertPreferences);
+
   // Alertas operativas internas del sistema (Regla: no simular WhatsApp/Email externos)
   protected readonly alertasDefinicion: AlertaOperativaConfig[] = ALERTAS_SISTEMA_DEFINICION;
-  protected readonly alertasOperativas = signal<Record<AlertaOperativaTipo, boolean>>({
-    pagos: true,
-    reservas: true,
-    contacto: true,
-    resenas: true,
-  });
+  protected readonly alertasOperativas = computed(() => this.alertPreferences.get(this.venueId()));
 
   // Cuentas bancarias de depósito y liquidaciones
   protected readonly cuentasBancarias = signal<CuentaBancariaItem[]>([]);
@@ -228,32 +224,12 @@ export class AdminConfiguracion {
         .catch(() => this.settingsFeedback.set('No se pudieron cargar los ajustes de la sede.'));
     });
 
-    // Restaurar preferencias guardadas en localStorage si existen
-    if (typeof localStorage !== 'undefined') {
-      try {
-        const savedAlertas = localStorage.getItem('canchero_pref_alertas');
-        if (savedAlertas) {
-          this.alertasOperativas.set(JSON.parse(savedAlertas));
-        }
-        const savedBank = localStorage.getItem('canchero_payout_bank');
-        if (savedBank) {
-          this.cuentaBancariaSeleccionada.set(savedBank);
-        }
-        const savedFreq = localStorage.getItem('canchero_payout_freq');
-        if (savedFreq) {
-          this.frecuenciaPago.set(savedFreq as FrecuenciaLiquidacion);
-        }
-      } catch {
-        // En caso de parse error, usar valores por defecto
-      }
-    }
-
     // Inicializar valores de edición al cambiar venue o auth
     effect(() => {
       const u = this.auth.currentUser();
       const v = this.venue();
       if (u) {
-        this.editNombre.set(u.nombre || '');
+        this.editNombre.set(v?.nombre || '');
         this.editTelefono.set(u.telefono || v?.telefono || '');
       }
       if (v?.ruc_facturacion) {
@@ -322,23 +298,18 @@ export class AdminConfiguracion {
 
   protected toggleAlertaOperativa(tipo: AlertaOperativaTipo): void {
     const nextVal = !this.alertasOperativas()[tipo];
-    this.alertasOperativas.update((current) => ({
-      ...current,
-      [tipo]: nextVal,
-    }));
-    this.guardarPreferenciasAlertas(false);
-    this.notice.emit(`Alerta interna ${nextVal ? 'activada' : 'desactivada'} en el panel.`);
+    if (!this.alertPreferences.set(this.venueId(), tipo, nextVal)) {
+      this.notice.emit('No se pudo guardar la preferencia en este navegador.');
+      return;
+    }
+    this.notice.emit(`Alerta interna ${nextVal ? 'activada' : 'desactivada'} en este navegador.`);
   }
 
   protected guardarPreferenciasAlertas(showNotice = true): void {
-    if (typeof localStorage !== 'undefined') {
-      try {
-        localStorage.setItem('canchero_pref_alertas', JSON.stringify(this.alertasOperativas()));
-      } catch {}
-    }
-    if (showNotice) {
-      this.notice.emit('Preferencias de alertas operativas internas guardadas.');
-    }
+    if (showNotice)
+      this.notice.emit(
+        'La campana usa estas preferencias en este navegador, para tu cuenta y sede.',
+      );
   }
 
   // ===== MULTISEDE =====
@@ -429,9 +400,9 @@ export class AdminConfiguracion {
       `Cuenta de Destino     : ${this.cuentaBancariaSeleccionada().toUpperCase()}`,
       '----------------------------------------------------------------',
       `Alquileres Brutos     : S/ ${comprobante.alquileresBrutos.toFixed(2)}`,
-      `Comisión Canchero (5%): -S/ ${comprobante.comisionMonto.toFixed(2)}`,
+      `Comisión registrada   : -S/ ${comprobante.comisionMonto.toFixed(2)}`,
       '----------------------------------------------------------------',
-      `NETO LIQUIDADO (95%)  : S/ ${comprobante.netoTransferido.toFixed(2)}`,
+      `NETO LIQUIDADO        : S/ ${comprobante.netoTransferido.toFixed(2)}`,
       '================================================================',
       'Nota: Documento oficial de control interno de liquidaciones bancarias.',
       'Canchero Perú - Plataforma de Gestión Deportiva.',
@@ -507,7 +478,7 @@ export class AdminConfiguracion {
   protected abrirEditarPerfil(): void {
     const u = this.auth.currentUser();
     const v = this.venue();
-    this.editNombre.set(u?.nombre || '');
+    this.editNombre.set(v?.nombre || '');
     this.editTelefono.set(u?.telefono || v?.telefono || '');
     this.editRuc.set(v?.ruc_facturacion || '');
     this.modalEditarPerfilOpen.set(true);
@@ -524,12 +495,17 @@ export class AdminConfiguracion {
     }
 
     const v = this.venue();
+    if (!v || !this.duenoId()) {
+      this.notice.emit('Selecciona una sede antes de guardar.');
+      return;
+    }
     if (v && this.duenoId()) {
       try {
         await this.db.saveOrUpdateSede(this.duenoId()!, {
           ...v,
-          telefono: telefono || v.telefono,
-          ruc_facturacion: ruc || v.ruc_facturacion,
+          nombre,
+          telefono,
+          ruc_facturacion: ruc,
         });
       } catch (error) {
         this.notice.emit(
@@ -542,7 +518,7 @@ export class AdminConfiguracion {
     }
 
     this.modalEditarPerfilOpen.set(false);
-    this.notice.emit('Datos de cuenta y contacto actualizados correctamente.');
+    this.notice.emit('Nombre, RUC y contacto de la sede guardados correctamente.');
   }
 
   // ===== GUARDADO GENERAL =====

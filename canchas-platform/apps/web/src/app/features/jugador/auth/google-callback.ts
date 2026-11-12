@@ -163,12 +163,13 @@ export class GoogleCallback {
               localStorage.setItem(`canchero_user_avatar_${user.id}`, pendingAvatar);
             }
           }
-          if (this.auth.isOwner()) void this.router.navigateByUrl('/admin');
-          else
-            void this.router.navigate(['/perfil'], {
-              queryParams: { acceso: 'google', regreso: this.returnUrl },
-              replaceUrl: true,
-            });
+          void this.router.navigate(['/perfil'], {
+            queryParams: {
+              acceso: 'google',
+              regreso: this.auth.isOwner() ? '/admin' : this.returnUrl,
+            },
+            replaceUrl: true,
+          });
         },
         error: (failure: unknown) => {
           this.busy.set(false);

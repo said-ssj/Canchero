@@ -1,7 +1,7 @@
 @if (!firstAccess && profile && account()?.id) {
   <app-community-profile [userId]="account()!.id" [embedded]="true" />
 } @else {
-  <main class="container profile-page">
+  <main class="container profile-page" [class.onboarding-page]="firstAccess">
     @if (loading()) {
       <section class="card loading-state cn-loader" role="status">
         <mat-spinner diameter="48" color="primary"></mat-spinner>
@@ -17,124 +17,136 @@
       </button>
     }
     @if (profile; as p) {
-      <app-profile-header
-        [name]="fullName"
-        [initials]="initials"
-        [photo]="p.foto"
-        [badge]="roleLabel"
-        [description]="
-          p.completo
-            ? 'Tu espacio en Canchero. Mantén tus datos al día para organizar tu próximo partido.'
-            : 'Completa tus nombres y apellidos para personalizar tu experiencia en Canchero.'
-        "
-      >
-        <div profileActions class="header-actions">
-          @if (!firstAccess && !editing()) {
-            <button
-              mat-flat-button
-              type="button"
-              class="btn-cover btn-cover-primary edit-profile"
-              (click)="editing.set(true); saved.set(false)"
-            >
-              <span class="material-symbols-outlined" aria-hidden="true">edit</span>
-              <span>Editar perfil</span>
-            </button>
-            <button
-              mat-icon-button
-              type="button"
-              class="btn-cover btn-cover-icon"
-              (click)="compartirPerfil()"
-              title="Compartir perfil"
-              aria-label="Compartir perfil"
-            >
-              <span class="material-symbols-outlined" aria-hidden="true">share</span>
-            </button>
-          }
-        </div>
-        <div profileMeta>
-          <p class="profile-email">{{ account()?.email }}</p>
-          <div class="identity-details">
-            <span
-              ><span class="material-symbols-outlined" aria-hidden="true">location_on</span
-              >{{ locationLabel }}</span
-            >
-            @if (p.telefono) {
-              <span
-                ><span class="material-symbols-outlined" aria-hidden="true">call</span
-                >{{ p.telefono }}</span
+      @if (!firstAccess) {
+        <app-profile-header
+          [name]="fullName"
+          [initials]="initials"
+          [photo]="p.foto"
+          [badge]="roleLabel"
+          [description]="
+            p.completo
+              ? 'Tu espacio en Canchero. Mantén tus datos al día para organizar tu próximo partido.'
+              : 'Completa tus nombres y apellidos para personalizar tu experiencia en Canchero.'
+          "
+        >
+          <div profileActions class="header-actions">
+            @if (!firstAccess && !editing()) {
+              <button
+                mat-flat-button
+                type="button"
+                class="btn-cover btn-cover-primary edit-profile"
+                (click)="editing.set(true); saved.set(false)"
               >
+                <span class="material-symbols-outlined" aria-hidden="true">edit</span>
+                <span>Editar perfil</span>
+              </button>
+              <button
+                mat-icon-button
+                type="button"
+                class="btn-cover btn-cover-icon"
+                (click)="compartirPerfil()"
+                title="Compartir perfil"
+                aria-label="Compartir perfil"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">share</span>
+              </button>
             }
           </div>
-        </div>
-        <div profileNotice class="profile-note">
-          <span class="material-symbols-outlined" aria-hidden="true">lock</span>Solo tú puedes ver
-          tus datos de contacto y dirección en este perfil.
-        </div>
-        <div profileTabs>
-          @if (!firstAccess && !editing()) {
-            <nav class="profile-tabs" aria-label="Secciones del perfil">
-              <button
-                type="button"
-                [class.active]="activeTab() === 'information'"
-                [attr.aria-current]="activeTab() === 'information' ? 'page' : null"
-                (click)="activeTab.set('information')"
+          <div profileMeta>
+            <p class="profile-email">{{ account()?.email }}</p>
+            <div class="identity-details">
+              <span
+                ><span class="material-symbols-outlined" aria-hidden="true">location_on</span
+                >{{ locationLabel }}</span
               >
-                Información
-              </button>
-              <button
-                type="button"
-                [class.active]="activeTab() === 'photos'"
-                [attr.aria-current]="activeTab() === 'photos' ? 'page' : null"
-                (click)="activeTab.set('photos')"
-              >
-                Foto de perfil
-              </button>
-              <button type="button" disabled title="Publicaciones aún no disponible">
-                Publicaciones
-              </button>
-              <button type="button" disabled title="Seguidores aún no disponible">
-                Seguidores
-              </button>
-              <button type="button" disabled title="Siguiendo aún no disponible">Siguiendo</button>
-            </nav>
-          }
-        </div></app-profile-header
-      >
+              @if (p.telefono) {
+                <span
+                  ><span class="material-symbols-outlined" aria-hidden="true">call</span
+                  >{{ p.telefono }}</span
+                >
+              }
+            </div>
+          </div>
+          <div profileNotice class="profile-note">
+            <span class="material-symbols-outlined" aria-hidden="true">lock</span>Solo tú puedes ver
+            tus datos de contacto y dirección en este perfil.
+          </div>
+          <div profileTabs>
+            @if (!firstAccess && !editing()) {
+              <nav class="profile-tabs" aria-label="Secciones del perfil">
+                <button
+                  type="button"
+                  [class.active]="activeTab() === 'information'"
+                  [attr.aria-current]="activeTab() === 'information' ? 'page' : null"
+                  (click)="activeTab.set('information')"
+                >
+                  Información
+                </button>
+                <button
+                  type="button"
+                  [class.active]="activeTab() === 'photos'"
+                  [attr.aria-current]="activeTab() === 'photos' ? 'page' : null"
+                  (click)="activeTab.set('photos')"
+                >
+                  Foto de perfil
+                </button>
+                <button type="button" disabled title="Publicaciones aún no disponible">
+                  Publicaciones
+                </button>
+                <button type="button" disabled title="Seguidores aún no disponible">
+                  Seguidores
+                </button>
+                <button type="button" disabled title="Siguiendo aún no disponible">
+                  Siguiendo
+                </button>
+              </nav>
+            }
+          </div></app-profile-header
+        >
+      } @else {
+        <header class="onboarding-heading">
+          <h1>Completa tu cuenta</h1>
+          <p>Elige cómo te encontrarán en Canchero y confirma tus datos.</p>
+          <p class="profile-email">{{ account()?.email }}</p>
+        </header>
+      }
       @if (saved()) {
         <p class="saved status-message" role="status">Tu perfil se guardó correctamente.</p>
       }
       <div class="profile-layout">
-        <aside class="profile-sidebar">
-          @if (managesVenues) {
-            <section class="card info-card"><app-managed-venue-profiles /></section>
-          }
-          <section class="card info-card">
-            <h2>Sobre mí</h2>
-            <dl>
-              <div>
-                <dt>Tipo de cuenta</dt>
-                <dd>{{ roleLabel }}</dd>
-              </div>
-              <div>
-                <dt>Ubicación</dt>
-                <dd>{{ locationLabel }}</dd>
-              </div>
-              <div>
-                <dt>Celular</dt>
-                <dd>{{ p.telefono || 'Sin agregar' }}</dd>
-              </div>
-              <div>
-                <dt>Dirección</dt>
-                <dd>{{ p.direccion || 'Sin agregar' }}</dd>
-              </div>
-            </dl>
-          </section>
-          <section class="card info-card account-note">
-            <span class="material-symbols-outlined" aria-hidden="true">manage_accounts</span>
-            <h2>Una cuenta, tu experiencia</h2>
-            <p>Tu foto y nombre se usan en tu cuenta y en las reservas que realizas.</p>
-          </section>
-        </aside>
+        @if (!firstAccess) {
+          <aside class="profile-sidebar">
+            @if (managesVenues) {
+              <section class="card info-card"><app-managed-venue-profiles /></section>
+            }
+            <section class="card info-card">
+              <h2>Sobre mí</h2>
+              <dl>
+                <div>
+                  <dt>Tipo de cuenta</dt>
+                  <dd>{{ roleLabel }}</dd>
+                </div>
+                <div>
+                  <dt>Ubicación</dt>
+                  <dd>{{ locationLabel }}</dd>
+                </div>
+                <div>
+                  <dt>Celular</dt>
+                  <dd>{{ p.telefono || 'Sin agregar' }}</dd>
+                </div>
+                <div>
+                  <dt>Dirección</dt>
+                  <dd>{{ p.direccion || 'Sin agregar' }}</dd>
+                </div>
+              </dl>
+            </section>
+            <section class="card info-card account-note">
+              <span class="material-symbols-outlined" aria-hidden="true">manage_accounts</span>
+              <h2>Una cuenta, tu experiencia</h2>
+              <p>Tu foto y nombre se usan en tu cuenta y en las reservas que realizas.</p>
+            </section>
+          </aside>
+        }
         <div class="profile-main">
           @if (firstAccess || editing()) {
             <section class="card profile-card" aria-labelledby="edit-title">
@@ -144,7 +156,10 @@
                   <h2 id="edit-title">
                     {{ firstAccess ? 'Completa tu perfil' : 'Editar perfil' }}
                   </h2>
-                  <p>Los campos opcionales puedes completarlos después.</p>
+                  <p>
+                    Nombres, apellidos e identificador son obligatorios. Los demás datos puedes
+                    completarlos después.
+                  </p>
                 </div>
               </div>
               <form #form="ngForm" (ngSubmit)="save()">
@@ -199,7 +214,7 @@
                       subscriptSizing="dynamic"
                       class="cn-field w-full"
                     >
-                      <mat-label>Nombre</mat-label>
+                      <mat-label>Nombres</mat-label>
                       <input
                         matInput
                         name="nombre"
@@ -214,7 +229,7 @@
                       subscriptSizing="dynamic"
                       class="cn-field w-full"
                     >
-                      <mat-label>Apellido</mat-label>
+                      <mat-label>Apellidos</mat-label>
                       <input
                         matInput
                         name="apellido"
@@ -225,6 +240,32 @@
                       />
                     </mat-form-field>
                   </div>
+                  <mat-form-field
+                    appearance="outline"
+                    subscriptSizing="dynamic"
+                    class="cn-field w-full"
+                  >
+                    <mat-label>Identificador de usuario</mat-label
+                    ><span matTextPrefix aria-hidden="true">@&nbsp;</span>
+                    <input
+                      matInput
+                      name="handle"
+                      autocomplete="username"
+                      required
+                      minlength="3"
+                      maxlength="30"
+                      pattern="[a-z0-9_.\-]{3,30}"
+                      [(ngModel)]="p.handle"
+                      [readonly]="handleLocked()"
+                      autocapitalize="none"
+                      spellcheck="false"
+                    />
+                    <mat-hint>{{
+                      handleLocked()
+                        ? 'Tu identificador actual se conserva. Puedes gestionar sus cambios desde tu perfil.'
+                        : 'De 3 a 30 letras minúsculas, números, puntos o guiones. Debe ser único; después podrás cambiarlo cada tres meses.'
+                    }}</mat-hint>
+                  </mat-form-field>
                   <mat-form-field
                     appearance="outline"
                     subscriptSizing="dynamic"

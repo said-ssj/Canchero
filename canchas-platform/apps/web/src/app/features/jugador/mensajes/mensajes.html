@@ -194,9 +194,11 @@
           </p>
         }
         <form class="composer" (ngSubmit)="send()">
+          <app-emoji-button [target]="messageInput" [disabled]="!c.canSend || sending()" />
           <mat-form-field appearance="outline" subscriptSizing="dynamic"
             ><mat-label>Escribe un mensaje</mat-label>
             <textarea
+              #messageInput
               matInput
               name="message"
               [(ngModel)]="draft"

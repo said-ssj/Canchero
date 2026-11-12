@@ -23,6 +23,7 @@ import { AuthService } from '@core/auth/auth.service';
 import { ChatService, ChatMessage, Conversation, ChatContact } from '@core/services/chat.service';
 import { RealtimeAuthService } from '@core/supabase/realtime-auth.service';
 import { ChatReportDialog } from './report-dialog';
+import { EmojiButton } from '@shared/components/emoji-button/emoji-button';
 
 @Component({
   selector: 'app-mensajes',
@@ -36,6 +37,7 @@ import { ChatReportDialog } from './report-dialog';
     MatInputModule,
     MatDialogModule,
     MatMenuModule,
+    EmojiButton,
   ],
   templateUrl: './mensajes.html',
   styleUrl: './mensajes.css',

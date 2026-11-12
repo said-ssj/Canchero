@@ -743,6 +743,7 @@
                   <textarea
                     matInput
                     name="postText"
+                    #postTextInput
                     [(ngModel)]="text"
                     rows="3"
                     maxlength="2000"
@@ -783,51 +784,7 @@
                 />
                 <div class="composer-tools-row">
                   <div class="composer-left-tools">
-                    <div class="emoji-picker-wrap">
-                      <button
-                        mat-icon-button
-                        class="btn icon-only emoji-btn"
-                        type="button"
-                        title="Agregar emoji"
-                        aria-label="Agregar emoji"
-                        (click)="toggleEmojiPicker()"
-                      >
-                        <span class="material-symbols-outlined" aria-hidden="true"
-                          >sentiment_satisfied</span
-                        >
-                      </button>
-                      @if (emojiPickerOpen()) {
-                        <div
-                          class="emoji-picker-dropdown"
-                          role="dialog"
-                          aria-label="Selector de emojis"
-                        >
-                          <div class="emoji-picker-header">
-                            <span class="emoji-picker-title">Elige un emoji</span>
-                            <button
-                              mat-icon-button
-                              type="button"
-                              class="btn icon-only emoji-close"
-                              (click)="emojiPickerOpen.set(false)"
-                              aria-label="Cerrar"
-                            >
-                              ✕
-                            </button>
-                          </div>
-                          <div class="emoji-picker-grid">
-                            @for (em of emojis(); track $index) {
-                              <button
-                                type="button"
-                                class="emoji-char-btn"
-                                (click)="insertEmoji(em)"
-                              >
-                                {{ em }}
-                              </button>
-                            }
-                          </div>
-                        </div>
-                      }
-                    </div>
+                    <app-emoji-button [target]="postTextInput" [disabled]="busy()" />
                     <button
                       mat-stroked-button
                       class="btn outline composer-gallery-btn"

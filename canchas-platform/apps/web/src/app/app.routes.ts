@@ -1,11 +1,13 @@
 import { Routes } from '@angular/router';
 import { MainLayout } from './shared/components/main-layout/main-layout';
 import { authGuard } from './core/guards/auth.guard';
+import { profileCompletionGuard } from './core/guards/profile-completion.guard';
 
 export const routes: Routes = [
   {
     path: '',
     component: MainLayout,
+    canActivateChild: [profileCompletionGuard],
     children: [
       {
         path: 'mensajes',
@@ -95,8 +97,8 @@ export const routes: Routes = [
   {
     path: 'admin',
     loadComponent: () => import('./features/admin/layout/admin-layout').then((m) => m.AdminLayout),
-    canActivate: [authGuard],
-    canActivateChild: [authGuard],
+    canActivate: [authGuard, profileCompletionGuard],
+    canActivateChild: [authGuard, profileCompletionGuard],
     children: [
       { path: '', redirectTo: 'sedes', pathMatch: 'full' },
       {
