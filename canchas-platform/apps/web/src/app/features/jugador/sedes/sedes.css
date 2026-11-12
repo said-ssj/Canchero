@@ -252,37 +252,71 @@
   display: block;
 }
 
-/* Botones en la foto (alert y fav) */
-.fav-btn,
-.alert-btn {
+/* Acciones compactas, sin marcos ni superficies de botón. */
+.photo-wrapper::after {
+  content: '';
   position: absolute;
-  top: 10px;
-  width: 32px;
-  height: 32px;
-  min-width: 32px;
-  padding: 4px;
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid var(--line, #cbd5e1);
-  border-radius: 6px;
+  inset: 0 0 auto;
+  height: 48px;
+  background: linear-gradient(180deg, #0005, transparent);
+  pointer-events: none;
+}
+.photo-wrapper .venue-photo-action {
+  position: absolute;
+  top: 12px;
+  width: 24px !important;
+  height: 24px !important;
+  min-width: 24px !important;
+  min-height: 24px !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
   z-index: 2;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  color: #fff !important;
 }
-
 .fav-btn {
-  right: 8px;
+  right: 12px;
 }
-
 .alert-btn {
-  right: 44px;
+  right: 52px;
 }
-
-.fav-btn.fill-1,
-.fav-btn .fill-1 {
-  color: var(--orange, #f59e0b);
+.photo-wrapper .venue-photo-action .material-symbols-outlined {
+  font-size: 24px !important;
+  width: 24px !important;
+  height: 24px !important;
+  line-height: 24px !important;
+  color: inherit !important;
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 500,
+    'GRAD' 0,
+    'opsz' 24;
+  text-shadow: 0 1px 3px #0009;
 }
-
+.photo-wrapper .fav-btn[aria-pressed='true'] {
+  color: #ffd166 !important;
+}
+.photo-wrapper .fav-btn[aria-pressed='true'] .material-symbols-outlined {
+  font-variation-settings:
+    'FILL' 1,
+    'wght' 500,
+    'GRAD' 0,
+    'opsz' 24;
+}
+.photo-wrapper .venue-photo-action:disabled {
+  background: transparent !important;
+  color: #b9c4ce !important;
+  cursor: default;
+}
+.photo-wrapper .venue-photo-action:focus-visible {
+  outline: 2px solid #fff !important;
+  outline-offset: 3px;
+}
 /* Cuerpo de la tarjeta */
 .venue-body {
   padding: 18px 20px;
@@ -555,15 +589,6 @@ body.dark-theme .photo-wrapper {
 :root.dark-theme .venue-badges-row .badge,
 body.dark-theme .venue-badges-row .badge {
   background: #27272a;
-  color: #e2e8f0;
-}
-
-:root.dark-theme .fav-btn,
-:root.dark-theme .alert-btn,
-body.dark-theme .fav-btn,
-body.dark-theme .alert-btn {
-  background: rgba(39, 39, 42, 0.9);
-  border-color: #3f3f46;
   color: #e2e8f0;
 }
 

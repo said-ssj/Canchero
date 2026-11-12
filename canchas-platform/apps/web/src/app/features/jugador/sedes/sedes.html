@@ -4,6 +4,12 @@
     <p>Encuentra una cancha para tu próximo partido.</p>
   </div>
 
+  @if (preferences.error()) {
+    <p role="alert">
+      {{ preferences.error() }}
+      <button type="button" (click)="preferences.load()">Reintentar favoritos</button>
+    </p>
+  }
   <div class="catalog-layout">
     <!-- FILTROS A LA IZQUIERDA -->
     <aside class="filters" aria-label="Filtros">
@@ -292,10 +298,22 @@
                 <!-- Botones auxiliares en esquina superior derecha de la foto (Imagen 1) -->
                 <button
                   type="button"
-                  class="btn icon-only fav-btn"
-                  disabled
-                  title="Favoritos pendientes de conexión con tu cuenta"
-                  aria-label="Guardar en favoritos, próximamente"
+                  class="btn icon-only venue-photo-action fav-btn"
+                  [disabled]="
+                    preferences.loading() ||
+                    preferences.busy().has(venue.id) ||
+                    !!preferences.error()
+                  "
+                  [attr.aria-pressed]="favorites().has(venue.id)"
+                  [attr.title]="
+                    favorites().has(venue.id) ? 'Quitar de favoritos' : 'Guardar en favoritos'
+                  "
+                  [attr.aria-label]="
+                    (favorites().has(venue.id)
+                      ? 'Quitar de favoritos: '
+                      : 'Guardar en favoritos: ') + venue.nombre
+                  "
+                  (click)="toggleFav($event, venue.id)"
                 >
                   <span
                     class="material-symbols-outlined icon-18 icon"
@@ -306,10 +324,10 @@
                 </button>
                 <button
                   type="button"
-                  class="btn icon-only alert-btn"
+                  class="btn icon-only venue-photo-action alert-btn"
                   disabled
-                  title="Notificaciones de horarios (próximamente)"
-                  aria-label="Notificaciones de horarios próximamente"
+                  title="Avisos de horarios próximamente"
+                  [attr.aria-label]="'Avisos de horarios próximamente: ' + venue.nombre"
                 >
                   <span class="material-symbols-outlined icon-18 icon" aria-hidden="true"
                     >notifications</span

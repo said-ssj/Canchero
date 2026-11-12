@@ -41,6 +41,14 @@ export const routes: Routes = [
         loadComponent: () => import('./features/jugador/checkout/checkout').then((m) => m.Checkout),
       },
       {
+        path: 'historial-pagos',
+        canActivate: [authGuard],
+        loadComponent: () =>
+          import('./features/jugador/historial-pagos/historial-pagos').then(
+            (m) => m.PaymentHistory,
+          ),
+      },
+      {
         path: 'itinerario',
         loadComponent: () =>
           import('./features/jugador/itinerario/itinerario').then((m) => m.Itinerario),

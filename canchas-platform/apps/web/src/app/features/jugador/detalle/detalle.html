@@ -16,6 +16,12 @@
       <span>{{ capitalize(v.distrito) }}</span>
     </nav>
 
+    @if (preferences.error()) {
+      <p role="alert">
+        {{ preferences.error() }}
+        <button type="button" (click)="preferences.load()">Reintentar favoritos</button>
+      </p>
+    }
     <app-profile-header
       [name]="v.nombre"
       badge="Complejo deportivo"
@@ -26,13 +32,33 @@
     >
       <div profileActions class="business-actions">
         <button
+          type="button"
+          class="btn icon-only"
+          [disabled]="
+            preferences.loading() || preferences.busy().has(v.id) || !!preferences.error()
+          "
+          [attr.aria-pressed]="favorito()"
+          [attr.aria-label]="favorito() ? 'Quitar de favoritos' : 'Guardar en favoritos'"
+          (click)="toggleFavorite()"
+        >
+          <span class="material-symbols-outlined" [class.fill-1]="favorito()" aria-hidden="true"
+            >star</span
+          >
+        </button>
+        <button
           class="btn icon-only"
           type="button"
-          disabled
-          title="Notificaciones de horarios (próximamente)"
-          aria-label="Notificaciones de horarios próximamente"
+          title="Preferencia local de avisos; todavía no se envían notificaciones"
+          aria-label="Preferencia local de avisos"
+          [attr.aria-pressed]="notificaciones()"
+          (click)="handleNotificationClick()"
         >
-          <span class="material-symbols-outlined" aria-hidden="true">notifications</span>
+          <span
+            class="material-symbols-outlined"
+            [class.fill-1]="notificaciones()"
+            aria-hidden="true"
+            >notifications</span
+          >
         </button>
         <button
           class="btn icon-only"
@@ -435,24 +461,34 @@
           }
         </section>
         <div class="divider"></div>
-        <h2>Tu próxima reserva</h2>
+        <h2>{{ selectedCourt() ? 'Tu próxima reserva' : 'Elige tu cancha' }}</h2>
         <p>
-          <strong>{{ v.nombre }}</strong> · {{ losaName() }}
+          <strong>{{ v.nombre }}</strong>
+          @if (losaName()) {
+            · {{ losaName() }}
+          }
         </p>
+        @if (!selectedCourt()) {
+          <p class="muted small">Elige una cancha de la lista para consultar sus horarios.</p>
+        }
         <div class="list-line">
           <span>Desde</span>
           <strong>S/ {{ selectedCourt()?.precioHora ?? v.precioBase }}.00 / h</strong>
         </div>
         <p class="muted small">Consulta la disponibilidad por fecha antes de reservar.</p>
-        <button
-          type="button"
-          class="btn primary btn-full"
-          [disabled]="!selectedCourt()?.disponible"
-          (click)="goToBookingFlow()"
-        >
-          <span class="material-symbols-outlined icon-16" aria-hidden="true">schedule</span>
-          Ver horarios
-        </button>
+        @if (selectedCourt()) {
+          <button
+            type="button"
+            class="btn primary btn-full"
+            [disabled]="!selectedCourt()?.disponible"
+            (click)="goToBookingFlow()"
+          >
+            <span class="material-symbols-outlined icon-16" aria-hidden="true">schedule</span>
+            Ver horarios
+          </button>
+        } @else {
+          <a class="btn primary btn-full" [href]="'/sedes/' + v.id + '#canchas'">Ver canchas</a>
+        }
         <div class="divider"></div>
         <p class="small">
           <span class="material-symbols-outlined icon-16 icon" aria-hidden="true">location_on</span>

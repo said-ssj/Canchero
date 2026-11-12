@@ -1,0 +1,108 @@
+:host {
+  display: block;
+  min-height: 65dvh;
+  background: var(--color-surface);
+  color: var(--color-ink-900);
+}
+.payment-history {
+  padding-block: 28px 40px;
+  max-width: 1000px;
+}
+header,
+.payment-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+h1 {
+  font-size: 26px;
+  margin: 0 0 8px;
+}
+header p,
+.payment p,
+.note,
+dt {
+  color: var(--color-ink-600);
+}
+header p,
+.payment p {
+  margin: 0;
+  line-height: 1.5;
+}
+.payments {
+  display: grid;
+  gap: 16px;
+  margin-top: 24px;
+}
+.payment,
+.state {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 20px;
+  background: var(--color-surface);
+}
+h2 {
+  font-size: 17px;
+  margin: 0 0 6px;
+}
+.amount {
+  font-size: 22px;
+  color: var(--color-brand-green);
+  white-space: nowrap;
+}
+dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin: 20px 0;
+}
+dt {
+  font-size: 12px;
+}
+dd {
+  margin: 5px 0 0;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.state {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 10px;
+  margin-top: 24px;
+}
+.more {
+  text-align: center;
+  margin-top: 20px;
+}
+.note {
+  font-size: 12px;
+  margin-top: 24px;
+  line-height: 1.6;
+}
+a,
+button {
+  --mat-button-filled-state-layer-color: transparent;
+  --mat-button-text-state-layer-color: transparent;
+}
+@media (max-width: 600px) {
+  header {
+    flex-direction: column;
+  }
+  .payment-heading {
+    flex-wrap: wrap;
+  }
+  dl {
+    grid-template-columns: 1fr;
+  }
+  .payment {
+    padding: 16px;
+  }
+  .payment-history {
+    padding-block: 20px;
+  }
+  h1 {
+    font-size: 24px;
+  }
+}

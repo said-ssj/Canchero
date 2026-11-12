@@ -21,6 +21,7 @@ import type {
 import {
   getLimaDate,
   buildBookingBlock,
+  buildBookingBlocks,
   getCourtOperatingHours,
 } from '@core/utils/availability.utils';
 
@@ -328,16 +329,22 @@ export class Checkout {
       }).format(date);
       const court = this.resolvedCourt();
       this.selectedSlots.set(
-        held.hours.map((hour) => ({
-          id: `${held.fecha}_${hour}`,
-          dateStr: held.fecha,
-          dayDisplay: label,
-          hour,
-          time: `${this.pad2(hour)}:00 - ${this.pad2(hour + 1)}:00`,
-          price: court
-            ? this.db.getCourtSlotAvailability(court, held.fecha, hour).price
-            : held.monto / held.hours.length,
-        })),
+        (held.bloques ?? [held]).flatMap((b) =>
+          b.hours.map((hour) => ({
+            id: `${b.fecha}_${hour}`,
+            dateStr: b.fecha,
+            dayDisplay: new Intl.DateTimeFormat('es-PE', {
+              weekday: 'short',
+              day: 'numeric',
+              month: 'short',
+            }).format(new Date(b.fecha + 'T12:00:00')),
+            hour,
+            time: `${this.pad2(hour)}:00 - ${this.pad2(hour + 1)}:00`,
+            price: court
+              ? this.db.getCourtSlotAvailability(court, b.fecha, hour).price
+              : b.monto / b.hours.length,
+          })),
+        ),
       );
       this.serverQuote.set(null);
       this.activePaso.set(2);
@@ -374,8 +381,12 @@ export class Checkout {
       held.courtId === this.queryCourtId() &&
       held.cupos === this.accessSlots() &&
       new Date(held.expiresAt).getTime() > Date.now() &&
-      slots.length === held.hours.length &&
-      slots.every((slot) => slot.dateStr === held.fecha && held.hours.includes(slot.hour))
+      slots.length === (held.bloques ?? [held]).reduce((n, b) => n + b.hours.length, 0) &&
+      slots.every((slot) =>
+        (held.bloques ?? [held]).some(
+          (b) => b.fecha === slot.dateStr && b.hours.includes(slot.hour),
+        ),
+      )
     );
   }
 
@@ -423,10 +434,29 @@ export class Checkout {
     return c ? c.precioHora : 0;
   });
 
+  protected readonly bookingBlocks = computed(() =>
+    buildBookingBlocks(this.selectedSlots(), this.nightStartHour()),
+  );
   protected readonly bookingBlock = computed<BookingBlock>(() => {
-    const localBlock = buildBookingBlock(this.selectedSlots(), this.nightStartHour());
+    const blocks = this.bookingBlocks();
+    const localBlock: BookingBlock =
+      blocks.length <= 1
+        ? (blocks[0] ?? buildBookingBlock([]))
+        : {
+            isValid: blocks.every((b) => b.isValid),
+            dateStr: blocks[0].dateStr,
+            timeStart: blocks[0].timeStart,
+            durationHours: blocks.reduce((n, b) => n + b.durationHours, 0),
+            tranches: blocks.flatMap((b) => b.tranches),
+            subtotal: blocks.reduce((n, b) => n + b.subtotal, 0),
+            fullLabel: blocks.map((b) => b.fullLabel).join(' · '),
+            displayRange: blocks.map((b) => `${b.dayDisplay}: ${b.displayRange}`).join(' · '),
+          };
     if (localBlock.isValid && this.matchesHeldSelection())
-      return { ...localBlock, subtotal: this.resumedPayment()!.monto };
+      return {
+        ...localBlock,
+        subtotal: this.resumedPayment()!.totalOperacion ?? this.resumedPayment()!.monto,
+      };
     const srv = this.serverQuote();
     if (
       localBlock.isValid &&
@@ -490,7 +520,7 @@ export class Checkout {
 
   protected readonly horasLabel = computed(() => {
     const block = this.bookingBlock();
-    if (block.isValid) {
+    if (block.isValid && this.bookingBlocks().length === 1) {
       return `${block.durationHours} ${block.durationHours === 1 ? 'hora' : 'horas continuas'}`;
     }
     const n = this.selectedSlots().length;
@@ -832,39 +862,39 @@ export class Checkout {
       return;
     }
     const court = this.resolvedCourt();
-    const localBlock = buildBookingBlock(this.selectedSlots(), this.nightStartHour());
-    if (!court || !localBlock.isValid || localBlock.durationHours === 0 || !localBlock.dateStr) {
-      this.serverQuote.set(null);
-      return;
-    }
-    if (typeof this.db.quoteCourtBooking !== 'function') {
-      this.serverQuote.set(null);
-      return;
-    }
-    const hours = localBlock.tranches.map((t) => t.hour);
-    const quote = await this.db.quoteCourtBooking(court.id, localBlock.dateStr, hours);
-    if (this.quoteSeq !== seq) return;
-    const quoteCourtId = (quote as any)?.courtId;
+    const blocks = this.bookingBlocks();
     if (
-      quote &&
-      (!quoteCourtId ||
-        String(quoteCourtId) === String(court.id) ||
-        String(quoteCourtId) === String(court.id_cancha ?? '')) &&
-      quote.dateStr === localBlock.dateStr
+      !court ||
+      !blocks.length ||
+      blocks.some((b) => !b.isValid) ||
+      typeof this.db.quoteCourtBooking !== 'function'
     ) {
-      this.serverQuote.set(quote);
-      // Sincronizar precios por tramo recibidos del servidor con las casillas seleccionadas
-      if (quote.isValid && quote.tranches.length === hours.length) {
-        const priceByHour = new Map(quote.tranches.map((t) => [t.hour, t.price]));
-        this.selectedSlots.update((slots) =>
-          slots.map((s) =>
-            s.dateStr === quote.dateStr && priceByHour.has(s.hour)
-              ? { ...s, price: priceByHour.get(s.hour)! }
-              : s,
-          ),
-        );
-      }
+      this.serverQuote.set(null);
+      return;
     }
+    const quotes = await Promise.all(
+      blocks.map((b) =>
+        this.db.quoteCourtBooking(
+          court.id,
+          b.dateStr!,
+          b.tranches.map((t) => t.hour),
+        ),
+      ),
+    );
+    if (this.quoteSeq !== seq) return;
+    this.serverQuote.set(quotes.length === 1 ? quotes[0] : null);
+    const prices = new Map<string, number>();
+    quotes.forEach((q, i) => {
+      if (!q?.isValid || q.dateStr !== blocks[i].dateStr) return;
+      for (const t of q.tranches) prices.set(`${q.dateStr}_${t.hour}`, t.price);
+    });
+    this.selectedSlots.update((slots) =>
+      slots.map((s) =>
+        prices.has(`${s.dateStr}_${s.hour}`)
+          ? { ...s, price: prices.get(`${s.dateStr}_${s.hour}`)! }
+          : s,
+      ),
+    );
   }
 
   protected reprice(): void {
@@ -1003,7 +1033,7 @@ export class Checkout {
 
     if (!this.canSubmitReservation()) {
       this.confirmError.set(
-        'El pago todavía no está disponible. Revisa la configuraci�n y la cantidad de participantes.',
+        'El pago todavía no está disponible. Revisa la configuración y la cantidad de participantes.',
       );
       return;
     }
@@ -1017,7 +1047,9 @@ export class Checkout {
       userId,
       String(court.id),
       dateStr,
-      displayRange,
+      this.bookingBlocks()
+        .map((b) => `${b.dateStr}:${b.displayRange}`)
+        .join('|'),
     );
 
     this.submitting.set(true);
@@ -1033,8 +1065,14 @@ export class Checkout {
       }
       const result = await this.mp.start({
         courtId: String(court.id),
-        fecha: dateStr,
-        hours: block.tranches.map((t) => t.hour),
+        // Una API antigua debe rechazar un conjunto, nunca reservar solo su primer dia.
+        ...(this.bookingBlocks().length === 1
+          ? { fecha: dateStr, hours: this.bookingBlocks()[0].tranches.map((t) => t.hour) }
+          : {}),
+        selections: this.bookingBlocks().map((b) => ({
+          fecha: b.dateStr!,
+          hours: b.tranches.map((t) => t.hour),
+        })),
         cupos: this.accessSlots(),
         idempotencyKey,
       });

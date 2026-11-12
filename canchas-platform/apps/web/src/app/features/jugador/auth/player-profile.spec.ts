@@ -7,11 +7,11 @@ import { vi } from 'vitest';
 import { AuthService } from '@core/auth/auth.service';
 import { PlayerProfilePage } from './player-profile';
 describe('Formulario de primer acceso', () => {
-  async function setup(acceso = 'google') {
+  async function setup(acceso = 'google', initialName = '', initialHandle: string | null = null) {
     const profile = {
-      nombre: '',
+      nombre: initialName,
       apellido: '',
-      handle: null,
+      handle: initialHandle,
       completo: false,
       telefono: null,
       direccion: null,
@@ -89,5 +89,40 @@ describe('Formulario de primer acceso', () => {
     expect(page.error()).toContain('ocupado');
     expect(page.profile.nombre).toBe('Nombres');
     expect(navigate).not.toHaveBeenCalled();
+  });
+  it('suggests the Google name without accents and selects it for replacement', async () => {
+    const { fixture, page } = await setup('google', 'Álvaro Alejandro');
+    const field = fixture.nativeElement.querySelector('input[name=handle]') as HTMLInputElement;
+    expect(page.profile.handle).toBe('alvaroalejandro');
+    expect(document.activeElement).toBe(field);
+    expect(field.selectionStart).toBe(0);
+    expect(field.selectionEnd).toBe(field.value.length);
+  });
+  it('updates the suggestion while entering the name but never replaces a manual handle or a deliberate blank', async () => {
+    const { fixture, page, auth } = await setup('registro');
+    page.updateName('María José');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const field = fixture.nativeElement.querySelector('input[name=handle]') as HTMLInputElement;
+    field.focus();
+    expect(field.selectionStart).toBe(0);
+    expect(field.selectionEnd).toBe(field.value.length);
+    expect(page.profile.handle).toBe('mariajose');
+    page.updateHandle('mi_usuario');
+    page.updateName('María Josefina');
+    expect(page.profile.handle).toBe('mi_usuario');
+    page.updateHandle('');
+    page.updateName('María');
+    page.profile.apellido = 'Pérez';
+    await page.save();
+    expect(auth.savePlayerProfile).not.toHaveBeenCalled();
+    expect(page.error()).toContain('identificador @');
+  });
+  it('preserves an already registered handle instead of suggesting another', async () => {
+    const { page } = await setup('inicio', 'Nombre', 'identificador_existente');
+    page.updateName('Otro nombre');
+    expect(page.profile.handle).toBe('identificador_existente');
+    expect(page.handleLocked()).toBe(true);
   });
 });

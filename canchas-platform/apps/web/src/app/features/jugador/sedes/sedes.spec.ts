@@ -1,3 +1,4 @@
+import { VenuePreferences } from '@core/services/venue-preferences.service';
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
@@ -92,6 +93,37 @@ describe('Sedes Component - Fase 7: Diseño y Verificación Integral', () => {
     await TestBed.configureTestingModule({
       imports: [Sedes],
       providers: [
+        {
+          provide: VenuePreferences,
+          useFactory: () => {
+            const favorites = signal(new Set<string>(['venue-20'])),
+              alerts = signal(new Set<string>());
+            return {
+              favorites,
+              alerts,
+              busy: signal(new Set<string>()),
+              loading: signal(false),
+              error: signal(''),
+              load: vi.fn(),
+              toggleFavorite: async (id: string) => {
+                favorites.update((s) => {
+                  const n = new Set(s);
+                  n.has(id) ? n.delete(id) : n.add(id);
+                  return n;
+                });
+                return true;
+              },
+              toggleAlert: (id: string) => {
+                alerts.update((s) => {
+                  const n = new Set(s);
+                  n.has(id) ? n.delete(id) : n.add(id);
+                  return n;
+                });
+                return true;
+              },
+            };
+          },
+        },
         provideRouter([]),
         { provide: DatabaseService, useValue: mockDatabaseService },
         { provide: MapsService, useValue: mockMapsService },
@@ -211,7 +243,7 @@ describe('Sedes Component - Fase 7: Diseño y Verificación Integral', () => {
     expect(filtered[0].nombre).toBe('Complejo Deportivo Norte');
   });
 
-  it('Caso 5: Pestaña "Mis Favoritas" filtra las sedes marcadas y botón favorito conmuta estado', () => {
+  it('Caso 5: Pestaña "Mis Favoritas" filtra las sedes marcadas y botón favorito conmuta estado', async () => {
     createComponent();
 
     // venue-20 iniciaba con favorita=true
@@ -226,14 +258,14 @@ describe('Sedes Component - Fase 7: Diseño y Verificación Integral', () => {
 
     // Conmuta favorito de venue-10
     const mockEvent = { stopPropagation: vi.fn() } as unknown as Event;
-    component['toggleFav'](mockEvent, 'venue-10');
+    await component['toggleFav'](mockEvent, 'venue-10');
     fixture.detectChanges();
 
     expect(component['favorites']().has('venue-10')).toBe(true);
     expect(component['countFav']()).toBe(2);
   });
 
-  it('Caso 6: Botón de notificaciones en tarjeta está deshabilitado como función pendiente (disabled real)', () => {
+  it('Caso 6: La campana permanece deshabilitada sin cambiar preferencias', () => {
     createComponent();
 
     const alertButtons = fixture.nativeElement.querySelectorAll('.alert-btn');
@@ -241,6 +273,8 @@ describe('Sedes Component - Fase 7: Diseño y Verificación Integral', () => {
     for (const btn of Array.from(alertButtons)) {
       expect((btn as HTMLButtonElement).disabled).toBe(true);
       expect((btn as HTMLButtonElement).title).toContain('próximamente');
+      (btn as HTMLButtonElement).click();
+      expect((btn as HTMLButtonElement).hasAttribute('aria-pressed')).toBe(false);
     }
   });
 
@@ -257,17 +291,13 @@ describe('Sedes Component - Fase 7: Diseño y Verificación Integral', () => {
     expect(mockImg.getAttribute('src')).toBe(component['fallbackVenueImg']);
   });
 
-  it('mantiene favoritos pendientes deshabilitados sin simular guardado', () => {
+  it('muestra las acciones de favoritos habilitadas al cargar la cuenta', () => {
     createComponent();
     const buttons = fixture.nativeElement.querySelectorAll(
       '.fav-btn',
     ) as NodeListOf<HTMLButtonElement>;
     expect(buttons.length).toBe(2);
-    buttons.forEach((button) => {
-      expect(button.disabled).toBe(true);
-      button.click();
-    });
-    expect(component['countFav']()).toBe(1);
+    buttons.forEach((button) => expect(button.disabled).toBe(false));
   });
 
   it('no inventa una ruta para sedes sin coordenadas validas', () => {

@@ -1,3 +1,4 @@
+import { VenuePreferences } from '@core/services/venue-preferences.service';
 import { Component, computed, DestroyRef, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -61,6 +62,7 @@ interface TimeSlot {
   templateUrl: './detalle.html',
 })
 export class Detalle {
+  protected readonly preferences = inject(VenuePreferences);
   private readonly route = inject(ActivatedRoute);
   private readonly routeParams = toSignal(this.route.paramMap, {
     initialValue: this.route.snapshot.paramMap,
@@ -147,8 +149,8 @@ export class Detalle {
     effect(() => {
       const canchas = this.filteredCanchas();
       const currentId = this.selectedCourtId();
-      if (canchas.length > 0 && !canchas.some((c) => c.id === currentId)) {
-        this.selectedCourtId.set((canchas.find((court) => court.disponible) ?? canchas[0]).id);
+      if (currentId && !canchas.some((c) => c.id === currentId)) {
+        this.selectedCourtId.set('');
       }
     });
   }
@@ -159,11 +161,13 @@ export class Detalle {
   });
 
   protected readonly carouselIdx = signal(0);
-  protected readonly favorito = signal(false);
-  protected readonly notificaciones = signal(false);
-  protected readonly selectedCourtId = signal<string>(
-    this.venue()?.canchas.find((cancha) => cancha.disponible)?.id ?? '',
+  protected readonly favorito = computed(() =>
+    this.preferences.favorites().has(this.venue()?.id || ''),
   );
+  protected readonly notificaciones = computed(() =>
+    this.preferences.alerts().has(this.venue()?.id || ''),
+  );
+  protected readonly selectedCourtId = signal<string>('');
 
   protected readonly selectedDateLabel = signal('Hoy (Vie)');
   protected readonly selectedTimeLabel = signal('19:00 - 20:00');
@@ -248,11 +252,7 @@ export class Detalle {
   });
 
   protected readonly selectedCourt = computed<Court | undefined>(() => {
-    const canchas = this.filteredCanchas();
-    if (canchas.length === 0) {
-      return this.venue()?.canchas[0];
-    }
-    return canchas.find((cancha) => cancha.id === this.selectedCourtId()) ?? canchas[0];
+    return this.filteredCanchas().find((cancha) => cancha.id === this.selectedCourtId());
   });
 
   protected readonly availableCount = computed(
@@ -402,14 +402,22 @@ export class Detalle {
     this.carouselIdx.set(index);
   }
 
-  protected toggleFavorite(): void {
-    this.favorito.update((value) => !value);
-    this.showToast(this.favorito() ? 'Agregado a tus canchas favoritas' : 'Eliminado de favoritos');
+  protected async toggleFavorite(): Promise<void> {
+    const id = this.venue()?.id;
+    if (id && (await this.preferences.toggleFavorite(id)))
+      this.showToast(
+        this.favorito() ? 'Sede guardada en tus favoritos' : 'Sede eliminada de favoritos',
+      );
   }
-
   protected handleNotificationClick(): void {
-    this.notificaciones.update((value) => !value);
-    this.showToast('Notificaciones activadas para horarios libres en esta sede');
+    const id = this.venue()?.id;
+    if (!id) return;
+    const saved = this.preferences.toggleAlert(id);
+    this.showToast(
+      saved
+        ? 'Preferencia guardada en este navegador. Los avisos todavía no se envían.'
+        : 'No se pudo guardar la preferencia local.',
+    );
   }
 
   protected selectLosa(court: Court): void {

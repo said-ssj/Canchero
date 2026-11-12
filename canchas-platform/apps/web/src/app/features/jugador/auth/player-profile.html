@@ -221,7 +221,8 @@
                         autocomplete="given-name"
                         maxlength="80"
                         required
-                        [(ngModel)]="p.nombre"
+                        [ngModel]="p.nombre"
+                        (ngModelChange)="updateName($event)"
                       />
                     </mat-form-field>
                     <mat-form-field
@@ -249,13 +250,17 @@
                     ><span matTextPrefix aria-hidden="true">@&nbsp;</span>
                     <input
                       matInput
+                      #handleInput
                       name="handle"
                       autocomplete="username"
                       required
                       minlength="3"
                       maxlength="30"
                       pattern="[a-z0-9_.\-]{3,30}"
-                      [(ngModel)]="p.handle"
+                      [ngModel]="p.handle"
+                      (ngModelChange)="updateHandle($event)"
+                      (focus)="selectHandle($event)"
+                      (mouseup)="preserveHandleSelection($event)"
                       [readonly]="handleLocked()"
                       autocapitalize="none"
                       spellcheck="false"
@@ -263,7 +268,7 @@
                     <mat-hint>{{
                       handleLocked()
                         ? 'Tu identificador actual se conserva. Puedes gestionar sus cambios desde tu perfil.'
-                        : 'De 3 a 30 letras minúsculas, números, puntos o guiones. Debe ser único; después podrás cambiarlo cada tres meses.'
+                        : 'Te sugerimos tu nombre; puedes cambiarlo. De 3 a 30 letras minúsculas, números, puntos o guiones. Debe ser único; después podrás cambiarlo cada tres meses.'
                     }}</mat-hint>
                   </mat-form-field>
                   <mat-form-field

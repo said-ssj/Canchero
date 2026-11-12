@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { environment } from '@env/environment';
-import { Component, inject, signal } from '@angular/core';
+import { Component, ElementRef, ViewChild, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService, PlayerProfile } from '@core/auth/auth.service';
@@ -133,6 +133,59 @@ export class PlayerProfilePage {
   }
 
   protected profile: PlayerProfile | null = null;
+  private handleEdited = false;
+  private handleSelectionPending = true;
+  private selectedHandleOnFocus = false;
+
+  @ViewChild('handleInput')
+  protected set handleInput(ref: ElementRef<HTMLInputElement> | undefined) {
+    if (!ref || !this.firstAccess || this.handleLocked() || !this.profile?.handle) return;
+    queueMicrotask(() => {
+      if (!ref.nativeElement.isConnected || this.handleEdited || !this.handleSelectionPending)
+        return;
+      ref.nativeElement.focus();
+      ref.nativeElement.select();
+      this.handleSelectionPending = false;
+    });
+  }
+
+  protected updateName(value: string): void {
+    if (!this.profile) return;
+    this.profile.nombre = value;
+    this.suggestHandle();
+  }
+
+  private suggestHandle(): void {
+    if (!this.profile || !this.firstAccess || this.handleLocked() || this.handleEdited) return;
+    this.profile.handle = (this.profile.nombre ?? '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '')
+      .slice(0, 30);
+    this.handleSelectionPending = true;
+  }
+
+  protected updateHandle(value: string): void {
+    if (!this.profile || this.handleLocked()) return;
+    this.profile.handle = value;
+    this.handleEdited = true;
+    this.handleSelectionPending = false;
+    this.selectedHandleOnFocus = false;
+  }
+
+  protected selectHandle(event: FocusEvent): void {
+    if (!this.firstAccess || this.handleLocked() || !this.handleSelectionPending) return;
+    (event.target as HTMLInputElement).select();
+    this.handleSelectionPending = false;
+    this.selectedHandleOnFocus = true;
+  }
+
+  protected preserveHandleSelection(event: MouseEvent): void {
+    if (this.selectedHandleOnFocus) event.preventDefault();
+    this.selectedHandleOnFocus = false;
+  }
+
   private persistedProfile: PlayerProfile | null = null;
 
   async ngOnInit(): Promise<void> {
@@ -173,6 +226,8 @@ export class PlayerProfilePage {
         idDistrito: savedDistrict?.id_distrito ?? null,
         nombre: !profile.completo && profile.nombre === 'Usuario' ? '' : (profile.nombre ?? ''),
       };
+      this.handleEdited = false;
+      this.suggestHandle();
       this.persistedProfile = { ...this.profile };
     } catch {
       this.error.set('No pudimos cargar tu perfil. Inténtalo nuevamente.');
@@ -267,6 +322,16 @@ export class PlayerProfilePage {
 
   protected async save(): Promise<void> {
     if (!this.profile || this.saving() || this.readingPhoto()) return;
+    if (
+      !this.profile.nombre?.trim() ||
+      !this.profile.apellido?.trim() ||
+      !/^[a-z0-9_.\-]{3,30}$/.test(this.profile.handle ?? '')
+    ) {
+      this.error.set(
+        'Completa tus nombres, apellidos y un identificador @ válido de 3 a 30 caracteres.',
+      );
+      return;
+    }
     this.error.set('');
     this.saving.set(true);
     try {

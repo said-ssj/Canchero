@@ -1,5 +1,10 @@
 import type { Court } from '@shared/models/court.model';
-import type { CourtSlotAvailability, SlotState, BookingBlock, BookingTranche } from '@shared/models/availability.model';
+import type {
+  CourtSlotAvailability,
+  SlotState,
+  BookingBlock,
+  BookingTranche,
+} from '@shared/models/availability.model';
 
 export function getLimaDate(date: Date = new Date()): string {
   const parts = new Intl.DateTimeFormat('en-CA', {
@@ -181,7 +186,11 @@ export function resolveSlotAvailability(
 
   const scheduleSource = useCourtSchedule ? court.horarios_semana! : horarios;
 
-  if (Array.isArray(scheduleSource) && scheduleSource.length > 0 && (useCourtSchedule || sedeIdNum > 0)) {
+  if (
+    Array.isArray(scheduleSource) &&
+    scheduleSource.length > 0 &&
+    (useCourtSchedule || sedeIdNum > 0)
+  ) {
     const horarioDia = scheduleSource.find((h) => {
       const hDia = Number(h.dia_semana ?? h.diaSemana);
       const dayMatches = hDia === dayOfWeek || (dayOfWeek === 0 && hDia === 7);
@@ -191,7 +200,11 @@ export function resolveSlotAvailability(
     });
 
     if (horarioDia) {
-      if (horarioDia.activo === false || horarioDia.estado === 'I' || horarioDia.abierto === false) {
+      if (
+        horarioDia.activo === false ||
+        horarioDia.estado === 'I' ||
+        horarioDia.abierto === false
+      ) {
         return {
           id,
           dateStr,
@@ -203,7 +216,9 @@ export function resolveSlotAvailability(
           reason: 'Sede cerrada este día',
         };
       }
-      const apertura = normalizeTimeString(horarioDia.hora_apertura ?? horarioDia.apertura ?? '08:00');
+      const apertura = normalizeTimeString(
+        horarioDia.hora_apertura ?? horarioDia.apertura ?? '08:00',
+      );
       const cierre = normalizeTimeString(horarioDia.hora_cierre ?? horarioDia.cierre ?? '23:00');
       const aperturaHour = parseInt(apertura.split(':')[0], 10);
       const cierreHour = parseInt(cierre.split(':')[0], 10);
@@ -237,7 +252,11 @@ export function resolveSlotAvailability(
         if (!matchesDay) return false;
       } else {
         const dDia = d.dia_semana ?? d.diaSemana;
-        if (dDia != null && Number(dDia) !== dayOfWeek && !(dayOfWeek === 0 && Number(dDia) === 7)) {
+        if (
+          dDia != null &&
+          Number(dDia) !== dayOfWeek &&
+          !(dayOfWeek === 0 && Number(dDia) === 7)
+        ) {
           return false;
         }
       }
@@ -254,7 +273,8 @@ export function resolveSlotAvailability(
         state: 'blocked',
         price,
         isNight,
-        reason: (descansoActivo as any).titulo || (descansoActivo as any).motivo || 'Horario de descanso',
+        reason:
+          (descansoActivo as any).titulo || (descansoActivo as any).motivo || 'Horario de descanso',
       };
     }
   }
@@ -262,7 +282,8 @@ export function resolveSlotAvailability(
   // 3. REGLA: ¿Bloqueo de mantenimiento o cierre activo?
   if (Array.isArray(bloqueos) && bloqueos.length > 0) {
     const slotStartIso = `${dateStr}T${slotStartStr}:00`;
-    const slotEndIso = hour + 1 === 24 ? `${dateStr}T23:59:59` : `${dateStr}T${pad2(hour + 1)}:00:00`;
+    const slotEndIso =
+      hour + 1 === 24 ? `${dateStr}T23:59:59` : `${dateStr}T${pad2(hour + 1)}:00:00`;
 
     const bloqueoActivo = bloqueos.find((b) => {
       if (b.activo === false || b.estado === 'I') return false;
@@ -305,13 +326,21 @@ export function resolveSlotAvailability(
     const reservaSolapada = reservas.find((r) => {
       // Excluir reservas canceladas o rechazadas
       const rEstado = String(r.estado || '').toLowerCase();
-      if (rEstado === 'cancelada' || rEstado === 'rechazada' || rEstado === 'anulada' || rEstado === 'i') return false;
+      if (
+        rEstado === 'cancelada' ||
+        rEstado === 'rechazada' ||
+        rEstado === 'anulada' ||
+        rEstado === 'i'
+      )
+        return false;
       if (Number(r.id_estado_reserva) === 4 || Number(r.id_estado_reserva) === 5) return false;
 
       const rCanchaId = Number(r.id_cancha ?? r.cancha_id ?? r.idCancha);
       if (rCanchaId !== courtIdNum) return false;
 
-      const rFecha = String(r.fecha_reserva ?? r.fecha ?? r.fechaReserva ?? '').split('T')[0].split(' ')[0];
+      const rFecha = String(r.fecha_reserva ?? r.fecha ?? r.fechaReserva ?? '')
+        .split('T')[0]
+        .split(' ')[0];
       if (rFecha !== dateStr) return false;
 
       const rInicio = normalizeTimeString(r.hora_inicio ?? r.horaInicio);
@@ -364,7 +393,8 @@ export function buildBookingBlock(
   if (dates.length > 1) {
     return {
       isValid: false,
-      errorMessage: 'Los turnos seleccionados deben pertenecer a la misma fecha. Por favor selecciona horarios de un solo día.',
+      errorMessage:
+        'Los turnos seleccionados deben pertenecer a la misma fecha. Por favor selecciona horarios de un solo día.',
       durationHours: slots.length,
       tranches: [],
       subtotal: slots.reduce((acc, s) => acc + s.price, 0),
@@ -430,3 +460,34 @@ export function buildBookingBlock(
   };
 }
 
+/** Split calendar selections into chronological, continuous reservation blocks. */
+export function buildBookingBlocks(
+  slots: { id?: string; dateStr: string; dayDisplay?: string; hour: number; price: number }[],
+  nightStartHour = 18,
+): BookingBlock[] {
+  const groups: (typeof slots)[] = [];
+  for (const slot of [...slots].sort(
+    (a, b) => a.dateStr.localeCompare(b.dateStr) || a.hour - b.hour,
+  )) {
+    const last = groups.at(-1);
+    if (!last || last[0].dateStr !== slot.dateStr || last.at(-1)!.hour + 1 !== slot.hour)
+      groups.push([slot]);
+    else last.push(slot);
+  }
+  const invalid =
+    slots.length > 168 ||
+    groups.length > 31 ||
+    new Set(slots.map((s) => `${s.dateStr}_${s.hour}`)).size !== slots.length ||
+    slots.some((s) => !Number.isInteger(s.hour) || s.hour < 0 || s.hour > 23);
+  if (invalid)
+    return [
+      {
+        isValid: false,
+        errorMessage: 'Selecciona hasta 31 bloques y 168 horas, sin turnos repetidos.',
+        durationHours: 0,
+        tranches: [],
+        subtotal: 0,
+      },
+    ];
+  return groups.map((group) => buildBookingBlock(group, nightStartHour));
+}

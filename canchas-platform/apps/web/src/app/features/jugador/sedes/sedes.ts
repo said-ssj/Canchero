@@ -1,3 +1,4 @@
+import { VenuePreferences } from '@core/services/venue-preferences.service';
 import { Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -35,6 +36,7 @@ export class Sedes {
   private readonly db = inject(DatabaseService);
   protected readonly courtFilters = inject(CourtFilterService);
   private readonly mapsService = inject(MapsService);
+  protected readonly preferences = inject(VenuePreferences);
 
   private readonly queryParams = toSignal(this.route.queryParamMap);
 
@@ -189,15 +191,7 @@ export class Sedes {
   protected readonly busqueda = signal('');
   protected readonly view = signal<'all' | 'fav'>('all');
 
-  protected readonly favorites = signal(
-    new Set(
-      this.db
-        .getVenuesPublicos()
-        .filter((v) => v.favorita)
-        .map((v) => v.id),
-    ),
-  );
-  protected readonly alerts = signal(new Set<string>());
+  protected readonly favorites = this.preferences.favorites;
 
   protected readonly toastText = signal('');
   protected readonly toastAlert = signal(false);
@@ -411,30 +405,13 @@ export class Sedes {
     event.stopPropagation();
   }
 
-  protected toggleFav(event: Event, id: string): void {
+  protected async toggleFav(event: Event, id: string): Promise<void> {
     event.stopPropagation();
-    const next = new Set(this.favorites());
-    if (next.has(id)) {
-      next.delete(id);
-      this.showToast('Eliminada de tus sedes favoritas', false);
-    } else {
-      next.add(id);
-      this.showToast('Añadida a tus sedes favoritas', false);
-    }
-    this.favorites.set(next);
-  }
-
-  protected toggleAlert(event: Event, id: string): void {
-    event.stopPropagation();
-    const next = new Set(this.alerts());
-    if (next.has(id)) {
-      next.delete(id);
-      this.showToast('Notificaciones de cancha desactivadas', false);
-    } else {
-      next.add(id);
-      this.showToast('Alertas activadas para nuevos horarios en esta sede', true);
-    }
-    this.alerts.set(next);
+    if (await this.preferences.toggleFavorite(id))
+      this.showToast(
+        this.favorites().has(id) ? 'Sede guardada en tus favoritos' : 'Sede eliminada de favoritos',
+        false,
+      );
   }
 
   private showToast(message: string, isAlert: boolean): void {

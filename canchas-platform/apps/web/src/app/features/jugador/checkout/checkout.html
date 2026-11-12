@@ -306,51 +306,58 @@
           <!-- Columna Lateral Sticky Resumen -->
           <aside class="summary" aria-label="Resumen de selección">
             <h2>Tu reserva</h2>
-            @if (bookingBlock().isValid && selectedSlots().length > 0) {
-              <app-venue-weather
-                [venueId]="resolvedVenue()?.id"
-                [date]="bookingBlock().dateStr"
-                [hour]="bookingBlock().timeStart"
-              />
-            }
-            <p>
-              {{ resolvedCourt()?.nombre || selectedTipoCancha() }} · {{ selectedComplejo().name }}
-            </p>
+            <div class="summary-scroll">
+              @if (bookingBlock().isValid && selectedSlots().length > 0) {
+                <app-venue-weather
+                  [venueId]="resolvedVenue()?.id"
+                  [date]="bookingBlock().dateStr"
+                  [hour]="bookingBlock().timeStart"
+                />
+              }
+              <p>
+                {{ resolvedCourt()?.nombre || selectedTipoCancha() }} ·
+                {{ selectedComplejo().name }}
+              </p>
 
-            <div class="list">
-              <div class="list-line">
-                <span>Fecha</span><strong data-summary-date>{{ summaryDateText() }}</strong>
+              <div class="list">
+                <div class="list-line">
+                  <span>Fecha</span><strong data-summary-date>{{ summaryDateText() }}</strong>
+                </div>
+                <div class="list-line">
+                  <span>Bloque</span
+                  ><strong data-summary-block>{{
+                    bookingBlock().displayRange || horarioText()
+                  }}</strong>
+                </div>
+                <div class="list-line">
+                  <span>Duración</span><strong data-summary-duration>{{ horasLabel() }}</strong>
+                </div>
+                <div class="list-line">
+                  <span>Total</span
+                  ><strong class="total" data-summary-total>{{ fmt(total()) }}</strong>
+                </div>
               </div>
-              <div class="list-line">
-                <span>Bloque</span
-                ><strong data-summary-block>{{
-                  bookingBlock().displayRange || horarioText()
-                }}</strong>
-              </div>
-              <div class="list-line">
-                <span>Duración</span><strong data-summary-duration>{{ horasLabel() }}</strong>
-              </div>
-              <div class="list-line">
-                <span>Total</span
-                ><strong class="total" data-summary-total>{{ fmt(total()) }}</strong>
-              </div>
+
+              @if (bookingBlock().isValid && bookingBlock().durationHours > 0) {
+                <div
+                  class="stack small"
+                  style="margin-top: 12px; border-top: 1px solid var(--line); padding-top: 12px"
+                >
+                  <span class="gallery-label" style="margin-bottom: 4px">Desglose por tramo</span>
+                  @for (block of bookingBlocks(); track block.fullLabel) {
+                    @if (bookingBlocks().length > 1) {
+                      <strong>{{ block.dayDisplay }} · {{ block.displayRange }}</strong>
+                    }
+                    @for (tranche of block.tranches; track tranche.hour) {
+                      <div class="list-line">
+                        <span>{{ tranche.displayTime }} ({{ tranche.rateType }})</span>
+                        <strong>{{ fmt(tranche.price) }}</strong>
+                      </div>
+                    }
+                  }
+                </div>
+              }
             </div>
-
-            @if (bookingBlock().isValid && bookingBlock().durationHours > 0) {
-              <div
-                class="stack small"
-                style="margin-top: 12px; border-top: 1px solid var(--line); padding-top: 12px"
-              >
-                <span class="gallery-label" style="margin-bottom: 4px">Desglose por tramo</span>
-                @for (tranche of bookingBlock().tranches; track tranche.hour) {
-                  <div class="list-line">
-                    <span>{{ tranche.displayTime }} ({{ tranche.rateType }})</span>
-                    <strong>{{ fmt(tranche.price) }}</strong>
-                  </div>
-                }
-              </div>
-            }
-
             <button
               type="button"
               class="btn primary"
@@ -608,6 +615,7 @@
                     class="btn primary"
                     [disabled]="!canSubmitReservation()"
                     (click)="confirmarReserva()"
+                    data-mp-checkout-cta="checkout-pro"
                   >
                     {{
                       submitting()
@@ -623,28 +631,30 @@
           <!-- Resumen Sticky Col -->
           <aside class="summary" aria-label="Resumen de pago">
             <h2>Resumen</h2>
-            <div class="list">
-              <div class="list-line">
-                <span>Cancha</span
-                ><strong>{{ resolvedCourt()?.nombre || selectedTipoCancha() }}</strong>
-              </div>
-              <div class="list-line">
-                <span>Fecha</span><strong>{{ summaryDateText() }}</strong>
-              </div>
-              <div class="list-line">
-                <span>Bloque</span
-                ><strong>{{ bookingBlock().displayRange || horarioText() }}</strong>
-              </div>
-              <div class="list-line">
-                <span>Duración</span><strong>{{ horasLabel() }}</strong>
-              </div>
-              <div class="list-line">
-                <span>Tarifa base</span><strong>{{ fmt(subtotal()) }}</strong>
-              </div>
+            <div class="summary-scroll">
+              <div class="list">
+                <div class="list-line">
+                  <span>Cancha</span
+                  ><strong>{{ resolvedCourt()?.nombre || selectedTipoCancha() }}</strong>
+                </div>
+                <div class="list-line">
+                  <span>Fecha</span><strong>{{ summaryDateText() }}</strong>
+                </div>
+                <div class="list-line">
+                  <span>Bloque</span
+                  ><strong>{{ bookingBlock().displayRange || horarioText() }}</strong>
+                </div>
+                <div class="list-line">
+                  <span>Duración</span><strong>{{ horasLabel() }}</strong>
+                </div>
+                <div class="list-line">
+                  <span>Tarifa base</span><strong>{{ fmt(subtotal()) }}</strong>
+                </div>
 
-              <div class="list-line">
-                <span>Total a pagar</span>
-                <strong class="total">{{ fmt(total()) }}</strong>
+                <div class="list-line">
+                  <span>Total a pagar</span>
+                  <strong class="total">{{ fmt(total()) }}</strong>
+                </div>
               </div>
             </div>
           </aside>

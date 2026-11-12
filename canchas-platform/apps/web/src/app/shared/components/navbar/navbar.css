@@ -103,8 +103,8 @@
    ========================================================================== */
 ::ng-deep .user-profile-mat-menu {
   min-width: 250px !important;
-  max-width: 320px !important;
-  border-radius: var(--radius-lg, 16px) !important;
+  max-width: min(320px, calc(100vw - 24px)) !important;
+  border-radius: 8px !important;
   border: 1px solid var(--color-border, #e2e8f0) !important;
   background: var(--color-surface, #ffffff) !important;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.14) !important;
@@ -162,10 +162,11 @@ body.dark-theme .user-menu-header {
   font-size: 14px;
   font-weight: 700;
   color: var(--color-ink-900, #0f172a);
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
   overflow: hidden;
   text-overflow: ellipsis;
-  line-height: 1.2;
+  line-height: 1.35;
 }
 
 .user-menu-email {
@@ -218,6 +219,21 @@ body.dark-theme .role-badge-chip {
   color: var(--color-ink-800, #1e293b) !important;
 }
 
+::ng-deep
+  .user-profile-mat-menu
+  .mat-mdc-menu-item.cdk-focused.cdk-program-focused:not(.cdk-keyboard-focused),
+::ng-deep
+  .user-profile-mat-menu
+  .mat-mdc-menu-item.cdk-focused.cdk-mouse-focused:not(.cdk-keyboard-focused) {
+  background: transparent !important;
+  outline: none !important;
+}
+
+::ng-deep .user-profile-mat-menu .mat-mdc-menu-item-text {
+  min-width: 0;
+  line-height: 1.4;
+}
+
 :root.dark-theme ::ng-deep .user-profile-mat-menu .mat-mdc-menu-item,
 body.dark-theme ::ng-deep .user-profile-mat-menu .mat-mdc-menu-item {
   color: #f1f5f9 !important;
@@ -249,7 +265,7 @@ body.dark-theme ::ng-deep .user-profile-mat-menu .mat-mdc-menu-item .material-sy
 }
 
 ::ng-deep .user-profile-mat-menu .mat-mdc-menu-item:focus-visible,
-::ng-deep .user-profile-mat-menu .mat-mdc-menu-item.cdk-focused {
+::ng-deep .user-profile-mat-menu .mat-mdc-menu-item.cdk-keyboard-focused {
   background-color: rgba(21, 128, 61, 0.08) !important;
   outline: 2px solid #15803d !important;
   outline-offset: -2px !important;
@@ -257,14 +273,14 @@ body.dark-theme ::ng-deep .user-profile-mat-menu .mat-mdc-menu-item .material-sy
 
 :root.dark-theme ::ng-deep .user-profile-mat-menu .mat-mdc-menu-item:focus-visible,
 body.dark-theme ::ng-deep .user-profile-mat-menu .mat-mdc-menu-item:focus-visible,
-:root.dark-theme ::ng-deep .user-profile-mat-menu .mat-mdc-menu-item.cdk-focused,
-body.dark-theme ::ng-deep .user-profile-mat-menu .mat-mdc-menu-item.cdk-focused {
+:root.dark-theme ::ng-deep .user-profile-mat-menu .mat-mdc-menu-item.cdk-keyboard-focused,
+body.dark-theme ::ng-deep .user-profile-mat-menu .mat-mdc-menu-item.cdk-keyboard-focused {
   background-color: rgba(74, 222, 128, 0.12) !important;
   outline-color: #4ade80 !important;
 }
 
 ::ng-deep .user-profile-mat-menu .menu-item-logout:focus-visible,
-::ng-deep .user-profile-mat-menu .menu-item-logout.cdk-focused {
+::ng-deep .user-profile-mat-menu .menu-item-logout.cdk-keyboard-focused {
   background-color: rgba(220, 38, 38, 0.08) !important;
   outline: 2px solid #dc2626 !important;
   outline-offset: -2px !important;
@@ -742,10 +758,11 @@ body.dark-theme .profile-menu-item:hover .menu-label {
     font-size: 14px;
     font-weight: 700;
     color: var(--color-ink-900, #0f172a);
-    white-space: nowrap;
+    white-space: normal;
+    overflow-wrap: anywhere;
     overflow: hidden;
     text-overflow: ellipsis;
-    line-height: 1.2;
+    line-height: 1.35;
   }
 
   .user-menu-email {

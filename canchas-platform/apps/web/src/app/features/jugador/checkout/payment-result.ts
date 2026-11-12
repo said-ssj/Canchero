@@ -36,6 +36,26 @@ export const RESERVATION_PASS_EXPORT = new InjectionToken('ReservationPassExport
         <p class="error" role="alert">{{ error() }}</p>
       }
       @if (data(); as p) {
+        @if ((p.bloques?.length ?? 0) > 1) {
+          <p>
+            Un único pago de {{ p.totalOperacion | currency: 'PEN' : 'S/ ' }} para
+            {{ p.bloques!.length }} reservas. Cada bloque tiene su propio pase y cupos.
+          </p>
+          <div class="pass-actions" aria-label="Reservas incluidas en el pago">
+            @for (b of p.bloques; track b.id) {
+              <button
+                mat-stroked-button
+                [disableRipple]="true"
+                type="button"
+                [disabled]="loading() || exporting()"
+                [attr.aria-pressed]="p.id === b.id"
+                (click)="selectBlock(b.id)"
+              >
+                {{ dateLabel(b.fecha) }} · {{ b.horario }}
+              </button>
+            }
+          </div>
+        }
         <dl>
           <div>
             <dt>Sede</dt>
@@ -54,7 +74,7 @@ export const RESERVATION_PASS_EXPORT = new InjectionToken('ReservationPassExport
             <dd>{{ dateLabel(p.fecha) }} · {{ p.horario }} (Perú)</dd>
           </div>
           <div>
-            <dt>Total</dt>
+            <dt>Importe de esta reserva</dt>
             <dd>{{ p.monto | currency: 'PEN' : 'S/ ' }}</dd>
           </div>
           <div>
@@ -250,6 +270,7 @@ export class PaymentResult {
   readonly returnUrl = '/pago/resultado' + window.location.search;
   private timer?: ReturnType<typeof setTimeout>;
   private attempts = 0;
+  private selectedBlockId: string | null = null;
   private dead = false;
   constructor() {
     this.destroy.onDestroy(() => {
@@ -262,7 +283,10 @@ export class PaymentResult {
     return (
       (
         {
-          aprobado: 'Pago aprobado y reserva confirmada',
+          aprobado:
+            (this.data()?.bloques?.length ?? 0) > 1
+              ? 'Pago aprobado y reservas confirmadas'
+              : 'Pago aprobado y reserva confirmada',
           pendiente:
             this.data()?.paymentStatus === 'rejected'
               ? 'Pago rechazado'
@@ -322,6 +346,35 @@ export class PaymentResult {
       this.exporting.set(false);
     }
   }
+  async selectBlock(id: string) {
+    if (this.loading() || this.exporting() || !this.data()?.bloques?.some((b) => b.id === id))
+      return;
+    this.loading.set(true);
+    this.error.set('');
+    this.qr.set('');
+    try {
+      const state = await this.api.state(id);
+      if (this.dead) return;
+      this.selectedBlockId = id;
+      await this.present(state);
+    } catch {
+      this.error.set('No se pudo consultar este pase. Reintenta.');
+    } finally {
+      this.loading.set(false);
+    }
+  }
+  private async present(state: PaymentState) {
+    this.data.set(state);
+    this.qr.set('');
+    if (state.estado === 'aprobado' && state.estadoPase === 'activo' && state.passToken) {
+      const qr = await QRCode.toDataURL(passUrl(state, window.location.origin), {
+        width: 240,
+        margin: 4,
+        errorCorrectionLevel: 'M',
+      });
+      if (!this.dead && this.data()?.id === state.id) this.qr.set(qr);
+    }
+  }
   async load(reconcile = false) {
     if (!this.auth.isLoggedIn() || this.loading() || this.dead) return;
     const id = this.route.snapshot.queryParamMap.get('checkout');
@@ -353,14 +406,12 @@ export class PaymentResult {
         });
         return;
       }
-      this.data.set(result);
-      this.qr.set('');
-      if (result.estado === 'aprobado' && result.estadoPase === 'activo' && result.passToken) {
-        const url = passUrl(result, window.location.origin);
-        this.qr.set(
-          await QRCode.toDataURL(url, { width: 240, margin: 4, errorCorrectionLevel: 'M' }),
-        );
-      }
+      const selected =
+        this.selectedBlockId && result.bloques?.some((b) => b.id === this.selectedBlockId)
+          ? await this.api.state(this.selectedBlockId)
+          : result;
+      if (this.dead) return;
+      await this.present(selected);
       if (result.estado === 'pendiente' && this.attempts++ < 6)
         this.timer = setTimeout(() => void this.load(), 4000);
     } catch (e: any) {

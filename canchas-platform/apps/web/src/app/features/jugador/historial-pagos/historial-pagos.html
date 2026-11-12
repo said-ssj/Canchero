@@ -1,0 +1,81 @@
+<main class="container payment-history">
+  <header>
+    <div>
+      <h1>Historial de pagos</h1>
+      <p>Pagos registrados de tus reservas y a qué corresponde cada uno.</p>
+    </div>
+    <a mat-button routerLink="/itinerario"><mat-icon>event_available</mat-icon>Mis reservas</a>
+  </header>
+  @if (error()) {
+    <section class="state" role="alert">
+      <p>{{ error() }}</p>
+      <button mat-stroked-button (click)="load(!rows().length)" [disabled]="loading()">
+        Reintentar
+      </button>
+    </section>
+  }
+  @if (!loading() && !error() && !rows().length) {
+    <section class="state">
+      <mat-icon>receipt_long</mat-icon>
+      <h2>Aún no tienes pagos registrados</h2>
+      <p>Cuando un pago de reserva se registre en tu cuenta, aparecerá aquí.</p>
+    </section>
+  }
+  <div class="payments">
+    @for (payment of rows(); track payment.id) {
+      <article class="payment">
+        <div class="payment-heading">
+          <div>
+            <h2>{{ payment.venueName }}</h2>
+            <p>{{ payment.courtName }} · Reserva #{{ payment.bookingId }}</p>
+          </div>
+          <strong class="amount">{{ payment.amount | currency: 'PEN' : 'S/ ' : '1.2-2' }}</strong>
+        </div>
+        <dl>
+          <div>
+            <dt>Partido</dt>
+            <dd>
+              {{ payment.bookingDate | date: 'dd/MM/yyyy' }} · {{ payment.startTime.slice(0, 5) }} –
+              {{ payment.endTime.slice(0, 5) }}
+            </dd>
+          </div>
+          <div>
+            <dt>Fecha del pago</dt>
+            <dd>
+              {{ payment.paidAt ? (payment.paidAt | date: 'dd/MM/yyyy HH:mm') : 'Sin registrar' }}
+            </dd>
+          </div>
+          <div>
+            <dt>Método</dt>
+            <dd>{{ payment.method || 'Sin registrar' }}</dd>
+          </div>
+          <div>
+            <dt>Concepto</dt>
+            <dd>{{ payment.advance ? 'Adelanto de reserva' : 'Pago de reserva' }}</dd>
+          </div>
+          @if (payment.reference) {
+            <div>
+              <dt>Referencia</dt>
+              <dd>{{ payment.reference }}</dd>
+            </div>
+          }
+        </dl>
+        <a mat-button [routerLink]="['/sedes', payment.venueId]"
+          >Ver sede<mat-icon>arrow_forward</mat-icon></a
+        >
+      </article>
+    }
+  </div>
+  @if (loading()) {
+    <div class="state" role="status"><mat-spinner diameter="30" /><span>Cargando pagos…</span></div>
+  }
+  @if (hasMore() && !error()) {
+    <div class="more">
+      <button mat-stroked-button (click)="load()" [disabled]="loading()">Ver más pagos</button>
+    </div>
+  }
+  <p class="note">
+    Importes en soles. Fechas del registro en hora de Perú. Este historial no acredita una
+    devolución ni sustituye un comprobante fiscal.
+  </p>
+</main>

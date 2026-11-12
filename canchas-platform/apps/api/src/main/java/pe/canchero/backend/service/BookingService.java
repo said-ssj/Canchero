@@ -260,7 +260,20 @@ public class BookingService extends JdbcSupport {
                     quote.tranches(),
                     effectiveIdempotencyKey);
         } finally {
-            courtLock.unlock();
+            releaseCourtLockAfterTransaction(courtLock);
+        }
+    }
+
+    /** No liberar el candado JVM antes del bloqueo SQL: una operacion puede crear varios bloques. */
+    private void releaseCourtLockAfterTransaction(ReentrantLock lock) {
+        if (org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive()
+                && org.springframework.transaction.support.TransactionSynchronizationManager.isSynchronizationActive()) {
+            org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+                new org.springframework.transaction.support.TransactionSynchronization() {
+                    @Override public void afterCompletion(int status) { lock.unlock(); }
+                });
+        } else {
+            lock.unlock();
         }
     }
 
@@ -443,7 +456,7 @@ public class BookingService extends JdbcSupport {
                     BigDecimal.valueOf(quote.total()), BigDecimal.valueOf(quote.total()), id);
             return getBookingById(id);
         } finally {
-            courtLock.unlock();
+            releaseCourtLockAfterTransaction(courtLock);
         }
     }
 

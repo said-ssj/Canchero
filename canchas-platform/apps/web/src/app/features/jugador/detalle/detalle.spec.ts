@@ -1,3 +1,4 @@
+import { VenuePreferences } from '@core/services/venue-preferences.service';
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
@@ -98,6 +99,37 @@ describe('Detalle Component - Fase 7: Diseño y Verificación Integral', () => {
     await TestBed.configureTestingModule({
       imports: [Detalle],
       providers: [
+        {
+          provide: VenuePreferences,
+          useFactory: () => {
+            const favorites = signal(new Set<string>(['venue-20'])),
+              alerts = signal(new Set<string>());
+            return {
+              favorites,
+              alerts,
+              busy: signal(new Set<string>()),
+              loading: signal(false),
+              error: signal(''),
+              load: vi.fn(),
+              toggleFavorite: async (id: string) => {
+                favorites.update((s) => {
+                  const n = new Set(s);
+                  n.has(id) ? n.delete(id) : n.add(id);
+                  return n;
+                });
+                return true;
+              },
+              toggleAlert: (id: string) => {
+                alerts.update((s) => {
+                  const n = new Set(s);
+                  n.has(id) ? n.delete(id) : n.add(id);
+                  return n;
+                });
+                return true;
+              },
+            };
+          },
+        },
         provideRouter([]),
         { provide: DatabaseService, useValue: mockDatabaseService },
         { provide: ReviewService, useValue: mockReviewService },
@@ -158,6 +190,10 @@ describe('Detalle Component - Fase 7: Diseño y Verificación Integral', () => {
     createComponent();
     const navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
 
+    expect(component['selectedCourt']()).toBeUndefined();
+    component['goToBookingFlow']();
+    expect(navigateSpy).not.toHaveBeenCalled();
+    component['selectedCourtId'].set('court-101');
     component['goToBookingFlow']();
     expect(navigateSpy).toHaveBeenCalledWith(['/checkout'], {
       queryParams: { courtId: 'court-101' },

@@ -25,6 +25,16 @@ export interface PaymentState {
   estadoPase: 'activo' | 'agotado' | 'vencido' | 'revocado' | 'no_disponible';
   publicPassUrl: string | null;
   testMode: boolean;
+  checkoutRaiz?: string;
+  totalOperacion?: number;
+  bloques?: {
+    id: string;
+    reservaId: number;
+    fecha: string;
+    horario: string;
+    hours: number[];
+    monto: number;
+  }[];
 }
 @Injectable({ providedIn: 'root' })
 export class MercadoPagoApi {
@@ -49,10 +59,11 @@ export class MercadoPagoApi {
   }
   start(request: {
     courtId: string;
-    fecha: string;
-    hours: number[];
+    fecha?: string;
+    hours?: number[];
     cupos: number;
     idempotencyKey: string;
+    selections?: { fecha: string; hours: number[] }[];
   }) {
     return firstValueFrom(
       this.http

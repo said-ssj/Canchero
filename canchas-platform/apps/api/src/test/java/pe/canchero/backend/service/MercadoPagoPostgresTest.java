@@ -30,6 +30,9 @@ class MercadoPagoPostgresTest {
         jdbc.execute("DO $$ BEGIN IF NOT EXISTS(select 1 from pg_roles where rolname='anon') THEN CREATE ROLE anon; END IF; IF NOT EXISTS(select 1 from pg_roles where rolname='authenticated') THEN CREATE ROLE authenticated; END IF; END $$");
         Path root=Path.of(System.getProperty("user.dir")).toAbsolutePath();while(root!=null&&!Files.exists(root.resolve("supabase/migrations/20261111034030_mercadopago_checkout_accesos.sql")))root=root.getParent();assertNotNull(root);
         jdbc.execute(Files.readString(root.resolve("supabase/migrations/20261111034030_mercadopago_checkout_accesos.sql")));
+        jdbc.execute(Files.readString(root.resolve("supabase/migrations/20261112100000_checkout_multibloque.sql")));
+        jdbc.update("insert into tipo_horario(id_sede,dia_semana,apertura,cierre,estado) values(10,6,'08:00','00:00','A')");
+        jdbc.update("insert into tarifa_cancha(id_cancha,dia_semana,hora_inicio,hora_fin,precio,estado) values(101,6,'08:00','18:00',90,'A')");
         clock=new MutableClock(CLOCK.instant());
         settings=new MercadoPagoSettings(true,"unit-test-token","unit-test-webhook-secret","123456","unit-test-pass-secret-with-at-least-32-chars","https://web.example.com","https://api.example.com/api/payments/mercadopago/webhook");
         client=mock(MercadoPagoClient.class);
@@ -198,6 +201,114 @@ class MercadoPagoPostgresTest {
         jdbc.update("update reserva set id_estado_reserva=2 where id_reserva=(select id_reserva from mp_checkout where id=?)",existing);
         assertThrows(ResponseStatusException.class,()->service.start(request("new-key-confirmed",2),PLAYER_1));
         verify(client,times(1)).preference(anyMap());
+    }
+
+    MercadoPagoService.StartRequest multi(String key){
+        return new MercadoPagoService.StartRequest("101",null,null,2,key,List.of(
+            new MercadoPagoService.Selection(LocalDate.parse(BOOKING_DATE).plusDays(1).toString(),List.of(12)),
+            new MercadoPagoService.Selection(BOOKING_DATE,List.of(11,10))));
+    }
+    ObjectNode multiPayment(UUID id){var p=payment(id,"20001");p.put("transaction_amount",270);return p;}
+    @Test void multipleDaysOnePreferenceAndIndependentPasses(){
+        UUID id=service.start(multi("multi-operation"),PLAYER_1).id();
+        var held=service.state(id,PLAYER_1);
+        assertEquals(2,held.bloques().size());assertEquals(270,held.totalOperacion().intValue());assertEquals(180,held.monto().intValue());
+        var captor=org.mockito.ArgumentCaptor.forClass(Map.class);verify(client,times(1)).preference(captor.capture());
+        assertEquals(2,((List<?>)captor.getValue().get("items")).size());
+        assertNull(held.passToken());assertEquals(0,jdbc.queryForObject("select count(*) from pago_reserva",Integer.class));
+        service.reconcile("20001",multiPayment(id));service.reconcile("20001",multiPayment(id));
+        assertEquals(2,jdbc.queryForObject("select count(*) from pago_reserva",Integer.class));
+        assertEquals(270,jdbc.queryForObject("select sum(monto) from pago_reserva",Integer.class));
+        var approved=service.state(id,PLAYER_1);
+        var second=service.state(approved.bloques().getLast().id(),PLAYER_1);
+        assertEquals(90,second.monto().intValue());assertEquals("approved",second.paymentStatus());
+        assertEquals(id,second.checkoutRaiz());assertNotNull(second.passToken());assertNotEquals(approved.passToken(),second.passToken());
+        assertThrows(ResponseStatusException.class,()->service.state(second.id(),PLAYER_2));
+        assertEquals(2,jdbc.queryForObject("select count(*) from reserva_acceso where max_ingresos=2",Integer.class));
+    }
+    @Test void multiDayIdempotenceCanonicalizesDaysAndHours(){
+        UUID id=service.start(multi("multi-order-original"),PLAYER_1).id();
+        var reversed=new MercadoPagoService.StartRequest("101",null,null,2,"multi-order-retry",List.of(
+            new MercadoPagoService.Selection(BOOKING_DATE,List.of(10,11)),
+            new MercadoPagoService.Selection(LocalDate.parse(BOOKING_DATE).plusDays(1).toString(),List.of(12))));
+        assertEquals(id,service.start(reversed,PLAYER_1).id());verify(client,times(1)).preference(anyMap());
+        assertEquals(2,jdbc.queryForObject("select count(*) from reserva",Integer.class));
+    }
+    @Test void conflictInSecondBlockRollsBackEntireNewBatch(){
+        var occupied=new MercadoPagoService.StartRequest("101",LocalDate.parse(BOOKING_DATE).plusDays(1).toString(),List.of(12),1,"occupied-operation");
+        service.start(occupied,PLAYER_2);
+        assertThrows(ResponseStatusException.class,()->service.start(multi("multi-conflict"),PLAYER_1));
+        assertEquals(1,jdbc.queryForObject("select count(*) from reserva",Integer.class));
+        assertEquals(1,jdbc.queryForObject("select count(*) from mp_checkout",Integer.class));verify(client,times(1)).preference(anyMap());
+    }
+    @Test void expiredBatchFreesEveryBlockAndLatePaymentNeverCreatesPass(){
+        UUID id=service.start(multi("multi-expiration"),PLAYER_1).id();clock.advance(Duration.ofMinutes(11));service.expire();
+        assertEquals(2,jdbc.queryForObject("select count(*) from reserva where estado='I'",Integer.class));
+        service.reconcile("20001",multiPayment(id));
+        assertEquals(2,jdbc.queryForObject("select count(*) from mp_checkout where estado='revision'",Integer.class));
+        assertEquals(0,jdbc.queryForObject("select count(*) from reserva_acceso",Integer.class));
+    }
+    @Test void cancelledChildPreventsAnyPartialApproval(){
+        UUID id=service.start(multi("multi-cancelled-child"),PLAYER_1).id();
+        jdbc.update("update reserva set estado='I' where id_reserva=(select id_reserva from mp_checkout where id_checkout_padre=?)",id);
+        service.reconcile("20001",multiPayment(id));
+        assertEquals("revision",service.state(id,PLAYER_1).estado());
+        assertEquals(0,jdbc.queryForObject("select count(*) from pago_reserva",Integer.class));
+        assertEquals(0,jdbc.queryForObject("select count(*) from reserva_acceso",Integer.class));
+    }
+    @Test void refundRevokesEveryPassAndNeverResurrectsOnApprovalReplay(){
+        UUID id=service.start(multi("multi-refund"),PLAYER_1).id();var p=multiPayment(id);service.reconcile("20001",p);
+        p.put("status","refunded");service.reconcile("20001",p);
+        assertEquals(2,jdbc.queryForObject("select count(*) from reserva_acceso where estado='revocado'",Integer.class));
+        p.put("status","approved");service.reconcile("20001",p);
+        assertEquals("reembolsado",service.state(id,PLAYER_1).estado());
+        assertEquals(2,jdbc.queryForObject("select count(*) from pago_reserva",Integer.class));
+    }
+    @Test void totalMustMatchWholeBatchNotFirstBlock(){
+        UUID id=service.start(multi("multi-wrong-total"),PLAYER_1).id();
+        assertThrows(ResponseStatusException.class,()->service.reconcile("10001",payment(id,"10001")));
+        assertEquals(0,jdbc.queryForObject("select count(*) from mp_pago",Integer.class));
+    }
+    @Test void invalidOrDuplicateHoursDoNotLeaveAnyHold(){
+        var bad=new MercadoPagoService.StartRequest("101",null,null,2,"multi-duplicate",List.of(new MercadoPagoService.Selection(BOOKING_DATE,List.of(10,10))));
+        assertThrows(ResponseStatusException.class,()->service.start(bad,PLAYER_1));
+        assertEquals(0,jdbc.queryForObject("select count(*) from reserva",Integer.class));
+    }
+
+    @Test void childPassConsumesOnlyItsOwnLimitAndUsesOriginalPaymentReference(){
+        UUID id=service.start(multi("multi-access-limits"),PLAYER_1).id();var p=multiPayment(id);
+        service.reconcile("20001",p);var group=service.state(id,PLAYER_1);
+        UUID child=group.bloques().getLast().id();
+        when(client.payment("20001")).thenReturn(p);
+        assertEquals(child,service.refresh(child,"20001",PLAYER_1).id());
+        var childState=service.state(child,PLAYER_1);String token=childState.passToken();
+        clock.set(LocalDate.parse(childState.fecha()).atTime(12,0).atZone(ZoneId.of("America/Lima")).toInstant());
+        var scanner=new ReservationAccessService(jdbc,manager,clock);
+        scanner.scan(new ReservationAccessService.Scan(token,UUID.randomUUID()),OWNER_A);
+        scanner.scan(new ReservationAccessService.Scan(token,UUID.randomUUID()),OWNER_A);
+        assertThrows(ResponseStatusException.class,()->scanner.scan(new ReservationAccessService.Scan(token,UUID.randomUUID()),OWNER_A));
+        assertEquals(0,jdbc.queryForObject("select ingresos_utilizados from reserva_acceso where id=?",Integer.class,id));
+        assertEquals("agotado",service.state(child,PLAYER_1).estadoPase());
+    }
+    @Test void simultaneousDifferentUsersCannotBuyOverlappingBatches()throws Exception{
+        ExecutorService pool=Executors.newFixedThreadPool(2);var start=new CountDownLatch(1);
+        try {
+            var first=pool.submit(()->{start.await();try{service.start(multi("multi-race-first"),PLAYER_1);return true;}catch(ResponseStatusException e){return false;}});
+            var second=pool.submit(()->{start.await();try{service.start(multi("multi-race-second"),PLAYER_2);return true;}catch(ResponseStatusException e){return false;}});
+            start.countDown();assertNotEquals(first.get(20,TimeUnit.SECONDS),second.get(20,TimeUnit.SECONDS));
+            assertEquals(2,jdbc.queryForObject("select count(*) from reserva",Integer.class));
+            assertEquals(1,jdbc.queryForObject("select count(*) from mp_checkout where id_checkout_padre is null",Integer.class));
+            verify(client,times(1)).preference(anyMap());
+        }finally{pool.shutdownNow();}
+    }
+
+    @Test void changedReservationAmountCannotConfirmAnUnderpaidBatch(){
+        UUID id=service.start(multi("multi-changed-price"),PLAYER_1).id();
+        jdbc.update("update reserva set monto_total=monto_total+10 where id_reserva=(select id_reserva from mp_checkout where id_checkout_padre=?)",id);
+        service.reconcile("20001",multiPayment(id));
+        assertEquals("revision",service.state(id,PLAYER_1).estado());
+        assertEquals(0,jdbc.queryForObject("select count(*) from pago_reserva",Integer.class));
+        assertEquals(0,jdbc.queryForObject("select count(*) from reserva_acceso",Integer.class));
     }
 
 }

@@ -993,54 +993,49 @@ describe('Checkout Component - Fase 3: Selección, Agrupación y Cotización', (
     expect(component['canProceedToPaso2']()).toBe(true);
   });
 
-  it('F3-4: Selección con hueco intermedio (p. ej. 18:00 y 20:00 sin 19:00) invalida el bloque y deshabilita continuar', () => {
+  it('groups separate hours into distinct reservations without charging unselected gaps', () => {
     createComponent();
     component['nextWeek']();
     fixture.detectChanges();
-    const futureDay = component['currentWeekDays']()[3];
-
-    component['toggleSlot'](futureDay, 18);
-    component['toggleSlot'](futureDay, 20);
+    const day = component['currentWeekDays']()[3];
+    component['toggleSlot'](day, 18);
+    component['toggleSlot'](day, 20);
     fixture.detectChanges();
-
-    const block = component['bookingBlock']();
-    expect(block.isValid).toBe(false);
-    expect(block.errorMessage).toContain(
-      'Existe un hueco no seleccionado entre las 19:00 y las 20:00',
-    );
-    expect(component['canProceedToPaso2']()).toBe(false);
-    expect(component['selectionValidationMessage']()).toContain('Existe un hueco no seleccionado');
-
+    expect(component['bookingBlocks']()).toHaveLength(2);
+    expect(component['bookingBlocks']().map((b) => b.displayRange)).toEqual([
+      '18:00 - 19:00',
+      '20:00 - 21:00',
+    ]);
+    expect(component['bookingBlock']().isValid).toBe(true);
+    expect(component['subtotal']()).toBe(240);
+    expect(component['canProceedToPaso2']()).toBe(true);
     component['goToPaso'](2);
-    expect(component['activePaso']()).toBe(1);
-    expect(component['confirmError']()).toContain('Existe un hueco no seleccionado');
+    expect(component['activePaso']()).toBe(2);
   });
-
-  it('F3-5: Selección en días distintos es rechazada (cada reserva representa un único bloque en la misma fecha)', () => {
+  it('allows several dates, groups their summary and keeps details inside the scroll container', () => {
     createComponent();
     component['nextWeek']();
     fixture.detectChanges();
-    const day1 = component['currentWeekDays']()[1];
-    const day2 = component['currentWeekDays']()[2];
-
-    component['toggleSlot'](day1, 18);
+    const day1 = component['currentWeekDays']()[1],
+      day2 = component['currentWeekDays']()[2];
     component['toggleSlot'](day2, 18);
+    component['toggleSlot'](day1, 19);
+    component['toggleSlot'](day1, 18);
     fixture.detectChanges();
-
-    const block = component['bookingBlock']();
-    expect(block.isValid).toBe(false);
-    expect(block.errorMessage).toContain('pertenecer a la misma fecha');
-    expect(component['canProceedToPaso2']()).toBe(false);
-    expect(
-      fixture.nativeElement.querySelectorAll('.slot.chosen[aria-pressed="true"]'),
-    ).toHaveLength(2);
-    const summaryBlock = fixture.nativeElement.querySelector('[data-summary-block]');
-    expect(summaryBlock.textContent).toContain(day1.displayShort);
-    expect(summaryBlock.textContent).toContain(day2.displayShort);
-
+    expect(component['bookingBlocks']()).toHaveLength(2);
+    expect(component['bookingBlocks']()[0].durationHours).toBe(2);
+    expect(component['canProceedToPaso2']()).toBe(true);
+    expect(component['horasLabel']()).toBe('3 horas');
+    const summary = fixture.nativeElement.querySelector('aside.summary');
+    expect(summary.querySelector('.summary-scroll [data-summary-block]').textContent).toContain(
+      day1.displayShort,
+    );
+    expect(summary.querySelector('.summary-scroll [data-summary-block]').textContent).toContain(
+      day2.displayShort,
+    );
+    expect(summary.querySelector(':scope > button')).not.toBeNull();
     component['goToPaso'](2);
-    expect(component['activePaso']()).toBe(1);
-    expect(component['confirmError']()).toContain('pertenecer a la misma fecha');
+    expect(component['activePaso']()).toBe(2);
   });
 
   it('F3-6: Desglose tarifario mixto (diurno + nocturno) cotiza exactamente por tramo sin fórmulas fijas', () => {
@@ -1284,12 +1279,57 @@ describe('Checkout Component - Fase 3: Selección, Agrupación y Cotización', (
       courtId: 'court-101',
       fecha: day.dateStr,
       hours: [18, 19],
+      selections: [{ fecha: day.dateStr, hours: [18, 19] }],
       cupos: 4,
       idempotencyKey: expect.any(String),
     });
     expect(sent.idempotencyKey).toMatch(/^[A-Za-z0-9_-]{8,100}$/);
     expect(mockMP.open).toHaveBeenCalled();
     expect(component['showSuccess']()).toBe(false);
+  });
+
+  it('sends multiple days in one operation and restores all held blocks after returning', async () => {
+    const day = await preparePayment();
+    const second = component['currentWeekDays']()[4];
+    component['toggleSlot'](second, 20);
+    component['toggleSlot'](second, 21);
+    await component['confirmarReserva']();
+    expect(mockMP.start).toHaveBeenCalledTimes(1);
+    expect(mockMP.start.mock.calls[0][0].fecha).toBeUndefined();
+    expect(mockMP.start.mock.calls[0][0].hours).toBeUndefined();
+    expect(mockMP.start.mock.calls[0][0].selections).toEqual([
+      { fecha: day.dateStr, hours: [18, 19] },
+      { fecha: second.dateStr, hours: [20, 21] },
+    ]);
+    const id = '12345678-1234-1234-1234-123456789abc';
+    mockMP.state.mockResolvedValue({
+      id,
+      courtId: 'court-101',
+      fecha: day.dateStr,
+      hours: [18, 19],
+      monto: 200,
+      totalOperacion: 420,
+      cupos: 4,
+      estado: 'pendiente',
+      canResume: true,
+      expiresAt: new Date(Date.now() + 300000).toISOString(),
+      paymentStatus: null,
+      bloques: [
+        { id, fecha: day.dateStr, hours: [18, 19], monto: 200 },
+        { id: 'child', fecha: second.dateStr, hours: [20, 21], monto: 220 },
+      ],
+    });
+    await component['restorePayment'](id);
+    expect(component['selectedSlots']()).toHaveLength(4);
+    expect(component['bookingBlocks']()).toHaveLength(2);
+    expect(component['subtotal']()).toBe(420);
+    expect(component['matchesHeldSelection']()).toBe(true);
+    const slot = vi
+      .spyOn(mockDatabaseService, 'getCourtSlotAvailability')
+      .mockReturnValue({ state: 'occupied', price: 999 } as any);
+    component['reprice']();
+    expect(component['selectedSlots']()).toHaveLength(4);
+    slot.mockRestore();
   });
 
   it('reutiliza la clave al reintentar y la cambia al modificar horas', async () => {

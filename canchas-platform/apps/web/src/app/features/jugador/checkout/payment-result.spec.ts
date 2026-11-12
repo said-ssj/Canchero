@@ -120,4 +120,50 @@ describe('Retorno verificado de Mercado Pago', () => {
     expect(passFiles.download).toHaveBeenCalledWith(file);
     fixture.destroy();
   });
+  it('lets the account choose the separate pass and amount of each block in one payment', async () => {
+    const child = '22345678-1234-1234-1234-123456789abc';
+    const blocks = [
+      {
+        id,
+        reservaId: 1,
+        fecha: '2026-11-19',
+        horario: '18:00 - 20:00',
+        hours: [18, 19],
+        monto: 180,
+      },
+      {
+        id: child,
+        reservaId: 2,
+        fecha: '2026-11-20',
+        horario: '20:00 - 21:00',
+        hours: [20],
+        monto: 90,
+      },
+    ];
+    const root = {
+      ...held(),
+      estado: 'aprobado',
+      canResume: false,
+      totalOperacion: 270,
+      bloques: blocks,
+      fecha: blocks[0].fecha,
+      monto: 180,
+      cupos: 2,
+    };
+    api.state
+      .mockResolvedValueOnce(root)
+      .mockResolvedValueOnce({ ...root, id: child, fecha: blocks[1].fecha, monto: 90 });
+    const fixture = TestBed.createComponent(PaymentResult);
+    const component = fixture.componentInstance;
+    await component.load();
+    expect(component.title()).toBe('Pago aprobado y reservas confirmadas');
+    await component.selectBlock(child);
+    expect(api.state).toHaveBeenLastCalledWith(child);
+    expect(component.data()?.id).toBe(child);
+    expect(component.data()?.monto).toBe(90);
+    expect(component.data()?.totalOperacion).toBe(270);
+    await component.selectBlock('not-in-batch');
+    expect(api.state).toHaveBeenCalledTimes(2);
+    fixture.destroy();
+  });
 });

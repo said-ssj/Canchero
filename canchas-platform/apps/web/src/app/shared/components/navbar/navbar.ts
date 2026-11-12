@@ -90,6 +90,7 @@ export class Navbar {
   protected readonly menuItems = computed<UserMenuItem[]>(() => {
     const items: UserMenuItem[] = [
       { label: 'Mis reservas', icon: 'event_available', route: '/itinerario' },
+      { label: 'Historial de pagos', icon: 'receipt_long', route: '/historial-pagos' },
       { label: 'Mi perfil', icon: 'person', route: '/perfil' },
       { label: 'Configuración', icon: 'settings', route: '/cuenta' },
     ];
