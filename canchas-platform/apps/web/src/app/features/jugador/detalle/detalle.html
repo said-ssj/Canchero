@@ -125,7 +125,12 @@
           <h2 id="gallery-title">Conoce el complejo</h2>
           @if (heroImages().length) {
             <div class="venue-cover-wrapper">
-              <img class="venue-cover" [src]="currentHero()" [alt]="'Fotografía de ' + v.nombre" />
+              <img
+                class="venue-cover"
+                [src]="currentHero()"
+                (error)="onImgError($event)"
+                [alt]="'Fotografía de ' + v.nombre"
+              />
               @if (heroImages().length > 1) {
                 <button
                   class="btn icon-only carousel-prev"
@@ -233,7 +238,7 @@
                   <img
                     class="venue-photo"
                     [src]="photo"
-                    (error)="$any($event.target).hidden = true"
+                    (error)="onImgError($event)"
                     [alt]="cancha.nombre"
                   />
                 } @else {

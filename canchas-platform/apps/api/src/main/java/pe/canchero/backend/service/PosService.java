@@ -26,6 +26,9 @@ import pe.canchero.backend.web.dto.TransformationResultDto;
 import pe.canchero.backend.web.dto.VentaDetalleResponse;
 import pe.canchero.backend.web.dto.VentaRequest;
 import pe.canchero.backend.web.dto.VentaResponse;
+import java.util.HashMap;
+import java.util.Map;
+import pe.canchero.backend.web.dto.SalePaymentDto;
 import java.math.BigDecimal;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -100,7 +103,7 @@ public class PosService extends JdbcSupport {
 
     public List<SaleDto> listSales(Integer sedeId) {
         int targetSedeId = requireExplicitVenue(sedeId);
-        return jdbc.query("""
+        return querySales("""
                 select v.id_venta, v.id_sede, v.fecha_venta, v.id_sesion_caja,
                        v.cajero_nombre, v.tipo_comprobante, v.numero_comprobante,
                        v.subtotal, v.igv, v.total, v.estado
@@ -133,7 +136,7 @@ public class PosService extends JdbcSupport {
                 where v.estado = 'A'
                   and v.id_sede = ?
                 order by v.fecha_venta desc, v.id_venta desc
-                """, (rs, rowNum) -> mapSale(rs, saleItems(rs.getInt("id_venta"))), targetSedeId);
+                """, targetSedeId);
     }
 
     @Transactional
@@ -610,7 +613,7 @@ public class PosService extends JdbcSupport {
     }
 
     private Optional<SaleDto> getSale(int saleId, int sedeId) {
-        return jdbc.query("""
+        return querySales("""
                 select v.id_venta, v.id_sede, v.fecha_venta, v.id_sesion_caja,
                        v.cajero_nombre, v.tipo_comprobante, v.numero_comprobante,
                        v.subtotal, v.igv, v.total, v.estado
@@ -641,32 +644,50 @@ public class PosService extends JdbcSupport {
                     left join caja c on c.id_caja = sc.id_caja
                 ) v
                 where v.id_venta = ? and v.id_sede = ?
-                """, (rs, rowNum) -> mapSale(rs, saleItems(saleId)), saleId, sedeId).stream().findFirst();
+                """, saleId, sedeId).stream().findFirst();
     }
 
-    private List<SaleItemDto> saleItems(int saleId) {
-        return jdbc.query("""
-                select vd.id_producto, coalesce(p.nombre, 'Producto #' || vd.id_producto) as nombre,
+    /**
+     * Lee las ventas y luego trae detalle y pagos de todas en dos consultas.
+     * Antes eran ~4 consultas por venta: con cientos de ventas y la base remota el POS no cargaba.
+     */
+    private List<SaleDto> querySales(String sql, Object... args) {
+        List<SaleDto> base = jdbc.query(sql, (rs, rowNum) -> mapSale(rs), args);
+        if (base.isEmpty()) return base;
+        List<Integer> ids = base.stream().map(PosService::saleId).toList();
+        Map<Integer, List<SaleItemDto>> items = saleItems(ids);
+        Map<Integer, List<SalePaymentDto>> payments = salePayments.payments(ids);
+        return base.stream().map(sale -> withDetails(sale,
+                items.getOrDefault(saleId(sale), List.of()),
+                payments.getOrDefault(saleId(sale), List.of()))).toList();
+    }
+
+    private static int saleId(SaleDto sale) {
+        return Integer.parseInt(sale.id().substring("VNT-".length()));
+    }
+
+    private Map<Integer, List<SaleItemDto>> saleItems(List<Integer> saleIds) {
+        Map<Integer, List<SaleItemDto>> bySale = new HashMap<>();
+        jdbc.query("""
+                select vd.id_venta, vd.id_producto, coalesce(p.nombre, 'Producto #' || vd.id_producto) as nombre,
                        vd.cantidad, vd.precio_unitario, vd.subtotal
                 from venta_detalle vd
                 left join producto p on p.id_producto = vd.id_producto
-                where vd.id_venta = ? and vd.estado = 'A'
-                order by vd.id_venta_detalle
-                """,
-                (rs, rowNum) -> new SaleItemDto(
-                        rs.getInt("id_producto"),
-                        rs.getString("nombre"),
-                        rs.getInt("cantidad"),
-                        rs.getBigDecimal("precio_unitario") == null ? 0 : rs.getBigDecimal("precio_unitario").doubleValue(),
-                        rs.getBigDecimal("subtotal") == null ? 0 : rs.getBigDecimal("subtotal").doubleValue()),
-                saleId);
+                where vd.estado = 'A' and vd.id_venta in (%s)
+                order by vd.id_venta, vd.id_venta_detalle
+                """.formatted(placeholders(saleIds.size())),
+                rs -> {
+                    bySale.computeIfAbsent(rs.getInt("id_venta"), k -> new ArrayList<>()).add(new SaleItemDto(
+                            rs.getInt("id_producto"),
+                            rs.getString("nombre"),
+                            rs.getInt("cantidad"),
+                            rs.getBigDecimal("precio_unitario") == null ? 0 : rs.getBigDecimal("precio_unitario").doubleValue(),
+                            rs.getBigDecimal("subtotal") == null ? 0 : rs.getBigDecimal("subtotal").doubleValue()));
+                }, saleIds.toArray());
+        return bySale;
     }
 
-    private SaleDto mapSale(ResultSet rs, List<SaleItemDto> items) throws java.sql.SQLException {
-        var payments = salePayments.payments(rs.getInt("id_venta"));
-        String method = payments.isEmpty() ? "sin_desglose" : payments.size() == 1 ? payments.get(0).metodoPago() : "mixto";
-        BigDecimal received = payments.stream().map(p -> p.montoRecibido()).reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal change = payments.stream().map(p -> p.montoRecibido().subtract(p.monto())).reduce(BigDecimal.ZERO, BigDecimal::add);
+    private SaleDto mapSale(ResultSet rs) throws java.sql.SQLException {
         return new SaleDto(
                 "VNT-" + rs.getInt("id_venta"),
                 rs.getObject("id_sede") == null ? null : rs.getInt("id_sede"),
@@ -677,14 +698,21 @@ public class PosService extends JdbcSupport {
                 "",
                 rs.getString("tipo_comprobante"),
                 rs.getString("numero_comprobante"),
-                items,
+                List.of(),
                 rs.getBigDecimal("subtotal") == null ? 0 : rs.getBigDecimal("subtotal").doubleValue(),
                 rs.getBigDecimal("igv") == null ? 0 : rs.getBigDecimal("igv").doubleValue(),
                 rs.getBigDecimal("total") == null ? 0 : rs.getBigDecimal("total").doubleValue(),
-                method,
-                payments.isEmpty() ? null : received.doubleValue(),
-                payments.isEmpty() ? null : change.doubleValue(),
-                "completada", payments);
+                "sin_desglose", null, null, "completada", List.of());
+    }
+
+    private static SaleDto withDetails(SaleDto s, List<SaleItemDto> items, List<SalePaymentDto> payments) {
+        String method = payments.isEmpty() ? "sin_desglose" : payments.size() == 1 ? payments.get(0).metodoPago() : "mixto";
+        BigDecimal received = payments.stream().map(p -> p.montoRecibido()).reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal change = payments.stream().map(p -> p.montoRecibido().subtract(p.monto())).reduce(BigDecimal.ZERO, BigDecimal::add);
+        return new SaleDto(s.id(), s.sedeId(), s.fecha(), s.cajaId(), s.cajeroNombre(), s.clienteNombre(),
+                s.clienteDocumento(), s.tipoComprobante(), s.numeroComprobante(), items, s.subtotal(), s.igv(), s.total(),
+                method, payments.isEmpty() ? null : received.doubleValue(), payments.isEmpty() ? null : change.doubleValue(),
+                s.estado(), payments);
     }
 
     private int stockForProduct(int productId) {
@@ -758,7 +786,7 @@ public class PosService extends JdbcSupport {
     }
 
     public List<VentaResponse> listVentasForOwner(AuthUserDto user) {
-        return jdbc.query("""
+        return querySales("""
                 select v.id_venta, v.id_sede, v.fecha_venta, v.id_sesion_caja,
                        v.cajero_nombre, v.tipo_comprobante, v.numero_comprobante,
                        v.subtotal, v.igv, v.total, v.estado
@@ -791,7 +819,7 @@ public class PosService extends JdbcSupport {
                 join sede s on s.id_sede = v.id_sede
                 where v.estado = 'A' and __SCOPE__
                 order by v.fecha_venta desc, v.id_venta desc
-                """.replace("__SCOPE__",new TenantPermissions(jdbc).scope("s.id_sede", user, "venta.ver")), (rs, rowNum) -> mapSale(rs, saleItems(rs.getInt("id_venta")))).stream()
+                """.replace("__SCOPE__",new TenantPermissions(jdbc).scope("s.id_sede", user, "venta.ver"))).stream()
                 .map(this::toVentaResponse)
                 .toList();
     }

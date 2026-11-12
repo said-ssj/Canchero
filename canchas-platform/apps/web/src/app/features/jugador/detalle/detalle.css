@@ -208,6 +208,7 @@
 
 .toast-popup {
   position: fixed;
+  max-width: calc(100vw - 48px);
   bottom: 24px;
   right: 24px;
   background: var(--color-contrast-bg);

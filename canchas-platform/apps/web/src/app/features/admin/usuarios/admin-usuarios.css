@@ -16,7 +16,7 @@
 .badge-role {
   display: inline-block;
   background: transparent;
-  color: #27802D;
+  color: #27802d;
   font-weight: 700;
   font-size: 11px;
   text-transform: uppercase;
@@ -124,12 +124,14 @@
   background: var(--surface, #ffffff);
   border: 1px solid var(--line, #e2e8f0);
   border-radius: 4px;
-  overflow: hidden;
+  /* En teléfono la tabla se desplaza; con hidden se cortaban las columnas de rol y acciones. */
+  overflow-x: auto;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .users-table {
   width: 100%;
+  min-width: 720px;
   border-collapse: collapse;
   text-align: left;
   font-size: 14px;
@@ -191,7 +193,7 @@
 
 .user-name {
   font-weight: 600;
-  color: var(--text, #0f172a);
+  color: var(--color-ink-900);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -267,11 +269,11 @@
 }
 
 .status-indicator.active {
-  color: #27802D;
+  color: #27802d;
 }
 
 .status-indicator.active::before {
-  background: #27802D;
+  background: #27802d;
 }
 
 .table-state-loading,

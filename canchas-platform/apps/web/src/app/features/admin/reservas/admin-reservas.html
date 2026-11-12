@@ -229,7 +229,9 @@
       <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
       <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
       <tr class="mat-row" *matNoDataRow>
-        <td class="mat-cell state" colspan="6">No hay reservas que coincidan con los filtros.</td>
+        <td class="mat-cell state" colspan="6">
+          <div class="table-empty-sticky">No hay reservas que coincidan con los filtros.</div>
+        </td>
       </tr>
     </table>
   </div>
