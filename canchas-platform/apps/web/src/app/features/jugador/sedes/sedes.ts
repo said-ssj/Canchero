@@ -1,4 +1,4 @@
-import { Component, computed, effect, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -41,53 +41,56 @@ export class Sedes {
   constructor() {
     effect(() => {
       const qp = this.queryParams();
-      if (!qp) return;
+      // La URL hidrata los filtros; escribir en el buscador no debe volver a aplicar una URL anterior.
+      untracked(() => {
+        if (!qp) return;
 
-      const qVal = (qp.get('q') || qp.get('buscar') || '').trim();
-      if (qVal !== this.busqueda()) {
-        this.busqueda.set(qVal);
-      }
+        const qVal = (qp.get('q') || qp.get('buscar') || '').trim();
+        if (qVal !== this.busqueda()) {
+          this.busqueda.set(qVal);
+        }
 
-      const ciudadVal = qp.get('ciudad');
-      if (ciudadVal && ciudadVal !== this.ciudad()) {
-        this.ciudad.set(ciudadVal);
-      }
+        const ciudadVal = qp.get('ciudad');
+        if (ciudadVal && ciudadVal !== this.ciudad()) {
+          this.ciudad.set(ciudadVal);
+        }
 
-      const distritoVal = qp.get('distrito');
-      if (distritoVal && distritoVal !== this.distrito()) {
-        this.distrito.set(distritoVal);
-      }
+        const distritoVal = qp.get('distrito');
+        if (distritoVal && distritoVal !== this.distrito()) {
+          this.distrito.set(distritoVal);
+        }
 
-      const formatoVal = qp.get('formato');
-      if (formatoVal) {
-        let mapped = formatoVal.toLowerCase();
-        if (mapped === 'futbol-7' || mapped === 'futbol 7') mapped = 'f7';
-        else if (mapped === 'futbol-5' || mapped === 'futbol 5') mapped = 'f5';
-        else if (mapped === 'futbol-6' || mapped === 'futbol 6') mapped = 'f6';
-        else if (mapped === 'futbol-8' || mapped === 'futbol 8') mapped = 'f8';
-        else if (mapped === 'futbol-9' || mapped === 'futbol 9') mapped = 'f9';
-        else if (mapped === 'futbol-11' || mapped === 'futbol 11') mapped = 'f11';
-        this.courtFilters.setFormato(mapped);
-      }
+        const formatoVal = qp.get('formato');
+        if (formatoVal) {
+          let mapped = formatoVal.toLowerCase();
+          if (mapped === 'futbol-7' || mapped === 'futbol 7') mapped = 'f7';
+          else if (mapped === 'futbol-5' || mapped === 'futbol 5') mapped = 'f5';
+          else if (mapped === 'futbol-6' || mapped === 'futbol 6') mapped = 'f6';
+          else if (mapped === 'futbol-8' || mapped === 'futbol 8') mapped = 'f8';
+          else if (mapped === 'futbol-9' || mapped === 'futbol 9') mapped = 'f9';
+          else if (mapped === 'futbol-11' || mapped === 'futbol 11') mapped = 'f11';
+          this.courtFilters.setFormato(mapped);
+        }
 
-      const superficieVal = qp.get('superficie');
-      if (superficieVal) {
-        let mapped = superficieVal.toLowerCase();
-        if (mapped.includes('sintetico') || mapped.includes('gras')) mapped = 'sintetico';
-        else if (mapped.includes('natural')) mapped = 'natural';
-        else if (mapped.includes('losa') || mapped.includes('cemento')) mapped = 'losa';
-        this.courtFilters.setSuperficie(mapped);
-      }
+        const superficieVal = qp.get('superficie');
+        if (superficieVal) {
+          let mapped = superficieVal.toLowerCase();
+          if (mapped.includes('sintetico') || mapped.includes('gras')) mapped = 'sintetico';
+          else if (mapped.includes('natural')) mapped = 'natural';
+          else if (mapped.includes('losa') || mapped.includes('cemento')) mapped = 'losa';
+          this.courtFilters.setSuperficie(mapped);
+        }
 
-      const coberturaVal = qp.get('cobertura');
-      if (coberturaVal) {
-        this.courtFilters.setCobertura(coberturaVal.toLowerCase());
-      }
+        const coberturaVal = qp.get('cobertura');
+        if (coberturaVal) {
+          this.courtFilters.setCobertura(coberturaVal.toLowerCase());
+        }
 
-      const equipamientoVal = qp.get('equipamiento');
-      if (equipamientoVal) {
-        this.courtFilters.setEquipamiento(equipamientoVal.toLowerCase());
-      }
+        const equipamientoVal = qp.get('equipamiento');
+        if (equipamientoVal) {
+          this.courtFilters.setEquipamiento(equipamientoVal.toLowerCase());
+        }
+      });
     });
   }
 

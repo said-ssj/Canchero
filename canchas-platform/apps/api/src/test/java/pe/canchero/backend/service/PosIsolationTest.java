@@ -34,6 +34,7 @@ class PosIsolationTest {
         jdbc.update("insert into sesion_caja values (10,1,'A',null),(20,2,'A',null),(30,1,'A',current_timestamp)");
         data = new PosService(jdbc);
         jdbc.execute("alter table producto add (contenido numeric, unidad_medida varchar, descripcion varchar, foto_url varchar)");
+        StaffTestSchema.create(jdbc);
         access = new VenueAccessService(jdbc);
     }
 

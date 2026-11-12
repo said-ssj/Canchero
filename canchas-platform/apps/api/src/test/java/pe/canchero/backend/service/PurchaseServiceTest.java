@@ -39,6 +39,7 @@ class PurchaseServiceTest {
         jdbc.update("insert into producto values (10, 1, 'SPO-500', 'Sporade 500ml', 2.50, 4.00, 5, 'A', 500, 'ml', 'Bebida', null)");
         jdbc.update("insert into kardex (id_producto, id_sede, id_tipo_mov_inv, cantidad, precio_unitario, saldo_stock, motivo, fecha, estado) values (10, 1, 1, 10, 2.50, 10, 'Stock inicial', current_timestamp, 'A')");
 
+        StaffTestSchema.create(jdbc);
         access = new VenueAccessService(jdbc);
         posService = new PosService(jdbc);
         purchaseService = new PurchaseService(jdbc, access, posService);

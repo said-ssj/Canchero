@@ -67,6 +67,8 @@ public final class PostgresTestSupport {
     }
 
     public static App newApp() {
+        // Las consultas operativas usan también las asignaciones de personal por sede.
+        pe.canchero.backend.service.StaffTestSchema.create(jdbc());
         AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
         context.register(TestConfig.class);
         context.refresh();

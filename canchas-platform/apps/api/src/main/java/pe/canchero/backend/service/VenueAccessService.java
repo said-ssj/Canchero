@@ -53,15 +53,22 @@ public class VenueAccessService {
     public boolean can(AuthUserDto user, int sedeId, String ownerId, String permiso) {
         if (user == null) return false;
         if (isSuperAdmin(user)) return true;
-        if (ownerId != null && user.id().equals(ownerId)) return Roles.isOwner(user.rol());
-        return permiso != null && Roles.isVenueStaff(user.rol()) && hasAssignment(user.id(), sedeId, permiso);
+        if (ownerId != null && user.id().equals(ownerId) && Roles.isOwner(user.rol())) return true;
+        // Una asignación operativa no cambia el rol personal de la cuenta.
+        return permiso != null && hasAssignment(user.id(), sedeId, permiso);
     }
 
     public boolean hasAssignment(String userId, int sedeId, String permiso) {
         UUID uuid;
         try { uuid = UUID.fromString(userId); } catch (RuntimeException ex) { return false; }
-        Integer n = jdbc.queryForObject("select count(*) from sede s where s.id_sede = ? and "
-                + VISIBLE_VENUE_SQL, Integer.class, sedeId, uuid, uuid, permiso);
+        Integer n = jdbc.queryForObject("""
+                select count(*) from sede s
+                join asignacion_sede a on a.id_sede=s.id_sede and a.id_negocio=s.id_negocio
+                join miembro_negocio m on m.id_miembro=a.id_miembro and m.id_negocio=a.id_negocio
+                join rol_sede_permiso p on p.rol_codigo=a.rol_codigo
+                where s.id_sede=? and s.estado='A' and a.estado='A' and m.estado='A'
+                  and m.id_usuario=? and p.permiso_codigo=?
+                """, Integer.class, sedeId, uuid, permiso);
         return n != null && n > 0;
     }
 

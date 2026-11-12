@@ -78,6 +78,7 @@ class TenantIsolationAndTransferTest {
         jdbc.update("insert into kardex (id_producto, id_sede, id_tipo_mov_inv, cantidad, precio_unitario, saldo_stock, motivo, fecha, feccre, estado, usucre, pccre) " +
                 "values (2, 3, 1, 50, 3.0, 50, 'Stock Inicial', current_timestamp, current_timestamp, 'A', 'API', 'SPRING')");
 
+        StaffTestSchema.create(jdbc);
         accessService = new VenueAccessService(jdbc);
         posService = new PosService(jdbc);
         catalogService = new PosCatalogService(jdbc, accessService);

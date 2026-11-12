@@ -315,6 +315,7 @@ class CashAndLegacyOperationsIsolationTest {
         dataService = new BookingService(jdbc, new VenueService(jdbc));
         cashService = new CashService(jdbc);
         posService = new PosService(jdbc);
+        StaffTestSchema.create(jdbc);
         accessService = new VenueAccessService(jdbc);
         venueStateService = new CashVenueStateService(jdbc, cashService);
 
@@ -521,7 +522,7 @@ class CashAndLegacyOperationsIsolationTest {
         mvc.perform(get("/api/cash/boxes?sedeId=30")
                 .header("Authorization", "Bearer " + tokenOwnerA))
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.message").value("No tienes este permiso en la sede seleccionada"));
+                .andExpect(jsonPath("$.message").value("La sede no pertenece a tu cuenta"));
 
         // Legacy /api/cajas?sedeId=30
         mvc.perform(get("/api/cajas?sedeId=30")
@@ -532,7 +533,7 @@ class CashAndLegacyOperationsIsolationTest {
         mvc.perform(get("/api/cajas/3")
                 .header("Authorization", "Bearer " + tokenOwnerA))
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.message").value("No tienes este permiso en la sede seleccionada"));
+                .andExpect(jsonPath("$.message").value("La sede no pertenece a tu cuenta"));
     }
 
     @Test
@@ -548,7 +549,7 @@ class CashAndLegacyOperationsIsolationTest {
                         }
                         """))
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.message").value("No tienes este permiso en la sede seleccionada"));
+                .andExpect(jsonPath("$.message").value("La sede no pertenece a tu cuenta"));
 
         // Legacy /api/sesiones-caja/abrir
         mvc.perform(post("/api/sesiones-caja/abrir")
@@ -561,7 +562,7 @@ class CashAndLegacyOperationsIsolationTest {
                         }
                         """))
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.message").value("No tienes este permiso en la sede seleccionada"));
+                .andExpect(jsonPath("$.message").value("La sede no pertenece a tu cuenta"));
     }
 
     @Test
@@ -782,13 +783,13 @@ class CashAndLegacyOperationsIsolationTest {
         mvc.perform(get("/api/cash/sessions/30/movements")
                 .header("Authorization", "Bearer " + tokenOwnerA))
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.message").value("No tienes este permiso en la sede seleccionada"));
+                .andExpect(jsonPath("$.message").value("La sede no pertenece a tu cuenta"));
 
         // Legacy /api/movimientos-caja/sesion/30
         mvc.perform(get("/api/movimientos-caja/sesion/30")
                 .header("Authorization", "Bearer " + tokenOwnerA))
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.message").value("No tienes este permiso en la sede seleccionada"));
+                .andExpect(jsonPath("$.message").value("La sede no pertenece a tu cuenta"));
 
         // Owner A attempts to register movement on Session 30
         mvc.perform(post("/api/cash/movements")
@@ -802,7 +803,7 @@ class CashAndLegacyOperationsIsolationTest {
                         }
                         """))
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.message").value("No tienes este permiso en la sede seleccionada"));
+                .andExpect(jsonPath("$.message").value("La sede no pertenece a tu cuenta"));
 
         // Owner A attempts to close Session 30
         mvc.perform(patch("/api/cash/sessions/30/close")
@@ -810,7 +811,7 @@ class CashAndLegacyOperationsIsolationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"totalEfectivoFisico\": 200.0}"))
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.message").value("No tienes este permiso en la sede seleccionada"));
+                .andExpect(jsonPath("$.message").value("La sede no pertenece a tu cuenta"));
     }
 
     @Test

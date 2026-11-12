@@ -912,7 +912,6 @@ export class DatabaseService {
     ) {
       return this.sedes();
     }
-    if (user?.rol === 'superadmin' && String(duenoId) === String(user.id)) return this.sedes();
     if (this.auth.isVenueStaff?.() && String(duenoId) === String(user?.id)) {
       const ids = new Set(this.staff.mine().map((a) => Number(a.sedeId)));
       return this.sedes().filter((s) => ids.has(Number(s.id)));

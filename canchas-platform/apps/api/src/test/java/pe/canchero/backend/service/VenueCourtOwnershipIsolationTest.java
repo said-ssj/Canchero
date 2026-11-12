@@ -47,6 +47,7 @@ class VenueCourtOwnershipIsolationTest {
             UUID id = call.getArgument(0);
             return Optional.of(new AuthUserDto(id.toString(), "Usuario", id + "@test", null, id.equals(admin) ? "superadmin" : "dueno"));
         });
+        StaffTestSchema.create(jdbc);
         var access = new VenueAccessService(jdbc);
         mvc = MockMvcBuilders.standaloneSetup(
                         new VenueController(data, access),

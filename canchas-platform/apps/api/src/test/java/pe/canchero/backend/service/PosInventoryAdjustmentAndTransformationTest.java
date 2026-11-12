@@ -42,6 +42,7 @@ class PosInventoryAdjustmentAndTransformationTest {
         jdbc.update("insert into kardex (id_producto, id_sede, id_tipo_mov_inv, cantidad, precio_unitario, saldo_stock, motivo, fecha, estado) values (11, 1, 1, 5, 3.00, 5, 'Stock inicial', current_timestamp, 'A')");
 
         posService = new PosService(jdbc);
+        StaffTestSchema.create(jdbc);
         access = new VenueAccessService(jdbc);
         controller = new PosController(posService, access);
     }

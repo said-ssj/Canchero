@@ -293,7 +293,7 @@ describe('Sedes Component - Fase 7: Diseño y Verificación Integral', () => {
 
     expect(component['filteredVenues']().length).toBe(0);
     const text = fixture.nativeElement.textContent;
-    expect(text).toContain('No encontramos sedes con ese criterio');
+    expect(text).toContain('No encontramos sedes para «TextoQueNoExisteEnNingunLado999»');
 
     // Restablecer filtros
     component['resetFilters']();
