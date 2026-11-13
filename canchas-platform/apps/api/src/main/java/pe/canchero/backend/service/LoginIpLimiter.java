@@ -94,7 +94,9 @@ public class LoginIpLimiter {
     public boolean bloqueada(String ip, String email) {
         String fingerprint = fingerprint(ip, email);
         if (jdbc == null) { int[] v = testCounts.get(fingerprint); return v != null && v[0] >= MAX_FALLOS && clock.instant().getEpochSecond() - v[1] < VENTANA.toSeconds(); }
-        Integer count = jdbc.queryForObject("select fallos from public.login_intento_ip where huella=? and inicio_ventana > now()-interval '15 minutes'", Integer.class, fingerprint);
+        // La ausencia de una ventana vigente es normal en el primer acceso o tras expirar.
+        // MAX conserva una fila incluso sin coincidencias; errores reales de BD siguen propagandose.
+        Integer count = jdbc.queryForObject("select coalesce(max(fallos),0) from public.login_intento_ip where huella=? and inicio_ventana > now()-interval '15 minutes'", Integer.class, fingerprint);
         return count != null && count >= MAX_FALLOS;
     }
 
