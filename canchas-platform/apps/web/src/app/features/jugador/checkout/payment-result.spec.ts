@@ -39,7 +39,11 @@ describe('Retorno verificado de Mercado Pago', () => {
         },
         {
           provide: AuthService,
-          useValue: { isLoggedIn: () => true, ready: new Promise(() => {}) },
+          useValue: {
+            isLoggedIn: () => true,
+            currentUser: () => ({ id: 'player-1' }),
+            ready: new Promise(() => {}),
+          },
         },
         { provide: MercadoPagoApi, useValue: api },
       ],

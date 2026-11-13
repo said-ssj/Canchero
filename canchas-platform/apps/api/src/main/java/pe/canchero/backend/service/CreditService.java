@@ -1,6 +1,8 @@
 package pe.canchero.backend.service;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,6 +13,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.PreparedStatement;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -82,14 +85,28 @@ public class CreditService extends JdbcSupport {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La fecha de vencimiento no es válida");
         }
         BigDecimal amount = money(request.montoOriginal());
-        Integer id = jdbc.queryForObject("""
+        KeyHolder key = new GeneratedKeyHolder();
+        jdbc.update(connection -> {
+            PreparedStatement statement = connection.prepareStatement("""
                 insert into cuenta_por_cobrar
                     (id_sede, cliente_nombre, cliente_documento, telefono, equipo, monto_original,
                      saldo, total_abonado, concepto, fecha_vencimiento, usucre)
-                values (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?) returning id_cuenta
-                """, Integer.class, venue, request.clienteNombre().trim(), safe(request.clienteDocumento()),
-                safe(request.telefono()), safe(request.equipo()), amount, amount,
-                fallback(request.concepto(), "Consumo a cuenta / Fiado"), dueDate, user.nombre());
+                values (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)
+                """, new String[]{"id_cuenta"});
+            statement.setInt(1, venue);
+            statement.setString(2, request.clienteNombre().trim());
+            statement.setString(3, safe(request.clienteDocumento()));
+            statement.setString(4, safe(request.telefono()));
+            statement.setString(5, safe(request.equipo()));
+            statement.setBigDecimal(6, amount);
+            statement.setBigDecimal(7, amount);
+            statement.setString(8, fallback(request.concepto(), "Consumo a cuenta / Fiado"));
+            statement.setDate(9, java.sql.Date.valueOf(dueDate));
+            statement.setString(10, user.nombre());
+            return statement;
+        }, key);
+        Integer id = key.getKey() == null ? null : key.getKey().intValue();
+        if (id == null) throw new IllegalStateException("No se pudo recuperar el ID de la cuenta de crÃ©dito");
         return findAccount(id, venue, true);
     }
 
@@ -131,9 +148,10 @@ public class CreditService extends JdbcSupport {
                 """, accountId, request.sesionCajaId(), amount, method, request.nroOperacion(),
                 request.observacion(), user.nombre(), user.nombre());
         jdbc.update("""
-                update cuenta_por_cobrar set saldo = ?, total_abonado = ?, fecmod = now(), usmod = ?
+                update cuenta_por_cobrar set saldo = ?, total_abonado = ?, estado = ?, fecmod = now(), usmod = ?
                 where id_cuenta = ? and id_sede = ?
-                """, newBalance, paid, user.nombre(), accountId, venue);
+                """, newBalance, paid, newBalance.signum() == 0 ? "CANCELADA" : "PENDIENTE",
+                user.nombre(), accountId, venue);
         if ("efectivo".equalsIgnoreCase(method) && request.sesionCajaId() != null) {
             cashService.createMovimientoCaja(new MovimientoCajaRequest(String.valueOf(request.sesionCajaId()),
                     "ingreso", "Abono a Crédito #" + accountId + " (" + current.clienteNombre() + ")",

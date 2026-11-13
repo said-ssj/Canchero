@@ -94,7 +94,7 @@ public class AuthTokenService {
                 throw unauthorized();
             }
             boolean rememberMe = true;
-            if (payloadParts.length == 3) {
+            if (payloadParts.length >= 3) {
                 if (!"true".equals(payloadParts[2]) && !"false".equals(payloadParts[2])) {
                     throw unauthorized();
                 }

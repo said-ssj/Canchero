@@ -2,12 +2,15 @@ package pe.canchero.backend.service;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import pe.canchero.backend.web.dto.*;
 
 import java.math.BigDecimal;
+import java.sql.PreparedStatement;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -109,13 +112,26 @@ public class PurchaseService extends JdbcSupport {
                 throw new ResponseStatusException(HttpStatus.CONFLICT, "Ya existe un proveedor activo con ese RUC");
             }
 
-            Integer id = jdbc.queryForObject("""
-                    insert into proveedor (id_sede, ruc, razon_social, contacto, telefono, correo, direccion, estado, feccre)
-                    values (?, ?, ?, ?, ?, ?, ?, 'A', now())
-                    returning id_proveedor
-                    """, Integer.class, venue, ruc, razonSocial, request.contacto(), request.telefono(), request.correo(), request.direccion());
+            KeyHolder key = new GeneratedKeyHolder();
+            jdbc.update(connection -> {
+                PreparedStatement statement = connection.prepareStatement("""
+                        insert into proveedor (id_sede, ruc, razon_social, contacto, telefono, correo, direccion, estado, feccre)
+                        values (?, ?, ?, ?, ?, ?, ?, 'A', now())
+                        """, new String[]{"id_proveedor"});
+                statement.setInt(1, venue);
+                statement.setString(2, ruc);
+                statement.setString(3, razonSocial);
+                statement.setString(4, request.contacto());
+                statement.setString(5, request.telefono());
+                statement.setString(6, request.correo());
+                statement.setString(7, request.direccion());
+                return statement;
+            }, key);
+            Number generatedId = key.getKey();
+            if (generatedId == null) throw new IllegalStateException("No se pudo recuperar el ID del proveedor");
+            int id = generatedId.intValue();
 
-            return new SupplierDto(id == null ? 0 : id, venue, ruc, razonSocial, request.contacto(), request.telefono(), request.correo(), request.direccion(), "A");
+            return new SupplierDto(id, venue, ruc, razonSocial, request.contacto(), request.telefono(), request.correo(), request.direccion(), "A");
         }
 
         // Memory fallback
@@ -292,19 +308,37 @@ public class PurchaseService extends JdbcSupport {
 
         PurchaseDto savedPurchase;
         if (tablesExist()) {
-            Integer id = jdbc.queryForObject("""
+            BigDecimal subtotalAmount = BigDecimal.valueOf(subtotal);
+            BigDecimal taxAmount = BigDecimal.valueOf(igv);
+            BigDecimal totalAmount = BigDecimal.valueOf(total);
+            KeyHolder key = new GeneratedKeyHolder();
+            jdbc.update(connection -> {
+                PreparedStatement statement = connection.prepareStatement("""
                     insert into compra (id_sede, id_proveedor, numero_comprobante, tipo_comprobante,
                                         fecha_emision, fecha_entrega_estimada, fecha_recepcion,
                                         subtotal, igv, total, estado, observacion, usucre)
                     values (?, ?, ?, ?, now(), ?, ?, ?, ?, ?, ?, ?, ?)
-                    returning id_compra
-                    """, Integer.class, venue, request.proveedorId(), numero, tipo,
-                    request.fechaEntregaEstimada() == null ? null : Timestamp.valueOf(LocalDateTime.parse(request.fechaEntregaEstimada())),
-                    request.recibirInmediatamente() ? Timestamp.valueOf(LocalDateTime.now()) : null,
-                    BigDecimal.valueOf(subtotal), BigDecimal.valueOf(igv), BigDecimal.valueOf(total),
-                    estadoInicial, request.observacion(), user.nombre());
+                    """, new String[]{"id_compra"});
+                statement.setInt(1, venue);
+                statement.setInt(2, request.proveedorId());
+                statement.setString(3, numero);
+                statement.setString(4, tipo);
+                if (request.fechaEntregaEstimada() == null) statement.setTimestamp(5, null);
+                else statement.setTimestamp(5, Timestamp.valueOf(LocalDateTime.parse(request.fechaEntregaEstimada())));
+                if (request.recibirInmediatamente()) statement.setTimestamp(6, Timestamp.valueOf(LocalDateTime.now()));
+                else statement.setTimestamp(6, null);
+                statement.setBigDecimal(7, subtotalAmount);
+                statement.setBigDecimal(8, taxAmount);
+                statement.setBigDecimal(9, totalAmount);
+                statement.setString(10, estadoInicial);
+                statement.setString(11, request.observacion());
+                statement.setString(12, user.nombre());
+                return statement;
+            }, key);
 
-            int purchaseId = id == null ? 0 : id;
+            Number generatedId = key.getKey();
+            if (generatedId == null) throw new IllegalStateException("No se pudo recuperar el ID de la compra");
+            int purchaseId = generatedId.intValue();
             for (PurchaseItemDto item : resolvedItems) {
                 jdbc.update("""
                         insert into compra_detalle (id_compra, id_producto, cantidad, costo_unitario, subtotal, estado)

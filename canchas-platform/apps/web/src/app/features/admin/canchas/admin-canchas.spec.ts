@@ -398,7 +398,7 @@ describe('AdminCanchas', () => {
     expect(descartarReserva).not.toHaveBeenCalled();
   });
 
-  it('allows rescheduling an affected reservation without altering payments', async () => {
+  it('allows rescheduling an affected reservation and reports the recalculated balance', async () => {
     const affectedRes = {
       reservaId: 501,
       codigoPase: '#CAN-501',
@@ -412,6 +412,7 @@ describe('AdminCanchas', () => {
       estado: 'confirmada',
     };
 
+    reprogramarReserva.mockResolvedValue({ saldo: 20, devolucion_pendiente: 0 });
     component['abrirModalReprogramar'](affectedRes);
     expect(component['reservaEnReprogramacion']()).not.toBeNull();
 
