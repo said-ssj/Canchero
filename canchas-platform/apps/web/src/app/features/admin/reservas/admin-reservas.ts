@@ -199,6 +199,7 @@ export class AdminReservas {
         const montoTotal = Number(reserva.monto_total ?? pago?.monto ?? 0);
         const adelanto = Number(reserva.adelanto ?? pago?.monto ?? 0);
         const saldo = Number(reserva.saldo ?? Math.max(0, montoTotal - adelanto));
+        const devolucionPendiente = Number(reserva.devolucion_pendiente ?? 0);
 
         return {
           reserva,
@@ -217,6 +218,7 @@ export class AdminReservas {
           montoTotal,
           adelanto,
           saldo,
+          devolucionPendiente,
           esClienteSinCuenta,
           checkInRealizado: !!reserva.check_in_realizado,
           metodo,

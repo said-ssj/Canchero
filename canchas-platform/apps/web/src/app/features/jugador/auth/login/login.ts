@@ -142,6 +142,10 @@ export class Login {
       }
       this.showError.set(false);
       this.submitting.set(false);
+      if (user.rol === 'superadmin') {
+        void this.router.navigateByUrl('/admin', { replaceUrl: true });
+        return;
+      }
       const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
       const regreso =
         returnUrl && /^\/(?![/\\])/.test(returnUrl) && !returnUrl.includes('\\')

@@ -21,7 +21,8 @@ public record BookingResponse(
         double paidAmount,
         double balanceAmount,
         String paymentMethod,
-        String paymentOperationNumber) {
+        String paymentOperationNumber,
+        double refundDueAmount) {
 
     public BookingResponse(
             String id,
@@ -38,7 +39,7 @@ public record BookingResponse(
             List<QuoteResponse.QuoteTrancheDto> tranches,
             String idempotencyKey) {
         this(id, codigoPase, courtId, courtName, venueName, venueId, fecha, horario, total, status, jugadores, tranches, idempotencyKey,
-                "aprobado", "sin_retencion", total, 0.0, "Tarjeta", null);
+                "aprobado", "sin_retencion", total, 0.0, "Tarjeta", null, 0.0);
     }
 
     public BookingResponse(
@@ -54,7 +55,7 @@ public record BookingResponse(
             String status,
             List<String> jugadores) {
         this(id, codigoPase, courtId, courtName, venueName, venueId, fecha, horario, total, status, jugadores, List.of(), null,
-                "aprobado", "sin_retencion", total, 0.0, "Tarjeta", null);
+                "aprobado", "sin_retencion", total, 0.0, "Tarjeta", null, 0.0);
     }
 
     public BookingResponse(
@@ -69,6 +70,6 @@ public record BookingResponse(
             String status,
             List<String> jugadores) {
         this(id, codigoPase, null, courtName, venueName, venueId, fecha, horario, total, status, jugadores, List.of(), null,
-                "aprobado", "sin_retencion", total, 0.0, "Tarjeta", null);
+                "aprobado", "sin_retencion", total, 0.0, "Tarjeta", null, 0.0);
     }
 }

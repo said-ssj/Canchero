@@ -21,7 +21,7 @@ class LoginIpLimiterTest {
     };
 
     @Test
-    void bloqueaLaIpTrasMuchosFallosYLaLiberaAlVencerLaVentana() {
+    void bloqueaCombinacionIpCuentaYLaLiberaAlVencerLaVentana() {
         var limiter = new LoginIpLimiter(clock);
         for (int i = 0; i < LoginIpLimiter.MAX_FALLOS - 1; i++) limiter.registrarFallo("1.1.1.1");
         assertFalse(limiter.bloqueada("1.1.1.1"));
@@ -47,15 +47,10 @@ class LoginIpLimiterTest {
     }
 
     @Test
-    void conElMapaLlenoLasIpsNuevasCompartenUnContador() {
+    void unaRedCompartidaNoMezclaLosIntentosDeCuentasDistintas() {
         var limiter = new LoginIpLimiter(clock);
-        for (int i = 0; i < LoginIpLimiter.MAX_IPS; i++) limiter.registrarFallo("ip-" + i);
-        for (int i = 0; i < LoginIpLimiter.MAX_FALLOS; i++) limiter.registrarFallo("nueva-" + i);
-        assertTrue(limiter.bloqueada("otra-nueva"));    // inventar IPs ya no sirve para saltarse el límite
-        assertFalse(limiter.bloqueada("ip-1"));          // las IPs ya conocidas siguen con su propio contador
-
-        ahora = ahora.plus(LoginIpLimiter.VENTANA).plus(Duration.ofMinutes(2));
-        limiter.registrarFallo("tras-limpieza");          // limpia las vencidas
-        assertFalse(limiter.bloqueada("otra-nueva"));
+        for (int i = 0; i < LoginIpLimiter.MAX_FALLOS; i++) limiter.registrarFallo("10.0.0.1", "a@example.test");
+        assertTrue(limiter.bloqueada("10.0.0.1", "a@example.test"));
+        assertFalse(limiter.bloqueada("10.0.0.1", "b@example.test"));
     }
 }

@@ -1,0 +1,40 @@
+name: Deploy Supabase notifications
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/functions/notificaciones/**'
+      - '.github/workflows/deploy-notificaciones.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy notificaciones
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.99.1
+      - name: Configure provider secrets and deploy
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
+          SENDGRID_FROM_EMAIL: ${{ secrets.SENDGRID_FROM_EMAIL }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          : "${SUPABASE_ACCESS_TOKEN:?Missing GitHub secret SUPABASE_ACCESS_TOKEN}"
+          : "${SUPABASE_PROJECT_REF:?Missing GitHub secret SUPABASE_PROJECT_REF}"
+          : "${SENDGRID_API_KEY:?Missing GitHub secret SENDGRID_API_KEY}"
+          : "${SENDGRID_FROM_EMAIL:?Missing GitHub secret SENDGRID_FROM_EMAIL}"
+          supabase secrets set --project-ref "$SUPABASE_PROJECT_REF" \
+            SENDGRID_API_KEY="$SENDGRID_API_KEY" \
+            SENDGRID_FROM_EMAIL="$SENDGRID_FROM_EMAIL"
+          supabase functions deploy notificaciones --project-ref "$SUPABASE_PROJECT_REF"

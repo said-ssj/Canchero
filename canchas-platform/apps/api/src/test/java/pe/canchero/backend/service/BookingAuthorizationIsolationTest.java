@@ -34,7 +34,6 @@ class BookingAuthorizationIsolationTest {
     private String tokenOwnerA;
     private String tokenOwnerB;
     private String tokenPlayer1;
-    private String tokenPlayer2;
     private String tokenAdmin;
 
     private int booking1Id; // Sede 10 (Owner A), Player 1
@@ -187,7 +186,6 @@ class BookingAuthorizationIsolationTest {
         tokenOwnerA = tokenService.issue(ownerAId, true);
         tokenOwnerB = tokenService.issue(ownerBId, true);
         tokenPlayer1 = tokenService.issue(player1Id, true);
-        tokenPlayer2 = tokenService.issue(player2Id, true);
         tokenAdmin = tokenService.issue(adminId, true);
 
         mvc = MockMvcBuilders.standaloneSetup(new BookingController(dataService))

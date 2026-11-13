@@ -340,6 +340,16 @@ public class PurchaseService extends JdbcSupport {
     @Transactional
     public PurchaseDto receivePurchase(int id, Integer sedeId, AuthUserDto user) {
         int venue = access.requirePermission(sedeId, user, "inventario.ingresar");
+        if (!tablesExist()) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                    "La recepción requiere persistencia de compras e inventario");
+        }
+        // Serialize concurrent clicks/retries on the durable purchase row. This lock
+        // is held through the inventory movements and the purchase status update.
+        Integer lockedId = jdbc.queryForList("""
+                select id_compra from compra where id_compra = ? and id_sede = ? for update
+                """, Integer.class, id, venue).stream().findFirst().orElse(null);
+        if (lockedId == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Compra no encontrada");
         PurchaseDto purchase = getPurchase(id, venue, user);
 
         if ("RECIBIDA".equalsIgnoreCase(purchase.estado())) {
@@ -359,7 +369,12 @@ public class PurchaseService extends JdbcSupport {
         }
 
         if (tablesExist()) {
-            jdbc.update("update compra set estado='RECIBIDA', fecha_recepcion=now(), fecmod=now() where id_compra=?", id);
+            int changed = jdbc.update("""
+                    update compra set estado='RECIBIDA', fecha_recepcion=now(), fecmod=now()
+                    where id_compra=? and id_sede=? and estado <> 'RECIBIDA'
+                    """, id, venue);
+            if (changed != 1) throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "La compra ya fue recepcionada previamente");
         } else {
             List<PurchaseDto> list = memoryPurchases.getOrDefault(venue, new ArrayList<>());
             for (int i = 0; i < list.size(); i++) {

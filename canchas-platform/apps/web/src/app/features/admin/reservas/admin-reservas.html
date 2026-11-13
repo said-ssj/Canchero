@@ -188,6 +188,12 @@
           } @else {
             <span class="saldo-zero">Pagado 100%</span>
           }
+          @if (row.devolucionPendiente > 0) {
+            <span class="saldo-alert"
+              >Devolución pendiente:
+              {{ row.devolucionPendiente | currency: 'PEN' : 'S/ ' : '1.2-2' }}</span
+            >
+          }
         </td>
       </ng-container>
 
@@ -297,6 +303,12 @@
             <span class="saldo-zero">S/ 0.00 (Totalmente cancelado)</span>
           }
         </dd>
+        @if (row.devolucionPendiente > 0) {
+          <dt>Devolución pendiente</dt>
+          <dd class="saldo-alert">
+            {{ row.devolucionPendiente | currency: 'PEN' : 'S/ ' : '1.2-2' }}
+          </dd>
+        }
         <dt>Operación</dt>
         <dd>{{ row.operacion || 'Sin referencia registrada' }}</dd>
         <dt>Acreditación</dt>

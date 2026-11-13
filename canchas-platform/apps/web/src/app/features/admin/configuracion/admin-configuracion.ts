@@ -276,6 +276,7 @@ export class AdminConfiguracion {
 
     try {
       await firstValueFrom(this.auth.changePassword(actual, nuevo));
+      await this.auth.logout();
       this.pwdSuccess.set('Contraseña actualizada correctamente.');
       this.notice.emit('Contraseña actualizada en Canchero.');
       this.pwdCurrent.set('');

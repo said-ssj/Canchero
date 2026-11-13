@@ -1,4 +1,19 @@
-.footer { margin-top: 32px; }
+.footer {
+  margin-top: 32px;
+}
+
+.footer-column ul a,
+.footer-column ul button.footer-pending {
+  color: var(--color-slate-400);
+  font-size: 0.925rem;
+  line-height: inherit;
+  font-family: inherit;
+}
+
+.footer-column ul a:hover,
+.footer-column ul a:focus-visible {
+  color: #fff;
+}
 
 .footer-pending {
   display: inline-block;

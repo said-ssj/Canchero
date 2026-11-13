@@ -40,18 +40,19 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request, HttpServletRequest http) {
-        String ip = LoginIpLimiter.clientIp(http);
-        if (ipLimiter.bloqueada(ip)) {
+        String ip = ipLimiter.resolveClientIp(http);
+        String email = request == null ? "" : request.email();
+        if (ipLimiter.bloqueada(ip, email)) {
             return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(new ErrorResponse(
-                    "Demasiados intentos fallidos desde tu conexión. Espera 15 minutos o usa \"¿Olvidaste tu contraseña?\"."));
+                    "Demasiados intentos fallidos para esta cuenta desde esta conexión. Espera 15 minutos antes de volver a intentarlo."));
         }
         try {
             var result = data.login(request);
             if (result.isPresent()) return ResponseEntity.ok(result.get());
-            ipLimiter.registrarFallo(ip);
+            ipLimiter.registrarFallo(ip, email);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ErrorResponse("Credenciales inválidas"));
         } catch (org.springframework.web.server.ResponseStatusException ex) {
-            ipLimiter.registrarFallo(ip);
+            ipLimiter.registrarFallo(ip, email);
             if (ex instanceof AuthService.CuentaRecienBloqueada bloqueo) avisarBloqueo(bloqueo.email);
             return ResponseEntity.status(ex.getStatusCode()).body(new ErrorResponse(ex.getReason()));
         }

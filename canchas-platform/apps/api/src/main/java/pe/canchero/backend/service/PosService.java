@@ -139,6 +139,7 @@ public class PosService extends JdbcSupport {
                 """, targetSedeId);
     }
 
+
     @Transactional
     public SaleDto processSale(ProcessSaleRequest request) {
         int sedeId = requireExplicitVenue(request.sedeId());

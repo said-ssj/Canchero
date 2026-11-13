@@ -15,6 +15,8 @@ export const profileCompletionGuard: CanActivateFn = async (_route, state) => {
     return true;
   await auth.ready;
   if (!auth.user()) return true;
+  // Las cuentas de plataforma no necesitan un perfil de jugador para administrar.
+  if (auth.user()?.rol === 'superadmin') return true;
   const identity = auth.user()!.id;
   if (auth.playerProfile()?.completo) return true;
   try {

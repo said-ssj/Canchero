@@ -624,6 +624,21 @@ body.dark-theme .view-mode-btn.is-active {
     padding: 0 0 20px;
     margin-bottom: 12px;
     width: 100%;
+    max-height: min(42dvh, 340px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .results-head-left,
+  .results-head-left .cn-loader {
+    min-width: 0;
+  }
+
+  .results-head-left .cn-loader {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
   }
 
   .public-venue.is-list {

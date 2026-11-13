@@ -90,6 +90,8 @@ Configurar como variables privadas de Render, no en archivos versionados:
 | SPRING_DATASOURCE_USERNAME | Usuario que aparece en Connect de Supabase |
 | SPRING_DATASOURCE_PASSWORD | Contrasena de BD, no la clave anon |
 | SUPABASE_JWT_SECRET | Secreto propio y estable de sesiones Canchero |
+| SUPABASE_URL | URL HTTPS del proyecto Supabase |
+| SUPABASE_SERVICE_ROLE_KEY | Clave privada solo del backend para subir imágenes autenticadas; nunca en Vercel |
 | CORS_ALLOWED_ORIGINS | Origen HTTPS exacto de tu frontend |
 | DB_POOL_MAX_SIZE | 5 inicialmente; ajustar al presupuesto de conexiones |
 | DB_POOL_MIN_IDLE | 1 inicialmente |

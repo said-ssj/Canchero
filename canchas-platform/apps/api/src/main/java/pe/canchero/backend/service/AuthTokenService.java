@@ -2,6 +2,8 @@ package pe.canchero.backend.service;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
@@ -22,14 +24,26 @@ public class AuthTokenService {
 
     private final String secret;
     private final Clock clock;
+    private final JdbcTemplate jdbc;
 
     @Autowired
-    public AuthTokenService(@Value("${app.auth.token-secret:${APP_AUTH_TOKEN_SECRET:${SUPABASE_JWT_SECRET:}}}") String secret) {
-        this(secret, Clock.systemUTC());
+    public AuthTokenService(JdbcTemplate jdbc,
+            @Value("${app.auth.token-secret:${APP_AUTH_TOKEN_SECRET:${SUPABASE_JWT_SECRET:}}}") String secret) {
+        this(jdbc, secret, Clock.systemUTC());
     }
 
     public AuthTokenService(String secret, Clock clock) {
+        this(null, secret, clock);
+    }
+
+    /** Constructor para pruebas unitarias sin base de datos. */
+    public AuthTokenService(String secret) {
+        this(null, secret, Clock.systemUTC());
+    }
+
+    private AuthTokenService(JdbcTemplate jdbc, String secret, Clock clock) {
         if (secret == null || secret.isBlank()) throw new IllegalArgumentException("Falta APP_AUTH_TOKEN_SECRET");
+        this.jdbc = jdbc;
         this.secret = secret;
         this.clock = clock;
     }
@@ -40,7 +54,7 @@ public class AuthTokenService {
 
     public String issue(UUID userId, boolean rememberMe) {
         long expiresAt = clock.instant().getEpochSecond() + (rememberMe ? TOKEN_TTL_SECONDS : SESSION_TTL_SECONDS);
-        String payload = userId + ":" + expiresAt + ":" + rememberMe;
+        String payload = userId + ":" + expiresAt + ":" + rememberMe + ":" + sessionVersion(userId);
         String encodedPayload = base64Url(payload.getBytes(StandardCharsets.UTF_8));
         String signature = sign(encodedPayload);
         return PREFIX + "." + encodedPayload + "." + signature;
@@ -76,7 +90,7 @@ public class AuthTokenService {
         try {
             String payload = new String(Base64.getUrlDecoder().decode(encodedPayload), StandardCharsets.UTF_8);
             String[] payloadParts = payload.split(":", -1);
-            if (payloadParts.length != 2 && payloadParts.length != 3) {
+            if (payloadParts.length < 2 || payloadParts.length > 4) {
                 throw unauthorized();
             }
             boolean rememberMe = true;
@@ -90,8 +104,24 @@ public class AuthTokenService {
             if (clock.instant().getEpochSecond() >= expiresAt) {
                 throw unauthorized();
             }
-            return new TokenClaims(UUID.fromString(payloadParts[0]), rememberMe, expiresAt);
+            int sessionVersion = payloadParts.length == 4 ? Integer.parseInt(payloadParts[3]) : 0;
+            UUID userId = UUID.fromString(payloadParts[0]);
+            if (sessionVersion != sessionVersion(userId)) throw unauthorized();
+            return new TokenClaims(userId, rememberMe, expiresAt);
         } catch (IllegalArgumentException ex) {
+            throw unauthorized();
+        }
+    }
+
+    private int sessionVersion(UUID userId) {
+        if (jdbc == null) return 0;
+        try {
+            Integer version = jdbc.queryForObject(
+                    "select session_version from public.usuario where id_usuario = ? and estado = 'A'",
+                    Integer.class, userId);
+            if (version == null) throw unauthorized();
+            return version;
+        } catch (EmptyResultDataAccessException ex) {
             throw unauthorized();
         }
     }

@@ -376,6 +376,7 @@ export class DatabaseService {
       monto_total: Number(b.total || 0),
       adelanto: paidAmount,
       saldo: balanceAmount,
+      devolucion_pendiente: Number(b.refundDueAmount ?? 0),
       estado,
       estado_label: estado,
       codigo_pase: b.codigoPase,
@@ -1366,7 +1367,7 @@ export class DatabaseService {
     reservaId: number,
     nuevaFecha: string,
     nuevoHorario: string,
-  ): Promise<void> {
+  ): Promise<any> {
     const saved = await firstValueFrom(
       this.http.patch<any>(`${this.apiUrl}/bookings/${reservaId}`, {
         fecha: nuevaFecha,
@@ -1375,6 +1376,7 @@ export class DatabaseService {
     );
     const synced = this.mapBackendBookingToReserva(saved, this.canchas());
     this.reservas.update((list) => list.map((r) => (r.id === reservaId ? { ...r, ...synced } : r)));
+    return synced;
   }
 
   // ===== RESERVAS & PAGOS =====
@@ -1897,6 +1899,32 @@ export class DatabaseService {
         const tarifas = Array.isArray(resp.tarifas) ? resp.tarifas : [];
         const bloqueos = Array.isArray(resp.bloqueos) ? resp.bloqueos : [];
         const ocupaciones = Array.isArray(resp.ocupaciones) ? resp.ocupaciones : [];
+        // El checkout calcula cada celda desde reservas(); sincroniza el rango
+        // consultado para que un 409 quite del calendario el turno recién ocupado.
+        const courtNumber = Number(idStr);
+        const inRangeForCourt = (row: any) =>
+          Number(row.id_cancha ?? row.idCancha ?? row.courtId) === courtNumber &&
+          String(row.fecha_reserva ?? row.fechaReserva ?? row.fecha ?? row.date ?? '').slice(
+            0,
+            10,
+          ) >= from &&
+          String(row.fecha_reserva ?? row.fechaReserva ?? row.fecha ?? row.date ?? '').slice(
+            0,
+            10,
+          ) <= to;
+        const retained = this.reservas().filter((row) => !inRangeForCourt(row));
+        this.reservas.set([
+          ...retained,
+          ...ocupaciones.map((row: any) =>
+            this.enhanceReserva({
+              ...row,
+              id_cancha: row.id_cancha ?? row.idCancha,
+              fecha_reserva: row.fecha_reserva ?? row.fechaReserva,
+              hora_inicio: row.hora_inicio ?? row.horaInicio,
+              hora_fin: row.hora_fin ?? row.horaFin,
+            }),
+          ),
+        ]);
         return { horarios, tarifas, bloqueos, ocupaciones };
       }
     } catch (error: any) {
@@ -1983,29 +2011,12 @@ export class DatabaseService {
 
   // ===== UTILIDADES =====
   async uploadPublicImage(file: File, folder = 'uploads'): Promise<string> {
-    const safeName = file.name
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-zA-Z0-9._-]+/g, '-')
-      .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '')
-      .toLowerCase();
-    const path = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safeName || 'imagen.jpg'}`;
-    const buckets = ['canchero-media', 'canchero-assets', 'sedes', 'imagenes', 'public'];
-    let lastError: unknown = null;
-
-    for (const bucket of buckets) {
-      const { error } = await supabase.storage.from(bucket).upload(path, file, {
-        cacheControl: '3600',
-        contentType: file.type || 'image/jpeg',
-        upsert: false,
-      });
-      if (!error) {
-        return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
-      }
-      lastError = error;
-    }
-
-    throw lastError ?? new Error('No se pudo subir la imagen a Supabase Storage');
+    const body = new FormData();
+    body.append('file', file, file.name || 'imagen');
+    body.append('folder', folder);
+    const result = await firstValueFrom(
+      this.http.post<{ url: string }>(`${this.apiUrl}/storage/images`, body).pipe(timeout(30000)),
+    );
+    return result.url;
   }
 }

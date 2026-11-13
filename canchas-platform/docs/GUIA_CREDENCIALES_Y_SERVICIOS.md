@@ -60,7 +60,7 @@ Los alias `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` y `VITE_GOOGLE_MAPS_API_
 
 NO copies **Secret**, `sb_secret_...` ni **service_role** en Angular. La clave publica identifica al proyecto y no sustituye permisos ni autenticacion. [Tipos de claves](https://supabase.com/docs/guides/getting-started/api-keys), [URL y configuracion API](https://supabase.com/docs/guides/api/quickstart).
 
-`SUPABASE_SERVICE_ROLE_KEY` aparece en la plantilla historica, pero no se encontro como requisito del backend actual. No la agregues para resolver un error del navegador: es una credencial privilegiada.
+`SUPABASE_SERVICE_ROLE_KEY` solo se configura en el backend Spring cuando se habilita la subida autenticada de imágenes a `canchero-media`. Nunca la agregues al build Angular, Vercel ni al navegador: es una credencial privilegiada.
 
 ## 4. Supabase: conexion de la base de datos
 

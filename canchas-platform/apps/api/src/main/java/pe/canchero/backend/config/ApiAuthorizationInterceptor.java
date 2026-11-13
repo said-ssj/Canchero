@@ -105,6 +105,8 @@ public class ApiAuthorizationInterceptor implements HandlerInterceptor {
             return true;
         if (path.startsWith("/api/staff"))
             return true;
+        if (path.startsWith("/api/storage"))
+            return true;
         if ("PATCH".equalsIgnoreCase(method) && path.matches("^/api/bookings/\\d+/cancel$")) {
             return false;
         }

@@ -2,7 +2,7 @@
 // FCM Push, Twilio WhatsApp/SMS, SendGrid Email
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { handleCors, createSupabaseClient, verifyAuth, jsonResponse, errorResponse } from '../_shared/index.ts';
+import { handleCors, createSupabaseClient, jsonResponse, errorResponse } from '../_shared/index.ts';
 
 interface NotificationRequest {
   usuario_id: string;
@@ -27,6 +27,10 @@ serve(async (req: Request) => {
   const cors = await handleCors(req);
   if (cors) return cors;
 
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (!serviceKey) return errorResponse('Servicio de notificaciones no configurado', 503);
+  if (!isTrustedServiceRequest(req, serviceKey)) return errorResponse('No autorizado', 401);
+
   const supabase = await createSupabaseClient();
   const url = new URL(req.url);
   const path = url.pathname.split('/').pop();
@@ -34,10 +38,8 @@ serve(async (req: Request) => {
   try {
     switch (path) {
       case 'enviar': {
-        const auth = await verifyAuth(req, supabase);
-        if ('error' in auth) return errorResponse(auth.error, auth.status);
-        
-        const body: NotificationRequest = await req.json();
+        const body = await req.json() as Partial<NotificationRequest>;
+        if (!isNotificationRequest(body)) return errorResponse('Solicitud de notificación inválida', 400);
         const canales = body.canales || ['push', 'email'];
         const results: Record<string, any> = {};
         
@@ -71,17 +73,15 @@ serve(async (req: Request) => {
       }
       
       case 'push': {
-        const auth = await verifyAuth(req, supabase);
-        if ('error' in auth) return errorResponse(auth.error, auth.status);
-        
         const { token, titulo, mensaje, data } = await req.json();
+        if (typeof token !== 'string' || token.length > 4096 || typeof titulo !== 'string'
+            || titulo.length > 120 || typeof mensaje !== 'string' || mensaje.length > 2000)
+          return errorResponse('Solicitud push inválida', 400);
         const result = await sendPushNotification(token, { titulo, mensaje, datos: data });
         return jsonResponse(result);
       }
       
       case 'topic': {
-        const auth = await verifyAuth(req, supabase);
-        if ('error' in auth) return errorResponse(auth.error, auth.status);
         return errorResponse('El envío de notificaciones por topic aún no está implementado.', 501);
       }
       
@@ -93,6 +93,34 @@ serve(async (req: Request) => {
     return errorResponse(err.message, 500);
   }
 });
+
+function isTrustedServiceRequest(req: Request, serviceKey: string): boolean {
+  const authorization = req.headers.get('Authorization') || '';
+  const match = /^Bearer\s+(.+)$/i.exec(authorization);
+  if (!match) return false;
+  const candidate = new TextEncoder().encode(match[1]);
+  const expected = new TextEncoder().encode(serviceKey);
+  let difference = candidate.length ^ expected.length;
+  const length = Math.max(candidate.length, expected.length);
+  for (let i = 0; i < length; i++) difference |= (candidate[i] ?? 0) ^ (expected[i] ?? 0);
+  return difference === 0;
+}
+
+function isNotificationRequest(body: Partial<NotificationRequest>): body is NotificationRequest {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return false;
+  const allowedTypes = new Set([
+    'reserva_creada', 'reserva_confirmada', 'reserva_cancelada', 'pago_recibido',
+    'recordatorio', 'review_solicitada', 'liquidacion_lista',
+  ]);
+  const allowedChannels = new Set(['push', 'email', 'whatsapp']);
+  return typeof body.usuario_id === 'string'
+    && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(body.usuario_id)
+    && typeof body.tipo === 'string' && allowedTypes.has(body.tipo)
+    && typeof body.titulo === 'string' && body.titulo.trim().length > 0 && body.titulo.length <= 120
+    && typeof body.mensaje === 'string' && body.mensaje.trim().length > 0 && body.mensaje.length <= 2000
+    && (body.canales === undefined || (Array.isArray(body.canales)
+      && body.canales.length > 0 && body.canales.every((channel) => allowedChannels.has(channel))));
+}
 
 async function sendPushNotification(token: string, body: NotificationRequest): Promise<any> {
   const serverKey = Deno.env.get('FCM_SERVER_KEY');
@@ -127,11 +155,14 @@ async function sendEmail(email: string, body: NotificationRequest): Promise<any>
   
   if (!apiKey) return { error: 'SendGrid not configured' };
   
+  const safeTitle = escapeHtml(body.titulo);
+  const safeMessage = escapeHtml(body.mensaje);
+  const safeData = body.datos ? escapeHtml(JSON.stringify(body.datos, null, 2)) : '';
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <h2 style="color: #3CB043;">${body.titulo}</h2>
-      <p>${body.mensaje}</p>
-      ${body.datos ? `<pre>${JSON.stringify(body.datos, null, 2)}</pre>` : ''}
+      <h2 style="color: #3CB043;">${safeTitle}</h2>
+      <p>${safeMessage}</p>
+      ${safeData ? `<pre>${safeData}</pre>` : ''}
       <hr>
       <p style="color: #666; font-size: 12px;">Canchero - Tu cancha, tu juego</p>
     </div>
@@ -176,4 +207,11 @@ async function sendWhatsApp(telefono: string, body: NotificationRequest): Promis
   });
   
   return response.ok ? { success: true } : { error: await response.text() };
+}
+
+function escapeHtml(value: string): string {
+  const replacements: Record<string, string> = {
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  };
+  return value.replace(/[&<>"']/g, (character) => replacements[character] ?? character);
 }

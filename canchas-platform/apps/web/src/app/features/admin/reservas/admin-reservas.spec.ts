@@ -56,6 +56,7 @@ function row(
     montoTotal: 100,
     adelanto: 50,
     saldo: 50,
+    devolucionPendiente: 0,
     esClienteSinCuenta: false,
     checkInRealizado: false,
     metodo: 'Efectivo',

@@ -1042,6 +1042,10 @@ export class Checkout {
     const displayRange = block.displayRange;
     const user = this.currentUser();
     const userId = String(user?.id ?? user?.id_usuario ?? 'auth-user');
+    if (!user?.id) {
+      this.confirmError.set('Inicia sesión con la cuenta que hará esta reserva.');
+      return;
+    }
     const venue = this.resolvedVenue();
     const idempotencyKey = this.getOrCreateIdempotencyKey(
       userId,
@@ -1076,6 +1080,14 @@ export class Checkout {
         cupos: this.accessSlots(),
         idempotencyKey,
       });
+      // La cuenta pudo cambiar mientras la API creaba la retención. No abrir
+      // el checkout externo bajo la sesión que ahora pertenece a otra persona.
+      if (this.currentUser()?.id !== userId) {
+        this.confirmError.set(
+          'La sesión cambió durante el pago. Inicia sesión con la cuenta original para continuar.',
+        );
+        return;
+      }
       try {
         sessionStorage.setItem(
           `mp-convocados:${result.id}`,

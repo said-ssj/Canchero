@@ -27,6 +27,7 @@ export interface AdminReservationRow {
   montoTotal: number;
   adelanto: number;
   saldo: number;
+  devolucionPendiente: number;
   esClienteSinCuenta: boolean;
   checkInRealizado: boolean;
   metodo: string;
@@ -40,7 +41,13 @@ export type ReservationFilter = 'pendientes' | 'hoy' | 'semana' | 'todas';
 export type ReservationAction =
   | { kind: 'approve'; reservationId: number }
   | { kind: 'reject'; reservationId: number }
-  | { kind: 'cobrarSaldo'; reservationId: number; metodoPago: string; monto: number; numeroOperacion?: string }
+  | {
+      kind: 'cobrarSaldo';
+      reservationId: number;
+      metodoPago: string;
+      monto: number;
+      numeroOperacion?: string;
+    }
   | { kind: 'checkIn'; reservationId: number }
   | { kind: 'cancelWithRefund'; reservationId: number; motivo: string; montoDevolucion: number };
 

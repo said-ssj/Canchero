@@ -385,6 +385,7 @@ export class PaymentResult {
     }
     this.loading.set(true);
     this.error.set('');
+    const requesterId = this.auth.currentUser()?.id;
     try {
       const paymentId = [
         this.route.snapshot.queryParamMap.get('payment_id'),
@@ -397,6 +398,12 @@ export class PaymentResult {
             ? await this.api.refresh(id!, paymentId)
             : await this.api.state(id!);
       if (this.dead) return;
+      if (!requesterId || this.auth.currentUser()?.id !== requesterId) {
+        this.error.set(
+          'La sesión cambió mientras verificábamos el pago. Inicia sesión con la cuenta titular de la reserva.',
+        );
+        return;
+      }
       // La URL nunca acredita ni cancela un pago. Solo reanudar una retención propia
       // autorizada por la API; un pago pendiente/aprobado permanece en el resultado.
       if (id && !paymentId && result.canResume && result.paymentStatus === null) {

@@ -1062,8 +1062,9 @@ export class AdminCanchas {
       return;
     }
 
+    let updated: any;
     try {
-      await this.db.reprogramarReserva(target.reservaId, fecha, horario);
+      updated = await this.db.reprogramarReserva(target.reservaId, fecha, horario);
     } catch (error) {
       this.mostrarToast(
         (error as any)?.error?.message ||
@@ -1073,7 +1074,18 @@ export class AdminCanchas {
       return;
     }
     this.mostrarToast(
-      `Reserva ${target.codigoPase} reprogramada con éxito al ${fecha} (${horario}) sin alterar pagos.`,
+      'Reserva ' +
+        target.codigoPase +
+        ' reprogramada al ' +
+        fecha +
+        ' (' +
+        horario +
+        ').' +
+        (updated.saldo > 0
+          ? ' Nuevo saldo: S/ ' + Number(updated.saldo).toFixed(2)
+          : updated.devolucion_pendiente > 0
+            ? ' Devolución pendiente: S/ ' + Number(updated.devolucion_pendiente).toFixed(2)
+            : ' Pagos y saldo recalculados.'),
     );
     this.reservaEnReprogramacion.set(null);
   }

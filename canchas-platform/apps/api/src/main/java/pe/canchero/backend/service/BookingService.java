@@ -419,11 +419,12 @@ public class BookingService extends JdbcSupport {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Debes iniciar sesión para reprogramar una reserva.");
         }
         List<Map<String, Object>> rows = jdbc.queryForList("""
-                select r.id_cancha, s.id_dueno
+                select r.id_cancha, s.id_dueno, s.id_sede, coalesce(r.adelanto, 0) as adelanto
                 from reserva r
                 join cancha c on c.id_cancha = r.id_cancha
                 join sede s on s.id_sede = c.id_sede
                 where r.id_reserva = ? and r.estado = 'A'
+                for update of r
                 """, id);
         if (rows.isEmpty()) {
             return Optional.empty();
@@ -444,16 +445,83 @@ public class BookingService extends JdbcSupport {
             if (!quote.valid()) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, quote.errorMessage());
             }
-            // El total sigue la tarifa del nuevo horario; lo ya pagado (adelanto) se respeta y el saldo es la diferencia.
-            // Si el nuevo horario es más barato, el saldo queda en 0 y la devolución del exceso se hace en caja.
+            // Recalculate the new balance from the payment already collected.
+            // A lower price is returned as a cash expense or tracked as pending.
+            int venueId = ((Number) rows.get(0).get("id_sede")).intValue();
+            BigDecimal paid = new BigDecimal(rows.get(0).get("adelanto").toString())
+                    .setScale(2, java.math.RoundingMode.HALF_UP);
+            BigDecimal newTotal = BigDecimal.valueOf(quote.total())
+                    .setScale(2, java.math.RoundingMode.HALF_UP);
+
+            // Recalculate the outstanding amount and replace any earlier refund
+            // request that has not yet been paid out.
+            jdbc.update("""
+                    update public.devolucion_pago_reserva set estado = 'CANCELADA'
+                    where id_reserva = ? and estado = 'PENDIENTE'
+                    """, id);
+            BigDecimal refundDue = paid.subtract(newTotal).max(BigDecimal.ZERO)
+                    .setScale(2, java.math.RoundingMode.HALF_UP);
+            BigDecimal paidAfterImmediateRefund = paid;
+            if (refundDue.signum() > 0) {
+                String paymentMethods = jdbc.queryForObject("""
+                        select coalesce(string_agg(distinct mp.nombre, ', ' order by mp.nombre), 'No identificado')
+                        from public.pago_reserva pr
+                        join public.metodo_pago mp on mp.id_metodo_pago = pr.id_metodo_pago
+                        where pr.id_reserva = ? and pr.estado = 'A'
+                          and lower(coalesce(pr.estado_liquidacion, 'aprobado'))
+                              not in ('pendiente', 'rechazado', 'fallido', 'expired')
+                        """, String.class, id);
+                Boolean cashOnly = jdbc.queryForObject("""
+                        select coalesce(bool_and(lower(mp.nombre) like '%efectivo%'), false)
+                        from public.pago_reserva pr
+                        join public.metodo_pago mp on mp.id_metodo_pago = pr.id_metodo_pago
+                        where pr.id_reserva = ? and pr.estado = 'A'
+                          and lower(coalesce(pr.estado_liquidacion, 'aprobado'))
+                              not in ('pendiente', 'rechazado', 'fallido', 'expired')
+                        """, Boolean.class, id);
+                Integer openCashSession = Boolean.TRUE.equals(cashOnly)
+                        ? jdbc.queryForList("""
+                                select sc.id_sesion_caja
+                                from public.sesion_caja sc
+                                join public.caja ca on ca.id_caja = sc.id_caja
+                                where ca.id_sede = ? and ca.estado = 'A'
+                                  and sc.estado = 'A' and sc.fecha_cierre is null
+                                order by sc.fecha_apertura desc, sc.id_sesion_caja desc
+                                limit 1 for update of sc
+                                """, Integer.class, venueId).stream().findFirst().orElse(null)
+                        : null;
+                if (Boolean.TRUE.equals(cashOnly) && openCashSession == null) {
+                    throw new ResponseStatusException(HttpStatus.CONFLICT,
+                            "Abre una caja de esta sede antes de reprogramar con devolución en efectivo.");
+                }
+                boolean returnedInCash = openCashSession != null;
+                Integer movementId = null;
+                if (returnedInCash) {
+                    movementId = jdbc.queryForObject("""
+                            insert into public.movimiento_caja
+                                (id_sesion_caja, id_tipo_movimiento, monto, concepto, fecha_movimiento, estado, usucre, pccre)
+                            values (?, 2, ?, ?, now(), 'A', ?, 'SPRING')
+                            returning id_movimiento
+                            """, Integer.class, openCashSession, refundDue,
+                            "Devolución reserva #" + id + " por reprogramación", authUser.nombre());
+                    paidAfterImmediateRefund = paid.subtract(refundDue).max(BigDecimal.ZERO);
+                }
+                jdbc.update("""
+                        insert into public.devolucion_pago_reserva
+                            (id_reserva, monto, medio_pago, estado, id_movimiento, motivo, usucre)
+                        values (?, ?, ?, ?, ?, 'Reprogramación de reserva', ?)
+                        """, id, refundDue, paymentMethods == null ? "No identificado" : paymentMethods,
+                        returnedInCash ? "REGISTRADA" : "PENDIENTE", movementId, authUser.nombre());
+            }
+            BigDecimal newBalance = newTotal.subtract(paidAfterImmediateRefund).max(BigDecimal.ZERO)
+                    .setScale(2, java.math.RoundingMode.HALF_UP);
             jdbc.update("""
                     update reserva
-                    set fecha_reserva = ?, hora_inicio = ?, hora_fin = ?,
-                        monto_total = ?, saldo = greatest(? - coalesce(adelanto, 0), 0),
-                        fecmod = now(), usmod = 'API', pcmod = 'SPRING'
+                    set fecha_reserva = ?, hora_inicio = ?, hora_fin = ?, monto_total = ?,
+                        adelanto = ?, saldo = ?, fecmod = now(), usmod = 'API', pcmod = 'SPRING'
                     where id_reserva = ? and estado = 'A'
-                    """, fecha, slotRange.startTime(), slotRange.endTime(),
-                    BigDecimal.valueOf(quote.total()), BigDecimal.valueOf(quote.total()), id);
+                    """, fecha, slotRange.startTime(), slotRange.endTime(), newTotal,
+                    paidAfterImmediateRefund, newBalance, id);
             return getBookingById(id);
         } finally {
             releaseCourtLockAfterTransaction(courtLock);
@@ -846,7 +914,8 @@ public class BookingService extends JdbcSupport {
                 base.paidAmount(),
                 base.balanceAmount(),
                 base.paymentMethod(),
-                base.paymentOperationNumber());
+                base.paymentOperationNumber(),
+                base.refundDueAmount());
     }
 
     private void createPayment(int reservaId, double total, String metodoPago, String idempotencyKey, String paymentStatus) {
@@ -905,7 +974,8 @@ public class BookingService extends JdbcSupport {
                     adelanto,
                     saldo,
                     metodoPago == null ? "Tarjeta" : metodoPago,
-                    numOp);
+                    numOp,
+                    rs.getBigDecimal("refund_due") == null ? 0 : rs.getBigDecimal("refund_due").doubleValue());
         };
     }
 
@@ -919,6 +989,8 @@ public class BookingService extends JdbcSupport {
                        c.nombre_numero as cancha_nombre, s.nombre as sede_nombre, s.id_sede,
                        (select pr.estado_liquidacion from pago_reserva pr where pr.id_reserva = r.id_reserva and pr.estado = 'A' order by pr.id_pago_reserva desc limit 1) as pago_estado,
                        (select pr.numero_operacion from pago_reserva pr where pr.id_reserva = r.id_reserva and pr.estado = 'A' order by pr.id_pago_reserva desc limit 1) as pago_num_op,
+                       coalesce((select sum(d.monto) from public.devolucion_pago_reserva d
+                                 where d.id_reserva = r.id_reserva and d.estado = 'PENDIENTE'), 0) as refund_due,
                        %s as metodo_pago_nombre
                 from reserva r
                 join cancha c on c.id_cancha = r.id_cancha

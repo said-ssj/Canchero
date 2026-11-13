@@ -170,13 +170,14 @@ export class GoogleCallback {
               localStorage.setItem(`canchero_user_avatar_${user.id}`, pendingAvatar);
             }
           }
-          void this.router.navigate(['/perfil'], {
-            queryParams: {
-              acceso: 'google',
-              regreso: this.auth.isOwner() ? '/admin' : this.returnUrl,
-            },
-            replaceUrl: true,
-          });
+          if (user.rol === 'superadmin') {
+            void this.router.navigateByUrl('/admin', { replaceUrl: true });
+          } else {
+            void this.router.navigate(['/perfil'], {
+              queryParams: { acceso: 'google', regreso: this.returnUrl },
+              replaceUrl: true,
+            });
+          }
         },
         error: (failure: unknown) => {
           this.busy.set(false);
