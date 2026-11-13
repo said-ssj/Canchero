@@ -38,276 +38,367 @@
 
       <!-- Menú de Navegación del Administrador -->
       <nav class="sidebar-nav">
-        <span class="sidebar-nav-heading">Sedes y reservas</span>
-        @if (context.can('pase.verificar')) {
-          <a
-            class="sidebar-nav-item"
-            routerLink="/admin/accesos"
-            routerLinkActive="active"
-            (click)="closeMobileSidebar()"
+        <section class="sidebar-nav-section">
+          <button
+            class="sidebar-nav-heading"
+            type="button"
+            (click)="toggleNavSection('sedes')"
+            [attr.aria-expanded]="expandedNavSections().sedes"
+            aria-controls="nav-section-sedes"
           >
-            <span class="material-symbols-outlined icon sidebar-nav-icon" aria-hidden="true"
-              >qr_code_scanner</span
-            >
-            <span>Control de accesos</span>
-          </a>
-        }
-        <!-- 1. Mi Sede -->
-        <a
-          class="sidebar-nav-item"
-          routerLink="/admin/sedes"
-          routerLinkActive="active"
-          (click)="closeMobileSidebar()"
-          matRipple
-        >
-          <span class="material-symbols-outlined icon sidebar-nav-icon" aria-hidden="true"
-            >stadium</span
+            <span>Sedes y reservas</span>
+            <mat-icon aria-hidden="true">{{
+              expandedNavSections().sedes ? 'expand_less' : 'expand_more'
+            }}</mat-icon>
+          </button>
+          <div
+            id="nav-section-sedes"
+            class="sidebar-nav-section-items"
+            [hidden]="!expandedNavSections().sedes"
           >
-          <span>{{ allVenuesMode() ? 'Sedes de plataforma' : 'Mis sedes' }}</span>
-        </a>
-
-        <!-- 2. Mis Canchas -->
-        @if (context.can('cancha.gestionar')) {
-          <a
-            class="sidebar-nav-item"
-            routerLink="/admin/canchas"
-            routerLinkActive="active"
-            (click)="closeMobileSidebar()"
-            matRipple
-          >
-            <span class="material-symbols-outlined icon sidebar-nav-icon" aria-hidden="true"
-              >sports_soccer</span
-            >
-            <span>Mis Canchas</span>
-          </a>
-        }
-
-        <!-- 3. Reservas & Operaciones -->
-        @if (context.can('reserva.ver', 'reserva.agenda')) {
-          <a
-            class="sidebar-nav-item"
-            routerLink="/admin/reservas"
-            routerLinkActive="active"
-            (click)="closeMobileSidebar()"
-            matRipple
-          >
-            <span class="material-symbols-outlined icon sidebar-nav-icon" aria-hidden="true"
-              >calendar_month</span
-            >
-            <span>Reservas & Operaciones</span>
-            @if (pendientesCount() > 0) {
-              <span class="sidebar-status-badge is-warning">{{ pendientesBadgeText() }}</span>
+            @if (context.can('pase.verificar')) {
+              <a
+                class="sidebar-nav-item"
+                routerLink="/admin/accesos"
+                routerLinkActive="active"
+                (click)="closeMobileSidebar()"
+              >
+                <span class="material-symbols-outlined icon sidebar-nav-icon" aria-hidden="true"
+                  >qr_code_scanner</span
+                >
+                <span>Control de accesos</span>
+              </a>
             }
-          </a>
-        }
-
-        <span class="sidebar-nav-heading">Caja y ventas</span>
-        <!-- 4. Caja Operativa & Turnos -->
-        @if (context.can('caja.operar', 'caja.supervisar')) {
-          <a
-            class="sidebar-nav-item"
-            routerLink="/admin/caja"
-            routerLinkActive="active"
-            (click)="closeMobileSidebar()"
-            matRipple
-          >
-            <span class="material-symbols-outlined icon sidebar-nav-icon" aria-hidden="true"
-              >point_of_sale</span
+            <!-- 1. Mi Sede -->
+            <a
+              class="sidebar-nav-item"
+              routerLink="/admin/sedes"
+              routerLinkActive="active"
+              (click)="closeMobileSidebar()"
+              matRipple
             >
-            <span>Caja Operativa & Turnos</span>
-            @if (cajaAbierta()) {
-              <span class="sidebar-status-badge is-open">Abierta</span>
-            } @else {
-              <span class="sidebar-status-badge is-closed">Cerrada</span>
+              <span class="material-symbols-outlined icon sidebar-nav-icon" aria-hidden="true"
+                >stadium</span
+              >
+              <span>{{ allVenuesMode() ? 'Sedes de plataforma' : 'Mis sedes' }}</span>
+            </a>
+
+            <!-- 2. Mis Canchas -->
+            @if (context.can('cancha.gestionar')) {
+              <a
+                class="sidebar-nav-item"
+                routerLink="/admin/canchas"
+                routerLinkActive="active"
+                (click)="closeMobileSidebar()"
+                matRipple
+              >
+                <span class="material-symbols-outlined icon sidebar-nav-icon" aria-hidden="true"
+                  >sports_soccer</span
+                >
+                <span>Mis Canchas</span>
+              </a>
             }
-          </a>
-        }
 
-        <!-- 4.5. Punto de Venta (POS) & Kardex -->
-        @if (context.can('venta.crear', 'producto.ver', 'inventario.ver')) {
-          <a
-            class="sidebar-nav-item"
-            routerLink="/admin/pos"
-            routerLinkActive="active"
-            (click)="closeMobileSidebar()"
-            matRipple
-          >
-            <span class="material-symbols-outlined icon sidebar-nav-icon" aria-hidden="true"
-              >shopping_cart</span
-            >
-            <span>Punto de Venta (POS) & Kardex</span>
-            @if (stockCriticoCount() > 0) {
-              <span class="sidebar-status-badge is-warning">{{ stockCriticoCount() }}</span>
+            <!-- 3. Reservas & Operaciones -->
+            @if (context.can('reserva.ver', 'reserva.agenda')) {
+              <a
+                class="sidebar-nav-item"
+                routerLink="/admin/reservas"
+                routerLinkActive="active"
+                (click)="closeMobileSidebar()"
+                matRipple
+              >
+                <span class="material-symbols-outlined icon sidebar-nav-icon" aria-hidden="true"
+                  >calendar_month</span
+                >
+                <span>Reservas & Operaciones</span>
+                @if (pendientesCount() > 0) {
+                  <span class="sidebar-status-badge is-warning">{{ pendientesBadgeText() }}</span>
+                }
+              </a>
             }
-          </a>
-        }
-
-        <span class="sidebar-nav-heading">Inventario y compras</span>
-        <!-- 4.6. Catálogo & Productos -->
-        <a
-          class="sidebar-nav-item"
-          routerLink="/admin/catalogo"
-          routerLinkActive="active"
-          (click)="closeMobileSidebar()"
-          matRipple
-        >
-          <span class="material-symbols-outlined icon sidebar-nav-icon" aria-hidden="true"
-            >inventory_2</span
+          </div>
+        </section>
+        <section class="sidebar-nav-section">
+          <button
+            class="sidebar-nav-heading"
+            type="button"
+            (click)="toggleNavSection('caja')"
+            [attr.aria-expanded]="expandedNavSections().caja"
+            aria-controls="nav-section-caja"
           >
-          <span>Catálogo & Productos</span>
-        </a>
-
-        <!-- 4.7. Inventario & Kardex -->
-        <a
-          class="sidebar-nav-item"
-          routerLink="/admin/inventario"
-          routerLinkActive="active"
-          (click)="closeMobileSidebar()"
-          matRipple
-        >
-          <span class="material-symbols-outlined icon sidebar-nav-icon" aria-hidden="true"
-            >inventory</span
+            <span>Caja y ventas</span
+            ><mat-icon aria-hidden="true">{{
+              expandedNavSections().caja ? 'expand_less' : 'expand_more'
+            }}</mat-icon>
+          </button>
+          <div
+            id="nav-section-caja"
+            class="sidebar-nav-section-items"
+            [hidden]="!expandedNavSections().caja"
           >
-          <span>Inventario & Kardex</span>
-          @if (stockCriticoCount() > 0) {
-            <span class="sidebar-status-badge is-warning">{{ stockCriticoCount() }}</span>
-          }
-        </a>
+            <!-- 4. Caja Operativa & Turnos -->
+            @if (context.can('caja.operar', 'caja.supervisar')) {
+              <a
+                class="sidebar-nav-item"
+                routerLink="/admin/caja"
+                routerLinkActive="active"
+                (click)="closeMobileSidebar()"
+                matRipple
+              >
+                <span class="material-symbols-outlined icon sidebar-nav-icon" aria-hidden="true"
+                  >point_of_sale</span
+                >
+                <span>Caja Operativa & Turnos</span>
+                @if (cajaAbierta()) {
+                  <span class="sidebar-status-badge is-open">Abierta</span>
+                } @else {
+                  <span class="sidebar-status-badge is-closed">Cerrada</span>
+                }
+              </a>
+            }
 
-        <!-- 4.8. Compras & Proveedores -->
-        <a
-          class="sidebar-nav-item"
-          routerLink="/admin/compras"
-          routerLinkActive="active"
-          (click)="closeMobileSidebar()"
-          matRipple
-        >
-          <span class="material-symbols-outlined icon sidebar-nav-icon" aria-hidden="true"
-            >local_shipping</span
+            <!-- 4.5. Punto de Venta (POS) & Kardex -->
+            @if (context.can('venta.crear', 'producto.ver', 'inventario.ver')) {
+              <a
+                class="sidebar-nav-item"
+                routerLink="/admin/pos"
+                routerLinkActive="active"
+                (click)="closeMobileSidebar()"
+                matRipple
+              >
+                <span class="material-symbols-outlined icon sidebar-nav-icon" aria-hidden="true"
+                  >shopping_cart</span
+                >
+                <span>Punto de Venta (POS) & Kardex</span>
+                @if (stockCriticoCount() > 0) {
+                  <span class="sidebar-status-badge is-warning">{{ stockCriticoCount() }}</span>
+                }
+              </a>
+            }
+          </div>
+        </section>
+        <section class="sidebar-nav-section">
+          <button
+            class="sidebar-nav-heading"
+            type="button"
+            (click)="toggleNavSection('inventario')"
+            [attr.aria-expanded]="expandedNavSections().inventario"
+            aria-controls="nav-section-inventario"
           >
-          <span>Compras & Proveedores</span>
-        </a>
-
-        <span class="sidebar-nav-heading">Finanzas</span>
-        <!-- 4.9. Créditos & Fiados -->
-        <a
-          class="sidebar-nav-item"
-          routerLink="/admin/creditos"
-          routerLinkActive="active"
-          (click)="closeMobileSidebar()"
-          matRipple
-        >
-          <span class="material-symbols-outlined icon sidebar-nav-icon" aria-hidden="true"
-            >account_balance_wallet</span
+            <span>Inventario y compras</span
+            ><mat-icon aria-hidden="true">{{
+              expandedNavSections().inventario ? 'expand_less' : 'expand_more'
+            }}</mat-icon>
+          </button>
+          <div
+            id="nav-section-inventario"
+            class="sidebar-nav-section-items"
+            [hidden]="!expandedNavSections().inventario"
           >
-          <span>Créditos &amp; Fiados</span>
-        </a>
-
-        <!-- 5. Finanzas & Liquidación -->
-        @if (context.can('finanzas.ver')) {
-          <a
-            class="sidebar-nav-item"
-            routerLink="/admin/finanzas"
-            routerLinkActive="active"
-            (click)="closeMobileSidebar()"
-            matRipple
-          >
-            <span class="material-symbols-outlined icon sidebar-nav-icon" aria-hidden="true"
-              >payments</span
+            <!-- 4.6. Catálogo & Productos -->
+            <a
+              class="sidebar-nav-item"
+              routerLink="/admin/catalogo"
+              routerLinkActive="active"
+              (click)="closeMobileSidebar()"
+              matRipple
             >
-            <span>Finanzas & Liquidación</span>
-          </a>
-        }
+              <span class="material-symbols-outlined icon sidebar-nav-icon" aria-hidden="true"
+                >inventory_2</span
+              >
+              <span>Catálogo & Productos</span>
+            </a>
 
-        <span class="sidebar-nav-heading">Administración</span>
-        <!-- 6. Personalización & QR -->
-        @if (context.can('sede.editar')) {
-          <a
-            class="sidebar-nav-item"
-            routerLink="/admin/personalizacion"
-            routerLinkActive="active"
-            (click)="closeMobileSidebar()"
-            matRipple
-          >
-            <span class="material-symbols-outlined icon sidebar-nav-icon" aria-hidden="true"
-              >qr_code_2</span
+            <!-- 4.7. Inventario & Kardex -->
+            <a
+              class="sidebar-nav-item"
+              routerLink="/admin/inventario"
+              routerLinkActive="active"
+              (click)="closeMobileSidebar()"
+              matRipple
             >
-            <span>Personalización & QR</span>
-          </a>
-        }
+              <span class="material-symbols-outlined icon sidebar-nav-icon" aria-hidden="true"
+                >inventory</span
+              >
+              <span>Inventario & Kardex</span>
+              @if (stockCriticoCount() > 0) {
+                <span class="sidebar-status-badge is-warning">{{ stockCriticoCount() }}</span>
+              }
+            </a>
 
-        <!-- 7. Reportes & Opiniones -->
-        @if (context.can('reporte.ver')) {
-          <a
-            class="sidebar-nav-item"
-            routerLink="/admin/reportes"
-            routerLinkActive="active"
-            (click)="closeMobileSidebar()"
-            matRipple
-          >
-            <span class="material-symbols-outlined icon sidebar-nav-icon" aria-hidden="true"
-              >reviews</span
+            <!-- 4.8. Compras & Proveedores -->
+            <a
+              class="sidebar-nav-item"
+              routerLink="/admin/compras"
+              routerLinkActive="active"
+              (click)="closeMobileSidebar()"
+              matRipple
             >
-            <span>Reportes & Opiniones</span>
-          </a>
-        }
+              <span class="material-symbols-outlined icon sidebar-nav-icon" aria-hidden="true"
+                >local_shipping</span
+              >
+              <span>Compras & Proveedores</span>
+            </a>
+          </div>
+        </section>
+        <section class="sidebar-nav-section">
+          <button
+            class="sidebar-nav-heading"
+            type="button"
+            (click)="toggleNavSection('finanzas')"
+            [attr.aria-expanded]="expandedNavSections().finanzas"
+            aria-controls="nav-section-finanzas"
+          >
+            <span>Finanzas</span
+            ><mat-icon aria-hidden="true">{{
+              expandedNavSections().finanzas ? 'expand_less' : 'expand_more'
+            }}</mat-icon>
+          </button>
+          <div
+            id="nav-section-finanzas"
+            class="sidebar-nav-section-items"
+            [hidden]="!expandedNavSections().finanzas"
+          >
+            <!-- 4.9. Créditos & Fiados -->
+            <a
+              class="sidebar-nav-item"
+              routerLink="/admin/creditos"
+              routerLinkActive="active"
+              (click)="closeMobileSidebar()"
+              matRipple
+            >
+              <span class="material-symbols-outlined icon sidebar-nav-icon" aria-hidden="true"
+                >account_balance_wallet</span
+              >
+              <span>Créditos &amp; Fiados</span>
+            </a>
 
-        <!-- 8. Configuración -->
-        @if (context.can('sede.editar')) {
-          <a
-            class="sidebar-nav-item"
-            routerLink="/admin/configuracion"
-            routerLinkActive="active"
-            (click)="closeMobileSidebar()"
-            matRipple
+            <!-- 5. Finanzas & Liquidación -->
+            @if (context.can('finanzas.ver')) {
+              <a
+                class="sidebar-nav-item"
+                routerLink="/admin/finanzas"
+                routerLinkActive="active"
+                (click)="closeMobileSidebar()"
+                matRipple
+              >
+                <span class="material-symbols-outlined icon sidebar-nav-icon" aria-hidden="true"
+                  >payments</span
+                >
+                <span>Finanzas & Liquidación</span>
+              </a>
+            }
+          </div>
+        </section>
+        <section class="sidebar-nav-section">
+          <button
+            class="sidebar-nav-heading"
+            type="button"
+            (click)="toggleNavSection('administracion')"
+            [attr.aria-expanded]="expandedNavSections().administracion"
+            aria-controls="nav-section-administracion"
           >
-            <span class="material-symbols-outlined icon sidebar-nav-icon" aria-hidden="true"
-              >settings</span
-            >
-            <span>Configuración</span>
-          </a>
-        }
+            <span>Administración</span
+            ><mat-icon aria-hidden="true">{{
+              expandedNavSections().administracion ? 'expand_less' : 'expand_more'
+            }}</mat-icon>
+          </button>
+          <div
+            id="nav-section-administracion"
+            class="sidebar-nav-section-items"
+            [hidden]="!expandedNavSections().administracion"
+          >
+            <!-- 6. Personalización & QR -->
+            @if (context.can('sede.editar')) {
+              <a
+                class="sidebar-nav-item"
+                routerLink="/admin/personalizacion"
+                routerLinkActive="active"
+                (click)="closeMobileSidebar()"
+                matRipple
+              >
+                <span class="material-symbols-outlined icon sidebar-nav-icon" aria-hidden="true"
+                  >qr_code_2</span
+                >
+                <span>Personalización & QR</span>
+              </a>
+            }
 
-        <!-- 9. Personal de la sede (dueño, superadmin o admin asignado) -->
-        @if (context.can('personal.gestionar')) {
-          <a
-            class="sidebar-nav-item"
-            routerLink="/admin/personal"
-            routerLinkActive="active"
-            (click)="closeMobileSidebar()"
-            matRipple
-          >
-            <span class="material-symbols-outlined icon sidebar-nav-icon" aria-hidden="true"
-              >badge</span
-            >
-            <span>Personal de la Sede</span>
-          </a>
-        }
+            <!-- 7. Reportes & Opiniones -->
+            @if (context.can('reporte.ver')) {
+              <a
+                class="sidebar-nav-item"
+                routerLink="/admin/reportes"
+                routerLinkActive="active"
+                (click)="closeMobileSidebar()"
+                matRipple
+              >
+                <span class="material-symbols-outlined icon sidebar-nav-icon" aria-hidden="true"
+                  >reviews</span
+                >
+                <span>Reportes & Opiniones</span>
+              </a>
+            }
 
-        <!-- 8. Gestión de Usuarios (Exclusivo Superadmin) -->
-        @if (isSuperAdmin()) {
-          <a
-            class="sidebar-nav-item"
-            routerLink="/admin/moderacion"
-            routerLinkActive="active"
-            (click)="closeMobileSidebar()"
-            ><span class="material-symbols-outlined icon sidebar-nav-icon" aria-hidden="true"
-              >policy</span
-            ><span>Revisión de reportes</span></a
-          >
-          <a
-            class="sidebar-nav-item"
-            routerLink="/admin/usuarios"
-            routerLinkActive="active"
-            (click)="closeMobileSidebar()"
-            matRipple
-          >
-            <span class="material-symbols-outlined icon sidebar-nav-icon" aria-hidden="true"
-              >manage_accounts</span
-            >
-            <span>Usuarios & Roles</span>
-          </a>
-        }
+            <!-- 8. Configuración -->
+            @if (context.can('sede.editar')) {
+              <a
+                class="sidebar-nav-item"
+                routerLink="/admin/configuracion"
+                routerLinkActive="active"
+                (click)="closeMobileSidebar()"
+                matRipple
+              >
+                <span class="material-symbols-outlined icon sidebar-nav-icon" aria-hidden="true"
+                  >settings</span
+                >
+                <span>Configuración</span>
+              </a>
+            }
+
+            <!-- 9. Personal de la sede (dueño, superadmin o admin asignado) -->
+            @if (context.can('personal.gestionar')) {
+              <a
+                class="sidebar-nav-item"
+                routerLink="/admin/personal"
+                routerLinkActive="active"
+                (click)="closeMobileSidebar()"
+                matRipple
+              >
+                <span class="material-symbols-outlined icon sidebar-nav-icon" aria-hidden="true"
+                  >badge</span
+                >
+                <span>Personal de la Sede</span>
+              </a>
+            }
+
+            <!-- 8. Gestión de Usuarios (Exclusivo Superadmin) -->
+            @if (isSuperAdmin()) {
+              <a
+                class="sidebar-nav-item"
+                routerLink="/admin/moderacion"
+                routerLinkActive="active"
+                (click)="closeMobileSidebar()"
+                ><span class="material-symbols-outlined icon sidebar-nav-icon" aria-hidden="true"
+                  >policy</span
+                ><span>Revisión de reportes</span></a
+              >
+              <a
+                class="sidebar-nav-item"
+                routerLink="/admin/usuarios"
+                routerLinkActive="active"
+                (click)="closeMobileSidebar()"
+                matRipple
+              >
+                <span class="material-symbols-outlined icon sidebar-nav-icon" aria-hidden="true"
+                  >manage_accounts</span
+                >
+                <span>Usuarios & Roles</span>
+              </a>
+            }
+          </div>
+        </section>
       </nav>
     </div>
 

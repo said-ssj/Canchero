@@ -86,7 +86,20 @@ export class AdminLayout implements OnInit, OnDestroy {
   readonly toastMessage = computed(() => this.toastService.message());
 
   readonly sidebarCollapsed = signal(false);
+  readonly expandedNavSections = signal<Record<string, boolean>>({
+    sedes: true,
+    caja: true,
+    inventario: true,
+    finanzas: true,
+    administracion: true,
+  });
   readonly mobileSidebarOpen = signal(false);
+  toggleNavSection(section: string): void {
+    this.expandedNavSections.update((sections) => ({
+      ...sections,
+      [section]: !(sections[section] ?? true),
+    }));
+  }
   readonly isSedesRoute = toSignal(
     this.router.events.pipe(
       filter((e): e is NavigationEnd => e instanceof NavigationEnd),
