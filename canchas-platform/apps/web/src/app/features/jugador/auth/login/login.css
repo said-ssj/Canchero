@@ -499,3 +499,7 @@
   justify-content: center;
   min-height: 44px;
 }
+/* Con color-scheme: dark el navegador pinta el iframe de Google con fondo blanco opaco. */
+.google-gis ::ng-deep iframe {
+  color-scheme: light;
+}
