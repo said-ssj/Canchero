@@ -38,6 +38,7 @@
 
       <!-- Menú de Navegación del Administrador -->
       <nav class="sidebar-nav">
+        <span class="sidebar-nav-heading">Sedes y reservas</span>
         @if (context.can('pase.verificar')) {
           <a
             class="sidebar-nav-item"
@@ -100,6 +101,7 @@
           </a>
         }
 
+        <span class="sidebar-nav-heading">Caja y ventas</span>
         <!-- 4. Caja Operativa & Turnos -->
         @if (context.can('caja.operar', 'caja.supervisar')) {
           <a
@@ -140,6 +142,7 @@
           </a>
         }
 
+        <span class="sidebar-nav-heading">Inventario y compras</span>
         <!-- 4.6. Catálogo & Productos -->
         <a
           class="sidebar-nav-item"
@@ -185,6 +188,7 @@
           <span>Compras & Proveedores</span>
         </a>
 
+        <span class="sidebar-nav-heading">Finanzas</span>
         <!-- 4.9. Créditos & Fiados -->
         <a
           class="sidebar-nav-item"
@@ -215,6 +219,7 @@
           </a>
         }
 
+        <span class="sidebar-nav-heading">Administración</span>
         <!-- 6. Personalización & QR -->
         @if (context.can('sede.editar')) {
           <a

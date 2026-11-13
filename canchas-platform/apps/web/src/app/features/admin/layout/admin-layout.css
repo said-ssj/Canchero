@@ -43,6 +43,26 @@
   line-height: 1.2;
 }
 
+.sidebar-nav-heading {
+  display: block;
+  padding: 15px 14px 5px;
+  color: #9298a1;
+  font-size: 0.67rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.sidebar-nav-heading:not(:first-child) {
+  margin-top: 5px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sidebar-collapsed .sidebar-nav-heading {
+  display: none;
+}
+
 .sidebar-status-badge.is-warning {
   background: #fef3c7 !important;
   color: #b45309 !important;
