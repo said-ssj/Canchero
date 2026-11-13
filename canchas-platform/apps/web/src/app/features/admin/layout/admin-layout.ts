@@ -43,6 +43,8 @@ export interface AdminNavItem {
   icon: string;
 }
 
+type AdminNavSection = 'sedes' | 'caja' | 'inventario' | 'finanzas' | 'administracion';
+
 @Component({
   standalone: true,
   selector: 'app-admin-layout',
@@ -86,7 +88,7 @@ export class AdminLayout implements OnInit, OnDestroy {
   readonly toastMessage = computed(() => this.toastService.message());
 
   readonly sidebarCollapsed = signal(false);
-  readonly expandedNavSections = signal<Record<string, boolean>>({
+  readonly expandedNavSections = signal<Record<AdminNavSection, boolean>>({
     sedes: true,
     caja: true,
     inventario: true,
@@ -94,7 +96,7 @@ export class AdminLayout implements OnInit, OnDestroy {
     administracion: true,
   });
   readonly mobileSidebarOpen = signal(false);
-  toggleNavSection(section: string): void {
+  toggleNavSection(section: AdminNavSection): void {
     this.expandedNavSections.update((sections) => ({
       ...sections,
       [section]: !(sections[section] ?? true),
