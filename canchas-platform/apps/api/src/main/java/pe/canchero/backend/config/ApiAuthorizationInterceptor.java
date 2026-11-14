@@ -13,16 +13,35 @@ import pe.canchero.backend.web.dto.AuthUserDto;
 import java.io.IOException;
 import java.util.Locale;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Autowired;
+import pe.canchero.backend.service.PlatformAdminService;
 
 @Component
 public class ApiAuthorizationInterceptor implements HandlerInterceptor {
 
     private final AuthTokenService authTokenService;
     private final AuthService data;
+    private final PlatformAdminService platformAdmin;
 
-    public ApiAuthorizationInterceptor(AuthTokenService authTokenService, AuthService data) {
+    @Autowired
+    public ApiAuthorizationInterceptor(AuthTokenService authTokenService, AuthService data, PlatformAdminService platformAdmin) {
         this.authTokenService = authTokenService;
         this.data = data;
+        this.platformAdmin = platformAdmin;
+    }
+
+    public ApiAuthorizationInterceptor(AuthTokenService authTokenService, AuthService data) {
+        this(authTokenService, data, null);
+    }
+
+    @Override
+    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
+        if (platformAdmin == null || !request.getRequestURI().startsWith("/api/")
+                || "GET".equalsIgnoreCase(request.getMethod()) || "OPTIONS".equalsIgnoreCase(request.getMethod())) return;
+        Object raw = request.getAttribute("auth.user");
+        if (raw instanceof AuthUserDto actor) {
+            platformAdmin.recordMutation(actor, request.getMethod(), request.getRequestURI(), response.getStatus());
+        }
     }
 
     @Override

@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { MainLayout } from './shared/components/main-layout/main-layout';
 import { authGuard } from './core/guards/auth.guard';
 import { profileCompletionGuard } from './core/guards/profile-completion.guard';
+import { superadminGuard } from './core/guards/superadmin.guard';
 
 export const routes: Routes = [
   {
@@ -99,6 +100,52 @@ export const routes: Routes = [
         path: 'privacidad',
         loadComponent: () =>
           import('./features/jugador/legal/privacidad').then((m) => m.PrivacyPage),
+      },
+    ],
+  },
+  {
+    path: 'superadmin',
+    loadComponent: () =>
+      import('./features/superadmin/layout/superadmin-layout').then((m) => m.SuperadminLayout),
+    canActivate: [superadminGuard],
+    canActivateChild: [superadminGuard],
+    children: [
+      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+      {
+        path: 'dashboard',
+        loadComponent: () =>
+          import('./features/superadmin/dashboard/superadmin-dashboard').then(
+            (m) => m.SuperadminDashboard,
+          ),
+      },
+      {
+        path: 'sedes',
+        loadComponent: () => import('./features/admin/sedes/admin-sedes').then((m) => m.AdminSedes),
+      },
+      {
+        path: 'canchas',
+        loadComponent: () =>
+          import('./features/admin/canchas/admin-canchas').then((m) => m.AdminCanchas),
+      },
+      {
+        path: 'moderacion',
+        loadComponent: () =>
+          import('./features/admin/moderacion/moderacion').then((m) => m.Moderacion),
+      },
+      {
+        path: 'usuarios',
+        loadComponent: () =>
+          import('./features/admin/usuarios/admin-usuarios').then((m) => m.AdminUsuarios),
+      },
+      {
+        path: 'pagos',
+        loadComponent: () =>
+          import('./features/superadmin/finance/platform-finance').then((m) => m.PlatformFinance),
+      },
+      {
+        path: 'auditoria',
+        loadComponent: () =>
+          import('./features/superadmin/audit/platform-audit').then((m) => m.PlatformAudit),
       },
     ],
   },

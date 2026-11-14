@@ -86,6 +86,12 @@ export class Navbar {
       u.nombre?.toLowerCase().includes('dueño')
     );
   });
+  protected readonly adminDestination = computed(() =>
+    this.auth.isSuperAdmin() ? '/superadmin/dashboard' : '/admin',
+  );
+  protected readonly adminNavigationLabel = computed(() =>
+    this.auth.isSuperAdmin() ? 'Consola de plataforma' : 'Administración',
+  );
 
   protected readonly menuItems = computed<UserMenuItem[]>(() => {
     const items: UserMenuItem[] = [

@@ -8,12 +8,12 @@
     <nav id="navMenu" class="nav-menu" [class.is-open]="menuOpen()">
       @if (isOwner()) {
         <a
-          routerLink="/admin"
+          [routerLink]="adminDestination()"
           routerLinkActive="is-active"
           ariaCurrentWhenActive="page"
           class="nav-link"
           (click)="menuOpen.set(false)"
-          >Administración</a
+          >{{ adminNavigationLabel() }}</a
         >
         <span class="nav-link nav-link-disabled" aria-disabled="true">
           Torneos <span class="nav-link-coming-soon">Próximamente</span>

@@ -160,7 +160,7 @@ export class Login {
       this.showError.set(false);
       this.submitting.set(false);
       if (user.rol === 'superadmin') {
-        void this.router.navigateByUrl('/admin', { replaceUrl: true });
+        void this.router.navigateByUrl('/superadmin/dashboard', { replaceUrl: true });
         return;
       }
       const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');

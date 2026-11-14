@@ -7,12 +7,12 @@ export const authGuard: CanActivateFn = async () => {
   const router = inject(Router);
 
   try {
-    if (!await authService.validateSession()) return router.createUrlTree(['/login']);
+    if (!(await authService.validateSession())) return router.createUrlTree(['/login']);
   } catch {
     return router.createUrlTree(['/login']);
   }
 
-  if (authService.isOwner()) {
+  if (authService.isOwner() && !authService.isSuperAdmin()) {
     return true;
   }
 

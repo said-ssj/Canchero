@@ -171,7 +171,7 @@ export class GoogleCallback {
             }
           }
           if (user.rol === 'superadmin') {
-            void this.router.navigateByUrl('/admin', { replaceUrl: true });
+            void this.router.navigateByUrl('/superadmin/dashboard', { replaceUrl: true });
           } else {
             void this.router.navigate(['/perfil'], {
               queryParams: { acceso: 'google', regreso: this.returnUrl },
