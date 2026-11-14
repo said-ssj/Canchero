@@ -7,27 +7,84 @@ describe('Admin authentication guard', () => {
   it('waits for server validation without a 500ms bypass', async () => {
     let complete!: () => void;
     let validated = false;
-    const validation = new Promise<boolean>(resolve => { complete = () => { validated = true; resolve(true); }; });
-    TestBed.configureTestingModule({ providers: [provideRouter([]), { provide: AuthService, useValue: {
-      validateSession: () => validation, isOwner: () => validated, currentUser: () => null,
-    } }] });
+    const validation = new Promise<boolean>((resolve) => {
+      complete = () => {
+        validated = true;
+        resolve(true);
+      };
+    });
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        {
+          provide: AuthService,
+          useValue: {
+            validateSession: () => validation,
+            isOwner: () => validated,
+            isSuperAdmin: () => false,
+            currentUser: () => null,
+          },
+        },
+      ],
+    });
     const guard = TestBed.runInInjectionContext(() => authGuard({} as any, {} as any));
     complete();
     expect(await guard).toBe(true);
   });
 
   it('redirects to login when the server cannot validate the session', async () => {
-    TestBed.configureTestingModule({ providers: [provideRouter([]), { provide: AuthService, useValue: {
-      validateSession: async () => false, isOwner: () => false, currentUser: () => null,
-    } }] });
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        {
+          provide: AuthService,
+          useValue: {
+            validateSession: async () => false,
+            isOwner: () => false,
+            isSuperAdmin: () => false,
+            currentUser: () => null,
+          },
+        },
+      ],
+    });
     const result = await TestBed.runInInjectionContext(() => authGuard({} as any, {} as any));
     expect(TestBed.inject(Router).serializeUrl(result as any)).toBe('/login');
   });
 
   it('does not allow an authenticated player into the owner panel', async () => {
-    TestBed.configureTestingModule({ providers: [provideRouter([]), { provide: AuthService, useValue: {
-      validateSession: async () => true, isOwner: () => false, currentUser: () => ({ rol: 'cliente' }),
-    } }] });
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        {
+          provide: AuthService,
+          useValue: {
+            validateSession: async () => true,
+            isOwner: () => false,
+            isSuperAdmin: () => false,
+            currentUser: () => ({ rol: 'cliente' }),
+          },
+        },
+      ],
+    });
+    const result = await TestBed.runInInjectionContext(() => authGuard({} as any, {} as any));
+    expect(TestBed.inject(Router).serializeUrl(result as any)).toBe('/');
+  });
+
+  it('keeps superadmins out of the owner panel', async () => {
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        {
+          provide: AuthService,
+          useValue: {
+            validateSession: async () => true,
+            isOwner: () => true,
+            isSuperAdmin: () => true,
+            currentUser: () => ({ rol: 'superadmin' }),
+          },
+        },
+      ],
+    });
     const result = await TestBed.runInInjectionContext(() => authGuard({} as any, {} as any));
     expect(TestBed.inject(Router).serializeUrl(result as any)).toBe('/');
   });
