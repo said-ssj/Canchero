@@ -6,32 +6,6 @@
     </a>
 
     <nav id="navMenu" class="nav-menu" [class.is-open]="menuOpen()">
-      <a
-        routerLink="/"
-        routerLinkActive="is-active"
-        ariaCurrentWhenActive="page"
-        [routerLinkActiveOptions]="{ exact: true }"
-        class="nav-link"
-        (click)="menuOpen.set(false)"
-        >Inicio</a
-      >
-      <a
-        routerLink="/sedes"
-        routerLinkActive="is-active"
-        ariaCurrentWhenActive="page"
-        class="nav-link"
-        (click)="menuOpen.set(false)"
-        >Sedes</a
-      >
-      <a
-        routerLink="/itinerario"
-        routerLinkActive="is-active"
-        ariaCurrentWhenActive="page"
-        class="nav-link"
-        (click)="menuOpen.set(false)"
-        >Mi Itinerario</a
-      >
-      <span class="nav-link" style="opacity: 0.85; cursor: default">Torneos (Próximamente)</span>
       @if (isOwner()) {
         <a
           routerLink="/admin"
@@ -41,6 +15,38 @@
           (click)="menuOpen.set(false)"
           >Administración</a
         >
+        <span class="nav-link nav-link-disabled" aria-disabled="true">
+          Torneos <span class="nav-link-coming-soon">Próximamente</span>
+        </span>
+      } @else {
+        <a
+          routerLink="/"
+          routerLinkActive="is-active"
+          ariaCurrentWhenActive="page"
+          [routerLinkActiveOptions]="{ exact: true }"
+          class="nav-link"
+          (click)="menuOpen.set(false)"
+          >Inicio</a
+        >
+        <a
+          routerLink="/sedes"
+          routerLinkActive="is-active"
+          ariaCurrentWhenActive="page"
+          class="nav-link"
+          (click)="menuOpen.set(false)"
+          >Sedes</a
+        >
+        <a
+          routerLink="/itinerario"
+          routerLinkActive="is-active"
+          ariaCurrentWhenActive="page"
+          class="nav-link"
+          (click)="menuOpen.set(false)"
+          >Mi Itinerario</a
+        >
+        <span class="nav-link nav-link-disabled" aria-disabled="true">
+          Torneos <span class="nav-link-coming-soon">Próximamente</span>
+        </span>
       }
     </nav>
 

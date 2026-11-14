@@ -625,6 +625,30 @@ body.dark-theme .profile-menu-item:hover .menu-label {
   font-weight: 700;
 }
 
+.navbar .nav-menu .nav-link.nav-link-disabled {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--color-ink-500, #64748b);
+  cursor: default;
+  opacity: 0.78;
+}
+
+.navbar .nav-menu .nav-link.nav-link-disabled:hover {
+  color: var(--color-ink-500, #64748b) !important;
+  background: transparent;
+}
+
+.nav-link-coming-soon {
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--color-surface-muted, #f1f5f9);
+  color: var(--color-ink-500, #64748b);
+  font-size: 0.68em;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .nav-login {
   display: inline-flex;
   align-items: center;
