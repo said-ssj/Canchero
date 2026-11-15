@@ -215,7 +215,7 @@ export class PlatformAudit {
         this.loading.set(false);
       },
       error: (err) => {
-        this.error.set(err?.error?.message || 'No se pudo cargar la bitácora.');
+        this.error.set(this.service.describeError(err, 'audit'));
         this.loading.set(false);
       },
     });

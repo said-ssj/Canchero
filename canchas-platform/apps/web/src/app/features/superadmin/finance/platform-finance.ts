@@ -206,7 +206,7 @@ export class PlatformFinance {
         this.loading.set(false);
       },
       error: (err) => {
-        this.error.set(err?.error?.message || 'No se pudo cargar el resumen financiero.');
+        this.error.set(this.service.describeError(err, 'finance'));
         this.loading.set(false);
       },
     });
