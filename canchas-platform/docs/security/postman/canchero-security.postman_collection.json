@@ -1,0 +1,89 @@
+{
+  "info": {
+    "_postman_id": "0bb08f94-9bfa-48f5-8a8c-55c8d94801f3",
+    "name": "Canchero API - Security baseline (safe)",
+    "description": "Pruebas HTTP no destructivas para desarrollo local. Ver docs/security/INFORME_SEGURIDAD.md antes de ejecutar. No incluye login, escritura autenticada, fuzzing ni carga.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8090", "type": "string" },
+    { "key": "allowedOrigin", "value": "http://localhost:4200", "type": "string" },
+    { "key": "untrustedOrigin", "value": "https://attacker.invalid", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "1. Health y superficie pública",
+      "item": [
+        {
+          "name": "Health no revela detalles de BD",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/health" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Health devuelve 200 o 503 controlado', function () { pm.expect([200, 503]).to.include(pm.response.code); });",
+            "pm.test('La respuesta no contiene trazas ni detalles JDBC', function () { pm.expect(pm.response.text()).not.to.match(/stacktrace|jdbc:|password|\\bat\\s+[\\w.$]+\\(/i); });"
+          ] } }]
+        },
+        {
+          "name": "Catálogo público de sedes",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/venues" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('No responde con error de servidor', function () { pm.expect(pm.response.code).to.be.below(500); });",
+            "pm.test('No filtra secretos ni trazas', function () { pm.expect(pm.response.text()).not.to.match(/stacktrace|jdbc:|service_role|SUPABASE_JWT_SECRET/i); });"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "2. Autenticación y autorización negativas",
+      "item": [
+        {
+          "name": "Perfil actual sin token -> 401",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/auth/me" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Rechaza sesión ausente con 401', function () { pm.response.to.have.status(401); });"] } }]
+        },
+        {
+          "name": "Perfil actual con token adulterado -> 401",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer canchero.v1.invalid.invalid" }], "url": "{{baseUrl}}/api/auth/me" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Rechaza token inválido con 401', function () { pm.response.to.have.status(401); });"] } }]
+        },
+        {
+          "name": "Personal sin token -> 401",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/staff/me" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('No permite consultar datos de personal sin identidad', function () { pm.response.to.have.status(401); });"] } }]
+        },
+        {
+          "name": "Usuarios administrativos sin token -> 401",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/users" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('No permite enumerar usuarios sin identidad', function () { pm.response.to.have.status(401); });"] } }]
+        },
+        {
+          "name": "POS sin token -> 401 antes de leer sede",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/pos/products?sedeId=1" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('No permite leer POS sin identidad', function () { pm.response.to.have.status(401); });"] } }]
+        },
+        {
+          "name": "Escritura de sede sin token -> 401 sin mutación",
+          "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/api/venues/1" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('La autorización corta la petición antes de procesar la escritura', function () { pm.response.to.have.status(401); });"] } }]
+        }
+      ]
+    },
+    {
+      "name": "3. CORS",
+      "item": [
+        {
+          "name": "Preflight desde origen configurado",
+          "request": { "method": "OPTIONS", "header": [{ "key": "Origin", "value": "{{allowedOrigin}}" }, { "key": "Access-Control-Request-Method", "value": "GET" }, { "key": "Access-Control-Request-Headers", "value": "authorization,content-type" }], "url": "{{baseUrl}}/api/auth/me" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('CORS permite el origen de desarrollo configurado', function () { pm.expect(pm.response.headers.get('Access-Control-Allow-Origin')).to.eql(pm.environment.get('allowedOrigin') || pm.collectionVariables.get('allowedOrigin')); });",
+            "pm.test('CORS permite credenciales explícitamente', function () { pm.expect(pm.response.headers.get('Access-Control-Allow-Credentials')).to.eql('true'); });"
+          ] } }]
+        },
+        {
+          "name": "Preflight desde origen ajeno no recibe permiso",
+          "request": { "method": "OPTIONS", "header": [{ "key": "Origin", "value": "{{untrustedOrigin}}" }, { "key": "Access-Control-Request-Method", "value": "GET" }], "url": "{{baseUrl}}/api/auth/me" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('No autoriza un origen ajeno', function () { pm.expect(pm.response.headers.get('Access-Control-Allow-Origin')).to.not.eql(pm.environment.get('untrustedOrigin') || pm.collectionVariables.get('untrustedOrigin')); });"] } }]
+        }
+      ]
+    }
+  ]
+}
