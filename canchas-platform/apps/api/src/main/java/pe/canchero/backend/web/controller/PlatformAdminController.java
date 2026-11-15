@@ -20,6 +20,14 @@ public class PlatformAdminController {
     private final PlatformAdminService service;
     public PlatformAdminController(PlatformAdminService service) { this.service = service; }
 
+    @GetMapping("/dashboard")
+    public PlatformAdminService.DashboardOverview dashboard(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            HttpServletRequest request) {
+        return service.dashboard(from, to, actor(request));
+    }
+
     @GetMapping("/finance/revenue")
     public PlatformAdminService.RevenueSummary revenue(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
