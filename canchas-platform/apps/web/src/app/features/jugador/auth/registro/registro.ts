@@ -31,6 +31,7 @@ export class Registro {
   protected readonly password = signal('');
   protected readonly passwordConfirm = signal('');
   protected readonly terminos = signal(false);
+  protected readonly privacidadLeida = signal(false);
 
   protected readonly showPass = signal(false);
   protected readonly showPassConfirm = signal(false);
@@ -44,28 +45,6 @@ export class Registro {
   protected readonly passMatch = computed(
     () => !!this.password() && this.password() === this.passwordConfirm(),
   );
-
-  protected readonly terminosModalOpen = signal(false);
-  protected readonly modalTitulo = signal('Términos y Condiciones');
-  protected readonly modalContenido = signal('');
-
-  protected verTerminos(e: Event): void {
-    e.preventDefault();
-    this.modalTitulo.set('Términos y Condiciones del Servicio');
-    this.modalContenido.set(
-      'Canchero.MVP facilita la reserva de canchas deportivas. Al utilizar la plataforma aceptas respetar los horarios confirmados y las normas internas de cada complejo.',
-    );
-    this.terminosModalOpen.set(true);
-  }
-
-  protected verPrivacidad(e: Event): void {
-    e.preventDefault();
-    this.modalTitulo.set('Política de Privacidad');
-    this.modalContenido.set(
-      'Tus datos personales y de contacto se utilizan exclusivamente para la gestión de reservas, emisión de pases QR y contacto de emergencia con la sede.',
-    );
-    this.terminosModalOpen.set(true);
-  }
 
   protected readonly roleText = computed(() =>
     this.rol() === 'jugador'
@@ -96,8 +75,10 @@ export class Registro {
       return;
     }
 
-    if (!this.terminos()) {
-      this.feedbackText.set('Debes aceptar los Términos y Condiciones.');
+    if (!this.terminos() || !this.privacidadLeida()) {
+      this.feedbackText.set(
+        'Debes aceptar los Términos y confirmar que leíste la Política de Privacidad.',
+      );
       this.feedbackVisible.set(true);
       return;
     }
@@ -127,6 +108,8 @@ export class Registro {
         rol: userRole,
         password: pass,
         sedeSolicitada: this.sede(),
+        termsAccepted: this.terminos(),
+        privacyNoticeAcknowledged: this.privacidadLeida(),
       })
       .subscribe((user) => {
         if (!user) {

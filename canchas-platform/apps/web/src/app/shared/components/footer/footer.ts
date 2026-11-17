@@ -1,4 +1,4 @@
-import { Component, signal, computed } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { environment } from '@env/environment';
 
@@ -10,5 +10,5 @@ import { environment } from '@env/environment';
 })
 export class Footer {
   protected readonly year = signal(new Date().getFullYear());
-  protected readonly contact = signal(environment.contact);
+  protected readonly business = signal(environment.business);
 }

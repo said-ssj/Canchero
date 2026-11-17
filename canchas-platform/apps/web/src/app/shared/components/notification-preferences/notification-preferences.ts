@@ -7,6 +7,7 @@ import { environment } from '@env/environment';
 interface Preferences {
   bookingEmails: boolean;
   reminders: boolean;
+  marketingEmails: boolean;
   emailAvailable: boolean;
 }
 @Component({
@@ -32,7 +33,15 @@ interface Preferences {
               />
               Recordatorio antes del partido</label
             >
+            <label
+              ><input type="checkbox" name="marketingEmails" [(ngModel)]="p.marketingEmails" />
+              Acepto recibir promociones y novedades por correo (opcional)</label
+            >
           </fieldset>
+          <p class="hint">
+            Canchero no envía campañas promocionales actualmente. La autorización se registra y
+            puedes retirarla desde tus preferencias.
+          </p>
           @if (!p.emailAvailable) {
             <p class="hint">
               El envío de correos aún no está activado. Puedes guardar tus preferencias.
@@ -122,6 +131,7 @@ export class NotificationPreferences {
           this.http.put<Preferences>(this.url, {
             bookingEmails: preferences.bookingEmails,
             reminders: preferences.reminders,
+            marketingEmails: preferences.marketingEmails,
           }),
         ),
       );

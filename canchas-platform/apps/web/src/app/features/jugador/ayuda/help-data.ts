@@ -33,7 +33,7 @@ export const FAQ_ITEMS: FaqItem[] = [
     categoryLabel: 'Reservas de Canchas',
     question: '¿Cómo puedo cancelar o reprogramar mi partido?',
     answer:
-      'Puedes gestionar tu reserva desde "Mis reservas" (Itinerario) en el menú de usuario. Si las políticas de la sede lo permiten, podrás solicitar la cancelación o reprogramación con al menos 4 horas de anticipación. Te recomendamos comunicarte directamente con la administración de la sede para coordinar una nueva fecha.',
+      'Revisa la reserva en "Mis reservas" (Itinerario) y consulta las condiciones específicas de la sede antes de solicitar un cambio o cancelación. Los plazos y alternativas pueden variar por sede y tipo de pago; cancelar no confirma una devolución automática. Si la sede no puede prestar el servicio, contacta a la sede y a Canchero para registrar el caso.',
     keywords: [
       'cancelar',
       'reprogramar',
@@ -49,7 +49,7 @@ export const FAQ_ITEMS: FaqItem[] = [
     categoryLabel: 'Pagos y Facturación',
     question: '¿Cuáles son los métodos de pago aceptados?',
     answer:
-      'Aceptamos tarjetas de débito y crédito (Visa, Mastercard, American Express), billeteras digitales (Yape, Plin) y transferencias bancarias a través de pasarelas de pago cifradas. En algunas sedes también puedes pagar un adelanto en línea y abonar la diferencia en la recepción del complejo.',
+      'Los métodos disponibles se muestran en el resumen de cada reserva antes de pagar. Las opciones pueden variar por sede y por la configuración vigente de la plataforma; revisa el importe total y el comprobante de la operación.',
     keywords: ['pagos', 'tarjeta', 'yape', 'plin', 'efectivo', 'adelanto', 'comprobante', 'precio'],
   },
   {
@@ -58,7 +58,7 @@ export const FAQ_ITEMS: FaqItem[] = [
     categoryLabel: 'Reservas de Canchas',
     question: '¿Qué sucede si llueve o se suspende el partido por causas de fuerza mayor?',
     answer:
-      'Si las condiciones climáticas o eventualidades técnicas impiden el desarrollo seguro del partido, la sede deportiva reprogramará tu turno sin penalidad o emitirá un saldo a favor para tu próxima reserva. Canchero coordina directamente con las sedes para garantizar que no pierdas tu turno.',
+      'Contacta a la sede para confirmar si el turno puede realizarse y comunica el caso a Canchero. La alternativa depende de las condiciones de la reserva y de quién presta el servicio. Una reprogramación o saldo a favor no implica que se haya procesado una devolución.',
     keywords: ['lluvia', 'clima', 'suspensión', 'cancelado', 'fuerza mayor', 'corte de luz'],
   },
   {

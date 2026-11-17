@@ -140,9 +140,16 @@ public class AuthService extends JdbcSupport {
                 "Demasiados intentos fallidos. Espera " + segundos + " segundos para volver a intentarlo.");
     }
 
+    @org.springframework.transaction.annotation.Transactional
     public Optional<AuthResponse> register(RegisterRequest request) {
         if (request == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Datos de registro obligatorios");
+        }
+        if (!request.termsAccepted() || !request.privacyNoticeAcknowledged()
+                || !RegisterRequest.TERMS_VERSION.equals(request.termsVersion())
+                || !RegisterRequest.PRIVACY_VERSION.equals(request.privacyVersion())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Debes aceptar los términos y confirmar que leíste la política de privacidad vigente");
         }
         if (request.nombre() == null || request.nombre().trim().isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El nombre es obligatorio");
@@ -170,6 +177,10 @@ public class AuthService extends JdbcSupport {
                     userId, rolId, request.nombre().trim(), email,
                     request.telefono() == null ? "" : request.telefono().trim(),
                     PasswordUtil.hash(request.password()));
+            jdbc.update("""
+                    insert into public.aceptacion_documento_legal (id_usuario, documento, version)
+                    values (?, 'terminos', ?), (?, 'privacidad', ?)
+                    """, userId, request.termsVersion(), userId, request.privacyVersion());
         } catch (org.springframework.dao.DuplicateKeyException ex) {
             // Dos registros simultáneos con el mismo correo: el índice único usuario_correo_unico decide.
             throw new ResponseStatusException(HttpStatus.CONFLICT, "El email ya está registrado");

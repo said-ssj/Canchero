@@ -22,6 +22,7 @@ class BookingMailPostgresTest {
         PostgresTestServer.requireAvailable(); PostgresTestServer.resetSchema();
         jdbc=PostgresTestSupport.jdbc(); seedTwoVenues(jdbc);
         jdbc.execute(Files.readString(Path.of("../../docs/sql/notificaciones_reservas.sql")));
+        jdbc.execute(Files.readString(Path.of("../../supabase/migrations/20261117000000_privacidad_y_consentimiento_marketing.sql")));
         app=newApp();
         mail=mock(MailService.class); when(mail.resendConfigured()).thenReturn(true); when(mail.itineraryUrl()).thenReturn("https://example.test/itinerario");
         service=new BookingMailService(jdbc,mail,json,true);
@@ -47,9 +48,19 @@ class BookingMailPostgresTest {
         verify(mail,times(1)).sendResend(eq(PLAYER_1.email()),contains("cancelada"),anyString(),anyString());
         assertEquals(1,jdbc.queryForObject("select count(*) from reserva_correo_outbox where estado='omitido'",Integer.class));
         var preferences=new NotificationPreferencesController(jdbc,service);
-        preferences.save(PLAYER_1,new NotificationPreferencesController.Preferences(false,false,false));
+        preferences.save(PLAYER_1,new NotificationPreferencesController.Preferences(false,false,false,false));
         assertFalse(preferences.get(PLAYER_1).bookingEmails());
         assertTrue(preferences.get(PLAYER_2).bookingEmails());
+        preferences.save(PLAYER_1,new NotificationPreferencesController.Preferences(true,true,true,false));
+        assertTrue(preferences.get(PLAYER_1).marketingEmails());
+        assertNotNull(jdbc.queryForObject(
+            "select consentimiento_marketing_en from preferencias_notificacion where id_usuario=?",
+            java.time.OffsetDateTime.class,java.util.UUID.fromString(PLAYER_1.id())));
+        preferences.save(PLAYER_1,new NotificationPreferencesController.Preferences(true,true,false,false));
+        assertFalse(preferences.get(PLAYER_1).marketingEmails());
+        assertNotNull(jdbc.queryForObject(
+            "select retiro_marketing_en from preferencias_notificacion where id_usuario=?",
+            java.time.OffsetDateTime.class,java.util.UUID.fromString(PLAYER_1.id())));
     }
     @Test void optOutAndProviderFailureDoNotChangeReservationAndCanRetry() {
         int id=booking();

@@ -199,6 +199,8 @@ export class AuthService {
     rol: UserRole;
     password: string;
     sedeSolicitada?: string;
+    termsAccepted: boolean;
+    privacyNoticeAcknowledged: boolean;
   }): Observable<User | null> {
     this.loginError.set(null);
     return this.http
@@ -208,6 +210,10 @@ export class AuthService {
         telefono: payload.telefono.trim(),
         password: payload.password,
         rol: payload.rol === 'OWNER' || payload.rol === 'dueno' ? 'dueno' : 'cliente',
+        termsAccepted: payload.termsAccepted,
+        privacyNoticeAcknowledged: payload.privacyNoticeAcknowledged,
+        termsVersion: '2026-11-17',
+        privacyVersion: '2026-11-17',
       })
       .pipe(
         timeout(10000),

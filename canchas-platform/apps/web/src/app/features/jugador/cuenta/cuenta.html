@@ -227,58 +227,6 @@
             Selecciona por qué medios deseas recibir las notificaciones de tus partidos.
           </p>
 
-          <!-- Toggle WhatsApp -->
-          <div class="toggle-row">
-            <div class="toggle-info">
-              <span class="toggle-label">WhatsApp</span>
-              <span class="toggle-desc">
-                Mensajes directos con tu código de pase, recordatorios y cambios de turno.
-              </span>
-            </div>
-            <mat-slide-toggle
-              [(ngModel)]="notifWhatsApp"
-              (change)="onWhatsAppToggleChange($event.checked)"
-              color="primary"
-              aria-label="Activar notificaciones por WhatsApp"
-            ></mat-slide-toggle>
-          </div>
-
-          <!-- Si activa WhatsApp y no tiene teléfono registrado -->
-          @if (notifWhatsApp && !formTelefono) {
-            <div class="whatsapp-inline-prompt" role="alert">
-              <p>
-                <strong>Número de WhatsApp requerido:</strong> Aún no tienes un teléfono registrado
-                en tu perfil. Ingrésalo a continuación para recibir tus avisos:
-              </p>
-              <div style="display: flex; gap: 8px; flex-wrap: wrap">
-                <mat-form-field
-                  appearance="outline"
-                  subscriptSizing="dynamic"
-                  style="max-width: 240px"
-                >
-                  <span matPrefix style="padding-right: 6px; font-weight: 700">+51</span>
-                  <input
-                    matInput
-                    type="tel"
-                    [(ngModel)]="formTelefono"
-                    placeholder="987654321"
-                    maxlength="9"
-                    aria-label="Ingresa tu número de WhatsApp"
-                  />
-                </mat-form-field>
-                <button
-                  mat-flat-button
-                  type="button"
-                  class="btn-primary"
-                  (click)="saveProfile()"
-                  [disabled]="!isPhoneValid()"
-                >
-                  Guardar número
-                </button>
-              </div>
-            </div>
-          }
-
           <!-- Toggle Correo Electrónico -->
           <div class="toggle-row">
             <div class="toggle-info">
@@ -303,21 +251,10 @@
             >
             Tipos de aviso
           </h2>
-          <p class="account-card-desc">Configura qué eventos generan una alerta en tu cuenta.</p>
-
-          <div class="toggle-row">
-            <div class="toggle-info">
-              <span class="toggle-label">Confirmación de reserva</span>
-              <span class="toggle-desc"
-                >Aviso inmediato con tu código QR cuando el pago o reserva es validado.</span
-              >
-            </div>
-            <mat-slide-toggle
-              [(ngModel)]="notifBookingConfirmation"
-              color="primary"
-              aria-label="Confirmación de reserva"
-            ></mat-slide-toggle>
-          </div>
+          <p class="account-card-desc">
+            Estas preferencias se guardan en tu cuenta. La disponibilidad del envío depende de que
+            el servicio de correo esté habilitado.
+          </p>
 
           <div class="toggle-row">
             <div class="toggle-info">
@@ -335,26 +272,28 @@
 
           <div class="toggle-row">
             <div class="toggle-info">
-              <span class="toggle-label">Cambios o cancelaciones</span>
-              <span class="toggle-desc"
-                >Alertas urgentes si la sede reprograma el turno o por motivos de clima.</span
-              >
-            </div>
-            <mat-slide-toggle
-              [(ngModel)]="notifScheduleChanges"
-              color="primary"
-              aria-label="Cambios o cancelaciones"
-            ></mat-slide-toggle>
-          </div>
-
-          <div class="toggle-row">
-            <div class="toggle-info">
               <span class="toggle-label">Promociones y novedades</span>
               <span class="toggle-desc"
-                >Descuentos en canchas de tu distrito y torneos especiales (desactivado por
-                defecto).</span
+                >Autorizo por separado el envío de novedades comerciales por correo. Está
+                desactivado por defecto y puedo retirar esta autorización aquí.</span
               >
             </div>
+
+            <p class="account-card-desc" role="status">
+              Actualmente Canchero no envía campañas promocionales. Esta preferencia registra tu
+              autorización y puedes retirarla aquí en cualquier momento.
+            </p>
+            @if (!notifEmailAvailable) {
+              <p class="account-card-desc" role="status">
+                El envío de correos operativos no está habilitado actualmente.
+              </p>
+            }
+            @if (notificationError()) {
+              <p role="alert" class="account-card-desc">{{ notificationError() }}</p>
+              <button mat-stroked-button type="button" (click)="cargarPreferenciasNotificaciones()">
+                Reintentar carga
+              </button>
+            }
             <mat-slide-toggle
               [(ngModel)]="notifPromotions"
               color="primary"
@@ -368,7 +307,7 @@
               type="button"
               class="btn-primary"
               (click)="saveNotifications()"
-              [disabled]="savingNotifications()"
+              [disabled]="savingNotifications() || !!notificationError()"
               aria-label="Guardar preferencias de notificación"
             >
               @if (savingNotifications()) {
@@ -473,8 +412,8 @@
             Transparencia: ¿Qué datos guardamos y para qué?
           </h2>
           <p class="account-card-desc">
-            Canchero almacena únicamente la información imprescindible para coordinar y validar tus
-            partidos.
+            Canchero trata datos de cuenta, perfil, reservas y preferencias para operar la
+            plataforma. La Política de Privacidad explica sus finalidades y proveedores.
           </p>
 
           <div class="data-table-list" role="list">
@@ -512,10 +451,10 @@
               mat-stroked-button
               type="button"
               (click)="descargarMisDatos()"
-              aria-label="Descargar una copia de mis datos en formato JSON"
+              aria-label="Descargar los datos de cuenta y reservas disponibles en formato JSON"
             >
               <span class="material-symbols-outlined" aria-hidden="true">download</span>
-              <span>Descargar mis datos (JSON)</span>
+              <span>Descargar datos disponibles (JSON)</span>
             </button>
             <a routerLink="/privacidad" mat-button style="color: var(--color-ink-700)">
               <span class="material-symbols-outlined" aria-hidden="true">description</span>
@@ -525,6 +464,10 @@
               <span class="material-symbols-outlined" aria-hidden="true">policy</span>
               <span>Términos y condiciones</span>
             </a>
+            <button mat-stroked-button type="button" (click)="abrirSolicitudDatos()">
+              <span class="material-symbols-outlined" aria-hidden="true">contact_support</span>
+              <span>Ejercer derechos sobre mis datos</span>
+            </button>
           </div>
         </section>
 
@@ -535,9 +478,15 @@
             Zona de peligro
           </h2>
           <p class="danger-desc">
-            Si eliminas tu cuenta, se borrará tu historial de reservas, pases y configuración. Esta
-            acción no se puede deshacer.
+            Puedes enviar una solicitud de supresión. Enviarla no elimina inmediatamente tu cuenta:
+            el equipo debe verificarla y revisar si existen datos que deban conservarse por motivos
+            legales u operativos.
           </p>
+          @if (privacyRequestId()) {
+            <p role="status" class="danger-desc">
+              Solicitud registrada: {{ privacyRequestId() }}. Estado inicial: pendiente.
+            </p>
+          }
           <button
             mat-flat-button
             type="button"
@@ -546,7 +495,7 @@
             aria-label="Eliminar mi cuenta definitivamente"
           >
             <span class="material-symbols-outlined" aria-hidden="true">delete_forever</span>
-            <span>Eliminar mi cuenta</span>
+            <span>Solicitar supresión de datos</span>
           </button>
         </section>
       </div>
@@ -567,7 +516,7 @@
       <div class="profile-modal-header">
         <h3 id="dialog-delete-title" class="profile-modal-title" style="color: #dc2626">
           <span class="material-symbols-outlined" aria-hidden="true">delete_forever</span>
-          ¿Eliminar tu cuenta de Canchero?
+          Solicitar supresión de datos
         </h3>
         <button
           mat-icon-button
@@ -584,23 +533,54 @@
         style="display: flex; flex-direction: column; gap: 14px; font-size: 14px"
       >
         <p style="margin: 0; color: var(--color-ink-700)">
-          Para confirmar la eliminación permanente de tu cuenta y reservas asociadas, por favor
-          escribe <strong>ELIMINAR</strong> o tu correo electrónico (<strong>{{
+          Elige el tipo de solicitud. Si solicitas supresión, confirma que eres titular escribiendo
+          <strong>ELIMINAR</strong> o tu correo electrónico (<strong>{{
             user()?.correo || user()?.email
           }}</strong
-          >):
+          >). El envío no elimina datos automáticamente.
         </p>
 
         <mat-form-field appearance="outline" subscriptSizing="dynamic">
-          <mat-label>Escribe ELIMINAR o tu correo</mat-label>
-          <input
-            matInput
-            type="text"
-            [(ngModel)]="confirmTextEliminar"
-            placeholder="ELIMINAR"
-            aria-label="Confirmación de eliminación"
-          />
+          <mat-label>Tipo de solicitud</mat-label>
+          <select
+            matNativeControl
+            [(ngModel)]="tipoSolicitudDatos"
+            aria-label="Tipo de solicitud de datos"
+          >
+            <option value="acceso">Acceso a mis datos</option>
+            <option value="rectificacion">Rectificación de mis datos</option>
+            <option value="oposicion">Oposición al tratamiento</option>
+            <option value="supresion">Supresión de mis datos</option>
+          </select>
         </mat-form-field>
+
+        @if (tipoSolicitudDatos === 'supresion') {
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Escribe ELIMINAR o tu correo</mat-label>
+            <input
+              matInput
+              type="text"
+              [(ngModel)]="confirmTextEliminar"
+              placeholder="ELIMINAR"
+              aria-label="Confirmación de solicitud de supresión"
+            />
+          </mat-form-field>
+        }
+
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Detalle opcional</mat-label>
+          <textarea
+            matInput
+            [(ngModel)]="detalleSolicitudSupresion"
+            maxlength="1000"
+            rows="3"
+            aria-label="Detalle opcional de la solicitud sobre datos personales"
+          ></textarea>
+        </mat-form-field>
+
+        @if (privacyRequestError()) {
+          <p role="alert" style="color: #dc2626; margin: 0">{{ privacyRequestError() }}</p>
+        }
 
         <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px">
           <button mat-button type="button" (click)="dialogEliminarOpen.set(false)">Cancelar</button>
@@ -608,10 +588,10 @@
             mat-flat-button
             type="button"
             class="btn-danger"
-            [disabled]="!canConfirmEliminar()"
-            (click)="ejecutarEliminarCuenta()"
+            [disabled]="!canConfirmEliminar() || sendingPrivacyRequest()"
+            (click)="enviarSolicitudPrivacidad()"
           >
-            Confirmar eliminación
+            {{ sendingPrivacyRequest() ? 'Enviando…' : 'Enviar solicitud' }}
           </button>
         </div>
       </div>

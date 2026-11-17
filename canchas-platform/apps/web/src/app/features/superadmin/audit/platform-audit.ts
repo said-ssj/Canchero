@@ -73,6 +73,9 @@ import { PlatformAdminService, PlatformAuditEvent } from '@core/services/platfor
     `
       :host {
         display: block;
+        box-sizing: border-box;
+        width: 100%;
+        min-width: 0;
         max-width: 1450px;
         margin: auto;
       }
@@ -133,6 +136,8 @@ import { PlatformAdminService, PlatformAuditEvent } from '@core/services/platfor
         flex: 1;
       }
       .table-wrap {
+        max-width: 100%;
+        min-width: 0;
         overflow: auto;
         border: 1px solid var(--color-border, #dbe1e8);
         border-radius: 7px;
@@ -140,6 +145,7 @@ import { PlatformAdminService, PlatformAuditEvent } from '@core/services/platfor
       }
       table {
         width: 100%;
+        min-width: 640px;
         border-collapse: collapse;
         text-align: left;
         font-size: 13px;
@@ -182,6 +188,11 @@ import { PlatformAdminService, PlatformAuditEvent } from '@core/services/platfor
         color: #b91c1c;
       }
       @media (max-width: 700px) {
+        header {
+          align-items: flex-start;
+          flex-direction: column;
+          gap: 10px;
+        }
         .filters {
           flex-wrap: wrap;
         }

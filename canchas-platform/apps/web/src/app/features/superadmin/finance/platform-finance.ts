@@ -66,6 +66,9 @@ import {
     `
       :host {
         display: block;
+        box-sizing: border-box;
+        width: 100%;
+        min-width: 0;
         max-width: 1400px;
         margin: auto;
       }
@@ -160,6 +163,13 @@ import {
         header {
           align-items: start;
           flex-direction: column;
+        }
+        .filters {
+          width: 100%;
+          flex-wrap: wrap;
+        }
+        .filters label {
+          flex: 1 1 140px;
         }
         .cards {
           grid-template-columns: repeat(2, minmax(0, 1fr));

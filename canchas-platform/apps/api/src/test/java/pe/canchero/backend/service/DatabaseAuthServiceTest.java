@@ -30,6 +30,7 @@ class DatabaseAuthServiceTest {
         jdbc = new JdbcTemplate(new DriverManagerDataSource("jdbc:h2:mem:" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL", "sa", ""));
         jdbc.execute("create table rol (id_rol int primary key, nombre varchar, estado varchar)");
         jdbc.execute("create table usuario (id_usuario uuid primary key, id_rol int, nombre varchar, correo varchar unique, telefono varchar, password_hash varchar, estado varchar, usucre varchar, pccre varchar, intentos_fallidos int not null default 0, bloqueo_hasta timestamp with time zone, reset_token_hash varchar, reset_expira timestamp with time zone)");
+        jdbc.execute("create table aceptacion_documento_legal (id_usuario uuid, documento varchar, version varchar, aceptado_en timestamp with time zone default current_timestamp)");
         jdbc.update("insert into rol values (1, 'admin', 'A'), (2, 'cliente', 'A')");
         jdbc.update("insert into usuario (id_usuario,id_rol,nombre,correo,password_hash,estado) values (?,1,'Dueno','dueno@canchero.pe',?,'A')", owner, PasswordUtil.hash("unit-test-only-password"));
         service = new AuthService(jdbc, new AuthTokenService("unit-test-only-secret"));
@@ -109,6 +110,24 @@ class DatabaseAuthServiceTest {
         var auth = service.register(new RegisterRequest("Jugador", "jugador@example.test", "", "cliente", "unit-test-only-password")).orElseThrow();
         assertEquals("jugador@example.test", auth.user().email());
         assertEquals("cliente", auth.user().rol());
+        assertEquals(2, jdbc.queryForObject(
+                "select count(*) from aceptacion_documento_legal where id_usuario = ?",
+                Integer.class, UUID.fromString(auth.user().id())));
+    }
+
+    @Test
+    void registerRejectsMissingLegalAcceptanceBeforeCreatingTheAccount() {
+        var request = new RegisterRequest(
+                "Jugador", "sin-aceptacion@example.test", "", "cliente", "unit-test-only-password",
+                false, true, RegisterRequest.TERMS_VERSION, RegisterRequest.PRIVACY_VERSION);
+
+        var error = assertThrows(org.springframework.web.server.ResponseStatusException.class,
+                () -> service.register(request));
+
+        assertEquals(400, error.getStatusCode().value());
+        assertEquals(0, jdbc.queryForObject(
+                "select count(*) from usuario where correo = ?",
+                Integer.class, "sin-aceptacion@example.test"));
     }
 
     private MockMvc refreshMvc(AuthTokenService tokens) {
@@ -194,7 +213,11 @@ class DatabaseAuthServiceTest {
                             "email": "carlos.jugador@example.com",
                             "telefono": "999888777",
                             "rol": "jugador",
-                            "password": "valid-password-123"
+                            "password": "valid-password-123",
+                            "termsAccepted": true,
+                            "privacyNoticeAcknowledged": true,
+                            "termsVersion": "2026-11-17",
+                            "privacyVersion": "2026-11-17"
                         }
                         """))
                 .andExpect(status().isCreated())
@@ -209,7 +232,11 @@ class DatabaseAuthServiceTest {
                             "email": "pedro.player@example.com",
                             "telefono": "999888778",
                             "rol": "player",
-                            "password": "valid-password-123"
+                            "password": "valid-password-123",
+                            "termsAccepted": true,
+                            "privacyNoticeAcknowledged": true,
+                            "termsVersion": "2026-11-17",
+                            "privacyVersion": "2026-11-17"
                         }
                         """))
                 .andExpect(status().isCreated())
@@ -223,7 +250,11 @@ class DatabaseAuthServiceTest {
                             "email": "mario.dueno@example.com",
                             "telefono": "999888779",
                             "rol": "dueno",
-                            "password": "valid-password-123"
+                            "password": "valid-password-123",
+                            "termsAccepted": true,
+                            "privacyNoticeAcknowledged": true,
+                            "termsVersion": "2026-11-17",
+                            "privacyVersion": "2026-11-17"
                         }
                         """))
                 .andExpect(status().isCreated())
@@ -237,7 +268,11 @@ class DatabaseAuthServiceTest {
                             "email": "oscar.owner@example.com",
                             "telefono": "999888780",
                             "rol": "owner",
-                            "password": "valid-password-123"
+                            "password": "valid-password-123",
+                            "termsAccepted": true,
+                            "privacyNoticeAcknowledged": true,
+                            "termsVersion": "2026-11-17",
+                            "privacyVersion": "2026-11-17"
                         }
                         """))
                 .andExpect(status().isCreated())
@@ -250,7 +285,11 @@ class DatabaseAuthServiceTest {
                             "nombre": "Default Player",
                             "email": "default.player@example.com",
                             "telefono": "999888781",
-                            "password": "valid-password-123"
+                            "password": "valid-password-123",
+                            "termsAccepted": true,
+                            "privacyNoticeAcknowledged": true,
+                            "termsVersion": "2026-11-17",
+                            "privacyVersion": "2026-11-17"
                         }
                         """))
                 .andExpect(status().isCreated())
@@ -271,7 +310,11 @@ class DatabaseAuthServiceTest {
                                 "email": "%s",
                                 "telefono": "999000111",
                                 "rol": "%s",
-                                "password": "valid-password-123"
+                                "password": "valid-password-123",
+                                "termsAccepted": true,
+                                "privacyNoticeAcknowledged": true,
+                                "termsVersion": "2026-11-17",
+                                "privacyVersion": "2026-11-17"
                             }
                             """.formatted(testEmail, privilegedRole)))
                     .andExpect(status().isBadRequest())
@@ -296,7 +339,11 @@ class DatabaseAuthServiceTest {
                                 "email": "%s",
                                 "telefono": "999000222",
                                 "rol": "%s",
-                                "password": "valid-password-123"
+                                "password": "valid-password-123",
+                                "termsAccepted": true,
+                                "privacyNoticeAcknowledged": true,
+                                "termsVersion": "2026-11-17",
+                                "privacyVersion": "2026-11-17"
                             }
                             """.formatted(testEmail, invalidRole)))
                     .andExpect(status().isBadRequest())
@@ -321,7 +368,11 @@ class DatabaseAuthServiceTest {
                             "email": "%s",
                             "telefono": "999000333",
                             "rol": "jugador",
-                            "password": "valid-password-123"
+                            "password": "valid-password-123",
+                            "termsAccepted": true,
+                            "privacyNoticeAcknowledged": true,
+                            "termsVersion": "2026-11-17",
+                            "privacyVersion": "2026-11-17"
                         }
                         """.formatted(testEmail)))
                 .andExpect(status().isConflict())
@@ -344,7 +395,11 @@ class DatabaseAuthServiceTest {
                             "email": "valid@example.com",
                             "telefono": "999000444",
                             "rol": "jugador",
-                            "password": "valid-password-123"
+                            "password": "valid-password-123",
+                            "termsAccepted": true,
+                            "privacyNoticeAcknowledged": true,
+                            "termsVersion": "2026-11-17",
+                            "privacyVersion": "2026-11-17"
                         }
                         """))
                 .andExpect(status().isBadRequest())
@@ -358,7 +413,11 @@ class DatabaseAuthServiceTest {
                             "email": "   ",
                             "telefono": "999000444",
                             "rol": "jugador",
-                            "password": "valid-password-123"
+                            "password": "valid-password-123",
+                            "termsAccepted": true,
+                            "privacyNoticeAcknowledged": true,
+                            "termsVersion": "2026-11-17",
+                            "privacyVersion": "2026-11-17"
                         }
                         """))
                 .andExpect(status().isBadRequest())
@@ -372,7 +431,11 @@ class DatabaseAuthServiceTest {
                             "email": "not-an-email",
                             "telefono": "999000444",
                             "rol": "jugador",
-                            "password": "valid-password-123"
+                            "password": "valid-password-123",
+                            "termsAccepted": true,
+                            "privacyNoticeAcknowledged": true,
+                            "termsVersion": "2026-11-17",
+                            "privacyVersion": "2026-11-17"
                         }
                         """))
                 .andExpect(status().isBadRequest())
@@ -386,7 +449,11 @@ class DatabaseAuthServiceTest {
                             "email": "shortpass@example.com",
                             "telefono": "999000444",
                             "rol": "jugador",
-                            "password": "123"
+                            "password": "123",
+                            "termsAccepted": true,
+                            "privacyNoticeAcknowledged": true,
+                            "termsVersion": "2026-11-17",
+                            "privacyVersion": "2026-11-17"
                         }
                         """))
                 .andExpect(status().isBadRequest())
@@ -401,7 +468,11 @@ class DatabaseAuthServiceTest {
                             "email": "longpass@example.com",
                             "telefono": "999000444",
                             "rol": "jugador",
-                            "password": "%s"
+                            "password": "%s",
+                            "termsAccepted": true,
+                            "privacyNoticeAcknowledged": true,
+                            "termsVersion": "2026-11-17",
+                            "privacyVersion": "2026-11-17"
                         }
                         """.formatted(tooLongPass)))
                 .andExpect(status().isBadRequest())
@@ -415,7 +486,11 @@ class DatabaseAuthServiceTest {
                             "email": "dueno@canchero.pe",
                             "telefono": "999000444",
                             "rol": "jugador",
-                            "password": "valid-password-123"
+                            "password": "valid-password-123",
+                            "termsAccepted": true,
+                            "privacyNoticeAcknowledged": true,
+                            "termsVersion": "2026-11-17",
+                            "privacyVersion": "2026-11-17"
                         }
                         """))
                 .andExpect(status().isConflict())

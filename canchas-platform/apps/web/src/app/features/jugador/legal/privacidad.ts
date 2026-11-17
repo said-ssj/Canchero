@@ -1,97 +1,151 @@
 import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
+import { environment } from '@env/environment';
 
 @Component({
   selector: 'app-privacidad',
-  imports: [RouterLink, MatButtonModule, MatIconModule],
+  imports: [RouterLink],
   styleUrl: './legal.css',
   template: `
     <article class="legal-page">
       <header class="legal-header">
         <span class="legal-badge">Protección de Datos</span>
         <h1 class="legal-title">Política de Privacidad</h1>
-        <p class="legal-date">Última actualización: Noviembre 2026 · Lima, Perú</p>
+        <p class="legal-date">Actualizada: 17 de noviembre de 2026 · Lima, Perú</p>
       </header>
 
-      <div class="legal-notice-box" role="note">
-        <!-- Pendiente de revisión legal por el equipo de Canchero -->
-        <strong>Transparencia:</strong> En Canchero protegemos tu información y te explicamos de
-        forma sencilla y veraz qué datos recopilamos y cuál es su finalidad.
+      <p class="legal-section">
+        Esta política describe el tratamiento de datos personales en Canchero, plataforma para
+        descubrir y reservar instalaciones deportivas. El proveedor responsable es
+        @if (business.name) {
+          <strong>{{ business.name }}</strong>
+        } @else {
+          <strong>la persona o empresa que opera Canchero</strong>
+        }
+        @if (business.taxId) {
+          (RUC {{ business.taxId }})
+        }
+        . Antes de publicar, deben completarse la identidad y los datos de contacto reales del
+        responsable.
+      </p>
+
+      <section class="legal-section">
+        <h2>1. Datos tratados</h2>
+        <ul>
+          <li>Cuenta: nombre, correo, teléfono y credenciales gestionadas por Canchero.</li>
+          <li>
+            Perfil y actividad: datos que agregas al perfil, publicaciones, mensajes, reseñas,
+            reservas, horarios y estado de las operaciones.
+          </li>
+          <li>
+            Pagos: datos necesarios para asociar el pago a una reserva. Los datos completos de
+            tarjeta deben ser ingresados directamente en la pasarela y no en Canchero.
+          </li>
+          <li>
+            Preferencias: idioma/tema, notificaciones y, si lo autorizas, la preferencia de
+            comunicaciones promocionales.
+          </li>
+          <li>
+            Información técnica y de seguridad necesaria para autenticar sesiones, prevenir abuso y
+            diagnosticar errores.
+          </li>
+        </ul>
+      </section>
+
+      <section class="legal-section">
+        <h2>2. Finalidades y proveedores</h2>
+        <p>Usamos los datos para crear y proteger cuentas, gestionar reservas, pagos y soporte,</p>
+        <p>
+          y enviar comunicaciones operativas relacionadas con esos servicios. Las promociones por
+          correo son opcionales: empiezan desactivadas, requieren una autorización separada y puedes
+          retirarla desde Mi cuenta.
+        </p>
+        <p>
+          Según las funciones que utilices, los datos pueden procesarse mediante Supabase
+          (autenticación, base de datos o archivos), Google (inicio de sesión o mapas), el proveedor
+          de alojamiento de Canchero, el servicio de correo, Mercado Pago para pagos y Sentry para
+          diagnóstico cuando esté habilitado. Cada proveedor recibe solo la información necesaria
+          para su función. La disponibilidad de cada integración puede variar.
+        </p>
+        <p>
+          La ubicación de los centros de datos, transferencias internacionales, plazos de retención
+          y contratos aplicables dependen de la configuración real de cada proveedor. El responsable
+          debe verificar y publicar esa información antes del lanzamiento.
+        </p>
+      </section>
+
+      <section class="legal-section">
+        <h2>3. Almacenamiento del navegador</h2>
+        <p>
+          Canchero utiliza almacenamiento local o de sesión del navegador para mantener la sesión,
+          preferencias y estados temporales. Los proveedores externos integrados pueden usar
+          tecnologías propias necesarias para prestar sus funciones. No habilites publicidad ni
+          seguimiento no esencial sin configurar previamente la información y los controles
+          correspondientes.
+        </p>
+      </section>
+
+      <section class="legal-section">
+        <h2>4. Conservación y seguridad</h2>
+        <p>
+          Conservamos la información mientras sea necesaria para prestar el servicio, atender
+          solicitudes y cumplir obligaciones aplicables. Los comprobantes y registros de operaciones
+          podrían requerir conservación aun después de cerrar una cuenta. Aplicamos controles
+          técnicos y organizativos, pero ningún servicio conectado a Internet puede garantizar
+          seguridad absoluta.
+        </p>
+      </section>
+
+      <section class="legal-section">
+        <h2>5. Tus derechos y solicitudes</h2>
+        <p>
+          Puedes solicitar acceso, rectificación o supresión desde Mi cuenta. La solicitud queda
+          registrada para revisión; enviarla no borra automáticamente datos ni sustituye la
+          verificación y respuesta del responsable. Algunos registros podrían conservarse cuando
+          exista una razón legal válida.
+        </p>
+        <p>
+          También puedes retirar tu autorización de promociones desde las preferencias de
+          notificaciones. La baja no afecta mensajes necesarios para operar una reserva.
+        </p>
+      </section>
+
+      <section class="legal-section">
+        <h2>6. Marco de referencia</h2>
+        <p>
+          El tratamiento se rige por la Ley peruana N.° 29733, su reglamento vigente y las demás
+          normas aplicables. Esta política debe revisarse con la operación y configuración real de
+          Canchero antes de su publicación definitiva.
+        </p>
+      </section>
+
+      <div class="legal-section">
+        <h2>Contacto del responsable</h2>
+        @if (business.privacyEmail || business.email) {
+          <p>Correo: {{ business.privacyEmail || business.email }}</p>
+        } @else {
+          <p>El canal de contacto del responsable aún no está configurado.</p>
+        }
+        @if (business.address) {
+          <p>Dirección: {{ business.address }}</p>
+        }
       </div>
-
-      <section class="legal-section">
-        <h2>1. Datos que recopilamos</h2>
-        <p>
-          Recopilamos únicamente los datos necesarios para brindarte el servicio de reserva de
-          canchas:
-        </p>
-        <ul>
-          <li>
-            <strong>Datos de perfil e identificación:</strong> Nombres, apellidos y correo
-            electrónico facilitados al registrarte o al iniciar sesión con Google.
-          </li>
-          <li>
-            <strong>Datos de contacto:</strong> Número de teléfono / WhatsApp para enviarte
-            confirmaciones y coordinar detalles del partido con la sede.
-          </li>
-          <li>
-            <strong>Historial deportivo y reservas:</strong> Canchas, fechas, horarios y estado de
-            tus partidos jugados y programados.
-          </li>
-        </ul>
-      </section>
-
-      <section class="legal-section">
-        <h2>2. Pagos y transacciones seguras</h2>
-        <p>
-          Los pagos electrónicos son procesados a través de pasarelas de pago certificadas (como
-          Mercado Pago o pasarelas bancarias autorizadas).
-          <strong
-            >Canchero nunca almacena el número completo de tu tarjeta de crédito o débito ni tus
-            códigos de seguridad CVV.</strong
-          >
-        </p>
-      </section>
-
-      <section class="legal-section">
-        <h2>3. Finalidad del tratamiento de datos</h2>
-        <p>Utilizamos tu información exclusivamente para:</p>
-        <ul>
-          <li>Gestionar y validar tus reservas deportivas ante los complejos afiliados.</li>
-          <li>Enviarte tu pase digital de ingreso y avisos operativos sobre tu partido.</li>
-          <li>
-            Permitirte exportar o descargar tus datos en formato digital en cualquier momento.
-          </li>
-          <li>
-            Si lo autorizas expresamente, enviarte promociones y novedades sobre canchas
-            disponibles.
-          </li>
-        </ul>
-      </section>
-
-      <section class="legal-section">
-        <h2>4. Tus derechos (Acceso, Rectificación y Cancelación)</h2>
-        <p>
-          Puedes consultar, actualizar o solicitar la baja de tu cuenta directamente desde la
-          sección <strong>Mi cuenta</strong>. Si deseas una copia completa de tu información, puedes
-          utilizar la opción "Descargar mis datos" dentro de tu panel de cuenta.
-        </p>
-      </section>
 
       <div class="legal-footer-links">
         <a routerLink="/cuenta" class="legal-back-btn">
-          <span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
+          <span aria-hidden="true">←</span>
           <span>Ir a Mi Cuenta</span>
         </a>
         <a routerLink="/terminos" class="legal-back-btn">
           <span>Ver Términos y Condiciones</span>
-          <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
+          <span aria-hidden="true">→</span>
         </a>
       </div>
     </article>
   `,
 })
-export class PrivacyPage {}
+export class PrivacyPage {
+  protected readonly business = environment.business;
+}
+
 export { PrivacyPage as Privacidad };

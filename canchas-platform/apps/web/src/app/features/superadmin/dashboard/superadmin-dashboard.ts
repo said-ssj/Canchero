@@ -405,6 +405,9 @@ import {
     `
       :host {
         display: block;
+        box-sizing: border-box;
+        width: 100%;
+        min-width: 0;
         max-width: 1600px;
         margin: auto;
         color: var(--color-ink-900, #172033);
@@ -622,9 +625,15 @@ import {
       }
       .charts {
         display: grid;
+        min-width: 0;
         grid-template-columns: 1fr 1fr;
         gap: 14px;
         margin-top: 14px;
+      }
+      .charts > *,
+      .rankings > *,
+      .detail-panel {
+        min-width: 0;
       }
       .panel {
         padding: 18px;
@@ -743,6 +752,7 @@ import {
       }
       .rankings {
         display: grid;
+        min-width: 0;
         grid-template-columns: 1fr 1fr;
         gap: 14px;
         margin-top: 14px;
@@ -836,11 +846,13 @@ import {
         font-size: 12px;
       }
       .venue-detail {
+        min-width: 0;
         border-top: 1px solid var(--color-border, #e2e8f0);
       }
       .venue-detail summary {
         display: grid;
-        grid-template-columns: 20px minmax(150px, 1fr) auto repeat(3, minmax(85px, auto));
+        min-width: 0;
+        grid-template-columns: 20px minmax(0, 1fr) auto repeat(3, minmax(85px, auto));
         align-items: center;
         gap: 12px;
         min-height: 64px;
@@ -905,11 +917,16 @@ import {
         font-size: 11px;
       }
       .table-scroll {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
         overflow-x: auto;
+        overscroll-behavior-x: contain;
         margin-top: 9px;
       }
       table {
         width: 100%;
+        min-width: 760px;
         border-collapse: collapse;
         font-size: 11px;
         text-align: left;
@@ -1047,6 +1064,13 @@ import {
         .rankings {
           grid-template-columns: 1fr;
         }
+        .venue-detail summary {
+          grid-template-columns: 18px minmax(0, 1fr) auto repeat(2, minmax(64px, auto));
+          gap: 8px;
+        }
+        .summary-stat.money {
+          display: none;
+        }
       }
       @media (max-width: 760px) {
         .page-head {
@@ -1061,7 +1085,7 @@ import {
           grid-template-columns: repeat(2, minmax(0, 1fr));
         }
         .venue-detail summary {
-          grid-template-columns: 18px minmax(120px, 1fr) auto auto;
+          grid-template-columns: 18px minmax(0, 1fr) auto auto;
           gap: 8px;
           padding: 9px 0;
         }

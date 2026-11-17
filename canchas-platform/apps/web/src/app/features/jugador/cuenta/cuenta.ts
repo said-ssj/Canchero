@@ -23,6 +23,7 @@ import { firstValueFrom } from 'rxjs';
 interface NotificationPreferencesDto {
   bookingEmails: boolean;
   reminders: boolean;
+  marketingEmails: boolean;
   emailAvailable: boolean;
 }
 
@@ -74,18 +75,23 @@ export class AccountSettingsPage {
   protected readonly savingProfile = signal(false);
   protected readonly profileError = signal('');
 
-  // Canales y tipos de notificación
-  protected notifWhatsApp = true;
+  // Preferencias persistidas por la API
   protected notifEmail = true;
-  protected notifBookingConfirmation = true;
   protected notifMatchReminder = true;
-  protected notifScheduleChanges = true;
   protected notifPromotions = false;
+  protected notifEmailAvailable = false;
   protected readonly savingNotifications = signal(false);
+  protected readonly notificationError = signal('');
 
   // Diálogo eliminar cuenta
   protected readonly dialogEliminarOpen = signal(false);
   protected confirmTextEliminar = '';
+  protected detalleSolicitudSupresion = '';
+  protected tipoSolicitudDatos: 'acceso' | 'rectificacion' | 'oposicion' | 'supresion' =
+    'supresion';
+  protected readonly sendingPrivacyRequest = signal(false);
+  protected readonly privacyRequestError = signal('');
+  protected readonly privacyRequestId = signal('');
 
   constructor() {
     // Si no está autenticado, redirigir a login
@@ -131,6 +137,11 @@ export class AccountSettingsPage {
     return 'Jugador';
   });
 
+  protected isPhoneValid(): boolean {
+    const clean = this.formTelefono.trim().replace(/\D/g, '');
+    return clean.length === 9 && clean.startsWith('9');
+  }
+
   protected readonly isGoogleAuth = computed(() => {
     const u = this.user();
     // En Canchero, si la contraseña está vacía o el correo es gestionado por Google OAuth
@@ -143,11 +154,6 @@ export class AccountSettingsPage {
     if (!parts.length) return 'U';
     if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
     return (parts[0].charAt(0) + parts[1].charAt(0)).toUpperCase();
-  }
-
-  protected isPhoneValid(): boolean {
-    const clean = this.formTelefono.trim().replace(/\D/g, '');
-    return clean.length === 9 && clean.startsWith('9');
   }
 
   /* ================= CAMBIO DE TEMA VISUAL ================= */
@@ -197,73 +203,48 @@ export class AccountSettingsPage {
   }
 
   /* ================= NOTIFICACIONES ================= */
-  private cargarPreferenciasNotificaciones(): void {
-    if (typeof localStorage !== 'undefined') {
-      try {
-        const saved = localStorage.getItem('canchero_user_notifications');
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          this.notifWhatsApp = parsed.whatsapp ?? true;
-          this.notifEmail = parsed.email ?? true;
-          this.notifBookingConfirmation = parsed.bookingConfirmation ?? true;
-          this.notifMatchReminder = parsed.matchReminder ?? true;
-          this.notifScheduleChanges = parsed.scheduleChanges ?? true;
-          this.notifPromotions = parsed.promotions ?? false;
-        }
-      } catch {}
-    }
-
-    // Cargar también del backend si existe
+  protected cargarPreferenciasNotificaciones(): void {
+    this.notificationError.set('');
     this.http
       .get<NotificationPreferencesDto>(`${environment.apiUrl}/auth/notification-preferences`)
       .subscribe({
         next: (dto) => {
           this.notifEmail = dto.bookingEmails;
           this.notifMatchReminder = dto.reminders;
+          this.notifPromotions = dto.marketingEmails;
+          this.notifEmailAvailable = dto.emailAvailable;
         },
-        error: () => undefined,
+        error: () =>
+          this.notificationError.set(
+            'No se pudieron cargar las preferencias desde el servidor. Inténtalo nuevamente.',
+          ),
       });
-  }
-
-  protected onWhatsAppToggleChange(checked: boolean): void {
-    if (checked && !this.formTelefono.trim()) {
-      this.snackBar.open(
-        'Ingresa tu número de WhatsApp para poder enviarte los avisos.',
-        'Entendido',
-        { duration: 4000 },
-      );
-    }
   }
 
   protected async saveNotifications(): Promise<void> {
     this.savingNotifications.set(true);
+    this.notificationError.set('');
     try {
-      // Guardar en backend correo y recordatorios
-      await firstValueFrom(
-        this.http.put(`${environment.apiUrl}/auth/notification-preferences`, {
-          bookingEmails: this.notifEmail,
-          reminders: this.notifMatchReminder,
-        }),
-      ).catch(() => undefined);
-
-      // Guardar preferencias completas en storage local del usuario
-      if (typeof localStorage !== 'undefined') {
-        localStorage.setItem(
-          'canchero_user_notifications',
-          JSON.stringify({
-            whatsapp: this.notifWhatsApp,
-            email: this.notifEmail,
-            bookingConfirmation: this.notifBookingConfirmation,
-            matchReminder: this.notifMatchReminder,
-            scheduleChanges: this.notifScheduleChanges,
-            promotions: this.notifPromotions,
-          }),
-        );
-      }
+      const saved = await firstValueFrom(
+        this.http.put<NotificationPreferencesDto>(
+          `${environment.apiUrl}/auth/notification-preferences`,
+          {
+            bookingEmails: this.notifEmail,
+            reminders: this.notifMatchReminder,
+            marketingEmails: this.notifPromotions,
+          },
+        ),
+      );
+      this.notifEmail = saved.bookingEmails;
+      this.notifMatchReminder = saved.reminders;
+      this.notifPromotions = saved.marketingEmails;
+      this.notifEmailAvailable = saved.emailAvailable;
 
       this.snackBar.open('Preferencias de notificación guardadas', 'Cerrar', { duration: 3000 });
     } catch {
-      this.snackBar.open('Error al guardar notificaciones', 'Cerrar', { duration: 3000 });
+      this.notificationError.set(
+        'No se pudieron guardar las preferencias. No se aplicaron los cambios.',
+      );
     } finally {
       this.savingNotifications.set(false);
     }
@@ -286,19 +267,33 @@ export class AccountSettingsPage {
   /* ================= DESCARGAR MIS DATOS ================= */
   protected async descargarMisDatos(): Promise<void> {
     try {
-      const bookings = await this.db.fetchMyBookings().catch(() => []);
+      const bookings = await this.db.fetchMyBookings();
+      const user = this.user();
+      const profile = this.profile();
       const exportData = {
         exportDate: new Date().toISOString(),
-        usuario: this.user(),
-        perfil: this.profile(),
+        usuario: user
+          ? {
+              id: user.id,
+              nombre: user.nombre,
+              correo: user.correo || user.email,
+              telefono: user.telefono,
+              rol: user.rol,
+            }
+          : null,
+        perfil: profile
+          ? {
+              nombre: profile.nombre,
+              apellido: profile.apellido,
+              telefono: profile.telefono,
+              direccion: profile.direccion,
+              foto: profile.foto,
+              idDistrito: profile.idDistrito,
+            }
+          : null,
         preferencias: {
           tema: this.themeMode(),
-          notificaciones: {
-            whatsapp: this.notifWhatsApp,
-            email: this.notifEmail,
-            recordatorios: this.notifMatchReminder,
-            promociones: this.notifPromotions,
-          },
+          notificaciones: this.notificationPreferences(),
         },
         reservas: bookings,
       };
@@ -316,30 +311,70 @@ export class AccountSettingsPage {
 
       this.snackBar.open('Descarga iniciada (archivo JSON)', 'Cerrar', { duration: 3000 });
     } catch {
-      this.snackBar.open('No se pudo generar la descarga de datos.', 'Cerrar', { duration: 3000 });
+      this.snackBar.open(
+        'No se pudo generar la descarga porque no fue posible obtener todos los datos de cuenta y reservas.',
+        'Cerrar',
+        { duration: 5000 },
+      );
     }
+  }
+
+  private notificationPreferences(): NotificationPreferencesDto | null {
+    return this.notificationError()
+      ? null
+      : {
+          bookingEmails: this.notifEmail,
+          reminders: this.notifMatchReminder,
+          marketingEmails: this.notifPromotions,
+          emailAvailable: this.notifEmailAvailable,
+        };
   }
 
   /* ================= ELIMINAR CUENTA ================= */
   protected abrirModalEliminarCuenta(): void {
     this.confirmTextEliminar = '';
+    this.tipoSolicitudDatos = 'supresion';
+    this.detalleSolicitudSupresion = '';
+    this.dialogEliminarOpen.set(true);
+  }
+
+  protected abrirSolicitudDatos(): void {
+    this.confirmTextEliminar = '';
+    this.tipoSolicitudDatos = 'acceso';
+    this.detalleSolicitudSupresion = '';
     this.dialogEliminarOpen.set(true);
   }
 
   protected canConfirmEliminar(): boolean {
+    if (this.tipoSolicitudDatos !== 'supresion') return true;
     const text = this.confirmTextEliminar.trim().toLowerCase();
     const userEmail = (this.user()?.correo || this.user()?.email || '').trim().toLowerCase();
     return text === 'eliminar' || (!!userEmail && text === userEmail);
   }
 
-  protected ejecutarEliminarCuenta(): void {
-    this.dialogEliminarOpen.set(false);
-    // Limpieza de sesión
-    this.auth.logout();
-    this.snackBar.open('Tu cuenta y datos locales han sido desvinculados exitosamente.', 'Cerrar', {
-      duration: 5000,
-    });
-    void this.router.navigate(['/']);
+  protected async enviarSolicitudPrivacidad(): Promise<void> {
+    if (!this.canConfirmEliminar() || this.sendingPrivacyRequest()) return;
+    this.sendingPrivacyRequest.set(true);
+    this.privacyRequestError.set('');
+    try {
+      const receipt = await firstValueFrom(
+        this.http.post<{ id: string; status: string }>(`${environment.apiUrl}/privacy/requests`, {
+          type: this.tipoSolicitudDatos,
+          details: this.detalleSolicitudSupresion.trim(),
+        }),
+      );
+      this.privacyRequestId.set(receipt.id);
+      this.dialogEliminarOpen.set(false);
+      this.snackBar.open('Solicitud registrada para revisión del responsable.', 'Cerrar', {
+        duration: 5000,
+      });
+    } catch {
+      this.privacyRequestError.set(
+        'No se pudo registrar la solicitud. No se eliminó ningún dato; inténtalo nuevamente o comunícate con soporte.',
+      );
+    } finally {
+      this.sendingPrivacyRequest.set(false);
+    }
   }
 }
 export { AccountSettingsPage as Cuenta };

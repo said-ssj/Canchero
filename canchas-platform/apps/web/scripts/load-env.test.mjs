@@ -67,6 +67,19 @@ test('local configured backend remains supported', () => {
   assert.match(result.generated, /localhost:8080/);
 });
 
+test('public business contact data is generated only from explicit configuration', () => {
+  const result = run({
+    BUSINESS_LEGAL_NAME: 'Cancha Ejemplo SAC',
+    BUSINESS_TAX_ID: '20123456789',
+    PRIVACY_CONTACT_EMAIL: 'privacidad@example.test',
+  });
+  assert.equal(result.code, 0);
+  assert.match(result.generated, /"name": "Cancha Ejemplo SAC"/);
+  assert.match(result.generated, /"taxId": "20123456789"/);
+  assert.match(result.generated, /"privacyEmail": "privacidad@example.test"/);
+  assert.doesNotMatch(result.generated, /Av\\. Principal 123|987 654 321/);
+});
+
 test('only public frontend Sentry settings enter the browser bundle', () => {
   const result = run({
     RESEND_API_KEY: 're_PRIVATE_TEST_VALUE',

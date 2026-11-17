@@ -18,25 +18,39 @@ describe('Preferencias de correo', () => {
     const { fixture, http } = setup();
     http
       .expectOne((r) => r.url.endsWith('/notification-preferences'))
-      .flush({ bookingEmails: true, reminders: true, emailAvailable: false });
+      .flush({
+        bookingEmails: true,
+        reminders: true,
+        marketingEmails: false,
+        emailAvailable: false,
+      });
     await fixture.whenStable();
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent.replace(/\s+/g, ' ')).toContain(
       'El envío de correos aún no está activado',
     );
     expect(fixture.nativeElement.textContent).not.toContain('Cargando preferencias');
-    expect(fixture.nativeElement.querySelectorAll('input[type=checkbox]').length).toBe(2);
+    expect(fixture.nativeElement.querySelectorAll('input[type=checkbox]').length).toBe(3);
     http.verify();
   });
   it('solo envía preferencias propias y no confirma el guardado hasta recibir respuesta', async () => {
     const { fixture, http } = setup();
     http
       .expectOne((r) => r.url.endsWith('/notification-preferences'))
-      .flush({ bookingEmails: false, reminders: false, emailAvailable: false });
+      .flush({
+        bookingEmails: false,
+        reminders: false,
+        marketingEmails: false,
+        emailAvailable: false,
+      });
     await fixture.whenStable();
     const save = fixture.componentInstance.save();
     const req = http.expectOne((r) => r.method === 'PUT');
-    expect(req.request.body).toEqual({ bookingEmails: false, reminders: false });
+    expect(req.request.body).toEqual({
+      bookingEmails: false,
+      reminders: false,
+      marketingEmails: false,
+    });
     expect(fixture.componentInstance.saved()).toBe(false);
     req.flush({ message: 'No guardado' }, { status: 503, statusText: 'Unavailable' });
     await save;

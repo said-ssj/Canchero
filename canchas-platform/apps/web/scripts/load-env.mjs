@@ -61,6 +61,15 @@ const apiUrl = value(
   fileValues.API_URL,
   fileValues.VITE_API_URL,
 );
+const business = {
+  name: value(process.env.BUSINESS_LEGAL_NAME, fileValues.BUSINESS_LEGAL_NAME) || '',
+  taxId: value(process.env.BUSINESS_TAX_ID, fileValues.BUSINESS_TAX_ID) || '',
+  email: value(process.env.BUSINESS_EMAIL, fileValues.BUSINESS_EMAIL) || '',
+  phone: value(process.env.BUSINESS_PHONE, fileValues.BUSINESS_PHONE) || '',
+  address: value(process.env.BUSINESS_ADDRESS, fileValues.BUSINESS_ADDRESS) || '',
+  privacyEmail: value(process.env.PRIVACY_CONTACT_EMAIL, fileValues.PRIVACY_CONTACT_EMAIL) || '',
+  complaintsBookUrl: value(process.env.COMPLAINTS_BOOK_URL, fileValues.COMPLAINTS_BOOK_URL) || '',
+};
 const cloudBuild = process.env.VERCEL === '1' || process.env.RENDER === 'true';
 
 if (!supabaseUrl || !anonKey) {
@@ -137,6 +146,7 @@ const generated = {
   anonKey,
   googleMapsApiKey: googleMapsApiKey || undefined,
   apiUrl: apiUrl ? apiUrl.replace(/\/+$/, '') : undefined,
+  business,
 };
 
 writeFileSync(

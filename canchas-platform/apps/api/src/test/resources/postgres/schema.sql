@@ -29,6 +29,15 @@ CREATE TABLE usuario (
 
 CREATE UNIQUE INDEX usuario_correo_unico ON usuario (lower(correo));
 
+CREATE TABLE aceptacion_documento_legal (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    id_usuario uuid NOT NULL REFERENCES usuario(id_usuario) ON DELETE RESTRICT,
+    documento text NOT NULL CHECK (documento IN ('terminos', 'privacidad')),
+    version text NOT NULL,
+    aceptado_en timestamptz NOT NULL DEFAULT now(),
+    UNIQUE (id_usuario, documento, version)
+);
+
 CREATE OR REPLACE FUNCTION invalidate_sessions_after_password_change()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN

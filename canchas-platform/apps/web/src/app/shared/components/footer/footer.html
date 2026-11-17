@@ -2,12 +2,15 @@
   <div class="container">
     <div class="footer-grid">
       <div class="footer-column">
-        <a routerLink="/" class="brand-logo" style="margin-bottom: 1rem;">
+        <a routerLink="/" class="brand-logo" style="margin-bottom: 1rem">
           <div class="brand-icon">C</div>
-          <span class="brand-name" style="color: #FFFFFF;">Canchero<span class="brand-badge">.MVP</span></span>
+          <span class="brand-name" style="color: #ffffff"
+            >Canchero<span class="brand-badge">.MVP</span></span
+          >
         </a>
         <p>
-          La mejor plataforma para encontrar y reservar canchas y complejos deportivos de manera rápida y segura.
+          La mejor plataforma para encontrar y reservar canchas y complejos deportivos de manera
+          rápida y segura.
         </p>
       </div>
 
@@ -25,17 +28,56 @@
         <h3>Servicios</h3>
         <ul>
           <li><a routerLink="/sedes">Alquiler de Canchas</a></li>
-          <li><button type="button" class="footer-pending" disabled title="Próximamente">Academias</button></li>
-          <li><button type="button" class="footer-pending" disabled title="Próximamente">Torneos</button></li>
-          <li><button type="button" class="footer-pending" disabled title="Próximamente">Eventos Corporativos</button></li>
+          <li>
+            <button type="button" class="footer-pending" disabled title="Próximamente">
+              Academias
+            </button>
+          </li>
+          <li>
+            <button type="button" class="footer-pending" disabled title="Próximamente">
+              Torneos
+            </button>
+          </li>
+          <li>
+            <button type="button" class="footer-pending" disabled title="Próximamente">
+              Eventos Corporativos
+            </button>
+          </li>
         </ul>
       </div>
 
       <div class="footer-column">
         <h3>Contacto</h3>
-        <p><strong>Email:</strong> {{ contact().email }}</p>
-        <p><strong>Teléfono:</strong> {{ contact().phone }}</p>
-        <p><strong>Dirección:</strong> {{ contact().address }}</p>
+        @if (business().email) {
+          <p><strong>Email:</strong> {{ business().email }}</p>
+        }
+        @if (business().phone) {
+          <p><strong>Teléfono:</strong> {{ business().phone }}</p>
+        }
+        @if (business().address) {
+          <p><strong>Dirección:</strong> {{ business().address }}</p>
+        }
+        @if (business().name) {
+          <p><strong>Proveedor:</strong> {{ business().name }}</p>
+        }
+        @if (business().taxId) {
+          <p><strong>RUC:</strong> {{ business().taxId }}</p>
+        }
+      </div>
+
+      <div class="footer-column">
+        <h3>Información legal</h3>
+        <ul>
+          <li><a routerLink="/terminos">Términos y condiciones</a></li>
+          <li><a routerLink="/privacidad">Privacidad</a></li>
+          @if (business().complaintsBookUrl) {
+            <li>
+              <a [href]="business().complaintsBookUrl" target="_blank" rel="noopener noreferrer">
+                Libro de Reclamaciones
+              </a>
+            </li>
+          }
+        </ul>
       </div>
     </div>
 

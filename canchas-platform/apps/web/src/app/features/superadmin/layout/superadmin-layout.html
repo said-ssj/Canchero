@@ -1,0 +1,215 @@
+<div class="console-shell">
+  @if (mobileSidebarOpen()) {
+    <button
+      type="button"
+      class="sidebar-backdrop"
+      aria-label="Cerrar menú lateral"
+      (click)="closeMobileSidebar()"
+    ></button>
+  }
+
+  <aside class="console-sidebar" [class.is-open]="mobileSidebarOpen()">
+    <a class="brand" routerLink="/superadmin/dashboard" (click)="closeMobileSidebar()">
+      <span class="brand-mark material-symbols-outlined" aria-hidden="true">sports_soccer</span>
+      <span class="brand-name"
+        >Canchero<span class="brand-suffix">.MVP</span>
+        <small>CONSOLA DE PLATAFORMA</small>
+      </span>
+    </a>
+
+    <nav class="sidebar-nav" aria-label="Navegación de superadministración">
+      @for (section of navSections; track section.id) {
+        <section class="nav-section">
+          <button
+            type="button"
+            class="nav-section-heading"
+            [attr.aria-expanded]="expandedNavSections()[section.id]"
+            (click)="toggleNavSection(section.id)"
+          >
+            <span>{{ section.label }}</span>
+            <span class="material-symbols-outlined" aria-hidden="true">{{
+              expandedNavSections()[section.id] ? 'expand_less' : 'expand_more'
+            }}</span>
+          </button>
+          <div class="nav-section-items" [hidden]="!expandedNavSections()[section.id]">
+            @for (item of section.items; track item.route) {
+              <a
+                class="nav-item"
+                [routerLink]="item.route"
+                routerLinkActive="active"
+                [routerLinkActiveOptions]="{ exact: true }"
+                (click)="closeMobileSidebar()"
+              >
+                <span class="material-symbols-outlined nav-icon" aria-hidden="true">{{
+                  item.icon
+                }}</span>
+                <span>{{ item.label }}</span>
+              </a>
+            }
+          </div>
+        </section>
+      }
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="account-row">
+        <span class="account-avatar" aria-hidden="true">{{ initials() }}</span>
+        <span class="account-info">
+          <strong>{{ name() }}</strong>
+          <small>Superadministrador</small>
+        </span>
+      </div>
+      <button type="button" class="logout-button" (click)="logout()">
+        <span class="material-symbols-outlined" aria-hidden="true">logout</span>
+        <span>Cerrar sesión</span>
+      </button>
+    </div>
+  </aside>
+
+  <main class="console-main">
+    <header class="console-header">
+      <div class="header-title">
+        <button
+          type="button"
+          class="icon-button menu-toggle"
+          aria-label="Abrir menú de navegación"
+          (click)="mobileSidebarOpen.set(true)"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">menu</span>
+        </button>
+        <span class="header-context">Supervisión global</span>
+      </div>
+
+      <div class="header-actions">
+        <app-theme-toggle />
+        <button
+          type="button"
+          class="icon-button"
+          [attr.aria-label]="
+            isFullscreen() ? 'Salir de pantalla completa' : 'Usar pantalla completa'
+          "
+          [title]="isFullscreen() ? 'Salir de pantalla completa' : 'Pantalla completa'"
+          (click)="toggleFullscreen()"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">{{
+            isFullscreen() ? 'fullscreen_exit' : 'desktop_windows'
+          }}</span>
+        </button>
+
+        <div class="notification-control">
+          <button
+            type="button"
+            class="icon-button notification-button"
+            aria-label="Notificaciones"
+            [attr.aria-expanded]="notificationsOpen()"
+            (click)="toggleNotifications()"
+          >
+            <span class="material-symbols-outlined" aria-hidden="true">notifications</span>
+            @if (unreadNotificationCount() > 0) {
+              <span class="notification-badge">{{ unreadNotificationCount() }}</span>
+            }
+          </button>
+
+          @if (notificationsOpen()) {
+            <section class="notification-popover" role="dialog" aria-label="Notificaciones">
+              <div class="popover-heading">
+                <h2>Notificaciones</h2>
+                <div class="popover-actions">
+                  <button
+                    type="button"
+                    class="text-button"
+                    (click)="loadNotifications()"
+                    [disabled]="notificationLoading()"
+                  >
+                    Actualizar
+                  </button>
+                  @if (unreadNotificationCount() > 0) {
+                    <button type="button" class="text-button" (click)="markReportsAsRead()">
+                      Marcar leído
+                    </button>
+                  }
+                </div>
+              </div>
+              @if (notificationLoading()) {
+                <p class="notification-state" role="status">Cargando notificaciones…</p>
+              } @else if (notificationError()) {
+                <div class="notification-state error-state" role="alert">
+                  <p>{{ notificationError() }}</p>
+                  <button type="button" class="text-button" (click)="loadNotifications()">
+                    Reintentar
+                  </button>
+                </div>
+              } @else if (pendingReports(); as count) {
+                <button type="button" class="notification-item" (click)="openReports()">
+                  <span class="notification-item-icon material-symbols-outlined" aria-hidden="true"
+                    >flag</span
+                  >
+                  <span>
+                    <strong>Reportes de la plataforma</strong>
+                    <small
+                      >{{ count }}
+                      {{ count === 1 ? 'reporte abierto requiere' : 'reportes abiertos requieren' }}
+                      revisión.</small
+                    >
+                  </span>
+                  @if (unreadNotificationCount() > 0) {
+                    <span class="unread-dot" aria-label="No leído"></span>
+                  }
+                </button>
+              } @else {
+                <p class="notification-state">
+                  <span class="material-symbols-outlined" aria-hidden="true"
+                    >notifications_none</span
+                  >
+                  No hay reportes pendientes.
+                </p>
+              }
+            </section>
+          }
+        </div>
+
+        <div class="profile-control">
+          <button
+            type="button"
+            class="profile-button"
+            aria-label="Menú de usuario"
+            [attr.aria-expanded]="profileMenuOpen()"
+            (click)="toggleProfileMenu()"
+          >
+            {{ initials() }}
+          </button>
+          @if (profileMenuOpen()) {
+            <section class="profile-popover" aria-label="Cuenta de superadministrador">
+              <div class="profile-summary">
+                <span class="account-avatar" aria-hidden="true">{{ initials() }}</span>
+                <span>
+                  <strong>{{ name() }}</strong>
+                  <small>{{ email() }}</small>
+                </span>
+              </div>
+              <a
+                routerLink="/perfil"
+                [queryParams]="{ regreso: '/superadmin/dashboard' }"
+                (click)="closeProfileMenu()"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">person</span>
+                Mi perfil
+              </a>
+              <button type="button" (click)="logout()">
+                <span class="material-symbols-outlined" aria-hidden="true">logout</span>
+                Cerrar sesión
+              </button>
+            </section>
+          }
+        </div>
+      </div>
+    </header>
+
+    @if (fullscreenError()) {
+      <p class="fullscreen-error" role="alert">{{ fullscreenError() }}</p>
+    }
+    <div class="page-content">
+      <router-outlet />
+    </div>
+  </main>
+</div>
