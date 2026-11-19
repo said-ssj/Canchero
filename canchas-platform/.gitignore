@@ -153,3 +153,11 @@ dumps/
 
 # Generated from the pinned emoji dataset before start/build/test
 apps/web/public/assets/emojis/
+
+# Playwright
+apps/web/test-results/
+apps/web/e2e/reporte/
+
+# Respaldos de base de datos (contienen datos personales)
+backups/
+reportes/

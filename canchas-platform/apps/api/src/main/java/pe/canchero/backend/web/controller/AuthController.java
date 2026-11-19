@@ -40,8 +40,12 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request, HttpServletRequest http) {
+        if (request == null || request.email() == null || request.email().isBlank()
+                || request.password() == null || request.password().isEmpty()) {
+            return ResponseEntity.badRequest().body(new ErrorResponse("Ingresa tu correo y contraseña"));
+        }
         String ip = ipLimiter.resolveClientIp(http);
-        String email = request == null ? "" : request.email();
+        String email = request.email();
         if (ipLimiter.bloqueada(ip, email)) {
             return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(new ErrorResponse(
                     "Demasiados intentos fallidos para esta cuenta desde esta conexión. Espera 15 minutos antes de volver a intentarlo."));

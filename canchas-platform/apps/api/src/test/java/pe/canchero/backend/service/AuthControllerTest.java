@@ -50,4 +50,13 @@ class AuthControllerTest {
         mvc.perform(get("/api/auth/me")).andExpect(status().isUnauthorized());
         assertEquals(0, data.reads);
     }
+
+    @Test
+    void rejectsEmptyLoginWithBadRequestWithoutReadingDatabase() throws Exception {
+        mvc.perform(post("/api/auth/login").contentType("application/json").content("{}"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(post("/api/auth/login").contentType("application/json").content("{\"email\":\" \",\"password\":\"x\"}"))
+                .andExpect(status().isBadRequest());
+        assertEquals(0, data.reads);
+    }
 }
